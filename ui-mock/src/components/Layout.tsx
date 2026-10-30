@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import {
-  LayoutGrid, ListChecks, TrendingUp, MessageSquareText, MapPinned, ScanSearch, FileText, History, Settings, Search, ChevronsUpDown, ChevronDown, ArrowLeft,
-  Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Sparkles, Flame, CalendarDays, AudioLines, Puzzle,
+  LayoutGrid, ListChecks, TrendingUp, MessageSquareText, MapPinned, ScanSearch, FileText, Settings, Search, ChevronsUpDown, ChevronDown, ArrowLeft,
+  Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Sparkles, Flame, CalendarDays,
 } from "lucide-react";
 import { cn } from "./ui";
-import { Logo, LogoMark } from "./Logo";
+import { Logo } from "./Logo";
 import { keywords, locations, workspace } from "../data/mock";
 import { openTasksFor, useRunState } from "../lib/tasks";
 import { runningOf, useRuns } from "../lib/runs";
@@ -13,13 +13,15 @@ import { useTheme } from "../lib/theme";
 import { Freshness, RunButton, kindForPath } from "./RunStatus";
 import { AssistantPanel, MarkoLauncher } from "./Assistant";
 import { ask, toggleAssistant, type PageContext } from "../lib/assistant";
+import { accountSections, businessSections } from "../pages/Settings";
 
 type Leaf = { to: string; label: string };
 type Nav = Leaf & { icon: typeof LayoutGrid; children?: Leaf[]; section?: string };
 
 // Every page is one click from the sidebar, under a section per kind of marketing
-// (SEO, Social, Sales) and Marko's own setup (Brand voice, Skills). Groups list their pages as sub-items; the group holding
-// the current page is open, the rest open with their chevron.
+// (SEO, Social, Sales). Groups list their pages as sub-items; the group holding
+// the current page is open, the rest open with their chevron. Marko's setup
+// (Brand voice, Skills) and Activity live in Settings.
 const nav: Nav[] = [
   { to: "/", label: "Home", icon: LayoutGrid },
   { to: "/todo", label: "To-do", icon: ListChecks },
@@ -44,13 +46,9 @@ const nav: Nav[] = [
   { to: "/social/trends", label: "Trending ideas", icon: Flame, section: "Social" },
   { to: "/social/posts", label: "Posts & calendar", icon: CalendarDays },
   ...(workspace.plan === "agency" ? [{ to: "/prospects", label: "Prospecting", icon: Target, section: "Sales" }] : []),
-  { to: "/brand", label: "Brand voice", icon: AudioLines, section: "Marko" },
-  { to: "/skills", label: "Skills", icon: Puzzle },
 ];
-const footer: Nav[] = [
-  { to: "/runs", label: "Activity", icon: History },
-  { to: "/settings", label: "Settings", icon: Settings },
-];
+const settingsNav: Nav = { to: "/settings", label: "Settings", icon: Settings };
+const settingsLeaves: Leaf[] = [...businessSections, ...accountSections].map((s) => ({ to: `/settings/${s.id}`, label: s.label }));
 
 const split = (to: string) => { const [path, q = ""] = to.split("?"); return { path, params: new URLSearchParams(q) }; };
 const onPath = (path: string, to: string) => (to === "/" ? path === "/" : path === to || path.startsWith(`${to}/`));
@@ -65,7 +63,8 @@ function activeLeaf(leaves: Leaf[], pathname: string, search: string): Leaf | un
 }
 const inGroup = (n: Nav, pathname: string) => (n.children ?? [n]).some((l) => onPath(pathname, split(l.to).path));
 
-const row = (active: boolean) => cn("flex h-8 items-center gap-2.5 rounded-md px-2 text-[13.5px] transition-colors", active ? "bg-active font-medium text-fg" : "text-muted hover:bg-hover hover:text-fg");
+const iconBtn = "grid size-7 shrink-0 place-items-center rounded-md text-muted hover:bg-hover hover:text-fg";
+const row = (active: boolean) => cn("flex h-7 items-center gap-2.5 rounded-md px-2 text-[13px] transition-colors", active ? "bg-active font-medium text-fg" : "text-muted hover:bg-hover hover:text-fg");
 
 function NavItem({ item, badge, open, onToggle }: { item: Nav; badge?: number; open?: boolean; onToggle?: () => void }) {
   const { pathname, search } = useLocation();
@@ -76,20 +75,20 @@ function NavItem({ item, badge, open, onToggle }: { item: Nav; badge?: number; o
     <div>
       <div className="flex items-center">
         <Link to={item.to} aria-current={here && !item.children ? "page" : undefined} className={cn(row(here && !item.children), "min-w-0 flex-1", here && item.children && "font-medium text-fg")}>
-          <Icon size={16} strokeWidth={1.75} className="shrink-0" />
+          <Icon size={15} strokeWidth={1.75} className="shrink-0" />
           <span className="flex-1 truncate">{item.label}</span>
           {badge ? <span className="num min-w-5 rounded-full bg-active px-1.5 text-center text-[11px] font-medium text-muted">{badge}</span> : null}
         </Link>
         {item.children && (
-          <button onClick={onToggle} aria-expanded={open} aria-label={`${open ? "Hide" : "Show"} ${item.label} pages`} className="grid size-8 shrink-0 place-items-center rounded-md text-subtle hover:bg-hover hover:text-fg">
+          <button onClick={onToggle} aria-expanded={open} aria-label={`${open ? "Hide" : "Show"} ${item.label} pages`} className="grid size-7 shrink-0 place-items-center rounded-md text-subtle hover:bg-hover hover:text-fg">
             <ChevronDown size={14} className={cn("transition-transform", !open && "-rotate-90")} />
           </button>
         )}
       </div>
       {item.children && open && (
-        <div className="mt-0.5 mb-1 ml-[15px] flex flex-col gap-0.5 border-l border-line pl-2">
+        <div className="my-px ml-[14px] flex flex-col gap-px border-l border-line pl-2">
           {item.children.map((c) => (
-            <Link key={c.to} to={c.to} aria-current={c === leaf ? "page" : undefined} className={cn(row(c === leaf), "h-7 text-[13px]")}>{c.label}</Link>
+            <Link key={c.to} to={c.to} aria-current={c === leaf ? "page" : undefined} className={cn(row(c === leaf), "h-[26px] text-[12.5px]")}>{c.label}</Link>
           ))}
         </div>
       )}
@@ -99,8 +98,8 @@ function NavItem({ item, badge, open, onToggle }: { item: Nav; badge?: number; o
 
 /** What Marko is "looking at": the page's sidebar name, plus a keyword when one is open. */
 function pageContext(pathname: string, search: string): PageContext {
-  const item = [...nav, ...footer].find((n) => inGroup(n, pathname));
-  const leaf = item?.children ? activeLeaf(item.children, pathname, search) : item;
+  const item = [...nav, settingsNav].find((n) => inGroup(n, pathname));
+  const leaf = item === settingsNav ? activeLeaf(settingsLeaves, pathname, search) : item?.children ? activeLeaf(item.children, pathname, search) : item;
   const kw = pathname.match(/^\/rankings\/([^/]+)/)?.[1] ?? new URLSearchParams(search).get("kw") ?? undefined;
   return { label: leaf?.label ?? "This page", path: pathname, keywordId: kw };
 }
@@ -111,10 +110,10 @@ function LocationSwitcher() {
   const loc = locations.find((l) => l.id === cur)!;
   return (
     <div className="relative">
-      <button onClick={() => setOpen(!open)} className="flex w-full items-center gap-2.5 rounded-md p-1.5 text-left hover:bg-hover" aria-expanded={open}>
+      <button onClick={() => setOpen(!open)} className="flex w-full items-center gap-2.5 rounded-md p-1 text-left hover:bg-hover" aria-expanded={open}>
         <span className="grid size-7 shrink-0 place-items-center rounded-md bg-ink text-[13px] font-semibold text-on-ink">M</span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13.5px] font-medium">{loc.name}</span>
+        <span className="min-w-0 flex-1 leading-tight">
+          <span className="block truncate text-[13px] font-medium">{loc.name}</span>
           <span className="block truncate text-[12px] text-muted">{loc.city}</span>
         </span>
         <ChevronsUpDown size={14} className="text-subtle" />
@@ -140,7 +139,10 @@ function CommandPalette({ open, onClose, ctx }: { open: boolean; onClose: () => 
   const [idx, setIdx] = useState(0);
   const navigate = useNavigate();
   const items = useMemo(() => {
-    const pages = [...nav, ...footer].flatMap((n) => n.children ?? [n]).map((i) => ({ label: i.label, hint: "Page", to: i.to }));
+    const pages = [
+      ...nav.flatMap((n) => n.children ?? [n]).map((i) => ({ label: i.label, hint: "Page", to: i.to })),
+      ...settingsLeaves.map((i) => ({ label: i.label, hint: "Settings", to: i.to })),
+    ];
     const extra = [
       ...(workspace.plan === "agency" ? [{ label: "Audit a business", hint: "Prospecting", to: "/prospects?new=audit" }] : []),
       { label: "Run setup again", hint: "Onboarding", to: "/onboarding" },
@@ -225,37 +227,33 @@ export default function Layout() {
   useEffect(() => { window.scrollTo(0, 0); }, [loc.pathname]);
 
   const sidebar = (
-    <div className="flex h-full flex-col gap-1 px-2.5 py-3">
-      <NavLink to="/" aria-label="OpenMarko home" className="mb-3 flex h-8 items-center px-2"><Logo size={22} /></NavLink>
+    <div className="flex h-full flex-col gap-1 px-2.5 py-2.5">
+      {/* Logo, Search and Ask Marko share one row; the shortcuts are in the tooltips. */}
+      <div className="flex h-8 items-center gap-0.5">
+        <NavLink to="/" aria-label="OpenMarko home" className="mr-auto flex h-7 items-center rounded-md px-2 hover:bg-hover"><Logo size={17} /></NavLink>
+        <button onClick={() => setCmd(true)} aria-label="Search" title="Search (⌘K)" className={iconBtn}><Search size={15} strokeWidth={1.75} /></button>
+        <button onClick={toggleAssistant} aria-label="Ask Marko" title="Ask Marko (⌘J)" className={iconBtn}><Sparkles size={15} strokeWidth={1.75} /></button>
+      </div>
       {locations.length > 1 && <LocationSwitcher />}
-      <button onClick={() => setCmd(true)} className="mt-1 mb-2 flex h-8 items-center gap-2.5 rounded-md px-2 text-[13.5px] text-muted hover:bg-hover">
-        <Search size={16} strokeWidth={1.75} />
-        <span className="flex-1 text-left">Search</span>
-        <kbd className="rounded border border-line bg-surface px-1 font-sans text-[11px] text-subtle">⌘K</kbd>
-      </button>
-      <button onClick={toggleAssistant} className="mb-2 flex h-8 items-center gap-2.5 rounded-md px-2 text-[13.5px] text-muted hover:bg-hover hover:text-fg">
-        <LogoMark size={16} />
-        <span className="flex-1 text-left">Ask Marko</span>
-        <kbd className="rounded border border-line bg-surface px-1 font-sans text-[11px] text-subtle">⌘J</kbd>
-      </button>
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto" aria-label="Main">
+      <nav className="mt-1 flex flex-1 flex-col gap-px overflow-y-auto" aria-label="Main">
         {nav.map((n) => (
           <div key={n.label}>
-            {n.section && <div className="mt-4 mb-1 px-2 text-[11px] font-medium tracking-[0.06em] text-subtle uppercase">{n.section}</div>}
+            {n.section && <div className="mt-3 mb-0.5 px-2 text-[10.5px] font-medium tracking-[0.06em] text-subtle uppercase">{n.section}</div>}
             <NavItem item={n} badge={n.to === "/todo" ? openTasksFor(runState).length : undefined} open={shown(n)} onToggle={() => toggle(n)} />
           </div>
         ))}
       </nav>
-      <NavLink to="/onboarding" className="mb-2 rounded-lg border border-line bg-surface p-3 shadow-card transition-colors hover:border-line-strong">
-        <div className="flex items-center gap-2 text-[13px] font-medium"><Rocket size={14} /> Setup 4 of 5</div>
-        <div className="mt-2 h-1 rounded-full bg-hover"><div className="h-full w-4/5 rounded-full bg-accent" /></div>
-        <div className="mt-1.5 text-[12px] text-muted">Connect Google Analytics</div>
+      <NavLink to="/onboarding" className="mb-1 rounded-lg border border-line bg-surface px-2.5 py-2 shadow-card transition-colors hover:border-line-strong">
+        <div className="flex items-center gap-2 text-[12.5px] font-medium"><Rocket size={13} /> Setup 4 of 5<span className="ml-auto truncate text-[11.5px] font-normal text-muted">Connect GA4</span></div>
+        <div className="mt-1.5 h-1 rounded-full bg-hover"><div className="h-full w-4/5 rounded-full bg-accent" /></div>
       </NavLink>
-      {footer.map((n) => <NavItem key={n.label} item={n} badge={n.to === "/runs" ? live || undefined : undefined} />)}
-      <button onClick={() => setDark(!dark)} className={row(false)}>
-        {dark ? <Sun size={16} strokeWidth={1.75} /> : <Moon size={16} strokeWidth={1.75} />}
-        {dark ? "Light mode" : "Dark mode"}
-      </button>
+      <div className="flex items-center gap-0.5">
+        {/* Live runs show on Settings, where Activity lives. */}
+        <div className="min-w-0 flex-1"><NavItem item={settingsNav} badge={live || undefined} /></div>
+        <button onClick={() => setDark(!dark)} aria-label={dark ? "Light mode" : "Dark mode"} title={dark ? "Light mode" : "Dark mode"} className={iconBtn}>
+          {dark ? <Sun size={15} strokeWidth={1.75} /> : <Moon size={15} strokeWidth={1.75} />}
+        </button>
+      </div>
     </div>
   );
 
@@ -278,7 +276,7 @@ export default function Layout() {
         <main className="relative mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-8 lg:px-12 lg:py-10">
           <div className="mb-5 flex min-h-9 flex-wrap items-center justify-between gap-3 print:hidden">
             {/* Detail pages one level down (an audit issue, a competitor) get a way back. */}
-            {loc.pathname.split("/").length > 2 && !loc.pathname.startsWith("/prospects/") && !loc.pathname.startsWith("/social/") ? (
+            {loc.pathname.split("/").length > 2 && !/^\/(prospects|social|settings)\//.test(loc.pathname) ? (
               <NavLink to={`/${loc.pathname.split("/")[1]}`} className="inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-fg"><ArrowLeft size={13} /> Back</NavLink>
             ) : <span />}
             <div className="flex flex-wrap items-center gap-3">

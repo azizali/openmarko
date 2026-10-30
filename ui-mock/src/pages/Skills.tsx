@@ -15,7 +15,7 @@ export default function Skills() {
   return (
     <>
       <PageHeader
-        title="Skills"
+        title="Marko skills"
         sub="What Marko knows how to write. When you ask for something, Marko picks the matching skill and follows its instructions, with your brand voice and business facts in mind."
         actions={<Button variant="primary" icon={<Plus size={14} />} onClick={() => setOpen(blankSkill())}>New skill</Button>}
       />
@@ -26,10 +26,10 @@ export default function Skills() {
           <div className="text-[14px] font-medium">Always in the background</div>
           <div className="text-[13px] text-muted">Your brand voice and business facts go with every skill, so a review reply, a TikTok and an article all sound like the same business.</div>
         </div>
-        <Link to="/brand"><Button size="sm" variant="ghost">Brand voice</Button></Link>
+        <Link to="/settings/brand"><Button size="sm" variant="ghost">Brand voice</Button></Link>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
         {skills.map((s) => (
           <Card key={s.id} className={cn("flex flex-col gap-3", !s.enabled && "opacity-60")}>
             <div className="flex items-start gap-3">

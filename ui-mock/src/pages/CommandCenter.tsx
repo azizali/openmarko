@@ -32,7 +32,7 @@ export default function CommandCenter() {
         <div className="min-w-0 flex-1">
           {didAlready.length > 0 && (
             <p className="mt-0.5 mb-4 text-[14px] leading-[1.55]">
-              <b className="font-medium">While you were away</b> I {didAlready.join(" and ")}. <Link to="/runs" className="text-accent hover:underline">See activity</Link>
+              <b className="font-medium">While you were away</b> I {didAlready.join(" and ")}. <Link to="/settings/activity" className="text-accent hover:underline">See activity</Link>
             </p>
           )}
           <ThisWeek onOpen={setOpen} heading={<p className="m-0 text-[14px] leading-[1.55]">Three things need you this week:</p>} />

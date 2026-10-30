@@ -15,15 +15,12 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import Prospects from "./pages/Prospects";
 import ProspectAudit from "./pages/ProspectAudit";
-import Runs from "./pages/Runs";
 import AiVisibility from "./pages/AiVisibility";
 import Citations from "./pages/Citations";
 import PublicAudit from "./pages/PublicAudit";
 import Content from "./pages/Content";
 import SocialTrends from "./pages/SocialTrends";
 import SocialPosts from "./pages/SocialPosts";
-import Brand from "./pages/Brand";
-import Skills from "./pages/Skills";
 
 // Rank pack now lives inside Rankings (Map pack view); keep old links working.
 function GridRedirect() {
@@ -63,18 +60,20 @@ export default function App() {
           <Route path="actions/:id" element={<ActionRedirect />} />
           <Route path="profile" element={<Profile />} />
           <Route path="reports" element={<Reports />} />
-          <Route path="settings" element={<Settings />} />
+          <Route path="settings" element={<Navigate replace to="/settings/brand" />} />
+          <Route path="settings/:section" element={<Settings />} />
           <Route path="prospects" element={<Prospects />} />
           <Route path="prospects/:id" element={<ProspectAudit />} />
-          <Route path="runs" element={<Runs />} />
+          <Route path="runs" element={<Navigate replace to="/settings/activity" />} />
           <Route path="ai" element={<AiVisibility />} />
           <Route path="citations" element={<Citations />} />
           <Route path="social" element={<Navigate replace to="/social/trends" />} />
           <Route path="social/trends" element={<SocialTrends />} />
           <Route path="social/posts" element={<SocialPosts />} />
-          <Route path="social/voice" element={<Navigate replace to="/brand" />} />
-          <Route path="brand" element={<Brand />} />
-          <Route path="skills" element={<Skills />} />
+          <Route path="social/voice" element={<Navigate replace to="/settings/brand" />} />
+          {/* Brand voice, Skills and Activity moved into Settings; keep old links working. */}
+          <Route path="brand" element={<Navigate replace to="/settings/brand" />} />
+          <Route path="skills" element={<Navigate replace to="/settings/skills" />} />
           <Route path="*" element={<CommandCenter />} />
         </Route>
       </Routes>

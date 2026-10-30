@@ -30,7 +30,7 @@ export default function SocialTrends() {
           <div className="text-[14px] font-medium">Written in your voice</div>
           <div className="line-clamp-2 text-[13px] text-muted">{voice.summary}</div>
         </div>
-        <Link to="/brand"><Button size="sm" variant="ghost">Edit voice</Button></Link>
+        <Link to="/settings/brand"><Button size="sm" variant="ghost">Edit voice</Button></Link>
       </Card>
 
       <div className="mb-4 flex flex-wrap gap-1.5">

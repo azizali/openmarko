@@ -181,7 +181,7 @@ export function AssistantPanel({ ctx }: { ctx: PageContext }) {
             <MarkoAvatar />
             <div className="text-[13.5px] leading-[1.55]">
               <p className="m-0">Hi, I'm Marko. I can look into your rankings, reply to reviews, fix listings, write posts and send reports.</p>
-              <p className="mt-2 mb-0 text-muted">I ask before changing anything, unless you've allowed it in <Link to="/settings" className="underline decoration-line-strong underline-offset-2 hover:text-fg">Settings → Automation</Link>. Every change can be undone.</p>
+              <p className="mt-2 mb-0 text-muted">I ask before changing anything, unless you've allowed it in <Link to="/settings/automation" className="underline decoration-line-strong underline-offset-2 hover:text-fg">Settings → Automation</Link>. Every change can be undone.</p>
             </div>
           </div>
         )}
@@ -194,7 +194,7 @@ export function AssistantPanel({ ctx }: { ctx: PageContext }) {
                 <MarkoAvatar />
                 <div className="flex min-w-0 flex-1 flex-col gap-2">
                   <Blocks blocks={m.blocks} />
-                  {!!m.skills?.length && <Link to="/skills" className="self-start text-[11.5px] text-subtle hover:text-fg">Used {m.skills.map(skillName).join(" + ")}, in your brand voice</Link>}
+                  {!!m.skills?.length && <Link to="/settings/skills" className="self-start text-[11.5px] text-subtle hover:text-fg">Used {m.skills.map(skillName).join(" + ")}, in your brand voice</Link>}
                 </div>
               </div>
             ),

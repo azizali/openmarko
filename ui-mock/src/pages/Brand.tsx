@@ -29,10 +29,10 @@ export default function Brand() {
       <div className="mb-6 flex flex-wrap items-center gap-1.5 text-[12.5px] text-muted">
         <span className="mr-1">Used in</span>
         {usedBy.map((u) => <Badge key={u}>{u}</Badge>)}
-        <Link to="/skills" className="ml-1 hover:text-fg">See skills →</Link>
+        <Link to="/settings/skills" className="ml-1 hover:text-fg">See skills →</Link>
       </div>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+      <div className="grid items-start gap-6 2xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
         <div className="flex flex-col gap-6">
           <Card>
             <CardHeader title="Your voice in a sentence" sub={`Learned from ${voice.learnedFrom.join(", ")}.`} />

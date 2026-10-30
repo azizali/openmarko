@@ -103,7 +103,7 @@ export function PostDrawer({ trend, post, onClose }: { trend?: Trend | null; pos
                 <ChannelBadge id={c.id} size={20} /> {c.name}
               </button>
             ) : (
-              <Link key={c.id} to="/settings" className="inline-flex h-8 items-center gap-2 rounded-full border border-dashed border-line pr-3 pl-1.5 text-[13px] text-muted hover:bg-hover">
+              <Link key={c.id} to="/settings/integrations" className="inline-flex h-8 items-center gap-2 rounded-full border border-dashed border-line pr-3 pl-1.5 text-[13px] text-muted hover:bg-hover">
                 <ChannelBadge id={c.id} size={20} /> Connect {c.name}
               </Link>
             );
@@ -116,7 +116,7 @@ export function PostDrawer({ trend, post, onClose }: { trend?: Trend | null; pos
             {tweakLabels.map((t) => (
               <button key={t.id} onClick={() => setTweaks(tweaks.includes(t.id) ? tweaks.filter((x) => x !== t.id) : [...tweaks, t.id])} aria-pressed={tweaks.includes(t.id)} className={cn("h-7 rounded-full border px-2.5 text-[12.5px] transition-colors", tweaks.includes(t.id) ? "border-ink bg-ink text-on-ink" : "border-line text-muted hover:bg-hover")}>{t.label}</button>
             ))}
-            <span className="ml-auto text-[12px] text-subtle">In your voice · <Link to="/brand" className="underline decoration-line-strong underline-offset-2 hover:text-fg">edit voice</Link></span>
+            <span className="ml-auto text-[12px] text-subtle">In your voice · <Link to="/settings/brand" className="underline decoration-line-strong underline-offset-2 hover:text-fg">edit voice</Link></span>
           </div>
         )}
 

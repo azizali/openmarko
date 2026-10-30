@@ -146,7 +146,7 @@ const drops = () =>
 const reply = (blocks: Block[], followUps?: string[], skills?: string[]): Message => ({ id: id(), role: "marko", blocks, followUps, skills });
 /** Marko won't write with a skill the user turned off. */
 const off = (skill: string): Message | null =>
-  skillOn(skill) ? null : reply([{ type: "text", text: `The “${skillName(skill)}” skill is turned off, so I won't write that. Turn it back on in Skills.` }, { type: "links", items: [{ label: "Skills", to: "/skills" }] }]);
+  skillOn(skill) ? null : reply([{ type: "text", text: `The “${skillName(skill)}” skill is turned off, so I won't write that. Turn it back on in Skills.` }, { type: "links", items: [{ label: "Skills", to: "/settings/skills" }] }]);
 
 // ---------- Social ----------
 
@@ -190,7 +190,7 @@ function socialReply(q: string): Message | null {
     const live = channels.filter((c) => c.connected).map((c) => c.id);
     const notConnected = named.filter((c) => !live.includes(c));
     const chs = (named.length ? named : t.bestFor).filter((c) => live.includes(c));
-    if (!chs.length) return reply([{ type: "text", text: `${notConnected.map((c) => channels.find((x) => x.id === c)!.name).join(" and ")} isn't connected yet.` }, { type: "links", items: [{ label: "Connect it in Settings", to: "/settings" }] }]);
+    if (!chs.length) return reply([{ type: "text", text: `${notConnected.map((c) => channels.find((x) => x.id === c)!.name).join(" and ")} isn't connected yet.` }, { type: "links", items: [{ label: "Connect it in Settings", to: "/settings/integrations" }] }]);
     const gate = off("social-viral") ?? off("trend-remix");
     if (gate) return gate;
     const post = remixTrend(t.id, chs);

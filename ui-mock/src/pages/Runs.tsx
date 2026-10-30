@@ -17,9 +17,9 @@ export default function Runs() {
 
   return (
     <>
-      <PageHeader title="Runs" sub="Every scan, crawl and sync that refreshes your data: scheduled and manual, with status, duration and cost." />
+      <PageHeader title="Activity" sub="Every scan, crawl and sync that refreshes your data: scheduled and manual, with status, duration and cost." />
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-6 grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
         {(Object.keys(runKinds) as RunKind[]).map((k) => {
           const Icon = icons[k];
           const last = lastDone(runs, k);

@@ -34,7 +34,7 @@ export function Freshness({ kind }: { kind: RunKind | null }) {
         </span>
       )}
       {running.map((r) => (
-        <Link key={r.id} to="/runs" className="inline-flex items-center gap-1.5 rounded-full bg-info-soft px-2 py-0.5 font-medium text-info hover:opacity-80">
+        <Link key={r.id} to="/settings/activity" className="inline-flex items-center gap-1.5 rounded-full bg-info-soft px-2 py-0.5 font-medium text-info hover:opacity-80">
           <span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-info opacity-60" /><span className="relative inline-flex size-2 rounded-full bg-info" /></span>
           {r.kind === "prospect" ? "Searching" : `${runKinds[r.kind].label} running`} <span className="num">{Math.round(r.progress * 100)}%</span>
         </Link>
@@ -56,7 +56,7 @@ export function RunButton({ kind, variant = "secondary" }: { kind: RunKind; vari
 
   if (active) {
     return (
-      <Link to="/runs" title="A run is already in progress. Open the run log" className="inline-flex h-9 items-center gap-1.5 rounded-md border border-line bg-surface px-3.5 text-[13.5px] font-medium whitespace-nowrap text-muted hover:bg-hover">
+      <Link to="/settings/activity" title="A run is already in progress. Open the run log" className="inline-flex h-9 items-center gap-1.5 rounded-md border border-line bg-surface px-3.5 text-[13.5px] font-medium whitespace-nowrap text-muted hover:bg-hover">
         <Loader2 size={14} className="animate-spin" />
         {kind === "rank" ? "Scan" : meta.label} in progress · <span className="num">{Math.round(active.progress * 100)}%</span>
       </Link>
