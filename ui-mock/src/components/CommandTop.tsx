@@ -1,19 +1,13 @@
 import { useId, type ReactNode } from "react";
 import { Link } from "react-router";
-import { ArrowDown, ArrowRight, ArrowUp, Activity, MapPin, MousePointerClick, Navigation, Phone, Sparkles, Star, TrendingUp, Eye } from "lucide-react";
+import { ArrowDown, ArrowUp, Activity, MapPin, MousePointerClick, Navigation, Phone, Sparkles, Star, TrendingUp, Eye } from "lucide-react";
 import { cn, fmt } from "./ui";
 import { scanFor } from "./KeywordTable";
 import { auditIssues, auditSummary, business, competitors, gbpInsights, gbpWeekly, gridStats, keywords, reviews, visibilitySeries } from "../data/mock";
 import { aiVisibility } from "../data/ai";
 
-// The top of the Command Center, in two layouts (Story and Ledger). Both read
-// the same numbers from pulseData() and include the local presence scorecard.
-
-export type TopVariant = "story" | "ledger";
-export const topVariants: { id: TopVariant; label: string }[] = [
-  { id: "story", label: "Story" },
-  { id: "ledger", label: "Ledger" },
-];
+// The top of the home page: last 28 days in one sentence, plus the local presence
+// scorecard. Each scorecard row links to the page with the detail.
 
 // ---------- Data ----------
 
@@ -60,11 +54,11 @@ export function pulseData(state: Record<string, string>) {
 
   const ai = aiVisibility();
   const scores = [
-    { key: "maps", label: "Map pack", value: Math.min(100, Math.round((solv / 40) * 100)), href: "#keywords" },
-    { key: "google", label: "Google search", value: Math.round((page1 / keywords.length) * 100), href: "#keywords" },
-    { key: "site", label: "Website", value: health, href: "#health" },
-    { key: "reviews", label: "Reviews", value: Math.round((business.rating / 5) * 70 + Math.min(1, you.reviewVelocity / leader.reviewVelocity) * 30), href: "#/profile" },
-    { key: "ai", label: "AI answers", value: Math.round(ai.pct), href: "#/ai" },
+    { key: "maps", label: "Map pack", value: Math.min(100, Math.round((solv / 40) * 100)), href: "/rankings?view=local" },
+    { key: "google", label: "Google search", value: Math.round((page1 / keywords.length) * 100), href: "/rankings" },
+    { key: "site", label: "Website", value: health, href: "/audit" },
+    { key: "reviews", label: "Reviews", value: Math.round((business.rating / 5) * 70 + Math.min(1, you.reviewVelocity / leader.reviewVelocity) * 30), href: "/profile?tab=reviews" },
+    { key: "ai", label: "AI answers", value: Math.round(ai.pct), href: "/ai" },
   ];
   const overall = Math.round(scores.reduce((a, s) => a + s.value, 0) / scores.length);
 
@@ -126,42 +120,6 @@ function Area({ values, color = "var(--accent)", h = 64, invert = false, classNa
   );
 }
 
-function Stars({ value, size = 13 }: { value: number; size?: number }) {
-  return (
-    <span className="relative inline-flex text-line-strong" aria-label={`${value} out of 5 stars`}>
-      {[0, 1, 2, 3, 4].map((i) => <Star key={i} size={size} className="fill-current" />)}
-      <span className="absolute inset-0 inline-flex overflow-hidden text-warn" style={{ width: `${(value / 5) * 100}%` }}>
-        {[0, 1, 2, 3, 4].map((i) => <Star key={i} size={size} className="shrink-0 fill-current" />)}
-      </span>
-    </span>
-  );
-}
-
-const go = (href: string) => (e: React.MouseEvent) => {
-  if (href.startsWith("#/")) return;
-  e.preventDefault();
-  document.querySelector(href)?.scrollIntoView({ behavior: "smooth", block: "start" });
-};
-
-function Tile({ href, className, children }: { href: string; className?: string; children: ReactNode }) {
-  return (
-    <a href={href} onClick={go(href)} className={cn("group relative block rounded-2xl border border-line bg-surface p-5 transition-[border-color,box-shadow] hover:border-line-strong hover:shadow-[0_8px_30px_-12px_rgba(0,0,0,0.15)]", className)}>
-      {children}
-    </a>
-  );
-}
-
-function Label({ icon: Icon, children, right }: { icon: typeof Phone; children: ReactNode; right?: ReactNode }) {
-  return (
-    <div className="flex items-center gap-2 text-[12.5px] font-medium text-muted">
-      <span className="grid size-6 place-items-center rounded-md bg-hover text-fg"><Icon size={13} /></span>
-      <span className="flex-1">{children}</span>
-      {right}
-    </div>
-  );
-}
-
-// ---------- Scorecard parts (shared by both layouts) ----------
 
 const sheen = "linear-gradient(90deg, var(--sheen-a), var(--sheen-b), var(--sheen-c))";
 const scoreOf = (d: P, key: string) => d.scores.find((s) => s.key === key)!.value;
@@ -187,27 +145,15 @@ function ScoreSummary({ d, size = 72 }: { d: P; size?: number }) {
   );
 }
 
-function IssuesBar({ d }: { d: P }) {
-  return (
-    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-line bg-bg/50 px-6 py-3 text-[12.5px] text-muted">
-      <span className="inline-flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-bad" />{d.critical} critical site issues</span>
-      <span className="inline-flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-warn" />{d.unreplied} reviews to reply to</span>
-      <span className="inline-flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-good" />{d.up} keywords moved up this week</span>
-      <Link to="/todo" className="ml-auto inline-flex items-center gap-1 font-medium text-fg hover:opacity-80">Fix these <ArrowRight size={13} /></Link>
-    </div>
-  );
-}
-
-// ---------- Story ----------
 
 function Story({ d }: { d: P }) {
   const calls = d.outcomes[0];
   const rows: { href: string; icon: typeof Phone; label: string; score: string; value: ReactNode; sub: string; delta: ReactNode; spark: ReactNode }[] = [
-    { href: "#keywords", icon: MapPin, label: "Map pack", score: "maps", value: `${d.solv.toFixed(0)}%`, sub: "of nearby searches, top 3", delta: <Delta v={d.solvDelta} suffix=" pts" digits={1} />, spark: <Area values={d.visTrend} h={26} dot={false} /> },
-    { href: "#keywords", icon: TrendingUp, label: "Google search", score: "google", value: `${d.page1}/${d.total}`, sub: "keywords on page 1", delta: <span className="num text-[11.5px] font-medium"><span className="text-good">▲{d.up}</span> <span className="text-bad">▼{d.down}</span></span>, spark: <Area values={d.posTrend} h={26} invert color="var(--info)" dot={false} /> },
-    { href: "#/ai", icon: Sparkles, label: "AI answers", score: "ai", value: `${d.ai.pct.toFixed(0)}%`, sub: "of answers name you", delta: <Delta v={d.aiDelta} suffix=" pts" />, spark: <Area values={d.ai.weekly} h={26} color="var(--sheen-c)" dot={false} /> },
-    { href: "#health", icon: Activity, label: "Website", score: "site", value: String(d.health), sub: `${d.critical} critical to fix`, delta: <Delta v={d.healthDelta} suffix=" pts" />, spark: <Meter value={d.health} /> },
-    { href: "#/profile", icon: Star, label: "Reviews", score: "reviews", value: `${d.rating}★`, sub: d.unreplied ? `${d.unreplied} waiting for a reply` : "all replied", delta: <span className="num text-[11.5px] text-muted">{d.velocity}/mo</span>, spark: <Meter value={(d.velocity / d.leader.reviewVelocity) * 100} tone="warn" /> },
+    { href: "/rankings?view=local", icon: MapPin, label: "Map pack", score: "maps", value: `${d.solv.toFixed(0)}%`, sub: "of nearby searches, top 3", delta: <Delta v={d.solvDelta} suffix=" pts" digits={1} />, spark: <Area values={d.visTrend} h={26} dot={false} /> },
+    { href: "/rankings", icon: TrendingUp, label: "Google search", score: "google", value: `${d.page1}/${d.total}`, sub: "keywords on page 1", delta: <span className="num text-[11.5px] font-medium"><span className="text-good">▲{d.up}</span> <span className="text-bad">▼{d.down}</span></span>, spark: <Area values={d.posTrend} h={26} invert color="var(--info)" dot={false} /> },
+    { href: "/ai", icon: Sparkles, label: "AI answers", score: "ai", value: `${d.ai.pct.toFixed(0)}%`, sub: "of answers name you", delta: <Delta v={d.aiDelta} suffix=" pts" />, spark: <Area values={d.ai.weekly} h={26} color="var(--sheen-c)" dot={false} /> },
+    { href: "/audit", icon: Activity, label: "Website", score: "site", value: String(d.health), sub: `${d.critical} critical to fix`, delta: <Delta v={d.healthDelta} suffix=" pts" />, spark: <Meter value={d.health} /> },
+    { href: "/profile?tab=reviews", icon: Star, label: "Reviews", score: "reviews", value: `${d.rating}★`, sub: d.unreplied ? `${d.unreplied} waiting for a reply` : "all replied", delta: <span className="num text-[11.5px] text-muted">{d.velocity}/mo</span>, spark: <Meter value={(d.velocity / d.leader.reviewVelocity) * 100} tone="warn" /> },
   ];
   return (
     <section className="mb-6 overflow-hidden rounded-2xl border border-line bg-surface">
@@ -237,20 +183,19 @@ function Story({ d }: { d: P }) {
           <ul>
             {rows.map((r) => (
               <li key={r.label}>
-                <a href={r.href} onClick={go(r.href)} className="grid grid-cols-[1fr_auto_88px] items-center gap-4 px-6 py-3 transition-colors hover:bg-hover/70">
+                <Link to={r.href} className="grid grid-cols-[1fr_auto_88px] items-center gap-4 px-6 py-3 transition-colors hover:bg-hover/70">
                   <span className="flex min-w-0 items-center gap-2.5">
                     <span className="grid size-7 shrink-0 place-items-center rounded-lg border border-line bg-surface"><r.icon size={14} /></span>
                     <span className="min-w-0 flex-1"><span className="block text-[13.5px] font-medium">{r.label}</span><span className="block truncate text-[12px] text-muted">{r.sub}</span><ScoreBar value={scoreOf(d, r.score)} className="mt-1.5 max-w-[140px]" /></span>
                   </span>
                   <span className="text-right"><span className="num block text-[18px] leading-tight font-semibold tracking-tight">{r.value}</span>{r.delta}</span>
                   <span className="w-[88px]">{r.spark}</span>
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
         </div>
       </div>
-      <IssuesBar d={d} />
     </section>
   );
 }
@@ -277,60 +222,6 @@ function Ring({ value, size = 64, stroke = 6, gradient = false }: { value: numbe
   );
 }
 
-// ---------- Ledger ----------
-
-function Ledger({ d }: { d: P }) {
-  const top: { href: string; label: string; score: string; value: ReactNode; delta: ReactNode; note: string; spark: ReactNode }[] = [
-    { href: "#keywords", label: "Map pack visibility", score: "maps", value: <>{d.solv.toFixed(0)}<small>%</small></>, delta: <Delta v={d.solvDelta} suffix=" pts" digits={1} />, note: "top 3, nearby searches", spark: <Area values={d.visTrend} h={34} dot={false} /> },
-    { href: "#keywords", label: "Keywords on page 1", score: "google", value: <>{d.page1}<small>/{d.total}</small></>, delta: <span className="num text-[11.5px] font-medium"><span className="text-good">▲{d.up}</span> <span className="text-bad">▼{d.down}</span></span>, note: `${d.inPack} in the map pack`, spark: <Area values={d.posTrend} h={34} invert color="var(--info)" dot={false} /> },
-    { href: "#/ai", label: "AI answers", score: "ai", value: <>{d.ai.pct.toFixed(0)}<small>%</small></>, delta: <Delta v={d.aiDelta} suffix=" pts" />, note: "of answers name you", spark: <Area values={d.ai.weekly} h={34} color="var(--sheen-c)" dot={false} /> },
-    { href: "#health", label: "Website health", score: "site", value: d.health, delta: <Delta v={d.healthDelta} suffix=" pts" />, note: `${d.critical} critical · LCP ${d.lcp}s`, spark: <div className="flex h-[34px] flex-col justify-end"><Meter value={d.health} /></div> },
-    { href: "#/profile", label: "Rating", score: "reviews", value: <>{d.rating}<small>★</small></>, delta: <span className="num text-[11.5px] text-muted">{fmt(d.reviewCount)} reviews</span>, note: d.unreplied ? `${d.unreplied} waiting for a reply` : "all replied", spark: <div className="flex h-[34px] items-end"><Stars value={d.rating} size={15} /></div> },
-  ];
-  return (
-    <section className="mb-6 overflow-hidden rounded-2xl border border-line bg-surface [&_small]:ml-0.5 [&_small]:text-[0.5em] [&_small]:font-normal [&_small]:text-muted">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line px-5 py-4">
-        <ScoreSummary d={d} size={60} />
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[12.5px] text-muted">
-          <span className="inline-flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-bad" />{d.critical} critical site issues</span>
-          <span className="inline-flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-warn" />{d.unreplied} reviews to reply to</span>
-          <Link to="/todo" className="inline-flex items-center gap-1 font-medium text-fg hover:opacity-80">Fix these <ArrowRight size={13} /></Link>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 divide-line max-lg:[&>*:nth-child(n+3)]:border-t sm:grid-cols-3 lg:grid-cols-5 lg:divide-x">
-        {top.map((c) => (
-          <a key={c.label} href={c.href} onClick={go(c.href)} className="group block border-line p-5 transition-colors hover:bg-hover/50 max-lg:border-r">
-            <div className="text-[12px] text-muted">{c.label}</div>
-            <div className="num mt-2 font-serif text-[40px] leading-none tracking-tight">{c.value}</div>
-            <div className="mt-2 flex items-center gap-2">{c.delta}</div>
-            <div className="mt-4">{c.spark}</div>
-            <div className="mt-1.5 truncate text-[11.5px] text-subtle">{c.note}</div>
-            <div className="mt-3 flex items-center gap-2 border-t border-dashed border-line pt-3 text-[11px] text-subtle">Score <ScoreBar value={scoreOf(d, c.score)} className="flex-1" /></div>
-          </a>
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line bg-bg/60 px-5 py-3.5">
-        <span className="text-[12px] font-medium tracking-wide text-muted uppercase">From Google · 28 days</span>
-        {d.outcomes.map((m) => (
-          <Link key={m.key} to="/profile" className="inline-flex items-baseline gap-2 hover:opacity-80">
-            <span className="text-[12.5px] text-muted">{m.label}</span>
-            <span className="num text-[16px] font-semibold">{fmt(m.cur)}</span>
-            <Delta v={m.pct} />
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-// ---------- Entry ----------
-
-export function CommandTop({ variant, state }: { variant: TopVariant; state: Record<string, string> }) {
-  const d = pulseData(state);
-  return (
-    <div key={variant} className="anim-fade">
-      {variant === "story" && <Story d={d} />}
-      {variant === "ledger" && <Ledger d={d} />}
-    </div>
-  );
+export function CommandTop({ state }: { state: Record<string, string> }) {
+  return <Story d={pulseData(state)} />;
 }

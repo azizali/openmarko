@@ -183,7 +183,7 @@ export default function Keywords() {
             <Checkbox checked={sel.has(q.term)} onChange={() => toggle(q.term)} />
             <span className="flex-1 text-[13.5px]">{q.term}?{q.isNew && <Badge tone="accent" className="ml-2">New</Badge>}</span>
             <span className="num text-[12.5px] text-muted">{fmt(q.volume)}/mo</span>
-            <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); toast("Content brief drafted, see Action plan"); }}>Draft FAQ</Button>
+            <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); toast("Content brief drafted, see To-do"); }}>Draft FAQ</Button>
           </label>
         ))}
         {tab === "nearme" && near.map((q) => (

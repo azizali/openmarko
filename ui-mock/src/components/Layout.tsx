@@ -1,113 +1,92 @@
 import { useEffect, useMemo, useState } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import {
-  LayoutGrid, ListChecks, TrendingUp, Users, Gauge, ScanSearch, Lightbulb, Store, FileText, History,
-  Sparkles, MapPinned, Newspaper, Settings, Search, ChevronsUpDown, ChevronDown, ArrowLeft, Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Palette,
+  LayoutGrid, ListChecks, TrendingUp, MessageSquareText, MapPinned, ScanSearch, FileText, History, Settings, Search, ChevronsUpDown, ChevronDown, ArrowLeft,
+  Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target,
 } from "lucide-react";
 import { cn } from "./ui";
 import { Logo } from "./Logo";
-import { keywords, locations } from "../data/mock";
+import { keywords, locations, workspace } from "../data/mock";
 import { openTasksFor, useRunState } from "../lib/tasks";
 import { runningOf, useRuns } from "../lib/runs";
+import { useTheme } from "../lib/theme";
 import { Freshness, RunButton, kindForPath } from "./RunStatus";
 
-const home = { to: "/", label: "Command Center", icon: LayoutGrid };
-const todo = { to: "/todo", label: "To-do", icon: ListChecks };
-const sales = [{ to: "/prospects", label: "Prospecting", icon: Target }];
-const runsNav = { to: "/runs", label: "Runs", icon: History };
-const deepDives = [
-  { to: "/rankings", label: "Rankings", icon: TrendingUp },
-  { to: "/competitors", label: "Competitors", icon: Users },
-  { to: "/ai", label: "AI visibility", icon: Sparkles },
-  { to: "/citations", label: "Citations & backlinks", icon: MapPinned },
-  { to: "/factors", label: "Ranking factors", icon: Gauge },
-  { to: "/audit", label: "Site audit", icon: ScanSearch },
-  { to: "/keywords", label: "Keyword ideas", icon: Lightbulb },
-  { to: "/content", label: "Content", icon: Newspaper },
-  { to: "/profile", label: "Business Profile", icon: Store },
+type Leaf = { to: string; label: string };
+type Nav = Leaf & { icon: typeof LayoutGrid; children?: Leaf[] };
+
+// Every page is one click from the sidebar. Groups list their pages as sub-items;
+// the group holding the current page is open, the rest open with their chevron.
+const nav: Nav[] = [
+  { to: "/", label: "Home", icon: LayoutGrid },
+  { to: "/todo", label: "To-do", icon: ListChecks },
+  { to: "/rankings", label: "Rankings", icon: TrendingUp, children: [
+    { to: "/rankings", label: "Keywords & map pack" },
+    { to: "/competitors", label: "Competitors" },
+    { to: "/ai", label: "AI answers" },
+    { to: "/factors", label: "Ranking factors" },
+    { to: "/keywords", label: "Keyword ideas" },
+  ] },
+  { to: "/profile?tab=reviews", label: "Reviews & content", icon: MessageSquareText, children: [
+    { to: "/profile?tab=reviews", label: "Reviews" },
+    { to: "/content", label: "Articles & posts" },
+    { to: "/profile", label: "Business Profile" },
+  ] },
+  { to: "/citations", label: "Citations & backlinks", icon: MapPinned, children: [
+    { to: "/citations", label: "Citations" },
+    { to: "/citations?tab=links", label: "Backlinks" },
+  ] },
+  { to: "/audit", label: "Site health", icon: ScanSearch },
   { to: "/reports", label: "Reports", icon: FileText },
+  ...(workspace.plan === "agency" ? [{ to: "/prospects", label: "Prospecting", icon: Target }] : []),
+];
+const footer: Nav[] = [
+  { to: "/runs", label: "Activity", icon: History },
+  { to: "/settings", label: "Settings", icon: Settings },
 ];
 
-function useTheme() {
-  const [dark, setDark] = useState(() => {
-    try {
-      const s = localStorage.getItem("gw-theme");
-      if (s) return s === "dark";
-    } catch {}
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
-  });
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-    try { localStorage.setItem("gw-theme", dark ? "dark" : "light"); } catch {}
-  }, [dark]);
-  return [dark, setDark] as const;
+const split = (to: string) => { const [path, q = ""] = to.split("?"); return { path, params: new URLSearchParams(q) }; };
+const onPath = (path: string, to: string) => (to === "/" ? path === "/" : path === to || path.startsWith(`${to}/`));
+
+/** The leaf that matches the current URL best: right path, and the most query params that agree. */
+function activeLeaf(leaves: Leaf[], pathname: string, search: string): Leaf | undefined {
+  const cur = new URLSearchParams(search);
+  const fits = leaves
+    .map((l) => ({ l, ...split(l.to) }))
+    .filter(({ path, params }) => onPath(pathname, path) && [...params].every(([k, v]) => cur.get(k) === v));
+  return fits.sort((a, b) => [...b.params].length - [...a.params].length)[0]?.l;
 }
+const inGroup = (n: Nav, pathname: string) => (n.children ?? [n]).some((l) => onPath(pathname, split(l.to).path));
 
-// Swatch colors mirror each flavor's light-mode sidebar/ink and accent in index.css.
-const flavors = [
-  { id: "origami", label: "Origami", a: "#09090b", b: "#fe7bcd" },
-  { id: "ultraviolet", label: "Ultraviolet", a: "#17133a", b: "#a78bfa" },
-  { id: "marigold", label: "Marigold", a: "#faefdc", b: "#ea580c" },
-  { id: "lagoon", label: "Lagoon", a: "#0c2a27", b: "#2dd4bf" },
-  { id: "blueprint", label: "Blueprint", a: "#2140d9", b: "#d93a2b" },
-] as const;
-type Flavor = (typeof flavors)[number]["id"];
+const row = (active: boolean) => cn("flex h-8 items-center gap-2.5 rounded-md px-2 text-[13.5px] transition-colors", active ? "bg-active font-medium text-fg" : "text-muted hover:bg-hover hover:text-fg");
 
-function useFlavor() {
-  const [flavor, setFlavor] = useState<Flavor>(() => {
-    try {
-      const s = localStorage.getItem("gw-flavor");
-      if (flavors.some((f) => f.id === s)) return s as Flavor;
-    } catch {}
-    return "origami";
-  });
-  useEffect(() => {
-    const root = document.documentElement;
-    if (flavor === "origami") delete root.dataset.flavor;
-    else root.dataset.flavor = flavor;
-    try { localStorage.setItem("gw-flavor", flavor); } catch {}
-  }, [flavor]);
-  return [flavor, setFlavor] as const;
-}
-
-function FlavorPicker({ value, onChange }: { value: Flavor; onChange: (f: Flavor) => void }) {
+function NavItem({ item, badge, open, onToggle }: { item: Nav; badge?: number; open?: boolean; onToggle?: () => void }) {
+  const { pathname, search } = useLocation();
+  const Icon = item.icon;
+  const here = inGroup(item, pathname);
+  const leaf = item.children && activeLeaf(item.children, pathname, search);
   return (
-    <div className="flex h-8 items-center gap-2.5 px-2 text-[13.5px] text-muted">
-      <Palette size={16} strokeWidth={1.75} className="shrink-0" />
-      <span className="flex-1">Theme</span>
-      <div role="radiogroup" aria-label="Color theme" className="flex shrink-0 items-center gap-0.5">
-        {flavors.map((f) => (
-          <button
-            key={f.id}
-            role="radio"
-            aria-checked={value === f.id}
-            aria-label={f.label}
-            title={f.label}
-            onClick={() => onChange(f.id)}
-            className={cn("grid size-5 place-items-center rounded-full transition-shadow", value === f.id ? "ring-2 ring-line-strong" : "hover:ring-2 hover:ring-line")}
-          >
-            <span className="size-3.5 rounded-full ring-1 ring-black/10" style={{ background: `linear-gradient(135deg, ${f.a} 50%, ${f.b} 50%)` }} />
+    <div>
+      <div className="flex items-center">
+        <Link to={item.to} aria-current={here && !item.children ? "page" : undefined} className={cn(row(here && !item.children), "min-w-0 flex-1", here && item.children && "font-medium text-fg")}>
+          <Icon size={16} strokeWidth={1.75} className="shrink-0" />
+          <span className="flex-1 truncate">{item.label}</span>
+          {badge ? <span className="num min-w-5 rounded-full bg-active px-1.5 text-center text-[11px] font-medium text-muted">{badge}</span> : null}
+        </Link>
+        {item.children && (
+          <button onClick={onToggle} aria-expanded={open} aria-label={`${open ? "Hide" : "Show"} ${item.label} pages`} className="grid size-8 shrink-0 place-items-center rounded-md text-subtle hover:bg-hover hover:text-fg">
+            <ChevronDown size={14} className={cn("transition-transform", !open && "-rotate-90")} />
           </button>
-        ))}
+        )}
       </div>
+      {item.children && open && (
+        <div className="mt-0.5 mb-1 ml-[15px] flex flex-col gap-0.5 border-l border-line pl-2">
+          {item.children.map((c) => (
+            <Link key={c.to} to={c.to} aria-current={c === leaf ? "page" : undefined} className={cn(row(c === leaf), "h-7 text-[13px]")}>{c.label}</Link>
+          ))}
+        </div>
+      )}
     </div>
-  );
-}
-
-function NavItem({ to, label, icon: Icon, badge, onClick }: { to: string; label: string; icon: typeof LayoutGrid; badge?: number; onClick?: () => void }) {
-  return (
-    <NavLink
-      to={to}
-      end={to === "/"}
-      onClick={onClick}
-      className={({ isActive }) =>
-        cn("flex h-8 items-center gap-2.5 rounded-md px-2 text-[13.5px] transition-colors", isActive ? "bg-active font-medium text-fg" : "text-muted hover:bg-hover hover:text-fg")
-      }
-    >
-      <Icon size={16} strokeWidth={1.75} />
-      <span className="flex-1 truncate">{label}</span>
-      {badge ? <span className="num min-w-5 rounded-full bg-active px-1.5 text-center text-[11px] font-medium text-muted">{badge}</span> : null}
-    </NavLink>
   );
 }
 
@@ -146,8 +125,11 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
   const [idx, setIdx] = useState(0);
   const navigate = useNavigate();
   const items = useMemo(() => {
-    const pages = [home, todo, ...sales, ...deepDives, runsNav].map((i) => ({ label: i.label, hint: "Page", to: i.to }));
-    const extra = [{ label: "Audit a business", hint: "Prospecting", to: "/prospects?new=audit" }, { label: "Settings & integrations", hint: "Page", to: "/settings" }, { label: "Run setup again", hint: "Onboarding", to: "/onboarding" }];
+    const pages = [...nav, ...footer].flatMap((n) => n.children ?? [n]).map((i) => ({ label: i.label, hint: "Page", to: i.to }));
+    const extra = [
+      ...(workspace.plan === "agency" ? [{ label: "Audit a business", hint: "Prospecting", to: "/prospects?new=audit" }] : []),
+      { label: "Run setup again", hint: "Onboarding", to: "/onboarding" },
+    ];
     const kws = keywords.map((k) => ({ label: k.term, hint: "Keyword", to: `/rankings/${k.id}` }));
     return [...pages, ...extra, ...kws].filter((i) => i.label.toLowerCase().includes(q.toLowerCase())).slice(0, 9);
   }, [q]);
@@ -195,14 +177,21 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
 
 export default function Layout() {
   const [dark, setDark] = useTheme();
-  const [flavor, setFlavor] = useFlavor();
   const [cmd, setCmd] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
-  const [deepOpen, setDeepOpen] = useState(true);
   const runState = useRunState();
   const live = runningOf(useRuns()).length;
   const loc = useLocation();
   const kind = kindForPath(loc.pathname);
+  // A group is open while it holds the current page, unless its chevron says otherwise.
+  const [manual, setManual] = useState<Record<string, boolean>>({});
+  const shown = (n: Nav) => manual[n.label] ?? inGroup(n, loc.pathname);
+  const toggle = (n: Nav) => setManual((m) => ({ ...m, [n.label]: !shown(n) }));
+  // Arriving in a group opens it, even if it was closed by hand earlier.
+  useEffect(() => {
+    const here = nav.find((n) => n.children && inGroup(n, loc.pathname));
+    if (here) setManual((m) => (m[here.label] === false ? { ...m, [here.label]: true } : m));
+  }, [loc.pathname]);
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setCmd((v) => !v); }
@@ -210,36 +199,28 @@ export default function Layout() {
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, []);
-  useEffect(() => { setMobileNav(false); window.scrollTo(0, 0); }, [loc.pathname]);
+  useEffect(() => { setMobileNav(false); }, [loc.pathname, loc.search]);
+  useEffect(() => { window.scrollTo(0, 0); }, [loc.pathname]);
 
   const sidebar = (
     <div className="flex h-full flex-col gap-1 px-2.5 py-3">
       <NavLink to="/" aria-label="OpenMarko home" className="mb-3 flex h-8 items-center px-2"><Logo size={22} /></NavLink>
-      <LocationSwitcher />
+      {locations.length > 1 && <LocationSwitcher />}
       <button onClick={() => setCmd(true)} className="mt-1 mb-2 flex h-8 items-center gap-2.5 rounded-md px-2 text-[13.5px] text-muted hover:bg-hover">
         <Search size={16} strokeWidth={1.75} />
         <span className="flex-1 text-left">Search</span>
         <kbd className="rounded border border-line bg-surface px-1 font-sans text-[11px] text-subtle">⌘K</kbd>
       </button>
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto" aria-label="Main">
-        <NavItem {...home} />
-        <div className="ml-[17px] border-l border-line pl-2"><NavItem {...todo} badge={openTasksFor(runState).length} /></div>
-        <div className="mt-5 mb-1 px-2 text-[11px] font-medium tracking-[0.06em] text-subtle uppercase">Sales</div>
-        {sales.map((it) => <NavItem key={it.to} {...it} />)}
-        <button onClick={() => setDeepOpen(!deepOpen)} aria-expanded={deepOpen} className="mt-5 mb-1 flex items-center gap-1 px-2 text-left text-[11px] font-medium tracking-[0.06em] text-subtle uppercase hover:text-muted">
-          Deep dives <ChevronDown size={12} className={cn("transition-transform", !deepOpen && "-rotate-90")} />
-        </button>
-        {deepOpen && deepDives.map((it) => <NavItem key={it.to} {...it} />)}
+        {nav.map((n) => <NavItem key={n.label} item={n} badge={n.to === "/todo" ? openTasksFor(runState).length : undefined} open={shown(n)} onToggle={() => toggle(n)} />)}
       </nav>
       <NavLink to="/onboarding" className="mb-2 rounded-lg border border-line bg-surface p-3 shadow-card transition-colors hover:border-line-strong">
         <div className="flex items-center gap-2 text-[13px] font-medium"><Rocket size={14} /> Setup 4 of 5</div>
         <div className="mt-2 h-1 rounded-full bg-hover"><div className="h-full w-4/5 rounded-full bg-accent" /></div>
         <div className="mt-1.5 text-[12px] text-muted">Connect Google Analytics</div>
       </NavLink>
-      <NavItem {...runsNav} badge={live || undefined} />
-      <NavItem to="/settings" label="Settings" icon={Settings} />
-      <FlavorPicker value={flavor} onChange={setFlavor} />
-      <button onClick={() => setDark(!dark)} className="flex h-8 items-center gap-2.5 rounded-md px-2 text-[13.5px] text-muted hover:bg-hover hover:text-fg">
+      {footer.map((n) => <NavItem key={n.label} item={n} badge={n.to === "/runs" ? live || undefined : undefined} />)}
+      <button onClick={() => setDark(!dark)} className={row(false)}>
         {dark ? <Sun size={16} strokeWidth={1.75} /> : <Moon size={16} strokeWidth={1.75} />}
         {dark ? "Light mode" : "Dark mode"}
       </button>
@@ -260,11 +241,13 @@ export default function Layout() {
         <div className="sticky top-0 z-20 flex h-12 items-center gap-3 border-b border-line bg-bg/90 px-4 backdrop-blur lg:hidden print:hidden">
           <button onClick={() => setMobileNav(true)} aria-label="Open navigation" className="rounded p-1.5 hover:bg-hover"><Menu size={18} /></button>
           <Logo size={20} />
+          <button onClick={() => setDark(!dark)} aria-label={dark ? "Light mode" : "Dark mode"} className="ml-auto rounded p-1.5 hover:bg-hover">{dark ? <Sun size={18} /> : <Moon size={18} />}</button>
         </div>
         <main className="relative mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-8 lg:px-12 lg:py-10">
           <div className="mb-5 flex min-h-9 flex-wrap items-center justify-between gap-3 print:hidden">
-            {loc.pathname !== "/" && !loc.pathname.startsWith("/prospects/") ? (
-              <NavLink to="/" className="inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-fg"><ArrowLeft size={13} /> Command Center</NavLink>
+            {/* Detail pages one level down (an audit issue, a competitor) get a way back. */}
+            {loc.pathname.split("/").length > 2 && !loc.pathname.startsWith("/prospects/") ? (
+              <NavLink to={`/${loc.pathname.split("/")[1]}`} className="inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-fg"><ArrowLeft size={13} /> Back</NavLink>
             ) : <span />}
             <div className="flex flex-wrap items-center gap-3">
               <Freshness kind={kind} />

@@ -1,7 +1,7 @@
 import { useId } from "react";
 import { cn } from "./ui";
 
-/** A solid circle (the "O") with a shallow wide V cut into the top (the middle of the "M"). Fills with the active flavor's sheen. */
+/** A solid circle (the "O") with a shallow wide V cut into the top (the middle of the "M"). Fills with the brand sheen. */
 export function LogoMark({ size = 22, className }: { size?: number; className?: string }) {
   const id = useId();
   return (

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router";
 import { Star, Phone, Navigation, MousePointerClick, Eye, Sparkles, Send, ImagePlus, Calendar, Check, Loader2 } from "lucide-react";
 import { Badge, Button, Card, CardHeader, Delta, PageHeader, Progress, ScoreRing, Segmented, Tabs, cn, fmt, useToast } from "../components/ui";
 import { business, gbpInsights, reviews as seed } from "../data/mock";
@@ -22,7 +23,11 @@ const draftReply = (name: string, rating: number) =>
     : `Hi ${name.split(" ")[0]}, I'm sorry about the billing confusion. That's not the experience we want for anyone. Our office manager will call you this week to make sure everything is resolved. — Dr. Patel`;
 
 export default function Profile() {
-  const [tab, setTab] = useState<Tab>("overview");
+  // The tab lives in the URL so the sidebar can link straight to Reviews or Posts.
+  const [params, setParams] = useSearchParams();
+  const t = params.get("tab");
+  const tab: Tab = t === "reviews" || t === "posts" ? t : "overview";
+  const setTab = (v: Tab) => setParams(v === "overview" ? {} : { tab: v }, { replace: true });
   const [reviews, setReviews] = useState(seed.map((r) => ({ ...r, draft: "" })));
   const [filter, setFilter] = useState<"unreplied" | "all">("unreplied");
   const [generating, setGenerating] = useState<string | null>(null);
@@ -163,7 +168,7 @@ export default function Profile() {
               </div>
             </Card>
             <Card>
-              <CardHeader title="Scheduled" sub="From Action plan" />
+              <CardHeader title="Scheduled" sub="From To-do" />
               <ul className="space-y-3 text-[13.5px]">
                 {["Mon Nov 2 · Emergency appointments", "Mon Nov 9 · Invisalign consult offer", "Mon Nov 16 · Meet Dr. Patel", "Mon Nov 23 · Holiday hours"].map((p) => (
                   <li key={p} className="flex items-center gap-2.5"><Calendar size={13} className="text-subtle" />{p}</li>

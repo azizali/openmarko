@@ -23,6 +23,9 @@ export const business = {
   lng: -97.7497,
 };
 
+/** Prospecting is an Agency-plan feature; a Local-plan workspace never sees it. */
+export const workspace = { plan: "agency" as "local" | "agency" };
+
 export const locations = [
   { id: "loc_1", name: "Maple & Main — South Congress", city: "Austin, TX" },
   { id: "loc_2", name: "Maple & Main — Mueller", city: "Austin, TX" },

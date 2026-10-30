@@ -76,7 +76,7 @@ export default function Settings() {
 
         {tab === "automation" && (
           <Card>
-            <CardHeader title="What OpenMarko can change without asking" sub="Everything else waits in the Action plan for approval." />
+            <CardHeader title="What OpenMarko can change without asking" sub="Everything else waits in To-do for approval." />
             {([
               ["posts", "Publish scheduled GBP posts", "Low risk"],
               ["alt", "Write image alt text on your site", "Low risk"],

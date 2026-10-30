@@ -19,28 +19,33 @@ function TaskButton({ t, primary, onOpen }: { t: Task; primary?: boolean; onOpen
   return <Button size="sm" variant={primary ? "primary" : "secondary"} onClick={() => (t.auto ? runTasks([t.id]) : onOpen(t))}>{t.cta}</Button>;
 }
 
-/** One-line teaser for the Command Center: the single next thing to do. */
-export function UpNext({ focus, onOpen }: { focus: Keyword | null; onOpen: (t: Task) => void }) {
+/** The home page's action list: the three most useful things to do this week. */
+export function ThisWeek({ onOpen }: { onOpen: (t: Task) => void }) {
   const state = useRunState();
-  const open = openTasksFor(state, focus?.id);
-  const next = open[0];
+  const open = openTasksFor(state);
   const done = tasks.filter((t) => state[t.id] === "done").length;
   return (
-    <Card className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-3 !py-4">
-      <span className="text-[12.5px] font-medium text-muted">Up next</span>
-      {next ? (
-        <>
-          <button onClick={() => onOpen(next)} className="min-w-0 flex-1 text-left">
-            <div className="truncate text-[14px] font-medium">{next.title}</div>
-            <div className="truncate text-[12.5px] text-muted">{next.why}</div>
-          </button>
-          <TaskButton t={next} primary onOpen={onOpen} />
-        </>
-      ) : <span className="flex-1 text-[14px] text-muted">You're all caught up.</span>}
-      <Link to="/todo" className="inline-flex items-center gap-1 text-[13px] text-muted hover:text-fg">
-        {Math.max(0, open.length - 1)} more{done ? ` · ${done} done` : ""} <ArrowRight size={13} />
-      </Link>
-    </Card>
+    <section>
+      <div className="mb-3 flex items-end justify-between gap-3">
+        <h2 className="font-serif text-[22px] leading-tight">This week</h2>
+        <Link to="/todo" className="inline-flex items-center gap-1 text-[13px] text-muted hover:text-fg">
+          {open.length > 3 ? `See all ${open.length}` : "See all"}{done ? ` · ${done} done` : ""} <ArrowRight size={13} />
+        </Link>
+      </div>
+      <Card pad={false}>
+        {open.slice(0, 3).map((t, i) => (
+          <div key={t.id} className="flex items-center gap-4 border-b border-line px-5 py-4 last:border-0">
+            <span className="num grid size-6 shrink-0 place-items-center rounded-full bg-hover text-[12px] font-medium text-muted">{i + 1}</span>
+            <button onClick={() => onOpen(t)} className="min-w-0 flex-1 text-left">
+              <div className="text-[14px] leading-snug font-medium">{t.title}</div>
+              <div className="mt-0.5 line-clamp-1 text-[12.5px] text-muted">{t.why}</div>
+            </button>
+            <div className="shrink-0"><TaskButton t={t} primary={i === 0} onOpen={onOpen} /></div>
+          </div>
+        ))}
+        {!open.length && <div className="px-5 py-10 text-center text-[13.5px] text-muted">You're all caught up. We'll add new things here as they come up.</div>}
+      </Card>
+    </section>
   );
 }
 
