@@ -16,6 +16,10 @@ import Settings from "./pages/Settings";
 import Prospects from "./pages/Prospects";
 import ProspectAudit from "./pages/ProspectAudit";
 import Runs from "./pages/Runs";
+import AiVisibility from "./pages/AiVisibility";
+import Citations from "./pages/Citations";
+import PublicAudit from "./pages/PublicAudit";
+import Content from "./pages/Content";
 
 // Rank pack now lives inside Rankings (Map pack view); keep old links working.
 function GridRedirect() {
@@ -36,6 +40,8 @@ export default function App() {
     <HashRouter>
       <Routes>
         <Route path="/onboarding" element={<Onboarding />} />
+        {/* Shared audit links open on their own, without the app around them. */}
+        <Route path="/a/:token" element={<PublicAudit />} />
         <Route element={<Layout />}>
           <Route index element={<CommandCenter />} />
           <Route path="rankings" element={<Rankings />} />
@@ -48,6 +54,7 @@ export default function App() {
           <Route path="audit" element={<Audit />} />
           <Route path="audit/:id" element={<AuditIssue />} />
           <Route path="keywords" element={<Keywords />} />
+          <Route path="content" element={<Content />} />
           <Route path="actions" element={<ActionRedirect />} />
           <Route path="actions/:id" element={<ActionRedirect />} />
           <Route path="profile" element={<Profile />} />
@@ -56,6 +63,8 @@ export default function App() {
           <Route path="prospects" element={<Prospects />} />
           <Route path="prospects/:id" element={<ProspectAudit />} />
           <Route path="runs" element={<Runs />} />
+          <Route path="ai" element={<AiVisibility />} />
+          <Route path="citations" element={<Citations />} />
           <Route path="*" element={<CommandCenter />} />
         </Route>
       </Routes>

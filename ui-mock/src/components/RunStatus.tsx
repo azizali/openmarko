@@ -12,6 +12,8 @@ export function kindForPath(path: string): RunKind | null {
   if (path.startsWith("/audit")) return "audit";
   if (path.startsWith("/profile")) return "profile";
   if (path.startsWith("/competitors") || path.startsWith("/factors")) return "competitors";
+  if (path.startsWith("/ai")) return "ai";
+  if (path.startsWith("/citations")) return new URLSearchParams(location.hash.split("?")[1] ?? "").get("tab") === "links" ? "links" : "citations";
   if (path.startsWith("/prospects")) return "prospect";
   return null;
 }

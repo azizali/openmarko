@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { Search, MapPin, Loader2, Star, ChevronRight, Flame, Zap, Target, Globe, ShieldAlert, Megaphone, SlidersHorizontal, Crosshair, Database, Download, UserPlus, X, MessageSquare, Mail, User, FileSearch, Bookmark, History, RefreshCw, Trash2 } from "lucide-react";
+import { Search, MapPin, Loader2, Star, ChevronRight, Flame, Zap, Target, Globe, ShieldAlert, Megaphone, SlidersHorizontal, Crosshair, Database, Download, UserPlus, X, MessageSquare, Mail, User, FileSearch, Bookmark, History, RefreshCw, Trash2, Eye } from "lucide-react";
 import { Badge, Button, Card, Checkbox, Modal, PageHeader, Progress, Segmented, cn, fmt, useToast } from "../components/ui";
 import { GridMap, GridLegend, GridThumb } from "../components/GridMap";
 import { ProspectMap } from "../components/ProspectMap";
@@ -9,6 +9,7 @@ import { NewAuditModal } from "../components/NewAudit";
 import { gridStats } from "../data/mock";
 import { googleCategories, leadersOf, opportunity, prospectGrid, prospectSources, searchMarket, specFromParams, specToQuery, suggestedSearches, type Market, type Opportunity, type Prospect, type Spec } from "../data/prospects";
 import { startRun, timeAgo } from "../lib/runs";
+import { shareFor, useShares } from "../lib/shares";
 import { findSaved, recordSaved, removeSaved, sortSaved, togglePin, useSaved, type Saved } from "../lib/saved";
 
 type Sort = "easiest" | "rank" | "value" | "distance";
@@ -71,6 +72,7 @@ export default function Prospects() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const saved = useSaved();
+  const shares = useShares();
   const spec = specFromParams(params);
   const [draft, setDraft] = useState<Spec>(spec);
   const [loc, setLoc] = useState<LocMode>(spec.lat !== null ? "pin" : spec.zip ? "zip" : "city");
@@ -339,7 +341,12 @@ export default function Prospects() {
                   <td className="w-40 max-w-40 px-3 py-3"><ContactIcons p={p} /></td>
                   <td className="num px-3 py-3 text-right">{o.missedRevenue ? `$${fmt(o.missedRevenue)}` : <span className="text-subtle">—</span>}</td>
                   <td className="px-3 py-3"><Signals p={p} /></td>
-                  <td className="pr-5 text-right"><Link to={`/prospects/${p.id}${qsKey}`} onClick={(e) => e.stopPropagation()} className="inline-flex h-7 items-center gap-1 rounded-md border border-line bg-surface px-2.5 text-[12.5px] font-medium whitespace-nowrap hover:bg-hover">Audit <ChevronRight size={12} /></Link></td>
+                  <td className="pr-5 text-right">
+                    <span className="inline-flex items-center gap-1.5">
+                      {(() => { const v = shareFor(shares, `/prospects/${p.id}${qsKey}`)?.views.length ?? 0; return v ? <span title={`Opened the shared audit ${v} time${v > 1 ? "s" : ""}`} className="num inline-flex items-center gap-0.5 rounded-full bg-good-soft px-1.5 py-0.5 text-[11.5px] font-medium text-good"><Eye size={11} />{v}</span> : null; })()}
+                      <Link to={`/prospects/${p.id}${qsKey}`} onClick={(e) => e.stopPropagation()} className="inline-flex h-7 items-center gap-1 rounded-md border border-line bg-surface px-2.5 text-[12.5px] font-medium whitespace-nowrap hover:bg-hover">Audit <ChevronRight size={12} /></Link>
+                    </span>
+                  </td>
                 </tr>
                 {on && (
                   <tr className="border-b border-line bg-bg">

@@ -1,9 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { Copy, Printer, Star, Check, X, Zap, TrendingUp, UserPlus, Globe } from "lucide-react";
 import { Badge, Button, Card, CardHeader, PageHeader, ScoreRing, cn, fmt, useToast } from "../components/ui";
 import { ProspectMap } from "../components/ProspectMap";
 import { ContactCard } from "../components/ProspectContact";
+import { ShareAuditButton } from "../components/ShareAudit";
+import { prospectAi } from "../data/ai";
 import { findProspect, leadersOf, opportunity, profileScore, searchMarket, specFromParams, specToQuery, visibilityScore, type Market, type Prospect } from "../data/prospects";
 
 const impactTone = { high: "good", medium: "info", low: "neutral" } as const;
@@ -29,7 +31,6 @@ export default function ProspectAudit() {
 
   const o = opportunity(p, market);
   const leaders = leadersOf(market).filter((l) => l.id !== p.id);
-  const vis = visibilityScore(p);
   const pitch = pitchText(p, market, leaders, o);
 
   const copy = async () => {
@@ -44,6 +45,7 @@ export default function ProspectAudit() {
         sub={<>Local visibility audit for <b className="font-medium text-fg">“{market.keyword}”</b> in {market.city} · {p.address} · prepared {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</>}
         actions={
           <div className="flex flex-wrap gap-2 print:hidden">
+            <ShareAuditButton path={`/prospects/${p.id}${qs}`} name={p.name} />
             <Button icon={<Copy size={14} />} onClick={copy}>Copy pitch</Button>
             <Button icon={<Printer size={14} />} onClick={() => window.print()}>Save as PDF</Button>
             <Button variant="primary" icon={<UserPlus size={14} />} onClick={() => toast(`${p.name} added to pipeline`)}>Add to pipeline</Button>
@@ -51,6 +53,38 @@ export default function ProspectAudit() {
         }
       />
 
+      <AuditBody p={p} market={market} o={o} beforeSections={
+      <Card className="mb-8 print:hidden">
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-[15px] font-medium">Who to contact</h2>
+          <span className="text-[12px] text-subtle">Only you see this. It's left out of the PDF.</span>
+        </div>
+        <ContactCard p={p} />
+      </Card>
+      } />
+
+      <section className="mb-4 print:hidden">
+        <SectionTitle n={6} title="Your pitch" sub="For you, not the prospect. Copy it into an email or use it on the call." />
+        <Card>
+          <div className="mb-4 flex flex-wrap gap-2">
+            {o.reasons.map((r) => <Badge key={r} tone="neutral">{r}</Badge>)}
+          </div>
+          <pre className="rounded-lg bg-bg p-4 font-sans text-[13.5px] whitespace-pre-wrap">{pitch}</pre>
+          <div className="mt-3 flex justify-end"><Button icon={<Copy size={14} />} onClick={copy}>Copy pitch</Button></div>
+        </Card>
+      </section>
+      {node}
+    </>
+  );
+}
+
+/** The audit itself: shared by the internal page and the public share link (#/a/:token). */
+export function AuditBody({ p, market, o, publicView = false, beforeSections }: { p: Prospect; market: Market; o: ReturnType<typeof opportunity>; publicView?: boolean; beforeSections?: ReactNode }) {
+  const they = publicView ? "you" : "they", them = publicView ? "you" : "them", theyre = publicView ? "you're" : "they're";
+  const ai = prospectAi(p, market);
+  const vis = visibilityScore(p);
+  return (
+    <>
       {/* Headline: the one-paragraph story the prospect should take away. */}
       <Card className="mb-6">
         <div className="flex flex-col gap-6 md:flex-row md:items-center">
@@ -77,31 +111,30 @@ export default function ProspectAudit() {
         </div>
       </Card>
 
-      <Card className="mb-8 print:hidden">
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-[15px] font-medium">Who to contact</h2>
-          <span className="text-[12px] text-subtle">Only you see this. It's left out of the PDF.</span>
-        </div>
-        <ContactCard p={p} />
-      </Card>
+      {beforeSections}
 
-      <section className="mb-8 break-inside-avoid">
-        <SectionTitle n={1} title="How they rank against competitors" sub="The businesses Google shows above them, and where the gap is. Red means they're behind the top 3." />
+      <section data-section="competitors" className="mb-8 break-inside-avoid">
+        <SectionTitle n={1} title={`How ${they} rank against competitors`} sub={`The businesses Google shows above ${them}, and where the gap is. Red means ${theyre} behind the top 3.`} />
         <CompetitorTable p={p} market={market} />
       </section>
 
-      <section className="mb-8 break-inside-avoid">
-        <SectionTitle n={2} title="Map pack coverage" sub={`Google results change depending on where the searcher is. We searched “${market.keyword}” from 49 points within 3 miles. Switch between the business and the top 3 to see who owns which part of town.`} />
+      <section data-section="map" className="mb-8 break-inside-avoid">
+        <SectionTitle n={2} title="Map pack coverage" sub={`Google results change depending on where the searcher is. We searched “${market.keyword}” from 49 points within 3 miles. Switch between ${publicView ? "your business" : "the business"} and the top 3 to see who owns which part of town.`} />
         <Card><ProspectMap p={p} market={market} /></Card>
       </section>
 
-      <section className="mb-8 break-inside-avoid">
+      <section data-section="profile & website" className="mb-8 break-inside-avoid">
         <SectionTitle n={3} title="Profile & website audit" sub="What Google sees when it decides who to show." />
         <SiteAudit p={p} market={market} />
       </section>
 
-      <section className="mb-8 break-inside-avoid">
-        <SectionTitle n={4} title="The game plan" sub="Quickest fixes first. Rank estimates are directional, based on the gap to the current top 3." />
+      <section data-section="AI answers" className="mb-8 break-inside-avoid">
+        <SectionTitle n={4} title={`Do AI assistants recommend ${them}?`} sub={`More people now ask ChatGPT or Google's AI instead of scrolling the map. We asked each one: “${ai.question}”`} />
+        <AiCheck p={p} ai={ai} />
+      </section>
+
+      <section data-section="game plan" className="mb-8 break-inside-avoid">
+        <SectionTitle n={5} title="The game plan" sub="Quickest fixes first. Rank estimates are directional, based on the gap to the current top 3." />
         <Card pad={false}>
           {o.wins.map((w, i) => (
             <div key={w.id} className="flex gap-4 border-b border-line px-5 py-4 last:border-0">
@@ -123,18 +156,31 @@ export default function ProspectAudit() {
         </Card>
       </section>
 
-      <section className="mb-4 print:hidden">
-        <SectionTitle n={5} title="Your pitch" sub="For you, not the prospect. Copy it into an email or use it on the call." />
-        <Card>
-          <div className="mb-4 flex flex-wrap gap-2">
-            {o.reasons.map((r) => <Badge key={r} tone="neutral">{r}</Badge>)}
-          </div>
-          <pre className="rounded-lg bg-bg p-4 font-sans text-[13.5px] whitespace-pre-wrap">{pitch}</pre>
-          <div className="mt-3 flex justify-end"><Button icon={<Copy size={14} />} onClick={copy}>Copy pitch</Button></div>
-        </Card>
-      </section>
-      {node}
     </>
+  );
+}
+
+function AiCheck({ p, ai }: { p: Prospect; ai: ReturnType<typeof prospectAi> }) {
+  const hits = ai.answers.filter((a) => a.mentioned).length;
+  return (
+    <Card>
+      <div className="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className={cn("num font-serif text-[28px] leading-none", hits >= 3 ? "text-good" : "text-bad")}>{hits} of {ai.answers.length}</span>
+        <span className="text-[13.5px] text-muted">AI assistants mention {p.name}</span>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {ai.answers.map((a) => (
+          <div key={a.engine.id} className={cn("rounded-lg border p-3", a.mentioned ? "border-good/30 bg-good-soft/40" : "border-line")}>
+            <div className="flex items-center justify-between gap-2 text-[13px] font-medium">
+              {a.engine.name}
+              {a.mentioned ? <Badge tone="good"><Check size={11} /> Mentioned</Badge> : <Badge tone="bad"><X size={11} /> Not mentioned</Badge>}
+            </div>
+            <div className="mt-1.5 text-[12px] text-muted">Recommends: {a.listed.map((n, i) => <span key={n} className={cn(n === p.name && "font-medium text-good")}>{i ? ", " : ""}{n}</span>)}</div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-[12px] text-subtle">AI answers lean on reviews, directory listings (Yelp, BBB, industry sites) and the business's own website, so the fixes below help here too.</p>
+    </Card>
   );
 }
 

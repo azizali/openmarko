@@ -28,6 +28,18 @@ export const endpoints = {
   businessReviews: `${DFS}/business_data/google/reviews/task_post`,
   businessListings: `${DFS}/business_data/business_listings/search/live`,
   backlinksSummary: `${DFS}/backlinks/summary/live`,
+  backlinksReferringDomains: `${DFS}/backlinks/referring_domains/live`,
+  backlinksList: `${DFS}/backlinks/backlinks/live`, // filter mode "new" / "lost" for recent changes
+  backlinksGap: `${DFS}/backlinks/domain_intersection/live`, // sites linking to 2+ competitors but not you
+  // Citations: find each listing with a site-restricted search for name + phone, then parse it
+  citationSearch: `${DFS}/serp/google/organic/live/advanced`, // keyword: site:yelp.com "Maple & Main" "512-555-0142"
+  citationPage: `${DFS}/on_page/content_parsing/live`,
+  // AI visibility (AI Optimization API); AI Overviews come back as an "ai_overview" item in organicSerp
+  chatgptScraper: `${DFS}/ai_optimization/chat_gpt/llm_scraper/live/advanced`,
+  geminiScraper: `${DFS}/ai_optimization/gemini/llm_scraper/live/advanced`,
+  perplexityResponses: `${DFS}/ai_optimization/perplexity/llm_responses/live`,
+  claudeResponses: `${DFS}/ai_optimization/claude/llm_responses/live`,
+  llmMentions: `${DFS}/ai_optimization/llm_mentions/search_mentions/live`,
   // Prospecting (see prospectSources in data/prospects.ts)
   businessCategories: `${DFS}/business_data/business_listings/categories`,
   contentParsing: `${DFS}/on_page/content_parsing/live`, // emails, phones, socials on the site

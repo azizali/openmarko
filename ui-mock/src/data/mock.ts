@@ -575,4 +575,13 @@ export const gbpPosts: ContentItem[] = [
   { id: "p4", title: "Whitening before the holidays", status: "published", keywordId: "kw_4", date: "Oct 21", metric: "640 views" },
 ];
 
+/** Older published content, newest first. Only the Content page and reports show this far back. */
+export const contentArchive: (ContentItem & { type: "article" | "post" })[] = [
+  { id: "a1", type: "post", title: "Now booking Saturday cleanings", status: "published", keywordId: "kw_12", date: "Oct 7", metric: "512 views" },
+  { id: "a2", type: "article", title: "Root canal recovery: a day-by-day guide", status: "published", keywordId: "kw_10", date: "Sep 18", words: 1350, metric: "96 clicks" },
+  { id: "a3", type: "post", title: "Back-to-school checkups for kids", status: "published", keywordId: "kw_6", date: "Aug 26", metric: "731 views" },
+  { id: "a4", type: "article", title: "Veneers vs. bonding: cost, lifespan and look", status: "published", keywordId: "kw_13", date: "Aug 14", words: 1600, metric: "143 clicks" },
+  { id: "a5", type: "post", title: "Sedation options for anxious patients", status: "published", keywordId: "kw_15", date: "Aug 5", metric: "388 views" },
+];
+
 export const auditKeywordLinks: Record<string, string[]> = { i1: ["kw_1", "kw_9"], i2: ["kw_3", "kw_4", "kw_5", "kw_7"], i4: ["kw_1"], i5: ["kw_3", "kw_6"], i6: ["kw_1"], i8: ["kw_1", "kw_9"] };

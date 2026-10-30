@@ -10,6 +10,8 @@ export type RankView = "both" | "organic" | "local";
 
 const seedOf = (k: Keyword) => Number(k.id.split("_")[1]) % 3;
 export const scanFor = (k: Keyword, size = 5, past = false) => makeGrid(k.id, size, past ? 2 : 1, past ? seedOf(k) - 1.5 : seedOf(k));
+/** 7×7 scan at one of the report's four dates (0 = 90 days ago … 3 = now, same as scanFor(k, 7)). */
+export const periodScanFor = (k: Keyword, step: number) => makeGrid(k.id, 7, step === 3 ? 1 : 3 + step, seedOf(k) - 3.5 * (1 - step / 3));
 
 /** Thumbnail of the geo-grid so every row shows its map pack at a glance. */
 export function MiniGrid({ k }: { k: Keyword }) {

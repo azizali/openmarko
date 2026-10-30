@@ -5,7 +5,7 @@
 
 import { useSyncExternalStore } from "react";
 
-export type RunKind = "rank" | "audit" | "profile" | "competitors" | "prospect";
+export type RunKind = "rank" | "audit" | "profile" | "competitors" | "ai" | "citations" | "links" | "prospect";
 export type RunStatus = "running" | "done" | "failed";
 export type Run = {
   id: string;
@@ -27,6 +27,9 @@ export const runKinds: Record<RunKind, { label: string; noun: string; button: st
   audit: { label: "Site crawl", noun: "site audit", button: "Re-crawl site", schedule: "Weekly, Mondays" },
   profile: { label: "Profile sync", noun: "Business Profile", button: "Sync profile", schedule: "Every 6 hours" },
   competitors: { label: "Competitor refresh", noun: "competitor data", button: "Refresh competitors", schedule: "Weekly, Sundays" },
+  ai: { label: "AI answer check", noun: "AI answers", button: "Check AI answers", schedule: "Weekly, Mondays" },
+  citations: { label: "Citation check", noun: "citations", button: "Re-check citations", schedule: "Weekly, Wednesdays" },
+  links: { label: "Backlink refresh", noun: "backlinks", button: "Refresh backlinks", schedule: "Weekly, Thursdays" },
   prospect: { label: "Prospect search", noun: "prospect data", button: "Search", schedule: "On demand" },
 };
 
@@ -47,6 +50,9 @@ let runs: Run[] = [
   seed({ kind: "rank", label: "Rank scan", trigger: "Scheduled", status: "done", started: ago(206), durationSec: 128, scope: "16 keywords · 7×7 grid", cost: 0.47 }),
   seed({ kind: "audit", label: "Site crawl", trigger: "Scheduled", status: "done", started: ago(208), durationSec: 134, scope: "46 pages · mobile + desktop", cost: 0.09 }),
   seed({ kind: "profile", label: "Profile sync", trigger: "Scheduled", status: "done", started: ago(372), durationSec: 41, scope: "Reviews, posts, insights", cost: 0.01 }),
+  seed({ kind: "ai", label: "AI answer check", trigger: "Scheduled", status: "done", started: ago(60 * 22), durationSec: 212, scope: "8 questions × 6 engines × 3 asks", cost: 0.86 }),
+  seed({ kind: "citations", label: "Citation check", trigger: "Scheduled", status: "done", started: ago(60 * 46), durationSec: 88, scope: "18 directories · name, address, phone, hours", cost: 0.11 }),
+  seed({ kind: "links", label: "Backlink refresh", trigger: "Scheduled", status: "done", started: ago(60 * 70), durationSec: 31, scope: "You + 5 competitors · link gap", cost: 0.24 }),
   seed({ kind: "competitors", label: "Competitor refresh", trigger: "Scheduled", status: "done", started: ago(60 * 26), durationSec: 96, scope: "5 competitors · profiles + backlinks", cost: 0.18 }),
   seed({ kind: "rank", label: "Rank scan", trigger: "Scheduled", status: "done", started: ago(60 * 27 + 46), durationSec: 131, scope: "16 keywords · 7×7 grid", cost: 0.47 }),
   seed({ kind: "audit", label: "Site crawl", trigger: "Manual", status: "failed", started: ago(60 * 30), durationSec: 302, scope: "46 pages", cost: 0.04, note: "Timed out on /blog (server returned 503). Retried automatically 15 min later." }),
@@ -85,6 +91,9 @@ const defaults: Record<RunKind, { scope: string; cost: number; sec: number }> = 
   audit: { scope: "46 pages · mobile + desktop", cost: 0.09, sec: 20 },
   profile: { scope: "Reviews, posts, insights", cost: 0.01, sec: 8 },
   competitors: { scope: "5 competitors · profiles + backlinks", cost: 0.18, sec: 15 },
+  ai: { scope: "8 questions × 6 engines × 3 asks", cost: 0.86, sec: 18 },
+  citations: { scope: "18 directories · name, address, phone, hours", cost: 0.11, sec: 12 },
+  links: { scope: "You + 5 competitors · link gap", cost: 0.24, sec: 10 },
   prospect: { scope: "14 businesses · 7×7 grid each", cost: 0.62, sec: 2.5 },
 };
 

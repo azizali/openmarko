@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Radar, ScanSearch, Store, Users, Target, Check, X, Loader2 } from "lucide-react";
+import { Radar, ScanSearch, Store, Users, Target, Check, X, Loader2, Sparkles, MapPinned, Link2 } from "lucide-react";
 import { Badge, Card, PageHeader, Progress, Tabs, cn } from "../components/ui";
 import { RunButton } from "../components/RunStatus";
 import { dur, lastDone, runKinds, runningOf, stamp, timeAgo, useRuns, type RunKind } from "../lib/runs";
 
-const icons: Record<RunKind, typeof Radar> = { rank: Radar, audit: ScanSearch, profile: Store, competitors: Users, prospect: Target };
+const icons: Record<RunKind, typeof Radar> = { rank: Radar, audit: ScanSearch, profile: Store, competitors: Users, ai: Sparkles, citations: MapPinned, links: Link2, prospect: Target };
 
 export default function Runs() {
   const runs = useRuns();
@@ -19,7 +19,7 @@ export default function Runs() {
     <>
       <PageHeader title="Runs" sub="Every scan, crawl and sync that refreshes your data: scheduled and manual, with status, duration and cost." />
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {(Object.keys(runKinds) as RunKind[]).map((k) => {
           const Icon = icons[k];
           const last = lastDone(runs, k);

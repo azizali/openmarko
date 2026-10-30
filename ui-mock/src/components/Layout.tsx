@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import {
   LayoutGrid, ListChecks, TrendingUp, Users, Gauge, ScanSearch, Lightbulb, Store, FileText, History,
-  Settings, Search, ChevronsUpDown, ChevronDown, ArrowLeft, Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Palette,
+  Sparkles, MapPinned, Newspaper, Settings, Search, ChevronsUpDown, ChevronDown, ArrowLeft, Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Palette,
 } from "lucide-react";
 import { cn } from "./ui";
 import { keywords, locations } from "../data/mock";
@@ -17,9 +17,12 @@ const runsNav = { to: "/runs", label: "Runs", icon: History };
 const deepDives = [
   { to: "/rankings", label: "Rankings", icon: TrendingUp },
   { to: "/competitors", label: "Competitors", icon: Users },
+  { to: "/ai", label: "AI visibility", icon: Sparkles },
+  { to: "/citations", label: "Citations & backlinks", icon: MapPinned },
   { to: "/factors", label: "Ranking factors", icon: Gauge },
   { to: "/audit", label: "Site audit", icon: ScanSearch },
   { to: "/keywords", label: "Keyword ideas", icon: Lightbulb },
+  { to: "/content", label: "Content", icon: Newspaper },
   { to: "/profile", label: "Business Profile", icon: Store },
   { to: "/reports", label: "Reports", icon: FileText },
 ];
