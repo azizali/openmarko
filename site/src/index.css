@@ -1,0 +1,182 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Same Origami palette as the app (ui-mock), so the site and product read as one brand. */
+:root {
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --sunken: #f4f4f5;
+  --hover: #f4f4f5;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --text: #09090b;
+  --muted: #71717a;
+  --subtle: #9a9aa3;
+  --ink: #09090b;
+  --on-ink: #fafafa;
+  --accent: #db2777;
+  --accent-soft: #fde3f1;
+  --ring: #fe7bcd;
+  --good: #15803d;
+  --good-soft: #ecfdf3;
+  --bad: #dc2626;
+  --bad-soft: #fef2f2;
+  --warn: #b45309;
+  --warn-soft: #fef6e4;
+  --info: #1d4ed8;
+  --info-soft: #eff4ff;
+  --grid-line: rgba(0, 0, 0, 0.045);
+  --glow: rgba(254, 123, 205, 0.12);
+  --pixel: rgba(219, 39, 119, 0.14);
+  --sheen-a: #d23f92;
+  --sheen-b: #fe7bcd;
+  --sheen-c: #c7b4f3;
+  --rank-1: #15803d;
+  --rank-2: #65a30d;
+  --rank-3: #ca8a04;
+  --rank-4: #ea580c;
+  --rank-5: #dc2626;
+  --map-land: #f1f1f3;
+  --map-road: #ffffff;
+  --map-water: #dde6ee;
+  --map-park: #e3ece0;
+  color-scheme: light;
+}
+
+/* Dark theme, chosen with the header switch. Light is the default. */
+:root[data-theme="dark"] {
+  --bg: #09090b;
+  --surface: #111113;
+  --sunken: #0c0c0e;
+  --hover: #1c1c1f;
+  --border: #232326;
+  --border-strong: #3f3f46;
+  --text: #fafafa;
+  --muted: #a1a1aa;
+  --subtle: #71717a;
+  --ink: #fafafa;
+  --on-ink: #09090b;
+  --accent: #fe7bcd;
+  --accent-soft: #3a1a2c;
+  --ring: #fe7bcd;
+  --good: #4ade80;
+  --good-soft: #13261a;
+  --bad: #f87171;
+  --bad-soft: #2c1517;
+  --warn: #fbbf24;
+  --warn-soft: #2a2112;
+  --info: #93b4fb;
+  --info-soft: #161f33;
+  --grid-line: rgba(255, 255, 255, 0.04);
+  --glow: rgba(254, 123, 205, 0.08);
+  --pixel: rgba(254, 123, 205, 0.12);
+  --rank-1: #4ade80;
+  --rank-2: #a3e635;
+  --rank-3: #facc15;
+  --rank-4: #fb923c;
+  --rank-5: #f87171;
+  --map-land: #18181b;
+  --map-road: #27272a;
+  --map-water: #172029;
+  --map-park: #18241b;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-hover: var(--hover);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-fg: var(--text);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-ink: var(--ink);
+  --color-on-ink: var(--on-ink);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --font-sans: "Roboto Flex", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Frank Ruhl Libre", ui-serif, Georgia, serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --shadow-float: 0 24px 64px -16px rgb(0 0 0 / 0.16), 0 4px 12px rgb(0 0 0 / 0.04);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { text-wrap: balance; }
+.font-serif { letter-spacing: -0.02em; font-optical-sizing: auto; }
+.num { font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 6px; }
+button { cursor: pointer; }
+
+/* Faint 80px graph-paper grid over a soft brand glow, fading out down the section. */
+.grid-backdrop {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 0),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 0),
+    radial-gradient(ellipse 60% 90% at 50% 0%, var(--glow), transparent 70%);
+  background-size: 80px 80px, 80px 80px, 100% 100%;
+  mask-image: linear-gradient(black 40%, transparent);
+}
+/* Small grid used inside visual panels. */
+.grid-fine {
+  background-image: linear-gradient(var(--grid-line) 1px, transparent 0), linear-gradient(90deg, var(--grid-line) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+/* Dithered pixel band, like a map seen from far away. Used as a section divider. */
+.pixel-band {
+  background-image: radial-gradient(var(--pixel) 30%, transparent 32%);
+  background-size: 10px 10px;
+  mask-image: linear-gradient(90deg, transparent, black 20%, black 80%, transparent);
+}
+
+/* Ink-to-brand sweep for one word in a headline. Rests on the brand colors. */
+.ink-sheen {
+  background: linear-gradient(100deg, var(--text) 0%, var(--text) 60%, var(--sheen-a) 74%, var(--sheen-b) 86%, var(--sheen-c) 100%);
+  background-size: 200% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: sheen 1.6s cubic-bezier(.32,.72,0,1) 300ms both;
+}
+@keyframes sheen { from { background-position: 0% 0; } to { background-position: 100% 0; } }
+
+/* Notched section tag, the Chatwoot "label" shape. */
+.tag {
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%);
+  padding-right: 18px;
+}
+
+/* Tilted callout stuck onto a product visual. */
+.sticker { box-shadow: 3px 3px 0 var(--ink); }
+
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.marquee { animation: marquee 40s linear infinite; }
+@keyframes pulse-ring { 0% { transform: scale(.6); opacity: .7; } 100% { transform: scale(1.8); opacity: 0; } }
+.ping::after { content: ""; position: absolute; inset: 0; border-radius: 999px; background: currentColor; animation: pulse-ring 1.6s ease-out infinite; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise 420ms cubic-bezier(.2,.8,.2,1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+}

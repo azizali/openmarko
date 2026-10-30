@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenMarko — Get into the top 3 on Google Maps</title>
+    <meta name="description" content="OpenMarko scans the map around your business, shows exactly why competitors outrank you, and does the fixes with your approval. Month-to-month, no contracts." />
+    <script>
+      // Apply the saved theme before first paint. Light is the default.
+      try { if (localStorage.getItem("om-theme") === "dark") document.documentElement.dataset.theme = "dark"; } catch (e) {}
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500&family=Roboto+Flex:opsz,wght@8..144,400;8..144,500;8..144,600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
