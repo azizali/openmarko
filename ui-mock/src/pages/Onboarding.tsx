@@ -5,6 +5,7 @@ import { Button, Badge, Card, Checkbox, Modal, Segmented, Toggle, cn, fmt } from
 import { GridMap, GridLegend } from "../components/GridMap";
 import { business, competitors, keywords, makeGrid } from "../data/mock";
 import { estimateGridCost } from "../lib/api";
+import { Logo } from "../components/Logo";
 
 const steps = ["Your business", "Connect Google", "Keywords", "Competitors", "Rank pack", "Launch"];
 
@@ -16,7 +17,7 @@ const searchResults = [
 
 type Integration = "gbp" | "gsc" | "ga4";
 const integrations: { id: Integration; name: string; desc: string; icon: typeof Store; required?: boolean; scope: string; pick: string[] }[] = [
-  { id: "gbp", name: "Google Business Profile", desc: "Read insights and reviews. Lets Groundwork publish approved changes.", icon: Store, required: true, scope: "business.manage", pick: ["Maple & Main — South Congress", "Maple & Main — Mueller"] },
+  { id: "gbp", name: "Google Business Profile", desc: "Read insights and reviews. Lets OpenMarko publish approved changes.", icon: Store, required: true, scope: "business.manage", pick: ["Maple & Main — South Congress", "Maple & Main — Mueller"] },
   { id: "gsc", name: "Google Search Console", desc: "Queries, clicks and impressions, used to seed keywords and measure CTR.", icon: SearchCheck, scope: "webmasters.readonly", pick: ["sc-domain:mapleandmaindental.com", "https://mapleandmaindental.com/"] },
   { id: "ga4", name: "Google Analytics 4", desc: "Organic sessions and conversions (calls, bookings) attributed to SEO.", icon: BarChart3, scope: "analytics.readonly", pick: ["Maple & Main — GA4 (342881920)"] },
 ];
@@ -48,7 +49,7 @@ export default function Onboarding() {
   return (
     <div className="flex min-h-full bg-bg">
       <aside className="hidden w-72 shrink-0 border-r border-line bg-sidebar px-6 py-8 md:block">
-        <Link to="/" className="font-serif text-[20px]">Groundwork</Link>
+        <Link to="/" aria-label="OpenMarko home"><Logo size={22} /></Link>
         <p className="mt-1 text-[13px] text-muted">Set up local tracking in about 5 minutes.</p>
         <ol className="mt-10 space-y-1">
           {steps.map((s, i) => (
@@ -101,7 +102,7 @@ export default function Onboarding() {
             {step === 1 && (
               <>
                 <h1 className="font-serif text-[34px] leading-tight">Connect your Google accounts</h1>
-                <p className="mt-2 text-muted">Read-only by default. Groundwork only writes to your Business Profile or site after you approve each change.</p>
+                <p className="mt-2 text-muted">Read-only by default. OpenMarko only writes to your Business Profile or site after you approve each change.</p>
                 <div className="mt-8 space-y-3">
                   {integrations.map((it) => (
                     <Card key={it.id} className="flex items-center gap-4">
@@ -257,7 +258,7 @@ function OAuthModal({ integration, onClose, onDone }: { integration: (typeof int
     >
       {phase === "consent" && (
         <div className="space-y-3 text-[13.5px]">
-          <p className="text-muted">You'll be redirected to Google to grant access. Groundwork will request:</p>
+          <p className="text-muted">You'll be redirected to Google to grant access. OpenMarko will request:</p>
           <div className="rounded-lg border border-line p-3 font-mono text-[12px] text-muted">https://www.googleapis.com/auth/{integration.scope}</div>
           <p className="text-[12.5px] text-subtle">Mock flow: no data leaves this browser.</p>
         </div>
@@ -312,7 +313,7 @@ function Launch({ kw, comp, onDone }: { kw: number; comp: number; onDone: () => 
       {finished && (
         <Card className="anim-fade mt-8">
           <div className="text-[13px] text-muted">First look</div>
-          <div className="mt-2 font-serif text-[20px]">You show in the top 3 at 31% of grid points. We found 7 improvements, 5 of which Groundwork can apply for you.</div>
+          <div className="mt-2 font-serif text-[20px]">You show in the top 3 at 31% of grid points. We found 7 improvements, 5 of which OpenMarko can apply for you.</div>
           <Button className="mt-5" variant="primary" onClick={onDone}>Open dashboard <ArrowRight size={14} /></Button>
         </Card>
       )}

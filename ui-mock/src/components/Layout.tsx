@@ -5,6 +5,7 @@ import {
   Sparkles, MapPinned, Newspaper, Settings, Search, ChevronsUpDown, ChevronDown, ArrowLeft, Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Palette,
 } from "lucide-react";
 import { cn } from "./ui";
+import { Logo } from "./Logo";
 import { keywords, locations } from "../data/mock";
 import { openTasksFor, useRunState } from "../lib/tasks";
 import { runningOf, useRuns } from "../lib/runs";
@@ -213,6 +214,7 @@ export default function Layout() {
 
   const sidebar = (
     <div className="flex h-full flex-col gap-1 px-2.5 py-3">
+      <NavLink to="/" aria-label="OpenMarko home" className="mb-3 flex h-8 items-center px-2"><Logo size={22} /></NavLink>
       <LocationSwitcher />
       <button onClick={() => setCmd(true)} className="mt-1 mb-2 flex h-8 items-center gap-2.5 rounded-md px-2 text-[13.5px] text-muted hover:bg-hover">
         <Search size={16} strokeWidth={1.75} />
@@ -257,7 +259,7 @@ export default function Layout() {
         <div aria-hidden className="grid-backdrop pointer-events-none absolute inset-x-0 top-0 h-[520px] print:hidden" />
         <div className="sticky top-0 z-20 flex h-12 items-center gap-3 border-b border-line bg-bg/90 px-4 backdrop-blur lg:hidden print:hidden">
           <button onClick={() => setMobileNav(true)} aria-label="Open navigation" className="rounded p-1.5 hover:bg-hover"><Menu size={18} /></button>
-          <span className="font-serif text-[19px]">Groundwork<span className="text-accent">.</span></span>
+          <Logo size={20} />
         </div>
         <main className="relative mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-8 lg:px-12 lg:py-10">
           <div className="mb-5 flex min-h-9 flex-wrap items-center justify-between gap-3 print:hidden">

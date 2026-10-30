@@ -72,7 +72,7 @@ export default function AuditIssue() {
             {issue.autoFix ? (
               <>
                 <div className="flex items-center gap-2 text-[14px] font-medium"><Wand2 size={15} className="text-accent" /> Apply automatically</div>
-                <p className="mt-1.5 text-[13px] text-muted">Groundwork will apply this through your connected {issue.autoFix.executor} site. A revision is saved so you can roll back.</p>
+                <p className="mt-1.5 text-[13px] text-muted">OpenMarko will apply this through your connected {issue.autoFix.executor} site. A revision is saved so you can roll back.</p>
                 {phase === "idle" && (
                   <Button variant="primary" className="mt-5 w-full" disabled={!selected.size} onClick={() => setPhase("running")}>
                     Apply to {selected.size} page{selected.size === 1 ? "" : "s"}

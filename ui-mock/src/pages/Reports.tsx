@@ -5,6 +5,7 @@ import { gridStats, keywords, reports, type GridScan, type Keyword } from "../da
 import { useContent } from "../lib/content";
 import { GridLegend, GridMap, GridThumb } from "../components/GridMap";
 import { periodScanFor } from "../components/KeywordTable";
+import { Logo, LogoMark } from "../components/Logo";
 
 const sections = ["Executive summary", "Keyword progress & map pack", "Rankings & changes", "Competitor movement", "Content published & planned", "Business Profile insights", "Site audit", "Actions completed", "Search Console & GA4 traffic"];
 
@@ -38,6 +39,10 @@ export default function Reports() {
       <Card className="mt-6">
         <CardHeader title="Preview: Monthly performance, October" sub="What your client sees" />
         <div className="rounded-lg border border-line bg-bg p-5 sm:p-8">
+          <div className="mb-6 flex items-center justify-between gap-3 border-b border-line pb-4">
+            <Logo size={20} />
+            <span className="text-[12px] text-subtle">Monthly performance report</span>
+          </div>
           <div className="text-[12px] tracking-wide text-subtle uppercase">Maple & Main Dental · October 2026</div>
           <h2 className="mt-2 font-serif text-[28px] leading-tight">Map pack visibility up 9 points. Invisalign is now a top-3 result.</h2>
           <div className="mt-6 grid grid-cols-3 gap-6 border-t border-line pt-6">
@@ -47,6 +52,9 @@ export default function Reports() {
           </div>
           <KeywordProgress />
           <ContentSummary />
+          <div className="mt-8 flex items-center justify-center gap-1.5 border-t border-line pt-5 text-[12px] text-subtle">
+            <LogoMark size={14} /> Prepared with OpenMarko
+          </div>
         </div>
       </Card>
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router";
 import { CalendarCheck, CreditCard, Check, Lock } from "lucide-react";
 import { Button, Modal, cn, fmt, useToast } from "../components/ui";
+import { Logo } from "../components/Logo";
 import { AuditBody } from "./ProspectAudit";
 import { findProspect, opportunity, searchMarket, specFromParams } from "../data/prospects";
 import { pathFromToken, recordView, updateLastView, useShares, type View } from "../lib/shares";
@@ -47,6 +48,7 @@ export default function PublicAudit() {
     return (
       <div className="grid min-h-full place-items-center bg-bg p-6 text-center">
         <div>
+          <Logo size={22} className="mb-8" />
           <Lock size={28} className="mx-auto text-subtle" />
           <h1 className="mt-3 font-serif text-[26px]">This audit is no longer available</h1>
           <p className="mt-1 text-[14px] text-muted">Ask whoever sent it for a fresh link.</p>
@@ -63,8 +65,8 @@ export default function PublicAudit() {
       {preview && <div className="bg-ink px-4 py-1.5 text-center text-[12.5px] text-on-ink print:hidden">Preview: this visit isn't counted as a view.</div>}
       <header className="sticky top-0 z-20 border-b border-line bg-bg/90 backdrop-blur print:static">
         <div className="mx-auto flex max-w-[1080px] flex-wrap items-center gap-3 px-4 py-3 sm:px-8">
-          <span className="grid size-7 place-items-center rounded-md bg-accent font-serif text-[15px] text-white">O</span>
-          <span className="text-[13.5px]"><b className="font-medium">OpenMarko</b> <span className="text-muted">· Local visibility audit</span></span>
+          <Logo size={22} />
+          <span className="text-[13.5px] text-muted">· Local visibility audit</span>
           <div className="ml-auto flex gap-2 print:hidden">
             <Button variant="primary" icon={<CalendarCheck size={14} />} onClick={() => setBook(true)}>{booked ? `Booked · ${booked}` : "Book a 15-min walkthrough"}</Button>
           </div>
