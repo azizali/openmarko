@@ -3,7 +3,7 @@ import { FileText, Plus, Mail, Hash, Download, Newspaper, Store, ChevronRight } 
 import { Badge, Button, Card, CardHeader, Checkbox, Modal, PageHeader, Segmented, Sparkline, cn, fmt, rankTone, shortDate, useToast } from "../components/ui";
 import { gridStats, keywords, reports, type GridScan, type Keyword } from "../data/mock";
 import { useContent } from "../lib/content";
-import { useSocialPosts } from "../lib/social";
+import { totals, useSocialPosts } from "../lib/social";
 import { dayLabel } from "../components/Social";
 import { GridLegend, GridMap, GridThumb } from "../components/GridMap";
 import { periodScanFor } from "../components/KeywordTable";
@@ -242,7 +242,7 @@ function KeywordProgress() {
 
 function ContentSummary() {
   // Website articles plus Google profile and social posts, in one list.
-  const posts = useSocialPosts().map((p) => ({ id: p.id, type: "post" as const, title: p.title, status: p.status, keywordId: "", date: dayLabel(p.day), metric: p.stats ? `${p.stats.views.toLocaleString()} views` : undefined }));
+  const posts = useSocialPosts().map((p) => ({ id: p.id, type: "post" as const, title: p.title, status: p.status, keywordId: "", date: dayLabel(p.day), metric: p.stats ? `${totals(p).views.toLocaleString()} views` : undefined }));
   const items = [...useContent(), ...posts];
   const published = items.filter((i) => i.status === "published");
   const upcoming = items.filter((i) => i.status === "scheduled" || i.status === "draft");

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import {
   LayoutGrid, ListChecks, TrendingUp, MessageSquareText, MapPinned, ScanSearch, FileText, Settings, Search, ChevronsUpDown, ChevronDown, ArrowLeft,
-  Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Sparkles, Flame, CalendarDays,
+  Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Sparkles, Radar, Bookmark, CalendarDays,
 } from "lucide-react";
 import { cn } from "./ui";
 import { Logo } from "./Logo";
@@ -43,7 +43,8 @@ const nav: Nav[] = [
     { to: "/citations?tab=links", label: "Backlinks" },
   ] },
   { to: "/audit", label: "Site health", icon: ScanSearch },
-  { to: "/social/trends", label: "Trending ideas", icon: Flame, section: "Social" },
+  { to: "/social/scanner", label: "Social scanner", icon: Radar, section: "Social" },
+  { to: "/social/swipe", label: "Swipe file", icon: Bookmark },
   { to: "/social/posts", label: "Posts & calendar", icon: CalendarDays },
   ...(workspace.plan === "agency" ? [{ to: "/prospects", label: "Prospecting", icon: Target, section: "Sales" }] : []),
 ];

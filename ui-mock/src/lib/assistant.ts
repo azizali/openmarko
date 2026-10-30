@@ -19,6 +19,9 @@ import { getRunState, openTasksFor, runTasks, tasks } from "./tasks";
 import { channels, draftFor, trends, type ChannelId, type ToneTweak, type Trend } from "../data/social";
 import { dateOf, getSocialPost, remixTrend, savePost, schedulePost } from "./social";
 import { skillName, skillOn } from "./skills";
+import { platformOf } from "../data/scanner";
+import { openOpportunities } from "./scanner";
+import { saveTrend, savedTrend } from "./swipes";
 
 export type Block =
   | { type: "text"; text: string }
@@ -118,7 +121,7 @@ export function suggestionsFor(ctx: PageContext): string[] {
   if (ctx.path.startsWith("/citations")) return ["Which listings are wrong?", "Fix my citations"];
   if (ctx.path.startsWith("/reports")) return ["Summarize this month", "Email the monthly report"];
   if (ctx.path.startsWith("/ai")) return ["Do AI assistants recommend me?", "What should I do this week?"];
-  if (ctx.path.startsWith("/social")) return ["What's trending this week?", "Write an Instagram post about the time change", "Make a TikTok in my voice"];
+  if (ctx.path.startsWith("/social")) return ["Who should I reply to today?", "What's trending this week?", "Make a TikTok in my voice"];
   return ["What should I do this week?", "Which keywords dropped?", "Reply to my 5-star reviews"];
 }
 
@@ -176,11 +179,28 @@ function socialReply(q: string): Message | null {
     }
   }
 
+  if (has(q, "swipe file", "save this", "save it", "save that")) {
+    const t = last?.trendId ? trends.find((x) => x.id === last.trendId) : undefined;
+    if (!t) return reply([{ type: "text", text: "Tell me which idea to keep, or save one from Social scanner → Trending." }, { type: "links", items: [{ label: "Swipe file", to: "/social/swipe" }] }]);
+    const was = savedTrend(t.id);
+    saveTrend(t);
+    return reply([{ type: "done", text: was ? `${quoted(t)} is already in your swipe file.` : `Saved ${quoted(t)} to your swipe file, so you can reuse the format after the trend fades.` }, { type: "links", items: [{ label: "Swipe file", to: "/social/swipe" }] }]);
+  }
+
+  if (has(q, "conversation", "reddit", "quora", "nextdoor", "facebook group", "people asking", "reply to today", "who should i reply", "threads")) {
+    const top = openOpportunities().slice(0, 3);
+    if (!top.length) return reply([{ type: "text", text: "Nothing new to reply to. The next scan runs tonight." }]);
+    return reply([
+      { type: "text", text: `${top.length} conversation${top.length > 1 ? "s" : ""} worth joining today: ${top.map((o) => `“${o.title}” on ${platformOf(o.platform).name} (${o.community}, ${o.age})`).join("; ")}. Each has a reply written in your voice; copy it, open the post, paste.` },
+      { type: "links", items: [{ label: "Open Social scanner", to: "/social/scanner" }] },
+    ], ["What's trending this week?"], ["community-reply"]);
+  }
+
   if (has(q, "trend", "viral", "what's working", "whats working", "what's hot")) {
     const top = [...trends].sort((a, b) => b.fit - a.fit).slice(0, 3);
     return reply([
       { type: "text", text: `Three things catching on this week that fit you: ${top.map((t) => `${quoted(t)} (${t.velocity})`).join("; ")}. The first fits you best. ${top[0].insight}` },
-      { type: "links", items: [{ label: "All trending ideas", to: "/social/trends" }] },
+      { type: "links", items: [{ label: "All trending ideas", to: "/social/scanner?tab=trending" }] },
     ], [`Remix “${top[0].title.replace(/[“”]/g, "")}”`, "Make a TikTok in my voice"], ["trend-remix"]);
   }
 

@@ -28,6 +28,16 @@ export const channelOf = (id: ChannelId) => channels.find((c) => c.id === id)!;
 
 // ---------- Trending ideas ----------
 
+export type TrendSourceId = "tiktok" | "reels" | "gtrends" | "reddit" | "x" | "news";
+export const trendSources: { id: TrendSourceId; name: string; what: string }[] = [
+  { id: "tiktok", name: "TikTok", what: "Rising formats, sounds and hashtags in your category" },
+  { id: "reels", name: "Instagram Reels", what: "Formats getting unusual saves and shares" },
+  { id: "gtrends", name: "Google Trends", what: "Searches rising in your area" },
+  { id: "reddit", name: "Reddit", what: "Top threads in your city and niche subreddits" },
+  { id: "x", name: "X", what: "Topics picking up near you" },
+  { id: "news", name: "Local news & events", what: "Dates, events and stories in your city" },
+];
+
 export type TrendKind = "Format" | "Topic" | "Local" | "Seasonal";
 export type Remix = {
   hook: string;
@@ -50,6 +60,7 @@ export type Trend = {
   insight: string; // why it works, underneath
   angle: string; // the remix in one line
   bestFor: ChannelId[];
+  from: TrendSourceId[]; // where the scanner saw it
   remix: Remix;
 };
 
@@ -60,7 +71,7 @@ export const trends: Trend[] = [
     seen: "A professional faces the camera and lists 4–5 habits they personally avoid, one per cut, with on-screen text.",
     insight: "It feels like a secret from someone who knows. Viewers stay to see if they do the thing, and share it with whoever does.",
     angle: "Dr. Patel: 5 things I'd never do as a dentist, filmed in the South Congress office.",
-    bestFor: ["tiktok", "instagram"],
+    bestFor: ["tiktok", "instagram"], from: ["tiktok", "reels"],
     remix: {
       hook: "5 things I'd never do as a dentist.",
       playfulHook: "Dentist here. Please stop doing #3.",
@@ -78,7 +89,7 @@ export const trends: Trend[] = [
     seen: "Brands tie a small habit to the time change: “change your clocks, change your smoke alarm battery.”",
     insight: "A date everyone already knows makes a reminder stick. It's useful, so people don't feel sold to.",
     angle: "Change your clocks, change your toothbrush. A twice-a-year reminder with a free brush at your next visit.",
-    bestFor: ["instagram", "facebook", "google"],
+    bestFor: ["instagram", "facebook", "google"], from: ["gtrends", "news"],
     remix: {
       hook: "Change your clocks, change your toothbrush.",
       playfulHook: "Your toothbrush is older than your last haircut. Clocks go back Sunday. Perfect timing.",
@@ -95,7 +106,7 @@ export const trends: Trend[] = [
     seen: "Locals trade names of dentists who were honest about what they didn't need, and warn about ones who weren't.",
     insight: "People don't fear the drill as much as the bill. Being open about what you won't sell builds more trust than a discount.",
     angle: "What we'll never upsell you on, and what a fair checkup includes. Prices on the post.",
-    bestFor: ["facebook", "x", "google"],
+    bestFor: ["facebook", "x", "google"], from: ["reddit"],
     remix: {
       hook: "Things we'll never try to sell you.",
       playfulHook: "Hot take from a dentist: you probably don't need that.",
@@ -113,7 +124,7 @@ export const trends: Trend[] = [
     seen: "Creators test drugstore whitening products on camera and argue about whether they work.",
     insight: "Everyone has bought one. A straight, expert answer settles the argument and earns saves.",
     angle: "A 20-second straight answer from Dr. Patel, plus what actually works for different budgets.",
-    bestFor: ["tiktok", "instagram", "x"],
+    bestFor: ["tiktok", "instagram", "x"], from: ["gtrends", "tiktok"],
     remix: {
       hook: "Is whitening toothpaste a scam? Straight answer.",
       playfulHook: "I tried to defend whitening toothpaste. I couldn't. Mostly.",
@@ -130,7 +141,7 @@ export const trends: Trend[] = [
     seen: "Fast clips from opening up to closing, with a voiceover on one small moment that mattered.",
     insight: "People pick a dentist they feel they already know. Showing the team does that faster than any ad.",
     angle: "A day at Maple & Main, from the 7:30 coffee to the last patient, told by the front desk.",
-    bestFor: ["instagram", "tiktok"],
+    bestFor: ["instagram", "tiktok"], from: ["reels"],
     remix: {
       hook: "A day at a neighborhood dental office.",
       playfulHook: "POV: you work the front desk at a dentist and everyone's a little nervous.",
@@ -145,6 +156,9 @@ export const trends: Trend[] = [
 ];
 
 export type ToneTweak = "shorter" | "playful" | "expert";
+
+/** Joins the parts that aren't empty with blank lines. */
+const paras = (...parts: string[]) => parts.map((p) => p.trim()).filter(Boolean).join("\n\n");
 
 /** X counts 280 characters; cut at the last full sentence that fits. */
 const x280 = (t: string) => {
@@ -161,12 +175,12 @@ export function draftFor(t: Trend, ch: ChannelId, tweaks: ToneTweak[] = []): str
   const body = tweaks.includes("shorter") ? r.body.split(/(?<=\.)\s/)[0] : r.body;
   const expert = tweaks.includes("expert") ? ` ${r.expertLine}` : "";
   switch (ch) {
-    case "instagram": return `${hook}\n\n${body}${expert}\n\n${r.cta}\n\n${r.hashtags.join(" ")}`;
-    case "tiktok": return `${hook} ${r.hashtags.slice(0, 3).join(" ")}`;
-    case "facebook": return `${hook}\n\n${body}${expert}\n\n${r.cta}\n\n${voice.signOff}`;
-    case "x": return x280(`${hook}\n\n${body}${expert}`);
-    case "linkedin": return `${r.hook}\n\n${r.body} ${r.expertLine}\n\nWhat's worked for your practice?`;
-    case "google": return `${body.split(/(?<=\.)\s/)[0]}${expert} ${r.cta}`;
+    case "instagram": return paras(hook, body + expert, r.cta, r.hashtags.join(" "));
+    case "tiktok": return `${hook} ${r.hashtags.slice(0, 3).join(" ")}`.trim();
+    case "facebook": return paras(hook, body + expert, r.cta, voice.signOff);
+    case "x": return x280(paras(hook, body + expert));
+    case "linkedin": return paras(r.hook, `${r.body} ${r.expertLine}`.trim(), "What's worked for your practice?");
+    case "google": return `${hook} ${body.split(/(?<=\.)\s/)[0]}${expert} ${r.cta}`.replace(/\s+/g, " ").trim();
   }
 }
 

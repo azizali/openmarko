@@ -4,7 +4,7 @@ import { Clapperboard, Send, Trash2 } from "lucide-react";
 import { Badge, Button, Drawer, cn, useToast } from "./ui";
 import { PostPreview } from "./PostPreview";
 import { bestTime, channelOf, channels, draftFor, type ChannelId, type ToneTweak, type Trend } from "../data/social";
-import { dateOf, publishNow, remixTrend, removePost, savePost, schedulePost, unschedulePost, type SocialPost } from "../lib/social";
+import { dateOf, publishNow, reactions, remixTrend, removePost, savePost, schedulePost, unschedulePost, type SocialPost } from "../lib/social";
 
 export function ChannelBadge({ id, size = 20 }: { id: ChannelId; size?: number }) {
   const c = channelOf(id);
@@ -63,7 +63,7 @@ export function PostDrawer({ trend, post, onClose }: { trend?: Trend | null; pos
   const status = post?.status;
 
   const finish = (msg: string, act?: (id: string) => void) => {
-    const id = post ? (savePost({ ...post, channels: chs, texts }), post.id) : remixTrend(trend!.id, chs, tweaks, texts).id;
+    const id = post ? (savePost({ ...post, channels: chs, texts }), post.id) : remixTrend(trend!, chs, tweaks, texts).id;
     act?.(id);
     toast(msg);
     setTimeout(onClose, 700);
@@ -154,8 +154,17 @@ export function PostDrawer({ trend, post, onClose }: { trend?: Trend | null; pos
           </div>
         )}
         {post?.stats && (
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Badge>{post.stats.views.toLocaleString()} views</Badge><Badge>{post.stats.likes.toLocaleString()} likes</Badge><Badge>{post.stats.comments} comments</Badge><Badge>{post.stats.shares} shares</Badge>
+          <div className="mt-5">
+            <div className="mb-2 text-[12.5px] font-medium text-muted">Results, from each platform's insights</div>
+            <div className="overflow-hidden rounded-lg border border-line text-[12.5px]">
+              {(Object.entries(post.stats) as [ChannelId, NonNullable<SocialPost["stats"]>[ChannelId]][]).map(([c, st]) => st && (
+                <div key={c} className="num flex items-center gap-3 border-b border-line px-3 py-2 last:border-0">
+                  <ChannelBadge id={c} size={18} /><span className="w-24 text-fg">{channelOf(c).name}</span>
+                  <span>{st.views.toLocaleString()} views</span>
+                  {reactions(st) > 0 && <span className="text-muted">{st.likes.toLocaleString()} likes · {st.comments} comments · {st.shares} shares</span>}
+                </div>
+              ))}
+            </div>
           </div>
         )}
         </div>

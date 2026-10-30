@@ -68,6 +68,23 @@ export const builtInSkills: Skill[] = [
     },
   },
   {
+    id: "community-reply", name: "Community replies", builtIn: true, enabled: true, uses30d: 11,
+    description: "Replying to people on Reddit, Quora, Facebook groups, X and Nextdoor who are asking for a dentist, asking a question you can answer, or talking about you.",
+    outputs: "A reply ready to paste, plus that community's rules",
+    background: ["voice", "facts"],
+    instructions: `- Be the most helpful reply in the thread. Answer their actual question first, fully.
+- Say who you are in a few words ("Dentist on South Congress here"). Never pretend to be a customer.
+- Mention the business once, at the end, and only when it fits what they asked.
+- Follow the community's rules: no links unless asked, no promos where they're banned, reply as a person in groups that ban pages.
+- No diagnosis over the internet; say when they should be seen today.
+- Never reveal anything about a patient, even one who posted about you.
+- Match the platform: short on X, neighborly on Nextdoor, long and specific on Quora.`,
+    example: {
+      ask: "r/Austin: “Cracked a molar, need a dentist this weekend. Who's actually open?”",
+      answer: "Dentist on South Congress here, so take this with that in mind. If it's sharp but there's no swelling or fever, it can usually wait until Monday…",
+    },
+  },
+  {
     id: "gbp-post", name: "Google profile posts", builtIn: true, enabled: true, uses30d: 6,
     description: "Writing posts for the Google Business Profile that help local ranking and get calls.",
     outputs: "One post with a button (Call, Book, Learn more) and a photo suggestion",

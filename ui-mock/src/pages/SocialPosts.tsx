@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { Plus } from "lucide-react";
-import { Badge, Button, Card, PageHeader, Stat, Tabs, cn, fmt } from "../components/ui";
+import { Badge, Button, Card, PageHeader, Tabs, cn, fmt } from "../components/ui";
 import { ChannelBadge, PostDrawer, dayLabel } from "../components/Social";
-import { channels } from "../data/social";
-import { dateOf, useSocialPosts, type PostStatus, type SocialPost } from "../lib/social";
+import { channelOf, channels, type ChannelId } from "../data/social";
+import { dateOf, reactions, totals, useSocialPosts, type PostStatus, type SocialPost } from "../lib/social";
 
 const statusTone: Record<PostStatus, "warn" | "info" | "good"> = { draft: "warn", scheduled: "info", published: "good" };
 
@@ -17,10 +17,19 @@ export default function SocialPosts() {
   const count = (s: PostStatus) => posts.filter((p) => p.status === s).length;
   const list = posts.filter((p) => p.status === tab).sort((a, b) => (tab === "published" ? b.day - a.day : a.day - b.day));
   const published = posts.filter((p) => p.status === "published" && p.stats && p.day >= -7);
-  const views = published.reduce((a, p) => a + p.stats!.views, 0);
-  const engaged = published.reduce((a, p) => a + p.stats!.likes + p.stats!.comments + p.stats!.shares, 0);
+  // Every number below is broken down by the platform it came from.
+  const byChannel = (pick: (s: NonNullable<NonNullable<SocialPost["stats"]>[ChannelId]>) => number) => {
+    const out: Partial<Record<ChannelId, number>> = {};
+    published.forEach((p) => Object.entries(p.stats!).forEach(([c, st]) => { if (st) out[c as ChannelId] = (out[c as ChannelId] ?? 0) + pick(st); }));
+    return Object.entries(out).map(([c, n]) => ({ c: c as ChannelId, n: n! })).sort((a, b) => b.n - a.n);
+  };
   const live = channels.filter((c) => c.connected && c.followers);
-  const followers = live.reduce((a, c) => a + c.followers, 0), followersPrev = live.reduce((a, c) => a + c.followersPrev, 0);
+  const stats = [
+    { label: "Followers", total: live.reduce((a, c) => a + c.followers, 0), note: `+${fmt(live.reduce((a, c) => a + c.followers - c.followersPrev, 0))} this month`, rows: live.map((c) => ({ c: c.id, n: c.followers })) },
+    { label: "Views, last 7 days", total: published.reduce((a, p) => a + totals(p).views, 0), rows: byChannel((s) => s.views) },
+    { label: "Likes, comments, shares, last 7 days", total: published.reduce((a, p) => a + reactions(totals(p)), 0), rows: byChannel(reactions) },
+  ];
+  const notConnected = channels.filter((c) => !c.connected);
 
   return (
     <>
@@ -30,11 +39,25 @@ export default function SocialPosts() {
         actions={<Button variant="primary" icon={<Plus size={14} />} onClick={() => setOpen(blank())}>New post</Button>}
       />
 
-      <Card className="mb-6 grid grid-cols-2 gap-6 sm:grid-cols-4">
-        <Stat label="Followers" value={fmt(followers)} delta={<Badge tone="good">+{fmt(followers - followersPrev)} this month</Badge>} />
-        <Stat label="Views, last 7 days" value={fmt(views)} />
-        <Stat label="Likes, comments, shares" value={fmt(engaged)} />
-        <Stat label="Scheduled" value={count("scheduled")} />
+      <Card pad={false} className="mb-6">
+        <div className="grid divide-line sm:grid-cols-3 sm:divide-x max-sm:divide-y">
+          {stats.map((st) => (
+            <div key={st.label} className="p-5">
+              <div className="text-[12.5px] text-muted">{st.label}</div>
+              <div className="mt-1 flex items-baseline gap-2"><span className="num font-serif text-[30px] leading-none tracking-tight">{fmt(st.total)}</span>{st.note && <Badge tone="good">{st.note}</Badge>}</div>
+              <ul className="mt-3 mb-0 space-y-1 pl-0">
+                {st.rows.map((r) => (
+                  <li key={r.c} className="num flex items-center gap-2 text-[12.5px]">
+                    <ChannelBadge id={r.c} size={16} /><span className="flex-1 text-muted">{channelOf(r.c).name}</span><span>{fmt(r.n)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <div className="border-t border-line px-5 py-2.5 text-[12px] text-subtle">
+          From each account's own insights: Meta for Instagram and Facebook, TikTok analytics, X analytics and Google Business Profile performance. Updated 1 hour ago.{notConnected.length > 0 && <> {notConnected.map((c) => c.name).join(", ")} isn't connected, so it's not counted. <Link to="/settings/integrations" className="underline decoration-line-strong underline-offset-2 hover:text-fg">Connect</Link></>}
+        </div>
       </Card>
 
       <h2 className="mb-3 font-serif text-[22px] leading-tight">Next 7 days</h2>
@@ -74,7 +97,7 @@ export default function SocialPosts() {
               <span className="block truncate text-[12.5px] text-muted">{Object.values(p.texts)[0]?.split("\n")[0] || "No text yet"}</span>
             </span>
             {p.stats ? (
-              <span className="num hidden shrink-0 text-right text-[12.5px] text-muted sm:block">{fmt(p.stats.views)} views{p.stats.likes + p.stats.comments + p.stats.shares > 0 && <><br />{fmt(p.stats.likes + p.stats.comments + p.stats.shares)} reactions</>}</span>
+              <span className="num hidden shrink-0 text-right text-[12.5px] text-muted sm:block">{fmt(totals(p).views)} views{reactions(totals(p)) > 0 && <><br />{fmt(reactions(totals(p)))} reactions</>}</span>
             ) : <Badge tone={statusTone[p.status]} className="capitalize">{p.status}</Badge>}
             <span className="w-28 shrink-0 text-right text-[12.5px] text-muted">{dayLabel(p.day)}<br />{p.time}</span>
           </button>
@@ -82,7 +105,7 @@ export default function SocialPosts() {
         {!list.length && (
           <div className="px-5 py-10 text-center text-[13px] text-muted">
             {tab === "draft" ? "No drafts. " : tab === "scheduled" ? "Nothing scheduled. " : "Nothing posted yet. "}
-            <Link to="/social/trends" className="text-fg underline decoration-line-strong underline-offset-2">Remix a trending idea</Link>
+            <Link to="/social/scanner?tab=trending" className="text-fg underline decoration-line-strong underline-offset-2">Remix a trending idea</Link>
           </div>
         )}
       </Card>

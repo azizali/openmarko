@@ -19,7 +19,8 @@ import AiVisibility from "./pages/AiVisibility";
 import Citations from "./pages/Citations";
 import PublicAudit from "./pages/PublicAudit";
 import Content from "./pages/Content";
-import SocialTrends from "./pages/SocialTrends";
+import SocialScanner from "./pages/SocialScanner";
+import SwipeFile from "./pages/SwipeFile";
 import SocialPosts from "./pages/SocialPosts";
 
 // Rank pack now lives inside Rankings (Map pack view); keep old links working.
@@ -67,8 +68,10 @@ export default function App() {
           <Route path="runs" element={<Navigate replace to="/settings/activity" />} />
           <Route path="ai" element={<AiVisibility />} />
           <Route path="citations" element={<Citations />} />
-          <Route path="social" element={<Navigate replace to="/social/trends" />} />
-          <Route path="social/trends" element={<SocialTrends />} />
+          <Route path="social" element={<Navigate replace to="/social/scanner" />} />
+          <Route path="social/scanner" element={<SocialScanner />} />
+          <Route path="social/trends" element={<Navigate replace to="/social/scanner?tab=trending" />} />
+          <Route path="social/swipe" element={<SwipeFile />} />
           <Route path="social/posts" element={<SocialPosts />} />
           <Route path="social/voice" element={<Navigate replace to="/settings/brand" />} />
           {/* Brand voice, Skills and Activity moved into Settings; keep old links working. */}
