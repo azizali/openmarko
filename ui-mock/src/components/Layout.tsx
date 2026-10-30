@@ -2,15 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import {
   LayoutGrid, ListChecks, TrendingUp, MessageSquareText, MapPinned, ScanSearch, FileText, History, Settings, Search, ChevronsUpDown, ChevronDown, ArrowLeft,
-  Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target,
+  Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Sparkles,
 } from "lucide-react";
 import { cn } from "./ui";
-import { Logo } from "./Logo";
+import { Logo, LogoMark } from "./Logo";
 import { keywords, locations, workspace } from "../data/mock";
 import { openTasksFor, useRunState } from "../lib/tasks";
 import { runningOf, useRuns } from "../lib/runs";
 import { useTheme } from "../lib/theme";
 import { Freshness, RunButton, kindForPath } from "./RunStatus";
+import { AssistantPanel, MarkoLauncher } from "./Assistant";
+import { ask, toggleAssistant, type PageContext } from "../lib/assistant";
 
 type Leaf = { to: string; label: string };
 type Nav = Leaf & { icon: typeof LayoutGrid; children?: Leaf[] };
@@ -90,6 +92,14 @@ function NavItem({ item, badge, open, onToggle }: { item: Nav; badge?: number; o
   );
 }
 
+/** What Marko is "looking at": the page's sidebar name, plus a keyword when one is open. */
+function pageContext(pathname: string, search: string): PageContext {
+  const item = [...nav, ...footer].find((n) => inGroup(n, pathname));
+  const leaf = item?.children ? activeLeaf(item.children, pathname, search) : item;
+  const kw = pathname.match(/^\/rankings\/([^/]+)/)?.[1] ?? new URLSearchParams(search).get("kw") ?? undefined;
+  return { label: leaf?.label ?? "This page", path: pathname, keywordId: kw };
+}
+
 function LocationSwitcher() {
   const [open, setOpen] = useState(false);
   const [cur, setCur] = useState(locations[0].id);
@@ -120,7 +130,7 @@ function LocationSwitcher() {
   );
 }
 
-function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
+function CommandPalette({ open, onClose, ctx }: { open: boolean; onClose: () => void; ctx: PageContext }) {
   const [q, setQ] = useState("");
   const [idx, setIdx] = useState(0);
   const navigate = useNavigate();
@@ -131,12 +141,16 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
       { label: "Run setup again", hint: "Onboarding", to: "/onboarding" },
     ];
     const kws = keywords.map((k) => ({ label: k.term, hint: "Keyword", to: `/rankings/${k.id}` }));
-    return [...pages, ...extra, ...kws].filter((i) => i.label.toLowerCase().includes(q.toLowerCase())).slice(0, 9);
+    const found = [...pages, ...extra, ...kws].filter((i) => i.label.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
+    // Anything typed can go to Marko. It leads when nothing matches or it reads like a sentence.
+    if (q.trim().length < 2) return found;
+    const askRow = { label: `Ask Marko: “${q.trim()}”`, hint: "Ask", to: "", ask: true };
+    return !found.length || q.trim().split(/\s+/).length >= 3 ? [askRow, ...found] : [...found, askRow];
   }, [q]);
   useEffect(() => { setIdx(0); }, [q]);
   useEffect(() => { if (open) setQ(""); }, [open]);
   if (!open) return null;
-  const go = (to: string) => { navigate(to); onClose(); };
+  const go = (it: { to: string; ask?: boolean }) => { if (it.ask) ask(q, ctx); else navigate(it.to); onClose(); };
   return (
     <div className="fixed inset-0 z-50 flex justify-center px-4 pt-[14vh]">
       <div className="absolute inset-0 bg-black/20" onClick={onClose} />
@@ -150,10 +164,10 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
             onKeyDown={(e) => {
               if (e.key === "ArrowDown") { e.preventDefault(); setIdx((i) => Math.min(items.length - 1, i + 1)); }
               if (e.key === "ArrowUp") { e.preventDefault(); setIdx((i) => Math.max(0, i - 1)); }
-              if (e.key === "Enter" && items[idx]) go(items[idx].to);
+              if (e.key === "Enter" && items[idx]) go(items[idx]);
               if (e.key === "Escape") onClose();
             }}
-            placeholder="Search pages, keywords…"
+            placeholder="Search, or tell Marko what to do…"
             aria-label="Search"
             className="h-12 flex-1 bg-transparent text-[14.5px] outline-none placeholder:text-subtle"
           />
@@ -161,7 +175,8 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
         <ul className="max-h-80 overflow-y-auto p-1.5">
           {items.map((it, i) => (
             <li key={it.to + it.label}>
-              <button onMouseEnter={() => setIdx(i)} onClick={() => go(it.to)} className={cn("flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-[13.5px]", i === idx && "bg-hover")}>
+              <button onMouseEnter={() => setIdx(i)} onClick={() => go(it)} className={cn("flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-[13.5px]", i === idx && "bg-hover")}>
+                {"ask" in it && <Sparkles size={14} className="shrink-0 text-accent" />}
                 <span className="flex-1 truncate">{it.label}</span>
                 <span className="text-[12px] text-subtle">{it.hint}</span>
                 {i === idx && <CornerDownLeft size={13} className="text-subtle" />}
@@ -183,6 +198,7 @@ export default function Layout() {
   const live = runningOf(useRuns()).length;
   const loc = useLocation();
   const kind = kindForPath(loc.pathname);
+  const ctx = pageContext(loc.pathname, loc.search);
   // A group is open while it holds the current page, unless its chevron says otherwise.
   const [manual, setManual] = useState<Record<string, boolean>>({});
   const shown = (n: Nav) => manual[n.label] ?? inGroup(n, loc.pathname);
@@ -195,6 +211,7 @@ export default function Layout() {
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setCmd((v) => !v); }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j") { e.preventDefault(); toggleAssistant(); }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
@@ -210,6 +227,11 @@ export default function Layout() {
         <Search size={16} strokeWidth={1.75} />
         <span className="flex-1 text-left">Search</span>
         <kbd className="rounded border border-line bg-surface px-1 font-sans text-[11px] text-subtle">⌘K</kbd>
+      </button>
+      <button onClick={toggleAssistant} className="mb-2 flex h-8 items-center gap-2.5 rounded-md px-2 text-[13.5px] text-muted hover:bg-hover hover:text-fg">
+        <LogoMark size={16} />
+        <span className="flex-1 text-left">Ask Marko</span>
+        <kbd className="rounded border border-line bg-surface px-1 font-sans text-[11px] text-subtle">⌘J</kbd>
       </button>
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto" aria-label="Main">
         {nav.map((n) => <NavItem key={n.label} item={n} badge={n.to === "/todo" ? openTasksFor(runState).length : undefined} open={shown(n)} onToggle={() => toggle(n)} />)}
@@ -254,10 +276,12 @@ export default function Layout() {
               {kind && kind !== "prospect" && <RunButton kind={kind} variant={loc.pathname === "/" ? "primary" : "secondary"} />}
             </div>
           </div>
-          <Outlet />
+          <Outlet context={ctx} />
         </main>
       </div>
-      <CommandPalette open={cmd} onClose={() => setCmd(false)} />
+      <AssistantPanel ctx={ctx} />
+      <MarkoLauncher />
+      <CommandPalette open={cmd} onClose={() => setCmd(false)} ctx={ctx} />
     </div>
   );
 }

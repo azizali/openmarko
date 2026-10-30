@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { Wand2, Wrench, MessageSquare, PenLine, Check, Loader2, Undo2, ArrowRight, Hand } from "lucide-react";
 import { Badge, Button, Card, Checkbox, Drawer, cn, rankTone } from "./ui";
@@ -12,7 +12,7 @@ export const kindMeta: Record<Kind, { label: string; icon: typeof Wand2 }> = {
   content: { label: "Content", icon: PenLine },
 };
 
-function TaskButton({ t, primary, onOpen }: { t: Task; primary?: boolean; onOpen: (t: Task) => void }) {
+export function TaskButton({ t, primary, onOpen }: { t: Task; primary?: boolean; onOpen: (t: Task) => void }) {
   const st = useRunState()[t.id];
   if (st === "done" || st === "dismissed") return <button onClick={() => undoTask(t.id)} className="inline-flex items-center gap-1 rounded px-2 py-1 text-[12.5px] text-muted hover:bg-hover"><Undo2 size={12} /> {st === "done" ? "Undo" : "Restore"}</button>;
   if (st === "running") return <Button size="sm" disabled><Loader2 size={13} className="animate-spin" /></Button>;
@@ -20,14 +20,14 @@ function TaskButton({ t, primary, onOpen }: { t: Task; primary?: boolean; onOpen
 }
 
 /** The home page's action list: the three most useful things to do this week. */
-export function ThisWeek({ onOpen }: { onOpen: (t: Task) => void }) {
+export function ThisWeek({ onOpen, heading }: { onOpen: (t: Task) => void; heading?: ReactNode }) {
   const state = useRunState();
   const open = openTasksFor(state);
   const done = tasks.filter((t) => state[t.id] === "done").length;
   return (
     <section>
       <div className="mb-3 flex items-end justify-between gap-3">
-        <h2 className="font-serif text-[22px] leading-tight">This week</h2>
+        {heading ?? <h2 className="font-serif text-[22px] leading-tight">This week</h2>}
         <Link to="/todo" className="inline-flex items-center gap-1 text-[13px] text-muted hover:text-fg">
           {open.length > 3 ? `See all ${open.length}` : "See all"}{done ? ` · ${done} done` : ""} <ArrowRight size={13} />
         </Link>

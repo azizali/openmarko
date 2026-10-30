@@ -87,6 +87,8 @@ export function undoTask(id: string) {
   set(next);
 }
 
+export const getRunState = () => runState;
+
 export function useRunState() {
   return useSyncExternalStore(subscribe, () => runState, () => runState);
 }
