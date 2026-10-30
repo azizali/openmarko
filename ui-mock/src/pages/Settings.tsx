@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Store, SearchCheck, BarChart3, Database, Globe, Hash, Eye, EyeOff, Check } from "lucide-react";
+import { Store, SearchCheck, BarChart3, Globe, Hash, Check } from "lucide-react";
 import { Badge, Button, Card, CardHeader, PageHeader, Progress, Tabs, Toggle, useToast } from "../components/ui";
 import { locations } from "../data/mock";
+import { channels } from "../data/social";
+import { ChannelBadge } from "../components/Social";
 
 type Tab = "integrations" | "locations" | "automation" | "team" | "billing";
 
@@ -15,7 +17,6 @@ const integrations = [
 
 export default function Settings() {
   const [tab, setTab] = useState<Tab>("integrations");
-  const [show, setShow] = useState(false);
   const { toast, node } = useToast();
   const [auto, setAuto] = useState({ posts: true, alt: true, schema: false, categories: false, replies: false });
 
@@ -44,21 +45,18 @@ export default function Settings() {
                 </div>
               ))}
             </Card>
-            <Card>
-              <CardHeader title={<span className="flex items-center gap-2"><Database size={15} /> DataForSEO</span>} sub="Powers SERP tracking, keyword data, audits and business data. Credentials stay on the server." />
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block text-[13px]"><span className="mb-1 block text-muted">API login</span><input defaultValue="api@mapleandmain.com" className="h-9 w-full rounded-md border border-line bg-surface px-3 outline-none focus:border-line-strong" /></label>
-                <label className="block text-[13px]"><span className="mb-1 block text-muted">API password</span>
-                  <span className="flex h-9 items-center rounded-md border border-line bg-surface pr-1 focus-within:border-line-strong">
-                    <input type={show ? "text" : "password"} defaultValue="d4f5e6a7b8c9" className="h-full flex-1 bg-transparent px-3 outline-none" />
-                    <button onClick={() => setShow(!show)} aria-label={show ? "Hide password" : "Show password"} className="rounded p-1.5 text-muted hover:bg-hover">{show ? <EyeOff size={14} /> : <Eye size={14} />}</button>
-                  </span>
-                </label>
-              </div>
-              <div className="mt-4 flex items-center justify-between">
-                <span className="num text-[12.5px] text-muted">Balance: <b className="font-medium text-fg">$42.18</b> · ~$6.40 / month at current settings</span>
-                <Button size="sm" onClick={() => toast("Connection OK · 200 from /v3/appendix/user_data")}>Test connection</Button>
-              </div>
+            <Card pad={false}>
+              <div className="border-b border-line px-5 py-3 text-[13px] font-medium text-muted">Social accounts</div>
+              {channels.filter((c) => c.id !== "google").map((c) => (
+                <div key={c.id} className="flex items-center gap-4 border-b border-line px-5 py-4 last:border-0">
+                  <ChannelBadge id={c.id} size={36} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 text-[14px] font-medium">{c.name}{c.connected && <Badge tone="good"><Check size={10} /> Connected</Badge>}</div>
+                    <div className="truncate text-[12.5px] text-muted">{c.connected ? `${c.handle} · ${c.followers.toLocaleString()} followers` : "Post and schedule from Posts & calendar"}</div>
+                  </div>
+                  <Button size="sm" variant={c.connected ? "ghost" : "primary"}>{c.connected ? "Manage" : "Connect"}</Button>
+                </div>
+              ))}
             </Card>
           </>
         )}

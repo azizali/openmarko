@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import {
   LayoutGrid, ListChecks, TrendingUp, MessageSquareText, MapPinned, ScanSearch, FileText, History, Settings, Search, ChevronsUpDown, ChevronDown, ArrowLeft,
-  Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Sparkles,
+  Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Sparkles, Flame, CalendarDays, AudioLines, Puzzle,
 } from "lucide-react";
 import { cn } from "./ui";
 import { Logo, LogoMark } from "./Logo";
@@ -15,14 +15,16 @@ import { AssistantPanel, MarkoLauncher } from "./Assistant";
 import { ask, toggleAssistant, type PageContext } from "../lib/assistant";
 
 type Leaf = { to: string; label: string };
-type Nav = Leaf & { icon: typeof LayoutGrid; children?: Leaf[] };
+type Nav = Leaf & { icon: typeof LayoutGrid; children?: Leaf[]; section?: string };
 
-// Every page is one click from the sidebar. Groups list their pages as sub-items;
-// the group holding the current page is open, the rest open with their chevron.
+// Every page is one click from the sidebar, under a section per kind of marketing
+// (SEO, Social, Sales) and Marko's own setup (Brand voice, Skills). Groups list their pages as sub-items; the group holding
+// the current page is open, the rest open with their chevron.
 const nav: Nav[] = [
   { to: "/", label: "Home", icon: LayoutGrid },
   { to: "/todo", label: "To-do", icon: ListChecks },
-  { to: "/rankings", label: "Rankings", icon: TrendingUp, children: [
+  { to: "/reports", label: "Reports", icon: FileText },
+  { to: "/rankings", label: "Rankings", icon: TrendingUp, section: "SEO", children: [
     { to: "/rankings", label: "Keywords & map pack" },
     { to: "/competitors", label: "Competitors" },
     { to: "/ai", label: "AI answers" },
@@ -31,7 +33,7 @@ const nav: Nav[] = [
   ] },
   { to: "/profile?tab=reviews", label: "Reviews & content", icon: MessageSquareText, children: [
     { to: "/profile?tab=reviews", label: "Reviews" },
-    { to: "/content", label: "Articles & posts" },
+    { to: "/content", label: "Articles" },
     { to: "/profile", label: "Business Profile" },
   ] },
   { to: "/citations", label: "Citations & backlinks", icon: MapPinned, children: [
@@ -39,8 +41,11 @@ const nav: Nav[] = [
     { to: "/citations?tab=links", label: "Backlinks" },
   ] },
   { to: "/audit", label: "Site health", icon: ScanSearch },
-  { to: "/reports", label: "Reports", icon: FileText },
-  ...(workspace.plan === "agency" ? [{ to: "/prospects", label: "Prospecting", icon: Target }] : []),
+  { to: "/social/trends", label: "Trending ideas", icon: Flame, section: "Social" },
+  { to: "/social/posts", label: "Posts & calendar", icon: CalendarDays },
+  ...(workspace.plan === "agency" ? [{ to: "/prospects", label: "Prospecting", icon: Target, section: "Sales" }] : []),
+  { to: "/brand", label: "Brand voice", icon: AudioLines, section: "Marko" },
+  { to: "/skills", label: "Skills", icon: Puzzle },
 ];
 const footer: Nav[] = [
   { to: "/runs", label: "Activity", icon: History },
@@ -234,7 +239,12 @@ export default function Layout() {
         <kbd className="rounded border border-line bg-surface px-1 font-sans text-[11px] text-subtle">⌘J</kbd>
       </button>
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto" aria-label="Main">
-        {nav.map((n) => <NavItem key={n.label} item={n} badge={n.to === "/todo" ? openTasksFor(runState).length : undefined} open={shown(n)} onToggle={() => toggle(n)} />)}
+        {nav.map((n) => (
+          <div key={n.label}>
+            {n.section && <div className="mt-4 mb-1 px-2 text-[11px] font-medium tracking-[0.06em] text-subtle uppercase">{n.section}</div>}
+            <NavItem item={n} badge={n.to === "/todo" ? openTasksFor(runState).length : undefined} open={shown(n)} onToggle={() => toggle(n)} />
+          </div>
+        ))}
       </nav>
       <NavLink to="/onboarding" className="mb-2 rounded-lg border border-line bg-surface p-3 shadow-card transition-colors hover:border-line-strong">
         <div className="flex items-center gap-2 text-[13px] font-medium"><Rocket size={14} /> Setup 4 of 5</div>
@@ -268,7 +278,7 @@ export default function Layout() {
         <main className="relative mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-8 lg:px-12 lg:py-10">
           <div className="mb-5 flex min-h-9 flex-wrap items-center justify-between gap-3 print:hidden">
             {/* Detail pages one level down (an audit issue, a competitor) get a way back. */}
-            {loc.pathname.split("/").length > 2 && !loc.pathname.startsWith("/prospects/") ? (
+            {loc.pathname.split("/").length > 2 && !loc.pathname.startsWith("/prospects/") && !loc.pathname.startsWith("/social/") ? (
               <NavLink to={`/${loc.pathname.split("/")[1]}`} className="inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-fg"><ArrowLeft size={13} /> Back</NavLink>
             ) : <span />}
             <div className="flex flex-wrap items-center gap-3">

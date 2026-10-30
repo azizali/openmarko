@@ -118,7 +118,7 @@ export default function Keywords() {
 
   return (
     <>
-      <PageHeader title="Keyword ideas" sub="Find local keywords worth tracking, from DataForSEO Labs and your Search Console queries." />
+      <PageHeader title="Keyword ideas" sub="Find local keywords worth tracking, from Google search data and your Search Console queries." />
 
       <form onSubmit={(e) => { e.preventDefault(); run(); }} className="mb-6 flex flex-wrap gap-2">
         <div className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-line bg-surface px-3 focus-within:border-line-strong">

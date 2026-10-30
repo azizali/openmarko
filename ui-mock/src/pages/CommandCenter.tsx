@@ -20,7 +20,7 @@ export default function CommandCenter() {
   return (
     <>
       <div className="mb-6">
-        <div className="text-[12.5px] text-muted">Monday, Oct 30 · Weekly brief</div>
+        <div className="text-[12.5px] text-muted">Friday, Oct 30 · Weekly brief</div>
         <h1 className="mt-1 font-serif text-[40px] leading-[1.1] tracking-[-0.02em]">Good morning, Dr. Patel.</h1>
         <p className="mt-1.5 max-w-2xl text-[14px] text-muted">How {business.name} did on Google, and what needs you this week.</p>
       </div>

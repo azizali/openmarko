@@ -78,7 +78,7 @@ export default function Onboarding() {
                   <Search size={16} className="text-subtle" />
                   <input aria-label="Business name" value={query} onChange={(e) => setQuery(e.target.value)} className="h-11 flex-1 bg-transparent outline-none" placeholder="Business name or Google Maps URL" />
                 </div>
-                <div className="mt-1.5 text-[12px] text-subtle">Powered by DataForSEO Business Data · Google Maps</div>
+                <div className="mt-1.5 text-[12px] text-subtle">Searches Google Maps</div>
                 <ul className="mt-6 space-y-2">
                   {searchResults.map((r, i) => (
                     <li key={r.name}>
@@ -127,7 +127,7 @@ export default function Onboarding() {
             {step === 2 && (
               <>
                 <h1 className="font-serif text-[34px] leading-tight">Choose keywords to track</h1>
-                <p className="mt-2 text-muted">Suggested from your Search Console queries and DataForSEO search volume for Austin, TX.</p>
+                <p className="mt-2 text-muted">Suggested from your Search Console queries and Google search volume for Austin, TX.</p>
                 <div className="mt-8 flex items-center justify-between text-[13px]">
                   <span className="text-muted"><b className="num font-medium text-fg">{selKw.size}</b> selected · 25 included in your plan</span>
                   <button className="text-muted underline-offset-2 hover:underline" onClick={() => setSelKw(new Set())}>Clear</button>
@@ -204,7 +204,7 @@ export default function Onboarding() {
                     </div>
                     <div className="rounded-lg bg-hover p-3 text-[12.5px] text-muted">
                       <div className="num">{Number(size) ** 2} points × {selKw.size} keywords = <b className="font-medium text-fg">{fmt(Number(size) ** 2 * selKw.size)}</b> SERP checks</div>
-                      <div className="num mt-1">≈ ${(estimateGridCost(Number(size), selKw.size) * (freq === "daily" ? 30 : 4)).toFixed(2)} / month in DataForSEO credits</div>
+                      <div className="num mt-1">≈ ${(estimateGridCost(Number(size), selKw.size) * (freq === "daily" ? 30 : 4)).toFixed(2)} / month in data costs</div>
                     </div>
                   </div>
                 </div>
@@ -281,7 +281,7 @@ function OAuthModal({ integration, onClose, onDone }: { integration: (typeof int
 const launchTasks = [
   "Importing Business Profile & reviews",
   "Pulling 16 months of Search Console data",
-  "Fetching search volume from DataForSEO",
+  "Fetching search volume",
   "Running geo-grid scan",
   "Crawling mapleandmaindental.com",
   "Benchmarking competitors",

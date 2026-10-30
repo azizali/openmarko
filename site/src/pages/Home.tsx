@@ -31,7 +31,7 @@ export default function Home() {
 
       <div className="border-y border-line"><Container rails className="py-10"><IndustriesMarquee /></Container></div>
 
-      <Container rails className="py-0"><StatStrip items={stats.map((s) => ({ value: s.value, label: <>{s.label} <a href={s.url} target="_blank" rel="noreferrer" className="block pt-1 text-[12px] text-subtle underline-offset-2 hover:underline">{s.source}</a></> }))} /></Container>
+      <Container rails className="py-0"><StatStrip items={stats.map((s) => ({ value: s.value, label: <>{s.label} {"url" in s ? <a href={s.url} target="_blank" rel="noreferrer" className="block pt-1 text-[12px] text-subtle underline-offset-2 hover:underline">{s.source}</a> : <span className="block pt-1 text-[12px] text-subtle">{s.source}</span>}</> }))} /></Container>
 
       {/* How it works */}
       <Section id="how">

@@ -261,7 +261,7 @@ Dr. Patel · ${business.phone}`;
           );
         })}
       </Card>
-      <p className="mt-3 max-w-3xl text-[12px] text-subtle">Link data from DataForSEO's Backlinks API: your referring domains, new and lost links, and sites that link to two or more competitors but not you. Outreach goes from your own mailbox; nothing is sent without your approval.</p>
+      <p className="mt-3 max-w-3xl text-[12px] text-subtle">We track your referring domains, new and lost links, and sites that link to two or more competitors but not you. Outreach goes from your own mailbox; nothing is sent without your approval.</p>
 
       <Drawer open={!!draft} onClose={() => setDraft(null)} title={draft ? `Reach out to ${draft.domain}` : ""} footer={draft && <>
         <Button variant="ghost" icon={<Copy size={14} />} onClick={async () => { try { await navigator.clipboard.writeText(email(draft)); toast("Email copied"); } catch { toast("Couldn't access the clipboard"); } }}>Copy</Button>

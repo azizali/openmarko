@@ -13,7 +13,7 @@ export default function Competitors() {
     <>
       <PageHeader
         title="Competitors"
-        sub="Businesses that share the map pack with you most often. Profiles refresh weekly from DataForSEO Business Data."
+        sub="Businesses that share the map pack with you most often. Profiles refresh weekly."
         actions={<Button variant="primary" icon={<Plus size={14} />}>Add competitor</Button>}
       />
 

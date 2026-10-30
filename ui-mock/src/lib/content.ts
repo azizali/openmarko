@@ -1,8 +1,8 @@
-// Content plan: website articles and Business Profile posts, from idea to published.
-// Module store so the Content page and the report preview see the same list.
+// Website articles, from idea to published. Posts (Google profile and social)
+// live in lib/social.ts. Module store so the Articles page and the report preview see the same list.
 
 import { useSyncExternalStore } from "react";
-import { blogPosts, contentArchive, gbpPosts, keywords, type ContentItem, type ContentStatus } from "../data/mock";
+import { blogPosts, contentArchive, keywords, type ContentItem, type ContentStatus } from "../data/mock";
 import { fmt } from "../components/ui";
 
 export type ContentType = "article" | "post";
@@ -10,8 +10,7 @@ export type PlanItem = ContentItem & { type: ContentType; why?: string; isNew?: 
 
 let items: PlanItem[] = [
   ...blogPosts.map((b) => ({ ...b, type: "article" as const })),
-  ...gbpPosts.map((p) => ({ ...p, type: "post" as const })),
-  ...contentArchive,
+  ...contentArchive.filter((c) => c.type === "article"),
 ];
 const listeners = new Set<() => void>();
 const set = (next: PlanItem[]) => { items = next; listeners.forEach((l) => l()); };
@@ -38,10 +37,6 @@ const articleTitles = [
   (t: string) => `5 questions to ask before choosing ${service(t)}`,
   (t: string) => `${cap(service(t))}: myths vs. facts`,
 ];
-const postTitles = [
-  (t: string) => `New patients welcome for ${service(t)} this month`,
-  (t: string) => `Ask Dr. Patel: ${service(t)}`,
-];
 
 /**
  * Suggests `n` ideas for keywords that have the least content aimed at them, biggest search volume first.
@@ -57,15 +52,14 @@ export function suggestIdeas(n = 3, keywordId?: string) {
   for (let round = 0; fresh.length < n && round < 3; round++) {
     for (const k of pool) {
       if (fresh.length >= n) break;
-      const type: ContentType = (fresh.length + round) % 3 === 2 ? "post" : "article";
-      const tpl = type === "article" ? articleTitles[round % articleTitles.length] : postTitles[round % postTitles.length];
-      const title = tpl(k.term);
+      const type: ContentType = "article";
+      const title = articleTitles[round % articleTitles.length](k.term);
       if (titles.has(title)) continue;
       titles.add(title);
       const covered = count(k.id);
       fresh.push({
         id: `c${Date.now()}_${fresh.length}`, type, title, status: "idea", keywordId: k.id, date: "Suggested", isNew: true,
-        words: type === "article" ? 1200 + (k.volume % 5) * 100 : undefined,
+        words: 1200 + (k.volume % 5) * 100,
         why: `${fmt(k.volume)} searches/mo · ${covered ? `${covered} piece${covered === 1 ? "" : "s"} so far` : "nothing aimed at it yet"}`,
       });
     }

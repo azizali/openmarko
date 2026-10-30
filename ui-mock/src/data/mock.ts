@@ -468,7 +468,7 @@ export const actions: Action[] = [
     id: "a9", keywordIds: ["kw_1"], title: "Fix 3 citations with an old suite number", category: "Citations", impact: "Low", effort: "Low",
     executor: "Citation network", status: "suggested",
     rationale: "Yellowpages, Superpages and Manta still list “Ste 200”.",
-    evidence: ["Found in DataForSEO Business Data search"], steps: ["Submit corrections", "Monitor for 30 days"],
+    evidence: ["Found in a business listings search"], steps: ["Submit corrections", "Monitor for 30 days"],
   },
 ];
 

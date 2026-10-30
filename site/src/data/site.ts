@@ -95,7 +95,7 @@ export const stats = [
   { value: "45%", label: "of consumers used AI tools to find local businesses in 2026, up from 6% a year earlier", source: "BrightLocal Local Consumer Review Survey 2026", url: "https://www.brightlocal.com/research/local-consumer-review-survey/" },
   { value: "19%", label: "of consumers expect a reply to their review the same day, up from 6%", source: "BrightLocal Local Consumer Review Survey 2026", url: "https://www.brightlocal.com/research/local-consumer-review-survey/" },
   { value: "74%", label: "of consumers only consider reviews from the last three months", source: "BrightLocal Local Consumer Review Survey 2026", url: "https://www.brightlocal.com/research/local-consumer-review-survey/" },
-  { value: "$1.26", label: "is the raw data cost of tracking 10 keywords weekly. Some tools charge up to 80× that. We show you the receipt.", source: "DataForSEO Maps pricing, OpenMarko research, Oct 2026", url: "https://dataforseo.com/pricing/google-serp/google-maps-serp-api" },
+  { value: "$1.26", label: "is the raw data cost of tracking 10 keywords weekly. Some tools charge up to 80× that. We show you the receipt.", source: "Public map-search API pricing, OpenMarko research, Oct 2026" },
 ];
 
 export const industries = ["HVAC", "Plumbing", "Roofing", "Dental", "Med spas", "Law firms", "Auto repair", "Electricians", "Landscaping", "Veterinary", "Chiropractic", "Pest control"];

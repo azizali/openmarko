@@ -598,7 +598,7 @@ export const prospectSources: { group: string; items: { what: string; api: strin
     { what: "Emails, phones and social links on the site", api: "On-Page · content_parsing" },
     { what: "CMS, analytics, ad pixels, chat widget", api: "Domain Analytics · technologies" },
     { what: "Domain age and registrant", api: "Domain Analytics · whois/overview" },
-    { what: "Organic traffic and ranking keywords", api: "DataForSEO Labs · domain_rank_overview" },
+    { what: "Organic traffic and ranking keywords", api: "Labs · domain_rank_overview" },
     { what: "Google Ads activity", api: "SERP API · google/ads_advertisers, ads_search" },
     { what: "Referring domains", api: "Backlinks · summary" },
   ]},

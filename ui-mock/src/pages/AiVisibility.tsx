@@ -55,7 +55,6 @@ export default function AiVisibility() {
                     <span className="num text-muted">{e.mentioned}/{e.total} · <b className={cn("font-medium", pct >= 50 ? "text-good" : pct >= 25 ? "text-warn" : "text-bad")}>{pct.toFixed(0)}%</b></span>
                   </div>
                   <Progress value={pct} tone={pct >= 50 ? "good" : pct >= 25 ? "warn" : "bad"} />
-                  <div className="mt-0.5 text-[11px] text-subtle">{e.api}</div>
                 </li>
               );
             })}
@@ -156,7 +155,7 @@ export default function AiVisibility() {
           </tbody>
         </table>
       </Card>
-      <p className="mt-3 max-w-3xl text-[12px] text-subtle">AI answers change from one ask to the next, so each question is asked several times per engine and we count how often you're named. ChatGPT, Gemini, Claude and Perplexity answers come from DataForSEO's AI Optimization API; AI Overviews and AI Mode from Google results.</p>
+      <p className="mt-3 max-w-3xl text-[12px] text-subtle">AI answers change from one ask to the next, so each question is asked several times per engine and we count how often you're named.</p>
       {node}
     </>
   );

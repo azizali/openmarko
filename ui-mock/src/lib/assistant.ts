@@ -16,6 +16,9 @@ import { aiVisibility } from "../data/ai";
 import { scanFor } from "../components/KeywordTable";
 import { startRun } from "./runs";
 import { getRunState, openTasksFor, runTasks, tasks } from "./tasks";
+import { channels, draftFor, trends, type ChannelId, type ToneTweak, type Trend } from "../data/social";
+import { dateOf, getSocialPost, remixTrend, savePost, schedulePost } from "./social";
+import { skillName, skillOn } from "./skills";
 
 export type Block =
   | { type: "text"; text: string }
@@ -23,9 +26,10 @@ export type Block =
   | { type: "map"; keywordId: string }
   | { type: "stats"; items: { label: string; value: string; note?: string; tone?: "good" | "bad" }[] }
   | { type: "links"; items: { label: string; to: string }[] }
-  | { type: "done"; text: string };
+  | { type: "done"; text: string }
+  | { type: "post"; postId: string };
 
-export type Message = { id: string; role: "user" | "marko"; blocks: Block[]; followUps?: string[] };
+export type Message = { id: string; role: "user" | "marko"; blocks: Block[]; followUps?: string[]; skills?: string[] };
 export type PageContext = { label: string; path: string; keywordId?: string };
 
 export type Chat = { id: string; title: string; page: string; updated: number; messages: Message[]; lastTaskIds: string[] };
@@ -114,6 +118,7 @@ export function suggestionsFor(ctx: PageContext): string[] {
   if (ctx.path.startsWith("/citations")) return ["Which listings are wrong?", "Fix my citations"];
   if (ctx.path.startsWith("/reports")) return ["Summarize this month", "Email the monthly report"];
   if (ctx.path.startsWith("/ai")) return ["Do AI assistants recommend me?", "What should I do this week?"];
+  if (ctx.path.startsWith("/social")) return ["What's trending this week?", "Write an Instagram post about the time change", "Make a TikTok in my voice"];
   return ["What should I do this week?", "Which keywords dropped?", "Reply to my 5-star reviews"];
 }
 
@@ -137,7 +142,66 @@ const drops = () =>
     .filter((k) => k.local !== null && k.localPrev !== null && k.local > k.localPrev)
     .sort((a, b) => (b.local! - b.localPrev!) - (a.local! - a.localPrev!));
 
-const reply = (blocks: Block[], followUps?: string[]): Message => ({ id: id(), role: "marko", blocks, followUps });
+/** A Marko answer. `skills` names the writing skills it used (shown under the answer). */
+const reply = (blocks: Block[], followUps?: string[], skills?: string[]): Message => ({ id: id(), role: "marko", blocks, followUps, skills });
+/** Marko won't write with a skill the user turned off. */
+const off = (skill: string): Message | null =>
+  skillOn(skill) ? null : reply([{ type: "text", text: `The “${skillName(skill)}” skill is turned off, so I won't write that. Turn it back on in Skills.` }, { type: "links", items: [{ label: "Skills", to: "/skills" }] }]);
+
+// ---------- Social ----------
+
+let lastPostId: string | null = null; // the draft "schedule it" and "make it shorter" refer to
+const quoted = (t: Trend) => (t.title.startsWith("“") ? t.title : `“${t.title}”`);
+const when = (day: number, time: string) => `${day === 0 ? "today" : day === 1 ? "tomorrow" : dateOf(day).toLocaleDateString("en-US", { weekday: "long" })} at ${time}`;
+const channelNames: [ChannelId, string[]][] = [["instagram", ["instagram", "insta", "reel"]], ["tiktok", ["tiktok", "tik tok"]], ["facebook", ["facebook"]], ["linkedin", ["linkedin"]], ["x", ["twitter", "tweet", " on x", "x post", "post on x"]]];
+
+/** The trend a request is about: words from its title or angle, else the best fit. */
+function trendIn(q: string): Trend {
+  const words = (t: Trend) => `${t.title} ${t.angle}`.toLowerCase().split(/[^a-z]+/).filter((w) => w.length > 4);
+  return [...trends].map((t) => ({ t, hits: words(t).filter((w) => q.includes(w)).length })).sort((a, b) => b.hits - a.hits || b.t.fit - a.t.fit)[0].t;
+}
+
+function socialReply(q: string): Message | null {
+  const last = lastPostId ? getSocialPost(lastPostId) : undefined;
+  if (last && /^(schedule|post) (it|this|that)\b/.test(q)) {
+    schedulePost(last.id);
+    return reply([{ type: "done", text: `Scheduled “${last.title}” for ${when(last.day, last.time)}. It's in Posts & calendar.` }], ["What's trending this week?"]);
+  }
+  const tweak: ToneTweak | null = /shorter/.test(q) ? "shorter" : /funnier|playful|fun\b/.test(q) ? "playful" : /expert|smarter|detail/.test(q) ? "expert" : null;
+  if (last && tweak && /\b(it|this|that)\b/.test(q)) {
+    const t = trends.find((x) => x.id === last.trendId);
+    if (t) {
+      savePost({ ...last, texts: Object.fromEntries(last.channels.map((c) => [c, draftFor(t, c, [tweak])])) });
+      return reply([{ type: "text", text: tweak === "shorter" ? "Shorter version:" : tweak === "playful" ? "More playful, same voice:" : "Added the expert detail:" }, { type: "post", postId: last.id }], ["Schedule it"], ["social-viral"]);
+    }
+  }
+
+  if (has(q, "trend", "viral", "what's working", "whats working", "what's hot")) {
+    const top = [...trends].sort((a, b) => b.fit - a.fit).slice(0, 3);
+    return reply([
+      { type: "text", text: `Three things catching on this week that fit you: ${top.map((t) => `${quoted(t)} (${t.velocity})`).join("; ")}. The first fits you best. ${top[0].insight}` },
+      { type: "links", items: [{ label: "All trending ideas", to: "/social/trends" }] },
+    ], [`Remix “${top[0].title.replace(/[“”]/g, "")}”`, "Make a TikTok in my voice"], ["trend-remix"]);
+  }
+
+  const named = channelNames.filter(([, ws]) => ws.some((w) => q.includes(w))).map(([c]) => c);
+  if (named.length || has(q, "social", "remix", "caption", "carousel")) {
+    const t = trendIn(q);
+    const live = channels.filter((c) => c.connected).map((c) => c.id);
+    const notConnected = named.filter((c) => !live.includes(c));
+    const chs = (named.length ? named : t.bestFor).filter((c) => live.includes(c));
+    if (!chs.length) return reply([{ type: "text", text: `${notConnected.map((c) => channels.find((x) => x.id === c)!.name).join(" and ")} isn't connected yet.` }, { type: "links", items: [{ label: "Connect it in Settings", to: "/settings" }] }]);
+    const gate = off("social-viral") ?? off("trend-remix");
+    if (gate) return gate;
+    const post = remixTrend(t.id, chs);
+    lastPostId = post.id;
+    return reply([
+      { type: "text", text: `I built this on ${quoted(t)} (${t.velocity}). ${t.insight} Written in your voice and saved as a draft for ${when(post.day, post.time)}, your best time.${notConnected.length ? ` (${notConnected.map((c) => channels.find((x) => x.id === c)!.name).join(", ")} isn't connected, so I left it out.)` : ""}` },
+      { type: "post", postId: post.id },
+    ], ["Schedule it", "Make it shorter", "Make it more playful"], ["trend-remix", "social-viral"]);
+  }
+  return null;
+}
 
 function respond(raw: string, ctx: PageContext, lastTaskIds: string[]): Message {
   const q = raw.toLowerCase();
@@ -156,6 +220,9 @@ function respond(raw: string, ctx: PageContext, lastTaskIds: string[]): Message 
     ], ["What should I do this week?", "Rescan my rankings"]);
   }
 
+  const social = socialReply(q);
+  if (social) return social;
+
   if (has(q, "rescan", "scan", "refresh", "re-check")) {
     startRun("rank", { scope: `${keywords.length} keywords · 7×7 grid`, cost: 0.62 });
     return reply([{ type: "done", text: `Started a ranking scan for ${keywords.length} keywords. It takes about 4 minutes; pages update when it finishes.` }], ["Which keywords dropped?"]);
@@ -166,6 +233,8 @@ function respond(raw: string, ctx: PageContext, lastTaskIds: string[]): Message 
   }
 
   if (has(q, "review", "repl")) {
+    const gate = off("review-reply");
+    if (gate) return gate;
     const five = has(q, "5-star", "5 star", "five", "positive", "good");
     const list = reviews.filter((r) => !r.replied && (!five || r.rating >= 4));
     const ids = open(list.map((r) => r.id));
@@ -174,7 +243,7 @@ function respond(raw: string, ctx: PageContext, lastTaskIds: string[]): Message 
     return reply([
       { type: "text", text: `${ids.length} review${ids.length > 1 ? "s" : ""} ${five ? "rated 4★ or 5★ " : ""}without a reply. I wrote a reply for each in your practice's voice${low ? ". The low rating one is an apology with a call back, so read it before it posts" : ""}.` },
       { type: "tasks", ids },
-    ], ["Reply to all of them", "How do I get more reviews?"]);
+    ], ["Reply to all of them", "How do I get more reviews?"], ["review-reply"]);
   }
 
   if (has(q, "citation", "listing", "yelp", "address", "directory", "directories")) {
@@ -199,15 +268,15 @@ function respond(raw: string, ctx: PageContext, lastTaskIds: string[]): Message 
         ],
       } as Block]),
       { type: "links", items: [{ label: "Open Reports", to: "/reports" }] },
-    ], emailIt ? undefined : ["Email the monthly report"]);
+    ], emailIt ? undefined : ["Email the monthly report"], ["report-summary"]);
   }
 
   if (has(q, "post", "article", "blog", "write", "content")) {
     return reply([
       { type: "text", text: "Your profile hasn't posted in 3 weeks; the dentists above you post weekly. I drafted this week's post, and an article on a question 880 people a month ask." },
       { type: "tasks", ids: open(["t_p1", "t_b1"]) },
-      { type: "links", items: [{ label: "Articles & posts", to: "/content" }] },
-    ], ["Publish both"]);
+      { type: "links", items: [{ label: "Posts & calendar", to: "/social/posts" }, { label: "Articles", to: "/content" }] },
+    ], ["Publish both"], ["gbp-post", "blog-article"]);
   }
 
   if (/\bai\b/.test(q) || has(q, "chatgpt", "gemini", "perplexity")) {

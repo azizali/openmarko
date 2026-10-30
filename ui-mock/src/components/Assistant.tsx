@@ -9,6 +9,11 @@ import { TaskButton } from "./Todo";
 import { gridStats, keywords } from "../data/mock";
 import { tasks, useRunState } from "../lib/tasks";
 import { timeAgo } from "../lib/runs";
+import { ChannelBadge, dayLabel } from "./Social";
+import { PostPreview } from "./PostPreview";
+import { channelOf } from "../data/social";
+import { schedulePost, useSocialPosts } from "../lib/social";
+import { skillName } from "../lib/skills";
 import { ask, closeAssistant, deleteChat, newChat, openChat, setWide, showHistory, suggestionsFor, toggleAssistant, useAssistant, type Block, type PageContext } from "../lib/assistant";
 
 export function MarkoAvatar({ size = 28 }: { size?: number }) {
@@ -68,6 +73,7 @@ export function Blocks({ blocks }: { blocks: Block[] }) {
         if (b.type === "text") return <p key={i} className="m-0">{b.text}</p>;
         if (b.type === "tasks") return <TaskRows key={i} ids={b.ids} />;
         if (b.type === "map") return <MapBlock key={i} keywordId={b.keywordId} />;
+        if (b.type === "post") return <PostBlock key={i} postId={b.postId} />;
         if (b.type === "done") return <p key={i} className="m-0 flex items-start gap-2 text-good"><CheckCircle2 size={15} className="mt-0.5 shrink-0" /><span>{b.text}</span></p>;
         if (b.type === "stats") return (
           <div key={i} className="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2">
@@ -79,12 +85,40 @@ export function Blocks({ blocks }: { blocks: Block[] }) {
             ))}
           </div>
         );
+        if (b.type !== "links") return null;
         return (
           <div key={i} className="flex flex-wrap gap-x-4 gap-y-1">
             {b.items.map((l) => <Link key={l.to} to={l.to} className="text-[13px] text-muted hover:text-fg">{l.label} →</Link>)}
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function PostBlock({ postId }: { postId: string }) {
+  const p = useSocialPosts().find((x) => x.id === postId);
+  const [tab, setTab] = useState(0);
+  if (!p) return <p className="m-0 text-[13px] text-muted">That draft was deleted.</p>;
+  const ch = p.channels[Math.min(tab, p.channels.length - 1)];
+  return (
+    <div className="overflow-hidden rounded-xl border border-line bg-surface">
+      <div className="flex items-center gap-1 border-b border-line px-2 pt-2">
+        {p.channels.map((c, i) => (
+          <button key={c} onClick={() => setTab(i)} aria-pressed={c === ch} className={cn("-mb-px flex items-center gap-1.5 border-b-2 px-2 pb-2 text-[12.5px]", c === ch ? "border-ink text-fg" : "border-transparent text-muted hover:text-fg")}>
+            <ChannelBadge id={c} size={16} /> {channelOf(c).name}
+          </button>
+        ))}
+      </div>
+      <div className="flex justify-center bg-hover/50 px-3 py-3"><PostPreview channel={ch} text={p.texts[ch] ?? ""} format={p.format} /></div>
+      <div className="flex flex-wrap items-center gap-2 border-t border-line px-3.5 py-2.5 text-[12px] text-muted">
+        <span>{p.format}</span>
+        <span className="flex-1" />
+        <Link to="/social/posts" className="hover:text-fg">Edit in Posts</Link>
+        {p.status === "draft" ? (
+          <button onClick={() => schedulePost(p.id)} className="h-7 rounded-md bg-ink px-2.5 text-[12.5px] font-medium text-on-ink hover:opacity-90">Schedule · {dayLabel(p.day)} {p.time}</button>
+        ) : <span className="font-medium text-good capitalize">{p.status} · {dayLabel(p.day)} {p.time}</span>}
+      </div>
     </div>
   );
 }
@@ -156,7 +190,13 @@ export function AssistantPanel({ ctx }: { ctx: PageContext }) {
             m.role === "user" ? (
               <div key={m.id} className="ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-ink px-3.5 py-2.5 text-[13.5px] leading-snug text-on-ink">{m.blocks[0].type === "text" ? m.blocks[0].text : null}</div>
             ) : (
-              <div key={m.id} className="anim-fade flex gap-3"><MarkoAvatar /><Blocks blocks={m.blocks} /></div>
+              <div key={m.id} className="anim-fade flex gap-3">
+                <MarkoAvatar />
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <Blocks blocks={m.blocks} />
+                  {!!m.skills?.length && <Link to="/skills" className="self-start text-[11.5px] text-subtle hover:text-fg">Used {m.skills.map(skillName).join(" + ")}, in your brand voice</Link>}
+                </div>
+              </div>
             ),
           )}
           {thinking && (

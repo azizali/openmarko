@@ -220,7 +220,7 @@ export default function Prospects() {
             <span className="pt-0.5"><Checkbox checked={draft.noSite} onChange={(v) => D({ noSite: v })} label="Only businesses with no website" /></span>
             <span>
               <span className="inline-flex items-center gap-1.5 font-medium"><Globe size={13} /> Only businesses with no website</span>
-              <span className="block text-[12.5px] text-muted">{draft.noSite ? "Searches Google's business listings in this area and keeps only those with no website (DataForSEO Business Listings, url = null). The map pack top 3 are pulled too, so you can show who they're losing to." : "Your easiest pitch: they need a site before anything else."}</span>
+              <span className="block text-[12.5px] text-muted">{draft.noSite ? "Searches Google's business listings in this area and keeps only those with no website. The map pack top 3 are pulled too, so you can show who they're losing to." : "Your easiest pitch: they need a site before anything else."}</span>
             </span>
           </label>
           <div className="flex flex-wrap items-center gap-1.5 text-[12.5px]">
@@ -381,7 +381,7 @@ export default function Prospects() {
         </div>
       </div>
 
-      <Modal open={sources} onClose={() => setSources(false)} title="Where the data comes from" width={620}>
+      <Modal open={sources} onClose={() => setSources(false)} title="What we check" width={620}>
         <div className="space-y-5">
           {prospectSources.map((g) => (
             <section key={g.group}>
@@ -390,13 +390,13 @@ export default function Prospects() {
                 {g.items.map((it) => (
                   <li key={it.what} className="flex flex-col gap-0.5 px-3 py-2 text-[13px] sm:flex-row sm:items-baseline sm:gap-3">
                     <span className="min-w-[38%] flex-1">{it.what}</span>
-                    <span className="text-[12px] text-muted sm:max-w-[58%] sm:text-right">{it.api}{it.partner && <Badge className="ml-1.5">Partner</Badge>}</span>
+                    {it.partner && <span className="sm:text-right"><Badge>Partner</Badge></span>}
                   </li>
                 ))}
               </ul>
             </section>
           ))}
-          <p className="text-[12px] text-subtle">DataForSEO doesn't return emails, line types or owner names directly. Those come from parsing the business's own site plus the partner lookups above.</p>
+          <p className="text-[12px] text-subtle">Emails, line types and owner names come from the business's own website plus the partner lookups marked above.</p>
         </div>
       </Modal>
       <NewAuditModal open={auditOpen} onClose={closeAudit} initialCity={spec.city} />
