@@ -190,6 +190,32 @@ export const competitors: Competitor[] = [
 
 // ---------- Ranking factors ----------
 
+/** A competitor's geo-grid for a keyword: strong where they're based, weaker with distance. */
+export function makeRivalGrid(keywordId: string, rival: Competitor, size = 7, seed = 1): GridScan {
+  if (rival.isYou) return makeGrid(keywordId, size, seed, seed === 1 ? Number(keywordId.split("_")[1]) % 3 : (Number(keywordId.split("_")[1]) % 3) - 1.5);
+  const idn = rival.id.charCodeAt(1);
+  const kwn = Number(keywordId.split("_")[1]);
+  const r = rng(seed * 53 + kwn * 11 + idn * 7);
+  const c = (size - 1) / 2;
+  const angle = (idn * 1.7) % (2 * Math.PI);
+  const cells = Math.min(c, rival.distanceMi / (3 / c)); // grid radius is 3 mi
+  const cx = c + Math.cos(angle) * cells, cy = c + Math.sin(angle) * cells;
+  const shift = ((kwn * idn) % 5) - 2 + (seed === 1 ? 0 : 1.2);
+  const others = [business.name, ...competitorNames.filter((n) => n !== rival.name)];
+  const points: GridPoint[] = [];
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      const dist = Math.hypot(row - cy, col - cx);
+      const base = rival.avgGridRank * 0.6 + dist * 1.05 + r() * 1.6 + shift * 0.3 - 2;
+      const rank = base > 20 ? null : Math.max(1, Math.round(base));
+      const shuffled = [...others].sort(() => r() - 0.5);
+      const top3 = rank && rank <= 3 ? [...shuffled.slice(0, rank - 1), rival.name, ...shuffled.slice(rank - 1)].slice(0, 3) : shuffled.slice(0, 3);
+      points.push({ row, col, rank, top3 });
+    }
+  }
+  return { id: `scan_${keywordId}_${rival.id}_${seed}`, keywordId, date: seed === 1 ? "2026-10-28" : "2026-09-28", size, radiusMi: 3, points };
+}
+
 export type FactorStatus = "good" | "warn" | "bad";
 export type Factor = { name: string; status: FactorStatus; detail: string; actionId?: string };
 export type FactorGroup = { id: string; name: string; weight: number; score: number; summary: string; factors: Factor[] };
@@ -368,11 +394,12 @@ export type Action = {
   evidence: string[];
   preview?: { label: string; before?: string; after: string };
   steps: string[];
+  keywordIds?: string[];
 };
 
 export const actions: Action[] = [
   {
-    id: "a1", title: "Add 3 secondary categories to your Business Profile", category: "GBP", impact: "High", effort: "Auto",
+    id: "a1", keywordIds: ["kw_3", "kw_4"], title: "Add 3 secondary categories to your Business Profile", category: "GBP", impact: "High", effort: "Auto",
     executor: "Google Business Profile API", status: "suggested",
     rationale: "Categories are the strongest controllable map-pack factor. The pack leaders use categories you don't.",
     evidence: ["Bright Smile Austin ranks #1 at 31/49 grid points with “Emergency dental service”", "“emergency dentist austin” — you average #8.2 in the grid"],
@@ -380,7 +407,7 @@ export const actions: Action[] = [
     steps: ["Validate category IDs against GBP taxonomy", "PATCH locations/{id} categories.additionalCategories", "Confirm the change is live", "Schedule grid re-scan in 7 days"],
   },
   {
-    id: "a2", title: "Publish weekly GBP posts for the next 4 weeks", category: "GBP", impact: "Medium", effort: "Auto",
+    id: "a2", keywordIds: ["kw_1", "kw_2", "kw_3"], title: "Publish weekly GBP posts for the next 4 weeks", category: "GBP", impact: "Medium", effort: "Auto",
     executor: "Google Business Profile API", status: "suggested",
     rationale: "Regular posts keep the profile fresh. Competitors in the pack post 3–6 times a month.",
     evidence: ["You: 1 post in 30 days", "Bright Smile Austin: 6 posts in 30 days"],
@@ -388,7 +415,7 @@ export const actions: Action[] = [
     steps: ["Generate 4 drafts from your services", "Attach photos from the media library", "Create localPosts with schedule", "Track post views in GBP insights"],
   },
   {
-    id: "a3", title: "Rewrite business description with missing service terms", category: "GBP", impact: "Medium", effort: "Auto",
+    id: "a3", keywordIds: ["kw_3", "kw_5"], title: "Rewrite business description with missing service terms", category: "GBP", impact: "Medium", effort: "Auto",
     executor: "Google Business Profile API", status: "approved",
     rationale: "Your description doesn't mention emergency care or Invisalign, two of your highest-volume services.",
     evidence: ["“invisalign austin” 2,400/mo — map rank #6", "“emergency dentist austin” 1,900/mo — map rank #8"],
@@ -400,7 +427,7 @@ export const actions: Action[] = [
     steps: ["Check length (≤750 chars) and policy", "PATCH locations/{id} profile.description", "Confirm the change is live"],
   },
   {
-    id: "a4", title: "Reply to 9 unanswered reviews", category: "Reviews", impact: "Medium", effort: "Low",
+    id: "a4", keywordIds: ["kw_1", "kw_2"], title: "Reply to 9 unanswered reviews", category: "Reviews", impact: "Medium", effort: "Low",
     executor: "Google Business Profile API", status: "suggested",
     rationale: "Responding to reviews signals engagement and is a chance to reinforce service + location terms naturally.",
     evidence: ["Response rate 61% (leaders 95%+)", "Oldest unanswered: 23 days"],
@@ -408,7 +435,7 @@ export const actions: Action[] = [
     steps: ["Draft replies with your brand voice", "Human review (required for reviews)", "PUT reviews/{id}/reply", "Log replies"],
   },
   {
-    id: "a5", title: "Launch post-visit review request SMS", category: "Reviews", impact: "High", effort: "Medium",
+    id: "a5", keywordIds: ["kw_1", "kw_2"], title: "Launch post-visit review request SMS", category: "Reviews", impact: "High", effort: "Medium",
     executor: "Manual", status: "suggested",
     rationale: "Review velocity is your biggest gap against the pack leader (6/mo vs 14/mo).",
     evidence: ["Projected +6 reviews/mo at a 12% response rate on 50 patients/week"],
@@ -421,7 +448,7 @@ export const actions: Action[] = [
     evidence: ["Pack leaders list 20+ services"], steps: ["Generate services", "Update serviceItems", "Confirm the change is live"],
   },
   {
-    id: "a7", title: "Add “Austin, TX” to 5 service page titles", category: "On-page", impact: "Medium", effort: "Auto",
+    id: "a7", keywordIds: ["kw_3", "kw_4", "kw_5", "kw_7"], title: "Add “Austin, TX” to 5 service page titles", category: "On-page", impact: "Medium", effort: "Auto",
     executor: "WordPress", status: "suggested",
     rationale: "Titles on service pages lack the city modifier used in high-volume local queries.",
     evidence: ["5 pages flagged in site audit"],
@@ -429,13 +456,13 @@ export const actions: Action[] = [
     steps: ["Update Yoast/RankMath title via WP REST", "Purge cache", "Request indexing in Search Console"],
   },
   {
-    id: "a8", title: "Add Dentist schema to homepage", category: "On-page", impact: "High", effort: "Auto",
+    id: "a8", keywordIds: ["kw_1", "kw_2", "kw_9"], title: "Add Dentist schema to homepage", category: "On-page", impact: "High", effort: "Auto",
     executor: "WordPress", status: "running",
     rationale: "No LocalBusiness structured data was found.",
     evidence: ["Site audit: critical issue"], steps: ["Generate JSON-LD", "Inject via header snippet", "Validate with Rich Results Test", "Request indexing"],
   },
   {
-    id: "a9", title: "Fix 3 citations with an old suite number", category: "Citations", impact: "Low", effort: "Low",
+    id: "a9", keywordIds: ["kw_1"], title: "Fix 3 citations with an old suite number", category: "Citations", impact: "Low", effort: "Low",
     executor: "Citation network", status: "suggested",
     rationale: "Yellowpages, Superpages and Manta still list “Ste 200”.",
     evidence: ["Found in DataForSEO Business Data search"], steps: ["Submit corrections", "Monitor for 30 days"],
@@ -481,6 +508,21 @@ export const reviews = [
 
 export const gbpInsights = { calls: 184, callsPrev: 164, directions: 312, directionsPrev: 298, websiteClicks: 421, websiteClicksPrev: 447, views: 9840, viewsPrev: 8710 };
 
+/** Weekly totals for the last 8 weeks (last 4 = this period), shaped to match gbpInsights. */
+export const gbpWeekly = (() => {
+  const r = rng(77);
+  const spread = (prev: number, cur: number) => {
+    const weeks = [...Array(4)].map(() => prev / 4 * (0.9 + r() * 0.2)).concat([...Array(4)].map(() => cur / 4 * (0.9 + r() * 0.2)));
+    return weeks.map((v) => Math.round(v));
+  };
+  return {
+    calls: spread(gbpInsights.callsPrev, gbpInsights.calls),
+    directions: spread(gbpInsights.directionsPrev, gbpInsights.directions),
+    websiteClicks: spread(gbpInsights.websiteClicksPrev, gbpInsights.websiteClicks),
+    views: spread(gbpInsights.viewsPrev, gbpInsights.views),
+  };
+})();
+
 // ---------- Dashboard series ----------
 
 export const visibilitySeries = (() => {
@@ -512,3 +554,25 @@ export const reports = [
   { id: "rep2", name: "Weekly rankings digest", schedule: "Weekly, Mon 8:00", recipients: "team@mapleandmain.com", last: "Oct 27", format: "Email" },
   { id: "rep3", name: "Competitor movement alert", schedule: "On change", recipients: "Slack #marketing", last: "Oct 24", format: "Slack" },
 ];
+
+// ---------- Content: website articles & GBP posts ----------
+
+export type ContentStatus = "idea" | "draft" | "scheduled" | "published";
+export type ContentItem = { id: string; title: string; status: ContentStatus; keywordId: string; date: string; metric?: string; words?: number };
+
+export const blogPosts: ContentItem[] = [
+  { id: "b1", title: "What counts as a dental emergency? (and what to do tonight)", status: "idea", keywordId: "kw_3", date: "Suggested", words: 1400 },
+  { id: "b2", title: "Invisalign cost in Austin: a 2026 price guide", status: "draft", keywordId: "kw_5", date: "Edited 2d ago", words: 1120 },
+  { id: "b3", title: "How long does teeth whitening last?", status: "scheduled", keywordId: "kw_4", date: "Nov 4", words: 980 },
+  { id: "b4", title: "Dental cleaning without insurance: what it costs in Austin", status: "published", keywordId: "kw_16", date: "Oct 12", metric: "412 clicks" },
+  { id: "b5", title: "Implants vs. bridges: which is right for you?", status: "published", keywordId: "kw_7", date: "Sep 30", metric: "188 clicks" },
+];
+
+export const gbpPosts: ContentItem[] = [
+  { id: "p1", title: "Same-day emergency appointments on South Congress", status: "draft", keywordId: "kw_3", date: "Ready to publish" },
+  { id: "p2", title: "Free Invisalign consult this November", status: "scheduled", keywordId: "kw_5", date: "Mon Nov 9" },
+  { id: "p3", title: "Meet Dr. Patel", status: "scheduled", keywordId: "kw_1", date: "Mon Nov 16" },
+  { id: "p4", title: "Whitening before the holidays", status: "published", keywordId: "kw_4", date: "Oct 21", metric: "640 views" },
+];
+
+export const auditKeywordLinks: Record<string, string[]> = { i1: ["kw_1", "kw_9"], i2: ["kw_3", "kw_4", "kw_5", "kw_7"], i4: ["kw_1"], i5: ["kw_3", "kw_6"], i6: ["kw_1"], i8: ["kw_1", "kw_9"] };

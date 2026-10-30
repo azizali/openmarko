@@ -28,6 +28,16 @@ export const endpoints = {
   businessReviews: `${DFS}/business_data/google/reviews/task_post`,
   businessListings: `${DFS}/business_data/business_listings/search/live`,
   backlinksSummary: `${DFS}/backlinks/summary/live`,
+  // Prospecting (see prospectSources in data/prospects.ts)
+  businessCategories: `${DFS}/business_data/business_listings/categories`,
+  contentParsing: `${DFS}/on_page/content_parsing/live`, // emails, phones, socials on the site
+  instantPages: `${DFS}/on_page/instant_pages`,
+  domainTechnologies: `${DFS}/domain_analytics/technologies/domain_technologies/live`,
+  whois: `${DFS}/domain_analytics/whois/overview/live`,
+  domainRankOverview: `${DFS}/dataforseo_labs/google/domain_rank_overview/live`,
+  adsAdvertisers: `${DFS}/serp/google/ads_advertisers/task_post`,
+  // Partner lookups (not DataForSEO)
+  twilioLookup: "https://lookups.twilio.com/v2/PhoneNumbers/{phone}?Fields=line_type_intelligence",
   // Google (OAuth)
   gscQuery: "https://searchconsole.googleapis.com/webmasters/v3/sites/{site}/searchAnalytics/query",
   ga4Report: "https://analyticsdata.googleapis.com/v1beta/properties/{property}:runReport",

@@ -62,7 +62,7 @@ export default function CompetitorDetail() {
               {c.posts30d > you.posts30d && <li>They posted <b className="font-medium">{c.posts30d}</b> GBP updates in 30 days. You posted {you.posts30d}.</li>}
               {c.photos > you.photos && <li>They have <b className="font-medium">{c.photos - you.photos}</b> more photos.</li>}
             </ul>
-            <Link to="/actions/a1"><Button variant="primary" className="mt-5 w-full" icon={<Wand2 size={14} />}>Close the category gap</Button></Link>
+            <Link to="/todo?task=a1"><Button variant="primary" className="mt-5 w-full" icon={<Wand2 size={14} />}>Close the category gap</Button></Link>
           </Card>
           <Card>
             <CardHeader title="Their categories" />

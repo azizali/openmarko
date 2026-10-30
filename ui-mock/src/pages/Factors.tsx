@@ -59,7 +59,7 @@ export default function Factors() {
                         <div className="text-[13px] text-muted">{f.detail}</div>
                       </div>
                       {f.actionId && (
-                        <Link to={`/actions/${f.actionId}`} className="inline-flex shrink-0 items-center gap-1 text-[13px] text-accent hover:underline">Fix <ArrowRight size={13} /></Link>
+                        <Link to={`/todo?task=${f.actionId}`} className="inline-flex shrink-0 items-center gap-1 text-[13px] text-accent hover:underline">Fix <ArrowRight size={13} /></Link>
                       )}
                     </li>
                   ))}

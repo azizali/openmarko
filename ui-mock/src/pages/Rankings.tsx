@@ -1,137 +1,125 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router";
-import { Download, Plus, Search, ArrowUpDown } from "lucide-react";
-import { Badge, Button, Card, PageHeader, RankDelta, Segmented, Sparkline, Tabs, cn, fmt, rankTone } from "../components/ui";
-import { keywords, type Keyword } from "../data/mock";
+import { Link, useParams, useSearchParams } from "react-router";
+import { Download, Plus, Search, X } from "lucide-react";
+import { Button, PageHeader, Segmented, Tabs, cn, useToast } from "../components/ui";
+import { KeywordTable, scanFor, type RankView } from "../components/KeywordTable";
+import { TaskDrawer } from "../components/Todo";
+import { gridStats, keywords, type Keyword } from "../data/mock";
+import { openTasksFor, useRunState, type Task } from "../lib/tasks";
 
-type Filter = "all" | "improved" | "declined" | "top3" | "pack";
-type SortKey = "term" | "organic" | "local" | "volume" | "change";
+type Filter = "all" | "improved" | "declined" | "top3";
+const tags = [...new Set(keywords.flatMap((k) => k.tags))];
+const avg = (xs: (number | null)[]) => { const v = xs.filter((x): x is number => x !== null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0; };
 
 export default function Rankings() {
+  const { id } = useParams();
+  const [params, setParams] = useSearchParams();
+  const state = useRunState();
+  const [view, setView] = useState<RankView>(params.get("view") === "local" ? "local" : params.get("view") === "organic" ? "organic" : "both");
   const [filter, setFilter] = useState<Filter>("all");
   const [q, setQ] = useState("");
-  const [mode, setMode] = useState<"both" | "organic" | "local">("both");
-  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "volume", dir: -1 });
-  const navigate = useNavigate();
+  const [tag, setTag] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(id ?? params.get("kw"));
+  const [task, setTask] = useState<Task | null>(null);
+  const { toast, node } = useToast();
 
-  const counts = {
-    all: keywords.length,
-    improved: keywords.filter((k) => k.organicPrev! > k.organic!).length,
-    declined: keywords.filter((k) => k.organicPrev! < k.organic!).length,
-    top3: keywords.filter((k) => (k.organic ?? 99) <= 3).length,
-    pack: keywords.filter((k) => (k.local ?? 99) <= 3).length,
+  // "Improved / declined / top 3" follow the chosen view: map pack when viewing map pack, otherwise organic.
+  const pos = (k: Keyword) => (view === "local" ? k.local : k.organic);
+  const prev = (k: Keyword) => (view === "local" ? k.localPrev : k.organicPrev);
+  const base = keywords.filter((k) => (!q || k.term.includes(q.toLowerCase())) && (!tag || k.tags.includes(tag)) && (view !== "local" || k.local !== null));
+  const match = (k: Keyword, f: Filter) => {
+    const c = pos(k), p = prev(k);
+    if (f === "improved") return c !== null && p !== null && p > c;
+    if (f === "declined") return c !== null && p !== null && p < c;
+    if (f === "top3") return (c ?? 99) <= 3;
+    return true;
   };
+  const rows = base.filter((k) => match(k, filter));
+  const count = (f: Filter) => base.filter((k) => match(k, f)).length;
 
-  const rows = useMemo(() => {
-    const f = keywords.filter((k) => {
-      if (q && !k.term.includes(q.toLowerCase())) return false;
-      if (filter === "improved") return k.organicPrev! > k.organic!;
-      if (filter === "declined") return k.organicPrev! < k.organic!;
-      if (filter === "top3") return (k.organic ?? 99) <= 3;
-      if (filter === "pack") return (k.local ?? 99) <= 3;
-      return true;
-    });
-    const val = (k: Keyword): number | string => {
-      if (sort.key === "term") return k.term;
-      if (sort.key === "change") return (k.organicPrev ?? 0) - (k.organic ?? 0);
-      return (k[sort.key] as number | null) ?? 999;
-    };
-    return [...f].sort((a, b) => (val(a) > val(b) ? 1 : -1) * sort.dir);
-  }, [filter, q, sort]);
-
-  const Th = ({ k, children, className }: { k: SortKey; children: React.ReactNode; className?: string }) => (
-    <th className={cn("px-3 py-2.5 font-normal", className)}>
-      <button onClick={() => setSort({ key: k, dir: sort.key === k ? (-sort.dir as 1 | -1) : k === "term" ? 1 : -1 })} className="inline-flex items-center gap-1 hover:text-fg">
-        {children}
-        <ArrowUpDown size={11} className={sort.key === k ? "text-fg" : "opacity-40"} />
-      </button>
-    </th>
+  const solv = useMemo(() => avg(base.filter((k) => k.local).map((k) => gridStats(scanFor(k, 7)).solv)), [base.length, tag, q, view]);
+  const stats = [
+    ...(view !== "local" ? [
+      { label: "Avg. Google position", value: avg(base.map((k) => k.organic)).toFixed(1), was: avg(base.map((k) => k.organicPrev)).toFixed(1) },
+      { label: "On page 1", value: String(base.filter((k) => (k.organic ?? 99) <= 10).length), was: `of ${base.length}` },
+    ] : []),
+    ...(view !== "organic" ? [
+      { label: "Avg. map pack position", value: avg(base.map((k) => k.local)).toFixed(1), was: avg(base.map((k) => k.localPrev)).toFixed(1) },
+      { label: "Share of local voice", value: `${solv.toFixed(0)}%`, was: "top 3 across the grid" },
+    ] : []),
+  ];
+  if (view !== "both") stats.push(
+    { label: view === "local" ? "In the map pack" : "Top 3 on Google", value: String(count("top3")), was: `of ${base.length}` },
+    { label: "Keywords with to-dos", value: String(base.filter((k) => openTasksFor(state, k.id).length).length), was: "open improvements" },
   );
 
-  const avg = (xs: (number | null)[]) => { const v = xs.filter((x): x is number => x !== null); return v.reduce((a, b) => a + b, 0) / v.length; };
+  const toggle = (kid: string) => {
+    const next = expanded === kid ? null : kid;
+    setExpanded(next);
+    const p = new URLSearchParams(params);
+    next ? p.set("kw", next) : p.delete("kw");
+    setParams(p, { replace: true });
+  };
+  const changeView = (v: RankView) => {
+    setView(v);
+    const p = new URLSearchParams(params);
+    v === "both" ? p.delete("view") : p.set("view", v);
+    setParams(p, { replace: true });
+  };
 
   return (
     <>
       <PageHeader
         title="Rankings"
-        sub="Organic and map pack positions from the business location, refreshed daily via DataForSEO."
-        actions={<><Button icon={<Download size={14} />}>Export</Button><Link to="/keywords"><Button variant="primary" icon={<Plus size={14} />}>Add keywords</Button></Link></>}
+        sub="Where you show up on Google and in the map pack for every keyword. Open a keyword for its map grid, history and competitors."
+        actions={<>
+          <Button icon={<Download size={14} />} onClick={() => toast("CSV exported")}>Export</Button>
+          <Link to="/keywords"><Button variant="primary" icon={<Plus size={14} />}>Add keywords</Button></Link>
+        </>}
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          ["Avg. organic", avg(keywords.map((k) => k.organic)).toFixed(1), avg(keywords.map((k) => k.organicPrev)).toFixed(1)],
-          ["Avg. map pack", avg(keywords.map((k) => k.local)).toFixed(1), avg(keywords.map((k) => k.localPrev)).toFixed(1)],
-          ["In top 3 organic", String(counts.top3), "3"],
-          ["In map pack", String(counts.pack), "5"],
-        ].map(([l, v, p]) => (
-          <Card key={l} className="!p-4">
-            <div className="text-[12.5px] text-muted">{l}</div>
-            <div className="num mt-1 font-serif text-[26px] leading-none">{v}</div>
-            <div className="num mt-1.5 text-[12px] text-subtle">was {p} last week</div>
-          </Card>
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <Segmented label="Results" value={view} onChange={changeView} options={[{ id: "both", label: "All results" }, { id: "organic", label: "Organic" }, { id: "local", label: "Map pack" }]} />
+        <span className="text-[12.5px] text-muted">
+          {view === "both" ? "Google results and the map pack side by side" : view === "organic" ? "The regular blue-link results" : "The 3 businesses shown on the map"}
+        </span>
+      </div>
+
+      <div className="mb-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line lg:grid-cols-4">
+        {stats.map((s) => (
+          <div key={s.label} className="bg-surface p-5">
+            <div className="text-[12.5px] text-muted">{s.label}</div>
+            <div className="num mt-1 font-serif text-[28px] leading-none">{s.value}</div>
+            <div className="num mt-1.5 text-[12px] text-subtle">{/^\d/.test(s.was) ? `was ${s.was} last week` : s.was}</div>
+          </div>
         ))}
       </div>
 
-      <Tabs
-        value={filter}
-        onChange={setFilter}
-        tabs={[
-          { id: "all", label: "All", count: counts.all },
-          { id: "improved", label: "Improved", count: counts.improved },
-          { id: "declined", label: "Declined", count: counts.declined },
-          { id: "top3", label: "Top 3", count: counts.top3 },
-          { id: "pack", label: "In map pack", count: counts.pack },
-        ]}
-      />
+      <Tabs value={filter} onChange={setFilter} tabs={[
+        { id: "all", label: "All", count: count("all") },
+        { id: "improved", label: "Improved", count: count("improved") },
+        { id: "declined", label: "Declined", count: count("declined") },
+        { id: "top3", label: view === "local" ? "In map pack" : "Top 3", count: count("top3") },
+      ]} />
 
       <div className="my-4 flex flex-wrap items-center gap-2">
         <div className="flex h-8 items-center gap-2 rounded-md border border-line bg-surface px-2.5">
           <Search size={14} className="text-subtle" />
-          <input aria-label="Filter keywords" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter keywords" className="w-44 bg-transparent text-[13px] outline-none" />
+          <input aria-label="Filter keywords" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find a keyword" className="w-40 bg-transparent text-[13px] outline-none" />
+          {q && <button onClick={() => setQ("")} aria-label="Clear search" className="text-subtle hover:text-fg"><X size={13} /></button>}
         </div>
-        <Segmented label="Columns" value={mode} onChange={setMode} options={[{ id: "both", label: "Both" }, { id: "organic", label: "Organic" }, { id: "local", label: "Map pack" }]} />
-        <span className="ml-auto text-[12.5px] text-subtle">Compared with Oct 22 · Desktop · Austin, TX</span>
+        <span className="mx-1 hidden h-5 w-px bg-line sm:block" />
+        <button onClick={() => setTag(null)} className={cn("h-7 rounded-full border px-2.5 text-[12.5px] transition-colors", !tag ? "border-ink bg-ink text-on-ink" : "border-line text-muted hover:bg-hover")}>All topics</button>
+        {tags.map((t) => (
+          <button key={t} onClick={() => setTag(tag === t ? null : t)} className={cn("h-7 rounded-full border px-2.5 text-[12.5px] capitalize transition-colors", tag === t ? "border-ink bg-ink text-on-ink" : "border-line text-muted hover:bg-hover")}>{t}</button>
+        ))}
+        <span className="ml-auto text-[12.5px] text-subtle">Changes vs. Oct 22 · Austin, TX</span>
       </div>
 
-      <Card pad={false} className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-[13.5px]">
-          <thead className="border-b border-line text-left text-[12.5px] text-muted">
-            <tr>
-              <Th k="term" className="pl-5">Keyword</Th>
-              {mode !== "local" && <Th k="organic" className="text-right">Organic</Th>}
-              {mode !== "local" && <Th k="change">Δ 7d</Th>}
-              {mode !== "organic" && <Th k="local" className="text-right">Map pack</Th>}
-              {mode !== "organic" && <th className="px-3 py-2.5 font-normal">Δ 7d</th>}
-              <th className="px-3 py-2.5 font-normal">90 days</th>
-              <Th k="volume" className="text-right">Volume</Th>
-              <th className="px-3 py-2.5 pr-5 font-normal">URL</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((k) => (
-              <tr key={k.id} onClick={() => navigate(`/rankings/${k.id}`)} className="cursor-pointer border-b border-line last:border-0 hover:bg-hover">
-                <td className="px-3 py-2.5 pl-5">
-                  <Link to={`/rankings/${k.id}`} onClick={(e) => e.stopPropagation()} className="font-medium hover:underline">{k.term}</Link>
-                  <div className="mt-0.5 flex gap-1">{k.tags.map((t) => <span key={t} className="text-[11.5px] text-subtle">#{t}</span>)}</div>
-                </td>
-                {mode !== "local" && <td className="num px-3 py-2.5 text-right">{k.organic ?? "—"}</td>}
-                {mode !== "local" && <td className="px-3 py-2.5"><RankDelta cur={k.organic} prev={k.organicPrev} /></td>}
-                {mode !== "organic" && (
-                  <td className="px-3 py-2.5 text-right">
-                    {k.local ? <Badge tone={rankTone(k.local)} className="num">#{k.local}</Badge> : <span className="text-subtle">—</span>}
-                  </td>
-                )}
-                {mode !== "organic" && <td className="px-3 py-2.5"><RankDelta cur={k.local} prev={k.localPrev} /></td>}
-                <td className="px-3 py-2.5"><Sparkline data={k.history.map((h) => (mode === "local" ? h.local : h.organic))} invert /></td>
-                <td className="num px-3 py-2.5 text-right text-muted">{fmt(k.volume)}</td>
-                <td className="max-w-40 truncate px-3 py-2.5 pr-5 text-muted">{k.url}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!rows.length && <div className="py-12 text-center text-[13px] text-muted">No keywords match.</div>}
-      </Card>
+      <KeywordTable rows={rows} expanded={expanded} onToggle={toggle} view={view} onOpenTask={(kid) => setTask(openTasksFor(state, kid)[0] ?? null)} />
+
+      <TaskDrawer task={task} onClose={() => setTask(null)} />
+      {node}
     </>
   );
 }

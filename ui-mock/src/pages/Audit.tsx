@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { RefreshCw, Wand2, ChevronRight, Loader2 } from "lucide-react";
-import { Badge, Button, Card, CardHeader, Delta, PageHeader, ScoreRing, Tabs, cn } from "../components/ui";
+import { Wand2, ChevronRight } from "lucide-react";
+import { Badge, Card, CardHeader, Delta, PageHeader, ScoreRing, Tabs, cn } from "../components/ui";
 import { auditIssues, auditSummary, type Severity } from "../data/mock";
 
 const sevTone = { critical: "bad", warning: "warn", notice: "info" } as const;
@@ -10,7 +10,6 @@ const cats = ["All", "Technical", "On-page", "Local", "Performance", "Content"] 
 export default function Audit() {
   const [sev, setSev] = useState<"all" | Severity>("all");
   const [cat, setCat] = useState<(typeof cats)[number]>("All");
-  const [crawling, setCrawling] = useState(false);
   const list = auditIssues.filter((i) => (sev === "all" || i.severity === sev) && (cat === "All" || i.category === cat));
   const count = (s: Severity) => auditIssues.filter((i) => i.severity === s).length;
 
@@ -25,7 +24,6 @@ export default function Audit() {
       <PageHeader
         title="Site audit"
         sub={`mapleandmaindental.com · ${auditSummary.pages} pages · crawled ${auditSummary.crawled} in ${auditSummary.duration}`}
-        actions={<Button variant="primary" icon={crawling ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} disabled={crawling} onClick={() => { setCrawling(true); setTimeout(() => setCrawling(false), 1800); }}>{crawling ? "Crawling…" : "Re-crawl"}</Button>}
       />
 
       <div className="mb-6 grid gap-6 lg:grid-cols-[1fr_1fr]">

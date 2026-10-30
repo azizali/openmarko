@@ -103,7 +103,7 @@ export default function AuditIssue() {
               </>
             )}
           </Card>
-          <Link to="/actions" className="mt-3 block text-center text-[12.5px] text-muted hover:text-fg">See all improvements in Action plan →</Link>
+          <Link to="/todo" className="mt-3 block text-center text-[12.5px] text-muted hover:text-fg">See everything in To-do →</Link>
         </div>
       </div>
       {node}

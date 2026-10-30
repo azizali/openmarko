@@ -188,8 +188,8 @@ export function Checkbox({ checked, onChange, label }: { checked: boolean; onCha
   );
 }
 
-export function Progress({ value, tone = "ink", className }: { value: number; tone?: "ink" | "good" | "warn" | "bad" | "accent"; className?: string }) {
-  const c = { ink: "bg-ink", good: "bg-good", warn: "bg-warn", bad: "bg-bad", accent: "bg-accent" }[tone];
+export function Progress({ value, tone = "ink", className }: { value: number; tone?: "ink" | "good" | "warn" | "bad" | "accent" | "info"; className?: string }) {
+  const c = { ink: "bg-ink", good: "bg-good", warn: "bg-warn", bad: "bg-bad", accent: "bg-accent", info: "bg-info" }[tone];
   return (
     <div className={cn("h-1.5 overflow-hidden rounded-full bg-hover", className)} role="progressbar" aria-valuenow={Math.round(value)} aria-valuemin={0} aria-valuemax={100}>
       <div className={cn("h-full rounded-full transition-[width] duration-500", c)} style={{ width: `${Math.min(100, value)}%` }} />
@@ -247,13 +247,14 @@ export function Modal({ open, onClose, title, children, footer, width = 480 }: {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-4">
       <div className="absolute inset-0 bg-black/25 anim-fade" onClick={onClose} />
-      <div role="dialog" aria-modal="true" className="anim-fade relative w-full rounded-xl border border-line bg-surface shadow-2xl" style={{ maxWidth: width }}>
-        <div className="flex items-center justify-between px-6 pt-5">
+      {/* Capped to the viewport: header and footer stay put, the body scrolls. */}
+      <div role="dialog" aria-modal="true" className="anim-fade relative flex max-h-[calc(100dvh-2rem)] w-full flex-col rounded-xl border border-line bg-surface shadow-2xl" style={{ maxWidth: width }}>
+        <div className="flex shrink-0 items-center justify-between px-6 pt-5 pb-1">
           <h2 className="font-serif text-[22px]">{title}</h2>
           <button onClick={onClose} aria-label="Close" className="rounded p-1 text-muted hover:bg-hover"><X size={16} /></button>
         </div>
-        <div className="px-6 py-4">{children}</div>
-        {footer && <div className="flex justify-end gap-2 border-t border-line px-6 py-3">{footer}</div>}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-4">{children}</div>
+        {footer && <div className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-line px-6 py-3">{footer}</div>}
       </div>
     </div>
   );

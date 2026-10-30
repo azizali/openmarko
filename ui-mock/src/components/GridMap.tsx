@@ -55,3 +55,15 @@ export function GridLegend() {
     </div>
   );
 }
+
+const dotFill = (r: number | null) => (r === null ? "var(--border-strong)" : r <= 3 ? "var(--good)" : r <= 10 ? "var(--warn)" : "var(--bad)");
+
+/** Thumbnail of a geo-grid so a table row shows its map pack at a glance. */
+export function GridThumb({ scan, gap = 7 }: { scan: GridScan; gap?: number }) {
+  const n = scan.size, pad = 4, size = pad * 2 + gap * (n - 1);
+  return (
+    <svg width={size} height={size} className="shrink-0 rounded bg-hover" role="img" aria-label={`Map pack grid: top 3 at ${scan.points.filter((p) => (p.rank ?? 99) <= 3).length} of ${n * n} points`}>
+      {scan.points.map((p) => <circle key={`${p.row}-${p.col}`} cx={pad + p.col * gap} cy={pad + p.row * gap} r={gap / 3} fill={dotFill(p.rank)} />)}
+    </svg>
+  );
+}
