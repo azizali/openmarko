@@ -23,7 +23,7 @@ export default function CommandCenter() {
   return (
     <>
       <div className="mb-6">
-        <h1 className="font-serif text-[32px] leading-tight tracking-[-0.01em]">Command Center</h1>
+        <h1 className="font-serif text-[40px] leading-[1.1] tracking-[-0.02em]">Command <span className="ink-sheen">Center</span></h1>
         <p className="mt-1.5 max-w-2xl text-[14px] text-muted">Everything about how Maple & Main Dental shows up on Google, on one page.</p>
       </div>
 

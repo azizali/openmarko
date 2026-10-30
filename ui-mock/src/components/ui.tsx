@@ -17,11 +17,11 @@ export function Button({ variant = "secondary", size = "md", icon, className, ch
     <button
       {...rest}
       className={cn(
-        "inline-flex items-center justify-center gap-1.5 rounded-md font-medium whitespace-nowrap transition-colors duration-150 disabled:opacity-50",
-        size === "sm" ? "h-7 px-2.5 text-[13px]" : "h-9 px-3.5 text-[13.5px]",
-        variant === "primary" && "bg-ink text-on-ink hover:opacity-90",
+        "inline-flex items-center justify-center gap-1.5 rounded-lg font-medium whitespace-nowrap transition-colors duration-150 disabled:opacity-50",
+        size === "sm" ? "h-7 rounded-md px-2.5 text-[13px]" : "h-9 px-3.5 text-[13.5px]",
+        variant === "primary" && "bg-ink text-on-ink shadow-card hover:opacity-85",
         variant === "accent" && "bg-accent text-white hover:opacity-90",
-        variant === "secondary" && "border border-line bg-surface text-fg hover:bg-hover",
+        variant === "secondary" && "border border-line bg-surface text-fg shadow-card hover:border-line-strong hover:bg-hover",
         variant === "ghost" && "text-muted hover:bg-hover hover:text-fg",
         variant === "danger" && "border border-line bg-surface text-bad hover:bg-bad-soft",
         className,
@@ -34,7 +34,7 @@ export function Button({ variant = "secondary", size = "md", icon, className, ch
 }
 
 export function Card({ className, children, pad = true }: { className?: string; children: ReactNode; pad?: boolean }) {
-  return <div className={cn("rounded-xl border border-line bg-surface", pad && "p-5", className)}>{children}</div>;
+  return <div className={cn("rounded-xl border border-line bg-surface shadow-card", pad && "p-5", className)}>{children}</div>;
 }
 
 export function CardHeader({ title, sub, right }: { title: ReactNode; sub?: ReactNode; right?: ReactNode }) {
@@ -60,7 +60,7 @@ const toneCls: Record<Tone, string> = {
 };
 
 export function Badge({ tone = "neutral", children, className }: { tone?: Tone; children: ReactNode; className?: string }) {
-  return <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[12px] font-medium leading-4", toneCls[tone], className)}>{children}</span>;
+  return <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-medium leading-4", toneCls[tone], className)}>{children}</span>;
 }
 
 export function Dot({ tone }: { tone: Tone }) {
@@ -113,7 +113,7 @@ export function PageHeader({ title, sub, actions, crumbs }: { title: ReactNode; 
       {crumbs && <div className="mb-3 text-[13px] text-muted">{crumbs}</div>}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="font-serif text-[32px] leading-tight tracking-[-0.01em]">{title}</h1>
+          <h1 className="font-serif text-[34px] leading-[1.1] tracking-[-0.02em]">{title}</h1>
           {sub && <p className="mt-1.5 max-w-2xl text-[14px] text-muted">{sub}</p>}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
@@ -137,7 +137,7 @@ export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { id: 
           )}
         >
           {t.label}
-          {t.count !== undefined && <span className="num rounded bg-hover px-1.5 text-[11.5px] text-muted">{t.count}</span>}
+          {t.count !== undefined && <span className="num rounded-full bg-hover px-1.5 text-[11.5px] text-muted">{t.count}</span>}
         </button>
       ))}
     </div>
@@ -146,14 +146,14 @@ export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { id: 
 
 export function Segmented<T extends string>({ options, value, onChange, label }: { options: { id: T; label: ReactNode }[]; value: T; onChange: (v: T) => void; label?: string }) {
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex rounded-md border border-line bg-surface p-0.5">
+    <div role="radiogroup" aria-label={label} className="inline-flex rounded-lg bg-hover p-0.5">
       {options.map((o) => (
         <button
           key={o.id}
           role="radio"
           aria-checked={value === o.id}
           onClick={() => onChange(o.id)}
-          className={cn("h-7 rounded px-2.5 text-[13px] transition-colors", value === o.id ? "bg-active text-fg" : "text-muted hover:text-fg")}
+          className={cn("h-7 rounded-md px-2.5 text-[13px] transition-colors", value === o.id ? "bg-surface font-medium text-fg shadow-sm" : "text-muted hover:text-fg")}
         >
           {o.label}
         </button>
@@ -229,7 +229,7 @@ export function Drawer({ open, onClose, title, children, footer, width = 520 }: 
   return (
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/20 anim-fade" onClick={onClose} />
-      <aside role="dialog" aria-modal="true" className="anim-slide absolute top-0 right-0 flex h-full max-w-full flex-col border-l border-line bg-surface shadow-xl" style={{ width }}>
+      <aside role="dialog" aria-modal="true" className="anim-slide absolute top-0 right-0 flex h-full max-w-full flex-col border-l border-line bg-surface shadow-float" style={{ width }}>
         <div className="flex items-center justify-between gap-4 border-b border-line px-6 py-4">
           <div className="min-w-0 text-[15px] font-medium">{title}</div>
           <button onClick={onClose} aria-label="Close" className="rounded p-1 text-muted hover:bg-hover"><X size={16} /></button>
@@ -248,7 +248,7 @@ export function Modal({ open, onClose, title, children, footer, width = 480 }: {
     <div className="fixed inset-0 z-50 grid place-items-center p-4">
       <div className="absolute inset-0 bg-black/25 anim-fade" onClick={onClose} />
       {/* Capped to the viewport: header and footer stay put, the body scrolls. */}
-      <div role="dialog" aria-modal="true" className="anim-fade relative flex max-h-[calc(100dvh-2rem)] w-full flex-col rounded-xl border border-line bg-surface shadow-2xl" style={{ maxWidth: width }}>
+      <div role="dialog" aria-modal="true" className="anim-fade relative flex max-h-[calc(100dvh-2rem)] w-full flex-col rounded-xl border border-line bg-surface shadow-float" style={{ maxWidth: width }}>
         <div className="flex shrink-0 items-center justify-between px-6 pt-5 pb-1">
           <h2 className="font-serif text-[22px]">{title}</h2>
           <button onClick={onClose} aria-label="Close" className="rounded p-1 text-muted hover:bg-hover"><X size={16} /></button>
@@ -268,7 +268,7 @@ export function useToast() {
     return () => clearTimeout(t);
   }, [msg]);
   const node = msg ? (
-    <div role="status" className="anim-fade fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-lg bg-ink px-4 py-2.5 text-[13.5px] text-on-ink shadow-lg">{msg}</div>
+    <div role="status" className="anim-fade fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-full bg-ink px-4 py-2.5 text-[13.5px] text-on-ink shadow-float">{msg}</div>
   ) : null;
   return { toast: setMsg, node };
 }

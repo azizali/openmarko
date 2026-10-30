@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import {
   LayoutGrid, ListChecks, TrendingUp, Users, Gauge, ScanSearch, Lightbulb, Store, FileText, History,
-  Settings, Search, ChevronsUpDown, ChevronDown, ArrowLeft, Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target,
+  Settings, Search, ChevronsUpDown, ChevronDown, ArrowLeft, Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Palette,
 } from "lucide-react";
 import { cn } from "./ui";
 import { keywords, locations } from "../data/mock";
@@ -39,6 +39,57 @@ function useTheme() {
   return [dark, setDark] as const;
 }
 
+// Swatch colors mirror each flavor's light-mode sidebar/ink and accent in index.css.
+const flavors = [
+  { id: "origami", label: "Origami", a: "#09090b", b: "#fe7bcd" },
+  { id: "ultraviolet", label: "Ultraviolet", a: "#17133a", b: "#a78bfa" },
+  { id: "marigold", label: "Marigold", a: "#faefdc", b: "#ea580c" },
+  { id: "lagoon", label: "Lagoon", a: "#0c2a27", b: "#2dd4bf" },
+  { id: "blueprint", label: "Blueprint", a: "#2140d9", b: "#d93a2b" },
+] as const;
+type Flavor = (typeof flavors)[number]["id"];
+
+function useFlavor() {
+  const [flavor, setFlavor] = useState<Flavor>(() => {
+    try {
+      const s = localStorage.getItem("gw-flavor");
+      if (flavors.some((f) => f.id === s)) return s as Flavor;
+    } catch {}
+    return "origami";
+  });
+  useEffect(() => {
+    const root = document.documentElement;
+    if (flavor === "origami") delete root.dataset.flavor;
+    else root.dataset.flavor = flavor;
+    try { localStorage.setItem("gw-flavor", flavor); } catch {}
+  }, [flavor]);
+  return [flavor, setFlavor] as const;
+}
+
+function FlavorPicker({ value, onChange }: { value: Flavor; onChange: (f: Flavor) => void }) {
+  return (
+    <div className="flex h-8 items-center gap-2.5 px-2 text-[13.5px] text-muted">
+      <Palette size={16} strokeWidth={1.75} className="shrink-0" />
+      <span className="flex-1">Theme</span>
+      <div role="radiogroup" aria-label="Color theme" className="flex shrink-0 items-center gap-0.5">
+        {flavors.map((f) => (
+          <button
+            key={f.id}
+            role="radio"
+            aria-checked={value === f.id}
+            aria-label={f.label}
+            title={f.label}
+            onClick={() => onChange(f.id)}
+            className={cn("grid size-5 place-items-center rounded-full transition-shadow", value === f.id ? "ring-2 ring-line-strong" : "hover:ring-2 hover:ring-line")}
+          >
+            <span className="size-3.5 rounded-full ring-1 ring-black/10" style={{ background: `linear-gradient(135deg, ${f.a} 50%, ${f.b} 50%)` }} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function NavItem({ to, label, icon: Icon, badge, onClick }: { to: string; label: string; icon: typeof LayoutGrid; badge?: number; onClick?: () => void }) {
   return (
     <NavLink
@@ -51,7 +102,7 @@ function NavItem({ to, label, icon: Icon, badge, onClick }: { to: string; label:
     >
       <Icon size={16} strokeWidth={1.75} />
       <span className="flex-1 truncate">{label}</span>
-      {badge ? <span className="num rounded bg-accent-soft px-1.5 text-[11.5px] font-medium text-accent">{badge}</span> : null}
+      {badge ? <span className="num min-w-5 rounded-full bg-active px-1.5 text-center text-[11px] font-medium text-muted">{badge}</span> : null}
     </NavLink>
   );
 }
@@ -63,7 +114,7 @@ function LocationSwitcher() {
   return (
     <div className="relative">
       <button onClick={() => setOpen(!open)} className="flex w-full items-center gap-2.5 rounded-md p-1.5 text-left hover:bg-hover" aria-expanded={open}>
-        <span className="grid size-7 shrink-0 place-items-center rounded-md bg-accent font-serif text-[15px] text-white">M</span>
+        <span className="grid size-7 shrink-0 place-items-center rounded-md bg-ink text-[13px] font-semibold text-on-ink">M</span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[13.5px] font-medium">{loc.name}</span>
           <span className="block truncate text-[12px] text-muted">{loc.city}</span>
@@ -71,7 +122,7 @@ function LocationSwitcher() {
         <ChevronsUpDown size={14} className="text-subtle" />
       </button>
       {open && (
-        <div className="anim-fade absolute top-full right-0 left-0 z-30 mt-1 rounded-lg border border-line bg-surface p-1 shadow-lg">
+        <div className="anim-fade absolute top-full right-0 left-0 z-30 mt-1 rounded-lg border border-line bg-surface p-1 shadow-float">
           {locations.map((l) => (
             <button key={l.id} onClick={() => { setCur(l.id); setOpen(false); }} className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[13px] hover:bg-hover">
               <span className="flex-1 truncate">{l.name}</span>
@@ -103,7 +154,7 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
   return (
     <div className="fixed inset-0 z-50 flex justify-center px-4 pt-[14vh]">
       <div className="absolute inset-0 bg-black/20" onClick={onClose} />
-      <div className="anim-fade relative h-fit w-full max-w-lg overflow-hidden rounded-xl border border-line bg-surface shadow-2xl" role="dialog" aria-label="Command menu">
+      <div className="anim-fade relative h-fit w-full max-w-lg overflow-hidden rounded-xl border border-line bg-surface shadow-float" role="dialog" aria-label="Command menu">
         <div className="flex items-center gap-2.5 border-b border-line px-4">
           <Search size={16} className="text-subtle" />
           <input
@@ -140,6 +191,7 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
 
 export default function Layout() {
   const [dark, setDark] = useTheme();
+  const [flavor, setFlavor] = useFlavor();
   const [cmd, setCmd] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const [deepOpen, setDeepOpen] = useState(true);
@@ -162,25 +214,26 @@ export default function Layout() {
       <button onClick={() => setCmd(true)} className="mt-1 mb-2 flex h-8 items-center gap-2.5 rounded-md px-2 text-[13.5px] text-muted hover:bg-hover">
         <Search size={16} strokeWidth={1.75} />
         <span className="flex-1 text-left">Search</span>
-        <kbd className="rounded border border-line px-1 text-[11px] text-subtle">⌘K</kbd>
+        <kbd className="rounded border border-line bg-surface px-1 font-sans text-[11px] text-subtle">⌘K</kbd>
       </button>
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto" aria-label="Main">
         <NavItem {...home} />
         <div className="ml-[17px] border-l border-line pl-2"><NavItem {...todo} badge={openTasksFor(runState).length} /></div>
-        <div className="mt-4 mb-1 px-2 text-[11.5px] font-medium text-subtle">Sales</div>
+        <div className="mt-5 mb-1 px-2 text-[11px] font-medium tracking-[0.06em] text-subtle uppercase">Sales</div>
         {sales.map((it) => <NavItem key={it.to} {...it} />)}
-        <button onClick={() => setDeepOpen(!deepOpen)} aria-expanded={deepOpen} className="mt-4 mb-1 flex items-center gap-1 px-2 text-left text-[11.5px] font-medium text-subtle hover:text-muted">
+        <button onClick={() => setDeepOpen(!deepOpen)} aria-expanded={deepOpen} className="mt-5 mb-1 flex items-center gap-1 px-2 text-left text-[11px] font-medium tracking-[0.06em] text-subtle uppercase hover:text-muted">
           Deep dives <ChevronDown size={12} className={cn("transition-transform", !deepOpen && "-rotate-90")} />
         </button>
         {deepOpen && deepDives.map((it) => <NavItem key={it.to} {...it} />)}
       </nav>
-      <NavLink to="/onboarding" className="mb-2 rounded-lg border border-line bg-surface p-3 hover:bg-hover">
+      <NavLink to="/onboarding" className="mb-2 rounded-lg border border-line bg-surface p-3 shadow-card transition-colors hover:border-line-strong">
         <div className="flex items-center gap-2 text-[13px] font-medium"><Rocket size={14} /> Setup 4 of 5</div>
         <div className="mt-2 h-1 rounded-full bg-hover"><div className="h-full w-4/5 rounded-full bg-accent" /></div>
         <div className="mt-1.5 text-[12px] text-muted">Connect Google Analytics</div>
       </NavLink>
       <NavItem {...runsNav} badge={live || undefined} />
       <NavItem to="/settings" label="Settings" icon={Settings} />
+      <FlavorPicker value={flavor} onChange={setFlavor} />
       <button onClick={() => setDark(!dark)} className="flex h-8 items-center gap-2.5 rounded-md px-2 text-[13.5px] text-muted hover:bg-hover hover:text-fg">
         {dark ? <Sun size={16} strokeWidth={1.75} /> : <Moon size={16} strokeWidth={1.75} />}
         {dark ? "Light mode" : "Dark mode"}
@@ -190,19 +243,20 @@ export default function Layout() {
 
   return (
     <div className="flex min-h-full">
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 border-r border-line bg-sidebar lg:block print:hidden">{sidebar}</aside>
+      <aside className="sidebar-scope sticky top-0 hidden h-screen w-60 shrink-0 border-r border-line bg-sidebar lg:block print:hidden">{sidebar}</aside>
       {mobileNav && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/20" onClick={() => setMobileNav(false)} />
-          <aside className="anim-fade absolute inset-y-0 left-0 w-64 border-r border-line bg-sidebar">{sidebar}</aside>
+          <aside className="sidebar-scope anim-fade absolute inset-y-0 left-0 w-64 border-r border-line bg-sidebar">{sidebar}</aside>
         </div>
       )}
-      <div className="min-w-0 flex-1">
+      <div className="relative min-w-0 flex-1">
+        <div aria-hidden className="grid-backdrop pointer-events-none absolute inset-x-0 top-0 h-[520px] print:hidden" />
         <div className="sticky top-0 z-20 flex h-12 items-center gap-3 border-b border-line bg-bg/90 px-4 backdrop-blur lg:hidden print:hidden">
           <button onClick={() => setMobileNav(true)} aria-label="Open navigation" className="rounded p-1.5 hover:bg-hover"><Menu size={18} /></button>
-          <span className="font-serif text-[17px]">Groundwork</span>
+          <span className="font-serif text-[19px]">Groundwork<span className="text-accent">.</span></span>
         </div>
-        <main className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-8 lg:px-12 lg:py-10">
+        <main className="relative mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-8 lg:px-12 lg:py-10">
           <div className="mb-5 flex min-h-9 flex-wrap items-center justify-between gap-3 print:hidden">
             {loc.pathname !== "/" && !loc.pathname.startsWith("/prospects/") ? (
               <NavLink to="/" className="inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-fg"><ArrowLeft size={13} /> Command Center</NavLink>
