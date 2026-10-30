@@ -3,10 +3,29 @@ import { Link } from "react-router";
 import { Sparkles, Plus, Check, X, ChevronRight, ExternalLink, ArrowUp, ArrowDown, Link2 } from "lucide-react";
 import { Badge, Button, Card, CardHeader, LineChart, PageHeader, Progress, cn, useToast } from "../components/ui";
 import { business, keywords } from "../data/mock";
-import { aiPrompts, aiVisibility, engines, type AiPrompt } from "../data/ai";
+import { aiVisibility, engines, type AiPrompt } from "../data/ai";
+import { aiPromptsFor } from "../data/scoped";
+import { ExternalUrl, LocationOverview, ScopeBar } from "../components/Scope";
+import { useScopedLocation } from "../lib/scope";
 
+// AI assistants answer "best dentist near …", so this is measured per Location.
 export default function AiVisibility() {
-  const [prompts, setPrompts] = useState<AiPrompt[]>(aiPrompts);
+  const { location } = useScopedLocation();
+  if (location) return <AiBody key={location.id} seed={aiPromptsFor(location.id)} />;
+  return (
+    <>
+      <PageHeader title="AI visibility" sub="How often AI assistants recommend each location when people ask for a dentist nearby." />
+      <ScopeBar kind="location" />
+      <LocationOverview columns={["Named in answers", "Change", "Questions tracked"]} row={(id) => {
+        const v = aiVisibility(aiPromptsFor(id));
+        return [`${Math.round(v.pct)}%`, `${v.pct >= v.prevPct ? "+" : ""}${Math.round(v.pct - v.prevPct)} pts`, aiPromptsFor(id).length];
+      }} />
+    </>
+  );
+}
+
+function AiBody({ seed }: { seed: AiPrompt[] }) {
+  const [prompts, setPrompts] = useState<AiPrompt[]>(seed);
   const [open, setOpen] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const { toast, node } = useToast();
@@ -28,6 +47,7 @@ export default function AiVisibility() {
         title="AI visibility"
         sub="When people ask ChatGPT, Gemini, Perplexity, Claude or Google's AI for a local business, are you recommended? We ask the questions your customers ask, every week, on every engine."
       />
+      <ScopeBar kind="location" />
 
       <div className="mb-6 grid gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)]">
         <Card className="flex flex-col justify-between">
@@ -79,7 +99,7 @@ export default function AiVisibility() {
           <ul className="divide-y divide-line">
             {v.sources.filter((s) => s.n > 0).slice(0, 7).map((s) => (
               <li key={s.domain} className="flex items-center gap-3 py-2 text-[13px]">
-                <span className="min-w-0 flex-1 truncate">{s.label} <span className="text-subtle">· {s.domain}</span></span>
+                <span className="min-w-0 flex-1 truncate">{s.label} <span className="text-subtle">· <ExternalUrl domain={s.domain} /></span></span>
                 <span className="num w-20 text-right text-muted">{s.pct.toFixed(0)}% of answers</span>
                 {s.you ? <Badge tone="good"><Check size={11} /> Listed</Badge> : <Badge tone="bad"><X size={11} /> Not listed</Badge>}
               </li>

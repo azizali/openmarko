@@ -1,18 +1,24 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Clapperboard, Send, Trash2 } from "lucide-react";
-import { Badge, Button, Drawer, cn, useToast } from "./ui";
+import { Button, Drawer, cn, useToast } from "./ui";
 import { PostPreview } from "./PostPreview";
-import { bestTime, channelOf, channels, draftFor, type ChannelId, type ToneTweak, type Trend } from "../data/social";
+import { accountLabel, accounts, bestTime, draftFor, mainAccount, platformMeta, platformOf, type AccountId, type SocialPlatform, type ToneTweak, type Trend } from "../data/social";
 import { dateOf, publishNow, reactions, remixTrend, removePost, savePost, schedulePost, unschedulePost, type SocialPost } from "../lib/social";
 
-export function ChannelBadge({ id, size = 20 }: { id: ChannelId; size?: number }) {
-  const c = channelOf(id);
+/** A Platform's mark (Instagram, X…). */
+export function PlatformMark({ platform, size = 20 }: { platform: SocialPlatform; size?: number }) {
+  const m = platformMeta[platform];
   return (
-    <span title={c.name} className="grid shrink-0 place-items-center rounded-md font-semibold text-white" style={{ width: size, height: size, background: c.color, fontSize: size * 0.45 }}>
-      {c.short}
+    <span title={m.name} className="grid shrink-0 place-items-center rounded-md font-semibold text-white" style={{ width: size, height: size, background: m.color, fontSize: size * 0.45 }}>
+      {m.short}
     </span>
   );
+}
+
+/** An Account's Platform mark, titled with the Account (and its Location, if tagged). */
+export function AccountBadge({ id, size = 20 }: { id: AccountId; size?: number }) {
+  return <span title={accountLabel(id)} className="inline-flex"><PlatformMark platform={platformOf(id)} size={size} /></span>;
 }
 
 export const dayLabel = (day: number) =>
@@ -25,35 +31,35 @@ const tweakLabels: { id: ToneTweak; label: string }[] = [
 ];
 
 /**
- * Writes or edits one post. From a trend it drafts a version per channel in the
+ * Writes or edits one post. From a trend it drafts a version per Account in the
  * brand voice; from an existing post it edits that post's texts.
  */
 export function PostDrawer({ trend, post, onClose }: { trend?: Trend | null; post?: SocialPost | null; onClose: () => void }) {
   const { toast, node } = useToast();
-  const connected = channels.filter((c) => c.connected).map((c) => c.id);
-  const [chs, setChs] = useState<ChannelId[]>([]);
-  const [tab, setTab] = useState<ChannelId>("instagram");
+  const [chs, setChs] = useState<AccountId[]>([]);
+  const [tab, setTab] = useState<AccountId>("instagram");
   const [tweaks, setTweaks] = useState<ToneTweak[]>([]);
-  const [texts, setTexts] = useState<Partial<Record<ChannelId, string>>>({});
-  const [edited, setEdited] = useState<Set<ChannelId>>(new Set());
+  const [texts, setTexts] = useState<Partial<Record<AccountId, string>>>({});
+  const [edited, setEdited] = useState<Set<AccountId>>(new Set());
   const open = !!(trend || post);
 
   useEffect(() => {
-    if (post) { setChs(post.channels); setTab(post.channels[0]); setTexts(post.texts); setEdited(new Set(post.channels)); }
+    if (post) { setChs(post.accounts); setTab(post.accounts[0]); setTexts(post.texts); setEdited(new Set(post.accounts)); }
     else if (trend) {
-      const first = trend.bestFor.filter((c) => connected.includes(c));
+      // Start with the Organization-wide Account on each Platform the trend suits.
+      const first = trend.bestFor.map((p) => mainAccount(p)).filter((a) => a?.connected).map((a) => a!.id);
       setChs(first); setTab(first[0]); setTweaks([]); setEdited(new Set()); setTexts({});
     }
   }, [trend?.id, post?.id]);
 
-  // Regenerate every channel the user hasn't typed into.
+  // Regenerate every Account the user hasn't typed into.
   useEffect(() => {
     if (!trend || post) return;
-    setTexts((cur) => Object.fromEntries(chs.map((c) => [c, edited.has(c) ? cur[c] : draftFor(trend, c, tweaks)])));
+    setTexts((cur) => Object.fromEntries(chs.map((c) => [c, edited.has(c) ? cur[c] : draftFor(trend, platformOf(c), tweaks)])));
   }, [trend?.id, chs.join(), tweaks.join()]);
 
   if (!open) return null;
-  const toggleCh = (c: ChannelId) => {
+  const toggleCh = (c: AccountId) => {
     const next = chs.includes(c) ? chs.filter((x) => x !== c) : [...chs, c];
     setChs(next);
     if (!next.includes(tab) && next[0]) setTab(next[0]);
@@ -63,7 +69,7 @@ export function PostDrawer({ trend, post, onClose }: { trend?: Trend | null; pos
   const status = post?.status;
 
   const finish = (msg: string, act?: (id: string) => void) => {
-    const id = post ? (savePost({ ...post, channels: chs, texts }), post.id) : remixTrend(trend!, chs, tweaks, texts).id;
+    const id = post ? (savePost({ ...post, accounts: chs, texts }), post.id) : remixTrend(trend!, chs, tweaks, texts).id;
     act?.(id);
     toast(msg);
     setTimeout(onClose, 700);
@@ -80,7 +86,7 @@ export function PostDrawer({ trend, post, onClose }: { trend?: Trend | null; pos
         <span className="flex-1" />
         {status === "scheduled" ? <Button onClick={() => finish("Moved back to drafts", unschedulePost)}>Unschedule</Button> : status !== "published" && <Button onClick={() => finish("Saved to drafts")}>Save draft</Button>}
         {status !== "published" && <Button onClick={() => finish("Posted", publishNow)} icon={<Send size={13} />} disabled={!chs.length}>Post now</Button>}
-        {status !== "published" && status !== "scheduled" && <Button variant="primary" disabled={!chs.length} onClick={() => finish(`Scheduled for ${bestTime[chs[0]]}`, schedulePost)}>Schedule{chs[0] ? ` · ${bestTime[chs[0]]}` : ""}</Button>}
+        {status !== "published" && status !== "scheduled" && <Button variant="primary" disabled={!chs.length} onClick={() => finish(`Scheduled for ${bestTime[platformOf(chs[0])]}`, schedulePost)}>Schedule{chs[0] ? ` · ${bestTime[platformOf(chs[0])]}` : ""}</Button>}
       </>}
     >
       <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_340px]">
@@ -96,15 +102,15 @@ export function PostDrawer({ trend, post, onClose }: { trend?: Trend | null; pos
 
         <div className="mb-2 text-[12.5px] font-medium text-muted">Post to</div>
         <div className="mb-5 flex flex-wrap gap-1.5">
-          {channels.map((c) => {
-            const on = chs.includes(c.id);
-            return c.connected ? (
-              <button key={c.id} onClick={() => toggleCh(c.id)} aria-pressed={on} className={cn("inline-flex h-8 items-center gap-2 rounded-full border pr-3 pl-1.5 text-[13px] transition-colors", on ? "border-ink bg-active" : "border-line text-muted hover:bg-hover")}>
-                <ChannelBadge id={c.id} size={20} /> {c.name}
+          {accounts.map((a) => {
+            const on = chs.includes(a.id);
+            return a.connected ? (
+              <button key={a.id} onClick={() => toggleCh(a.id)} aria-pressed={on} title={a.handle} className={cn("inline-flex h-8 items-center gap-2 rounded-full border pr-3 pl-1.5 text-[13px] transition-colors", on ? "border-ink bg-active" : "border-line text-muted hover:bg-hover")}>
+                <PlatformMark platform={a.platform} size={20} /> {accountLabel(a.id)}
               </button>
             ) : (
-              <Link key={c.id} to="/settings/integrations" className="inline-flex h-8 items-center gap-2 rounded-full border border-dashed border-line pr-3 pl-1.5 text-[13px] text-muted hover:bg-hover">
-                <ChannelBadge id={c.id} size={20} /> Connect {c.name}
+              <Link key={a.id} to="/settings/accounts" className="inline-flex h-8 items-center gap-2 rounded-full border border-dashed border-line pr-3 pl-1.5 text-[13px] text-muted hover:bg-hover">
+                <PlatformMark platform={a.platform} size={20} /> Connect {accountLabel(a.id)}
               </Link>
             );
           })}
@@ -125,12 +131,12 @@ export function PostDrawer({ trend, post, onClose }: { trend?: Trend | null; pos
             <div role="tablist" className="flex gap-4 border-b border-line">
               {chs.map((c) => (
                 <button key={c} role="tab" aria-selected={tab === c} onClick={() => setTab(c)} className={cn("-mb-px flex items-center gap-1.5 border-b-2 pb-2 text-[13px]", tab === c ? "border-ink text-fg" : "border-transparent text-muted hover:text-fg")}>
-                  <ChannelBadge id={c} size={16} /> {channelOf(c).name}
+                  <AccountBadge id={c} size={16} /> {accountLabel(c)}
                 </button>
               ))}
             </div>
             <textarea
-              aria-label={`${channelOf(tab).name} text`}
+              aria-label={`${accountLabel(tab)} text`}
               value={texts[tab] ?? ""}
               onChange={(e) => { setTexts({ ...texts, [tab]: e.target.value }); setEdited(new Set(edited).add(tab)); }}
               rows={9}
@@ -138,10 +144,10 @@ export function PostDrawer({ trend, post, onClose }: { trend?: Trend | null; pos
             />
             <div className="mt-1.5 flex flex-wrap justify-between gap-2 text-[12px] text-subtle">
               <span>{(texts[tab] ?? "").length} characters{edited.has(tab) && trend && !post ? " · edited, so Adjust leaves it alone" : ""}</span>
-              <span>Best time on {channelOf(tab).name}: {bestTime[tab]}</span>
+              <span>Best time on {platformMeta[platformOf(tab)].name}: {bestTime[platformOf(tab)]}</span>
             </div>
           </>
-        ) : <p className="text-[13px] text-muted">Pick at least one channel.</p>}
+        ) : <p className="text-[13px] text-muted">Pick at least one account.</p>}
 
         {(remix?.scenes || post?.format) && (
           <div className="mt-5">
@@ -155,11 +161,11 @@ export function PostDrawer({ trend, post, onClose }: { trend?: Trend | null; pos
         )}
         {post?.stats && (
           <div className="mt-5">
-            <div className="mb-2 text-[12.5px] font-medium text-muted">Results, from each platform's insights</div>
+            <div className="mb-2 text-[12.5px] font-medium text-muted">Results, from each account's own insights</div>
             <div className="overflow-hidden rounded-lg border border-line text-[12.5px]">
-              {(Object.entries(post.stats) as [ChannelId, NonNullable<SocialPost["stats"]>[ChannelId]][]).map(([c, st]) => st && (
+              {Object.entries(post.stats).map(([c, st]) => st && (
                 <div key={c} className="num flex items-center gap-3 border-b border-line px-3 py-2 last:border-0">
-                  <ChannelBadge id={c} size={18} /><span className="w-24 text-fg">{channelOf(c).name}</span>
+                  <AccountBadge id={c} size={18} /><span className="w-40 truncate text-fg">{accountLabel(c)}</span>
                   <span>{st.views.toLocaleString()} views</span>
                   {reactions(st) > 0 && <span className="text-muted">{st.likes.toLocaleString()} likes · {st.comments} comments · {st.shares} shares</span>}
                 </div>
@@ -170,10 +176,10 @@ export function PostDrawer({ trend, post, onClose }: { trend?: Trend | null; pos
         </div>
         <aside className="md:sticky md:top-0">
           <div className="mb-2 flex items-center gap-1.5 text-[12.5px] font-medium text-muted">
-            {chs.length ? <><ChannelBadge id={tab} size={16} /> Preview on {channelOf(tab).name}</> : "Preview"}
+            {chs.length ? <><AccountBadge id={tab} size={16} /> Preview on {accountLabel(tab)}</> : "Preview"}
           </div>
-          {chs.length > 0 && <PostPreview channel={tab} text={texts[tab] ?? ""} format={remix?.format ?? post?.format ?? "Post"} />}
-          {chs.length > 1 && <p className="mt-2 text-[12px] text-subtle">Switch tabs to see the other channels.</p>}
+          {chs.length > 0 && <PostPreview account={tab} text={texts[tab] ?? ""} format={remix?.format ?? post?.format ?? "Post"} />}
+          {chs.length > 1 && <p className="mt-2 text-[12px] text-subtle">Switch tabs to see the other accounts.</p>}
         </aside>
       </div>
       {node}

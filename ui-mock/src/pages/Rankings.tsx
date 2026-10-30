@@ -4,14 +4,35 @@ import { Download, Plus, Search, X } from "lucide-react";
 import { Button, PageHeader, Segmented, Tabs, cn, useToast } from "../components/ui";
 import { KeywordTable, scanFor, type RankView } from "../components/KeywordTable";
 import { TaskDrawer } from "../components/Todo";
-import { gridStats, keywords, type Keyword } from "../data/mock";
+import { gridStats, type Keyword } from "../data/mock";
+import { keywordsFor } from "../data/scoped";
+import { LocationOverview, ScopeBar } from "../components/Scope";
+import { useScopedLocation } from "../lib/scope";
 import { openTasksFor, useRunState, type Task } from "../lib/tasks";
 
 type Filter = "all" | "improved" | "declined" | "top3";
-const tags = [...new Set(keywords.flatMap((k) => k.tags))];
 const avg = (xs: (number | null)[]) => { const v = xs.filter((x): x is number => x !== null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0; };
 
+// Map and search rankings are measured from a Location's area, so this page shows
+// one Location's keywords at a time; "All locations" compares them.
 export default function Rankings() {
+  const { location } = useScopedLocation();
+  if (location) return <RankingsBody key={location.id} keywords={keywordsFor(location.id)} />;
+  const sum = (id: string) => {
+    const kw = keywordsFor(id).filter((k) => k.local !== null);
+    return { n: keywordsFor(id).length, top3: kw.filter((k) => (k.local ?? 99) <= 3).length, avg: kw.reduce((a, k) => a + (k.local ?? 20), 0) / Math.max(1, kw.length), solv: Math.round(kw.reduce((a, k) => a + gridStats(scanFor(k, 7)).solv, 0) / Math.max(1, kw.length)) };
+  };
+  return (
+    <>
+      <PageHeader title="Rankings" sub="Where each location shows up on Google and in the map pack." />
+      <ScopeBar kind="location" />
+      <LocationOverview columns={["Keywords", "In the map pack top 3", "Average map rank", "Top 3 of nearby searches"]} row={(id) => { const x = sum(id); return [x.n, x.top3, `#${x.avg.toFixed(1)}`, `${x.solv}%`]; }} />
+    </>
+  );
+}
+
+function RankingsBody({ keywords }: { keywords: Keyword[] }) {
+  const tags = [...new Set(keywords.flatMap((k) => k.tags))];
   const { id } = useParams();
   const [params, setParams] = useSearchParams();
   const state = useRunState();
@@ -77,6 +98,7 @@ export default function Rankings() {
           <Link to="/keywords"><Button variant="primary" icon={<Plus size={14} />}>Add keywords</Button></Link>
         </>}
       />
+      <ScopeBar kind="location" />
 
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <Segmented label="Results" value={view} onChange={changeView} options={[{ id: "both", label: "All results" }, { id: "organic", label: "Organic" }, { id: "local", label: "Map pack" }]} />

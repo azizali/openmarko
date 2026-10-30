@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { ChevronRight, Wand2, Check, Loader2, FileCode, ExternalLink, ClipboardCopy } from "lucide-react";
 import { Badge, Button, Card, CardHeader, PageHeader, cn, useToast } from "../components/ui";
+import { ExternalUrl } from "../components/Scope";
+import { useScopedWebsite } from "../lib/scope";
+import { websites } from "../data/org";
 import { auditIssues } from "../data/mock";
 
 const sevTone = { critical: "bad", warning: "warn", notice: "info" } as const;
@@ -10,6 +13,7 @@ const execSteps = ["Connecting to WordPress (REST API)", "Applying change", "Pur
 export default function AuditIssue() {
   const { id } = useParams();
   const issue = auditIssues.find((i) => i.id === id) ?? auditIssues[0];
+  const domain = (useScopedWebsite().website ?? websites[0]).domain;
   const [phase, setPhase] = useState<"idle" | "running" | "done">("idle");
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set(issue.pages));
@@ -60,8 +64,7 @@ export default function AuditIssue() {
             {issue.pages.map((p) => (
               <label key={p} className="flex cursor-pointer items-center gap-3 border-t border-line px-5 py-2.5 text-[13.5px] hover:bg-hover">
                 <input type="checkbox" checked={selected.has(p)} onChange={() => { const n = new Set(selected); n.has(p) ? n.delete(p) : n.add(p); setSelected(n); }} className="size-4 accent-[var(--ink)]" disabled={phase !== "idle" || !issue.autoFix} />
-                <span className="flex-1 font-mono text-[12.5px]">mapleandmaindental.com{p}</span>
-                <ExternalLink size={12} className="text-subtle" />
+                <span className="min-w-0 flex-1 font-mono text-[12.5px]"><ExternalUrl domain={domain} path={p} /></span>
               </label>
             ))}
           </Card>

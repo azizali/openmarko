@@ -2,7 +2,11 @@ import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { Star, Phone, Navigation, MousePointerClick, Eye, Sparkles, Send, ImagePlus, Calendar, Check, Loader2 } from "lucide-react";
 import { Badge, Button, Card, CardHeader, Delta, PageHeader, Progress, ScoreRing, Segmented, Tabs, cn, fmt, useToast } from "../components/ui";
-import { business, gbpInsights, reviews as seed } from "../data/mock";
+import { business, locations } from "../data/mock";
+import { locationData } from "../data/scoped";
+import { shortLocation } from "../data/org";
+import { LocationOverview, ScopeBar } from "../components/Scope";
+import { useScopedLocation } from "../lib/scope";
 
 type Tab = "overview" | "reviews";
 
@@ -17,27 +21,68 @@ const completeness = [
   { label: "Q&A seeded", done: false },
 ];
 
-const draftReply = (name: string, rating: number) =>
+const draftReply = (name: string, rating: number, place: string) =>
   rating >= 4
-    ? `Thank you, ${name.split(" ")[0]}! We're glad you had a great visit at our South Congress office. See you at your next appointment. — The Maple & Main team`
+    ? `Thank you, ${name.split(" ")[0]}! We're glad you had a great visit at our ${place} office. See you at your next appointment. — The Maple & Main team`
     : `Hi ${name.split(" ")[0]}, I'm sorry about the billing confusion. That's not the experience we want for anyone. Our office manager will call you this week to make sure everything is resolved. — Dr. Patel`;
 
+const unreplied = (id: string) => locationData[id].reviews.filter((r) => !r.replied).length;
+
+// A Google profile belongs to one Location, so this page shows one Location at a
+// time; "All locations" compares them.
 export default function Profile() {
   // The tab lives in the URL so the sidebar can link straight to Reviews.
   const [params, setParams] = useSearchParams();
   const t = params.get("tab");
   const tab: Tab = t === "reviews" ? t : "overview";
   const setTab = (v: Tab) => setParams(v === "overview" ? {} : { tab: v }, { replace: true });
-  const [reviews, setReviews] = useState(seed.map((r) => ({ ...r, draft: "" })));
+  const { location } = useScopedLocation();
+
+  return (
+    <>
+      <PageHeader
+        title={tab === "reviews" ? "Reviews" : "Business Profile"}
+        sub={location ? <span>{business.name} · {location.address}</span> : `${business.name} · ${locations.length} Google profiles`}
+        actions={location && <Badge tone="good"><Check size={11} /> Verified · synced 4 min ago</Badge>}
+      />
+      <ScopeBar kind="location" />
+      <Tabs value={tab} onChange={setTab} tabs={[
+        { id: "overview", label: "Overview" },
+        { id: "reviews", label: "Reviews", count: location ? unreplied(location.id) : locations.reduce((a, l) => a + unreplied(l.id), 0) },
+      ]} />
+      <div className="mt-6">
+        {location ? <ProfileBody key={location.id} locationId={location.id} tab={tab} /> : (
+          <LocationOverview
+            columns={tab === "reviews" ? ["Rating", "Reviews", "Need a reply"] : ["Rating", "Calls, 28 days", "Directions", "Profile complete"]}
+            row={(id) => {
+              const d = locationData[id];
+              return tab === "reviews"
+                ? [`${d.rating}★`, d.reviewCount, unreplied(id) ? <Badge tone="warn">{unreplied(id)}</Badge> : "0"]
+                : [`${d.rating}★`, <>{fmt(d.insights.calls)} <Delta cur={d.insights.calls} prev={d.insights.callsPrev} /></>, fmt(d.insights.directions), `${d.completeness}%`];
+            }}
+          />
+        )}
+      </div>
+    </>
+  );
+}
+
+function ProfileBody({ locationId, tab }: { locationId: string; tab: Tab }) {
+  const d = locationData[locationId];
+  const gbpInsights = d.insights;
+  const place = shortLocation(locationId);
+  // Mueller is newer: two of the profile basics aren't done yet.
+  const items = locationId === "loc_2" ? completeness.map((c) => (["Services (22)", "Booking link"].includes(c.label) ? { ...c, done: false } : c)) : completeness;
+  const [reviews, setReviews] = useState(d.reviews.map((r) => ({ ...r, draft: "" })));
   const [filter, setFilter] = useState<"unreplied" | "all">("unreplied");
   const [generating, setGenerating] = useState<string | null>(null);
   const { toast, node } = useToast();
-  const pct = Math.round((completeness.filter((c) => c.done).length / completeness.length) * 100);
+  const pct = Math.round((items.filter((c) => c.done).length / items.length) * 100);
 
   const gen = (id: string) => {
     setGenerating(id);
     setTimeout(() => {
-      setReviews((rs) => rs.map((r) => (r.id === id ? { ...r, draft: draftReply(r.author, r.rating) } : r)));
+      setReviews((rs) => rs.map((r) => (r.id === id ? { ...r, draft: draftReply(r.author, r.rating, place) } : r)));
       setGenerating(null);
     }, 700);
   };
@@ -46,17 +91,7 @@ export default function Profile() {
 
   return (
     <>
-      <PageHeader
-        title="Business Profile"
-        sub={<span>{business.name} · {business.address}</span>}
-        actions={<Badge tone="good"><Check size={11} /> Verified · synced 4 min ago</Badge>}
-      />
-      <Tabs value={tab} onChange={setTab} tabs={[
-        { id: "overview", label: "Overview" },
-        { id: "reviews", label: "Reviews", count: reviews.filter((r) => !r.replied).length },
-      ]} />
-
-      <div className="mt-6">
+      <div>
         {tab === "overview" && (
           <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
             <div className="space-y-6">
@@ -81,9 +116,9 @@ export default function Profile() {
                 <CardHeader title="Reviews" sub="Last 90 days" />
                 <div className="flex items-center gap-8">
                   <div>
-                    <div className="num font-serif text-[40px] leading-none">{business.rating}</div>
-                    <div className="mt-1 flex text-warn">{Array.from({ length: 5 }).map((_, i) => <Star key={i} size={13} className={i < Math.round(business.rating) ? "fill-current" : ""} />)}</div>
-                    <div className="num mt-1 text-[12.5px] text-muted">{business.reviews} reviews</div>
+                    <div className="num font-serif text-[40px] leading-none">{d.rating}</div>
+                    <div className="mt-1 flex text-warn">{Array.from({ length: 5 }).map((_, i) => <Star key={i} size={13} className={i < Math.round(d.rating) ? "fill-current" : ""} />)}</div>
+                    <div className="num mt-1 text-[12.5px] text-muted">{d.reviewCount} reviews</div>
                   </div>
                   <div className="flex-1 space-y-1.5">
                     {[[5, 78], [4, 14], [3, 4], [2, 2], [1, 2]].map(([s, p]) => (
@@ -96,10 +131,10 @@ export default function Profile() {
             <Card>
               <div className="flex items-center gap-4">
                 <ScoreRing score={pct} size={56} stroke={5} label="Profile completeness" />
-                <div><div className="font-medium">Profile completeness</div><div className="text-[12.5px] text-muted">{completeness.filter((c) => !c.done).length} items left</div></div>
+                <div><div className="font-medium">Profile completeness</div><div className="text-[12.5px] text-muted">{items.filter((c) => !c.done).length} items left</div></div>
               </div>
               <ul className="mt-5 space-y-2">
-                {completeness.map((c) => (
+                {items.map((c) => (
                   <li key={c.label} className="flex items-center gap-2.5 text-[13.5px]">
                     <span className={cn("grid size-4 place-items-center rounded-full border", c.done ? "border-good bg-good text-white" : "border-line-strong")}>{c.done && <Check size={10} strokeWidth={3} />}</span>
                     <span className={cn(c.done && "text-muted")}>{c.label}</span>

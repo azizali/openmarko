@@ -1,14 +1,14 @@
 import { Fragment, type ReactNode } from "react";
 import { AudioWaveform, Bookmark, CalendarCheck, ChartNoAxesColumn, Ellipsis, Globe, Heart, MessageCircle, MessageSquare, Phone, Play, Repeat2, Send, Share2, ThumbsUp } from "lucide-react";
 import { cn } from "./ui";
-import { channelOf, type ChannelId } from "../data/social";
+import { accountOf, type AccountId } from "../data/social";
 import { brandFacts } from "../data/brand";
 
 // How a post will look on each platform: the platform's layout, where the text
 // gets cut off ("… more"), hashtags, and the media slot. Not pixel copies of each
 // app, just close enough to judge the hook, the length and the crop.
 
-type Props = { channel: ChannelId; text: string; format: string; hook?: string };
+type Props = { account: AccountId; text: string; format: string; hook?: string };
 
 const isVideo = (format: string) => /reel|tiktok|video|\d+s\b/i.test(format);
 
@@ -55,8 +55,9 @@ const Frame = ({ children, className }: { children: ReactNode; className?: strin
   <div className={cn("w-full max-w-[340px] overflow-hidden rounded-xl border border-line bg-surface text-[13px] leading-[1.45] text-fg shadow-card", className)}>{children}</div>
 );
 
-export function PostPreview({ channel, text, format, hook }: Props) {
-  const c = channelOf(channel);
+export function PostPreview({ account, text, format, hook }: Props) {
+  const c = accountOf(account);
+  const channel = c.platform;
   const h = hook || firstLine(text) || "Your post";
   const video = isVideo(format);
   const now = <span className="text-muted">Just now</span>;
@@ -152,7 +153,7 @@ export function PostPreview({ channel, text, format, hook }: Props) {
     <Frame>
       <div className="flex items-center gap-2.5 px-3 py-2.5">
         <Avatar size={30} />
-        <div className="min-w-0 flex-1 leading-tight"><div className="truncate text-[13px] font-medium">{brandFacts.name}</div><div className="text-[11px] text-muted">Just now</div></div>
+        <div className="min-w-0 flex-1 leading-tight"><div className="truncate text-[13px] font-medium">{brandFacts.name} · {c.handle}</div><div className="text-[11px] text-muted">Just now</div></div>
       </div>
       <Media hook={h} video={false} className="aspect-[4/3]" />
       <Folded text={text} at={180} more="More" color="#1a73e8" className="px-3 pt-2.5" />

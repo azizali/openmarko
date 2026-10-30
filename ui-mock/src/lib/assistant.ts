@@ -1,4 +1,4 @@
-// Marko, the workspace assistant. Chats open in the ⌘J panel (with a list of
+// Marko, the assistant. Chats open in the ⌘J panel (with a list of
 // past chats) and start from Home, ⌘K or the floating button. Answers are text plus blocks the UI renders (task
 // rows with Apply/Undo, maps, stats, links); every change goes through the
 // same task store as To-do, so it shows as done everywhere.
@@ -16,7 +16,7 @@ import { aiVisibility } from "../data/ai";
 import { scanFor } from "../components/KeywordTable";
 import { startRun } from "./runs";
 import { getRunState, openTasksFor, runTasks, tasks } from "./tasks";
-import { channels, draftFor, trends, type ChannelId, type ToneTweak, type Trend } from "../data/social";
+import { mainAccount, draftFor, trends, type SocialPlatform, type ToneTweak, type Trend, platformMeta, platformOf as accountPlatform } from "../data/social";
 import { dateOf, getSocialPost, remixTrend, savePost, schedulePost } from "./social";
 import { skillName, skillOn } from "./skills";
 import { platformOf } from "../data/scanner";
@@ -156,7 +156,7 @@ const off = (skill: string): Message | null =>
 let lastPostId: string | null = null; // the draft "schedule it" and "make it shorter" refer to
 const quoted = (t: Trend) => (t.title.startsWith("“") ? t.title : `“${t.title}”`);
 const when = (day: number, time: string) => `${day === 0 ? "today" : day === 1 ? "tomorrow" : dateOf(day).toLocaleDateString("en-US", { weekday: "long" })} at ${time}`;
-const channelNames: [ChannelId, string[]][] = [["instagram", ["instagram", "insta", "reel"]], ["tiktok", ["tiktok", "tik tok"]], ["facebook", ["facebook"]], ["linkedin", ["linkedin"]], ["x", ["twitter", "tweet", " on x", "x post", "post on x"]]];
+const channelNames: [SocialPlatform, string[]][] = [["instagram", ["instagram", "insta", "reel"]], ["tiktok", ["tiktok", "tik tok"]], ["facebook", ["facebook"]], ["linkedin", ["linkedin"]], ["x", ["twitter", "tweet", " on x", "x post", "post on x"]]];
 
 /** The trend a request is about: words from its title or angle, else the best fit. */
 function trendIn(q: string): Trend {
@@ -174,7 +174,7 @@ function socialReply(q: string): Message | null {
   if (last && tweak && /\b(it|this|that)\b/.test(q)) {
     const t = trends.find((x) => x.id === last.trendId);
     if (t) {
-      savePost({ ...last, texts: Object.fromEntries(last.channels.map((c) => [c, draftFor(t, c, [tweak])])) });
+      savePost({ ...last, texts: Object.fromEntries(last.accounts.map((a) => [a, draftFor(t, accountPlatform(a), [tweak])])) });
       return reply([{ type: "text", text: tweak === "shorter" ? "Shorter version:" : tweak === "playful" ? "More playful, same voice:" : "Added the expert detail:" }, { type: "post", postId: last.id }], ["Schedule it"], ["social-viral"]);
     }
   }
@@ -207,16 +207,17 @@ function socialReply(q: string): Message | null {
   const named = channelNames.filter(([, ws]) => ws.some((w) => q.includes(w))).map(([c]) => c);
   if (named.length || has(q, "social", "remix", "caption", "carousel")) {
     const t = trendIn(q);
-    const live = channels.filter((c) => c.connected).map((c) => c.id);
-    const notConnected = named.filter((c) => !live.includes(c));
-    const chs = (named.length ? named : t.bestFor).filter((c) => live.includes(c));
-    if (!chs.length) return reply([{ type: "text", text: `${notConnected.map((c) => channels.find((x) => x.id === c)!.name).join(" and ")} isn't connected yet.` }, { type: "links", items: [{ label: "Connect it in Settings", to: "/settings/integrations" }] }]);
+    // Post from the Organization-wide Account on each Platform asked for.
+    const wanted = named.length ? named : t.bestFor;
+    const notConnected = wanted.filter((p) => !mainAccount(p)?.connected);
+    const chs = wanted.filter((p) => mainAccount(p)?.connected).map((p) => mainAccount(p)!.id);
+    if (!chs.length) return reply([{ type: "text", text: `${notConnected.map((p) => platformMeta[p].name).join(" and ")} isn't connected yet.` }, { type: "links", items: [{ label: "Connect it in Settings", to: "/settings/integrations" }] }]);
     const gate = off("social-viral") ?? off("trend-remix");
     if (gate) return gate;
     const post = remixTrend(t.id, chs);
     lastPostId = post.id;
     return reply([
-      { type: "text", text: `I built this on ${quoted(t)} (${t.velocity}). ${t.insight} Written in your voice and saved as a draft for ${when(post.day, post.time)}, your best time.${notConnected.length ? ` (${notConnected.map((c) => channels.find((x) => x.id === c)!.name).join(", ")} isn't connected, so I left it out.)` : ""}` },
+      { type: "text", text: `I built this on ${quoted(t)} (${t.velocity}). ${t.insight} Written in your voice and saved as a draft for ${when(post.day, post.time)}, your best time.${notConnected.length ? ` (${notConnected.map((p) => platformMeta[p].name).join(", ")} isn't connected, so I left it out.)` : ""}` },
       { type: "post", postId: post.id },
     ], ["Schedule it", "Make it shorter", "Make it more playful"], ["trend-remix", "social-viral"]);
   }

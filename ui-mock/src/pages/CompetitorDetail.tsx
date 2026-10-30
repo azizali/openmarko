@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router";
 import { ChevronRight, ExternalLink, Check, X as XIcon, Wand2 } from "lucide-react";
 import { Badge, Button, Card, CardHeader, PageHeader, cn, fmt } from "../components/ui";
+import { ExternalUrl } from "../components/Scope";
 import { competitors, keywords } from "../data/mock";
 
 export default function CompetitorDetail() {
@@ -26,7 +27,7 @@ export default function CompetitorDetail() {
       <PageHeader
         crumbs={<span className="flex items-center gap-1"><Link to="/competitors" className="hover:text-fg">Competitors</Link><ChevronRight size={12} />{c.name}</span>}
         title={c.name}
-        sub={<span className="inline-flex items-center gap-1">{c.website} <ExternalLink size={11} /> · {c.distanceMi} mi from you</span>}
+        sub={<span className="inline-flex items-center gap-1"><ExternalUrl domain={c.website} /> · {c.distanceMi} mi from you</span>}
         actions={<Button>Stop tracking</Button>}
       />
 

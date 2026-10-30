@@ -6,7 +6,9 @@ import {
 } from "lucide-react";
 import { cn } from "./ui";
 import { Logo } from "./Logo";
-import { keywords, locations, workspace } from "../data/mock";
+import { keywords, locations, member } from "../data/mock";
+import { memberships, shortLocation } from "../data/org";
+import { setScope, useScope } from "../lib/scope";
 import { openTasksFor, useRunState } from "../lib/tasks";
 import { runningOf, useRuns } from "../lib/runs";
 import { useTheme } from "../lib/theme";
@@ -46,7 +48,7 @@ const nav: Nav[] = [
   { to: "/social/scanner", label: "Social scanner", icon: Radar, section: "Social" },
   { to: "/social/swipe", label: "Swipe file", icon: Bookmark },
   { to: "/social/posts", label: "Posts & calendar", icon: CalendarDays },
-  ...(workspace.plan === "agency" ? [{ to: "/prospects", label: "Prospecting", icon: Target, section: "Sales" }] : []),
+  ...(member.plan === "agency" ? [{ to: "/prospects", label: "Prospecting", icon: Target, section: "Sales" }] : []),
 ];
 const settingsNav: Nav = { to: "/settings", label: "Settings", icon: Settings };
 const settingsLeaves: Leaf[] = [...businessSections, ...accountSections].map((s) => ({ to: `/settings/${s.id}`, label: s.label }));
@@ -105,30 +107,55 @@ function pageContext(pathname: string, search: string): PageContext {
   return { label: leaf?.label ?? "This page", path: pathname, keywordId: kw };
 }
 
-function LocationSwitcher() {
+/**
+ * The Organization being worked on, and the Scope within it. Agency Members can
+ * switch Organizations; with several Locations you can look at all or one.
+ */
+function OrgSwitcher() {
   const [open, setOpen] = useState(false);
-  const [cur, setCur] = useState(locations[0].id);
-  const loc = locations.find((l) => l.id === cur)!;
+  const { orgId, locationId } = useScope();
+  const org = memberships.find((m) => m.id === orgId) ?? memberships[0];
+  const sub = locationId ? shortLocation(locationId) : locations.length > 1 ? `All ${locations.length} locations` : locations[0]?.city;
+  const row = "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[13px] hover:bg-hover";
   return (
     <div className="relative">
       <button onClick={() => setOpen(!open)} className="flex w-full items-center gap-2.5 rounded-md p-1 text-left hover:bg-hover" aria-expanded={open}>
-        <span className="grid size-7 shrink-0 place-items-center rounded-md bg-ink text-[13px] font-semibold text-on-ink">M</span>
+        <span className="grid size-7 shrink-0 place-items-center rounded-md bg-ink text-[13px] font-semibold text-on-ink">{org.initial}</span>
         <span className="min-w-0 flex-1 leading-tight">
-          <span className="block truncate text-[13px] font-medium">{loc.name}</span>
-          <span className="block truncate text-[12px] text-muted">{loc.city}</span>
+          <span className="block truncate text-[13px] font-medium">{org.name}</span>
+          <span className="block truncate text-[12px] text-muted">{sub}</span>
         </span>
         <ChevronsUpDown size={14} className="text-subtle" />
       </button>
       {open && (
         <div className="anim-fade absolute top-full right-0 left-0 z-30 mt-1 rounded-lg border border-line bg-surface p-1 shadow-float">
-          {locations.map((l) => (
-            <button key={l.id} onClick={() => { setCur(l.id); setOpen(false); }} className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[13px] hover:bg-hover">
-              <span className="flex-1 truncate">{l.name}</span>
-              {l.id === cur && <Check size={14} />}
-            </button>
-          ))}
+          {locations.length > 1 && (
+            <>
+              <div className="px-2 pt-1 pb-0.5 text-[11px] font-medium tracking-[0.06em] text-subtle uppercase">Show</div>
+              {[null, ...locations.map((l) => l.id)].map((id) => (
+                <button key={id ?? "all"} onClick={() => { setScope({ locationId: id }); setOpen(false); }} className={row}>
+                  <span className="flex-1 truncate">{id ? shortLocation(id) : "All locations"}</span>
+                  {id === locationId && <Check size={14} />}
+                </button>
+              ))}
+              <NavLink to="/onboarding" className="block rounded px-2 py-1.5 text-[13px] text-muted hover:bg-hover">+ Add location</NavLink>
+            </>
+          )}
+          {memberships.length > 1 && (
+            <>
+              <div className="my-1 border-t border-line" />
+              <div className="px-2 pt-1 pb-0.5 text-[11px] font-medium tracking-[0.06em] text-subtle uppercase">Organizations</div>
+              {memberships.map((m) => (
+                <button key={m.id} onClick={() => { setScope({ orgId: m.id, locationId: null }); setOpen(false); }} className={row}>
+                  <span className="grid size-5 shrink-0 place-items-center rounded bg-hover text-[11px] font-semibold">{m.initial}</span>
+                  <span className="min-w-0 flex-1 truncate">{m.name}</span>
+                  {m.id === orgId && <Check size={14} />}
+                </button>
+              ))}
+            </>
+          )}
           <div className="my-1 border-t border-line" />
-          <NavLink to="/onboarding" className="block rounded px-2 py-1.5 text-[13px] text-muted hover:bg-hover">+ Add location</NavLink>
+          <NavLink to="/settings/locations" onClick={() => setOpen(false)} className="block rounded px-2 py-1.5 text-[13px] text-muted hover:bg-hover">Locations, websites & accounts</NavLink>
         </div>
       )}
     </div>
@@ -145,7 +172,7 @@ function CommandPalette({ open, onClose, ctx }: { open: boolean; onClose: () => 
       ...settingsLeaves.map((i) => ({ label: i.label, hint: "Settings", to: i.to })),
     ];
     const extra = [
-      ...(workspace.plan === "agency" ? [{ label: "Audit a business", hint: "Prospecting", to: "/prospects?new=audit" }] : []),
+      ...(member.plan === "agency" ? [{ label: "Audit a business", hint: "Prospecting", to: "/prospects?new=audit" }] : []),
       { label: "Run setup again", hint: "Onboarding", to: "/onboarding" },
     ];
     const kws = keywords.map((k) => ({ label: k.term, hint: "Keyword", to: `/rankings/${k.id}` }));
@@ -235,7 +262,7 @@ export default function Layout() {
         <button onClick={() => setCmd(true)} aria-label="Search" title="Search (⌘K)" className={iconBtn}><Search size={15} strokeWidth={1.75} /></button>
         <button onClick={toggleAssistant} aria-label="Ask Marko" title="Ask Marko (⌘J)" className={iconBtn}><Sparkles size={15} strokeWidth={1.75} /></button>
       </div>
-      {locations.length > 1 && <LocationSwitcher />}
+      <OrgSwitcher />
       <nav className="mt-1 flex flex-1 flex-col gap-px overflow-y-auto" aria-label="Main">
         {nav.map((n) => (
           <div key={n.label}>

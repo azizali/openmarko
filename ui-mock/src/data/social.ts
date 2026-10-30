@@ -1,30 +1,64 @@
-// Social: connected channels and trending ideas to remix. Mock data for Maple & Main Dental.
+// Social: the Organization's Accounts and trending ideas to remix. Mock data for
+// Maple & Main Dental. Terms follow GLOSSARY.md: a Post goes to Accounts; each
+// Account lives on a Platform and speaks for the whole Organization unless it's
+// tagged to one Location. A Location's Google Business Profile is an Account too.
 //
 // Real build:
 // - Posting: Meta Graph API (Instagram + Facebook pages), TikTok Content
-//   Posting API, LinkedIn Posts API; Google Business Profile localPosts as today.
+//   Posting API, LinkedIn Posts API; Google Business Profile localPosts per Location.
 // - Trends: TikTok Creative Center and Instagram Reels trends for the category,
-//   Google Trends (DataForSEO Trends) for the metro, Reddit search for the city
-//   and niche, local news RSS. Each candidate is scored for velocity and fit,
-//   then Claude writes the "why it works" insight and the remix.
-// - Voice: every draft is written with the business's brand profile
+//   Google Trends for the metro, Reddit search for the city and niche, local
+//   news RSS. Each candidate is scored for velocity and fit, then Claude writes
+//   the "why it works" insight and the remix.
+// - Voice: every draft is written with the Organization's Brand voice
 //   (data/brand.ts) as background, through the matching skill (data/skills.ts).
 
 import { voice } from "./brand";
+import { locations } from "./mock";
 
-export type ChannelId = "instagram" | "facebook" | "tiktok" | "x" | "linkedin" | "google";
-export type Channel = { id: ChannelId; name: string; short: string; color: string; handle: string; connected: boolean; followers: number; followersPrev: number };
+export type SocialPlatform = "instagram" | "facebook" | "tiktok" | "x" | "linkedin" | "google";
+export const platformMeta: Record<SocialPlatform, { name: string; short: string; color: string }> = {
+  instagram: { name: "Instagram", short: "IG", color: "#d62976" },
+  facebook: { name: "Facebook", short: "f", color: "#1877f2" },
+  tiktok: { name: "TikTok", short: "TT", color: "#111111" },
+  x: { name: "X", short: "X", color: "#000000" },
+  linkedin: { name: "LinkedIn", short: "in", color: "#0a66c2" },
+  google: { name: "Google profile", short: "G", color: "#5f6368" },
+};
 
-export const channels: Channel[] = [
-  { id: "instagram", name: "Instagram", short: "IG", color: "#d62976", handle: "@mapleandmaindental", connected: true, followers: 2140, followersPrev: 2032 },
-  { id: "facebook", name: "Facebook", short: "f", color: "#1877f2", handle: "Maple & Main Dental", connected: true, followers: 1380, followersPrev: 1366 },
-  { id: "tiktok", name: "TikTok", short: "TT", color: "#111111", handle: "@drpatel.atx", connected: true, followers: 860, followersPrev: 512 },
-  { id: "x", name: "X", short: "X", color: "#000000", handle: "@mapleandmaindds", connected: true, followers: 410, followersPrev: 396 },
-  { id: "linkedin", name: "LinkedIn", short: "in", color: "#0a66c2", handle: "Dr. Anika Patel", connected: false, followers: 0, followersPrev: 0 },
-  { id: "google", name: "Google profile", short: "G", color: "#5f6368", handle: "Business Profile posts", connected: true, followers: 0, followersPrev: 0 },
+export type AccountId = string;
+export type Account = {
+  id: AccountId;
+  platform: SocialPlatform;
+  handle: string;
+  locationId?: string; // tagged to one Location; otherwise it speaks for the whole Organization
+  connected: boolean;
+  followers: number;
+  followersPrev: number;
+};
+
+export const accounts: Account[] = [
+  { id: "instagram", platform: "instagram", handle: "@mapleandmaindental", connected: true, followers: 2140, followersPrev: 2032 },
+  { id: "instagram-mueller", platform: "instagram", handle: "@mapleandmain.mueller", locationId: "loc_2", connected: true, followers: 640, followersPrev: 588 },
+  { id: "facebook", platform: "facebook", handle: "Maple & Main Dental", connected: true, followers: 1380, followersPrev: 1366 },
+  { id: "tiktok", platform: "tiktok", handle: "@drpatel.atx", connected: true, followers: 860, followersPrev: 512 },
+  { id: "x", platform: "x", handle: "@mapleandmaindds", connected: true, followers: 410, followersPrev: 396 },
+  { id: "linkedin", platform: "linkedin", handle: "Dr. Anika Patel", connected: false, followers: 0, followersPrev: 0 },
+  { id: "google", platform: "google", handle: "South Congress", locationId: "loc_1", connected: true, followers: 0, followersPrev: 0 },
+  { id: "google-mueller", platform: "google", handle: "Mueller", locationId: "loc_2", connected: true, followers: 0, followersPrev: 0 },
 ];
 
-export const channelOf = (id: ChannelId) => channels.find((c) => c.id === id)!;
+export const accountOf = (id: AccountId) => accounts.find((a) => a.id === id)!;
+export const platformOf = (id: AccountId) => accountOf(id).platform;
+const locationName = (id?: string) => locations.find((l) => l.id === id)?.name.split(" — ")[1];
+/** "Instagram · Mueller", or just "Instagram" for an Organization-wide Account. */
+export const accountLabel = (id: AccountId) => {
+  const a = accountOf(id);
+  const loc = locationName(a.locationId);
+  return a.platform === "google" ? `Google profile · ${loc}` : loc ? `${platformMeta[a.platform].name} · ${loc}` : platformMeta[a.platform].name;
+};
+/** The Organization-wide Account on a Platform (for Google, the first Location's profile). */
+export const mainAccount = (p: SocialPlatform) => accounts.find((a) => a.platform === p && (!a.locationId || p === "google"));
 
 // ---------- Trending ideas ----------
 
@@ -59,7 +93,7 @@ export type Trend = {
   seen: string; // what the trending original looks like
   insight: string; // why it works, underneath
   angle: string; // the remix in one line
-  bestFor: ChannelId[];
+  bestFor: SocialPlatform[];
   from: TrendSourceId[]; // where the scanner saw it
   remix: Remix;
 };
@@ -168,8 +202,8 @@ const x280 = (t: string) => {
   return end > 80 ? cut.slice(0, end + 1) : `${cut.slice(0, 277)}…`;
 };
 
-/** Writes the remix for one channel, following the channel's norms and the brand voice. */
-export function draftFor(t: Trend, ch: ChannelId, tweaks: ToneTweak[] = []): string {
+/** Writes the remix for one Platform, following its norms and the brand voice. */
+export function draftFor(t: Trend, ch: SocialPlatform, tweaks: ToneTweak[] = []): string {
   const r = t.remix;
   const hook = tweaks.includes("playful") ? r.playfulHook : r.hook;
   const body = tweaks.includes("shorter") ? r.body.split(/(?<=\.)\s/)[0] : r.body;
@@ -184,7 +218,7 @@ export function draftFor(t: Trend, ch: ChannelId, tweaks: ToneTweak[] = []): str
   }
 }
 
-/** Best time to post on each channel, from this account's past engagement. */
-export const bestTime: Record<ChannelId, string> = {
+/** Best time to post on each Platform, from the Organization's past engagement. */
+export const bestTime: Record<SocialPlatform, string> = {
   instagram: "Tue 7:30 PM", tiktok: "Wed 8:00 PM", x: "Tue 12:00 PM", facebook: "Thu 12:15 PM", linkedin: "Tue 8:00 AM", google: "Mon 9:00 AM",
 };

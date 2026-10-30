@@ -1,9 +1,13 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
+import { locations } from "../data/mock";
+import { citationsFor, linkData } from "../data/scoped";
+import { ExternalUrl, LocationOverview, ScopeBar, WebsiteOverview } from "../components/Scope";
+import { useScopedLocation, useScopedWebsite } from "../lib/scope";
 import { Sparkles, Wrench, Plus, Loader2, Mail, Check, MapPin, ArrowUp, ArrowDown, Copy } from "lucide-react";
 import { Badge, Button, Card, CardHeader, Checkbox, Drawer, LineChart, Modal, PageHeader, ScoreRing, Segmented, Tabs, cn, useToast } from "../components/ui";
 import { business } from "../data/mock";
-import { backlinks, citationScore, citationStatusMeta, citations as seedCitations, linkHistory, linkOpportunities, linkSummary, type Citation, type CitationStatus, type LinkOpportunity, type LinkStatus } from "../data/authority";
+import { backlinks, citationScore, citationStatusMeta, linkHistory, linkOpportunities, linkSummary, type Citation, type CitationStatus, type LinkOpportunity, type LinkStatus } from "../data/authority";
 import { startRun } from "../lib/runs";
 
 type Tab = "citations" | "links";
@@ -11,17 +15,32 @@ type Tab = "citations" | "links";
 export default function Citations() {
   const [params, setParams] = useSearchParams();
   const tab: Tab = params.get("tab") === "links" ? "links" : "citations";
+  const { location } = useScopedLocation();
+  const { website } = useScopedWebsite();
   return (
     <>
       <PageHeader
         title="Citations & backlinks"
         sub="Where your business is listed and who links to you. Both tell Google, and the AI assistants that copy from these sites, that you're a real, trusted local business."
       />
+      {/* Citations are a Location's listings; backlinks point at a Website. */}
+      <ScopeBar kind={tab === "citations" ? "location" : "website"} />
       <Tabs value={tab} onChange={(t) => setParams(t === "links" ? { tab: "links" } : {}, { replace: true })} tabs={[
-        { id: "citations", label: "Citations", count: seedCitations.filter((c) => c.status !== "correct").length },
+        { id: "citations", label: "Citations", count: (location ? citationsFor(location.id) : locations.flatMap((l) => citationsFor(l.id))).filter((c) => c.status !== "correct").length },
         { id: "links", label: "Backlinks", count: linkOpportunities.filter((l) => l.status === "idea").length },
       ]} />
-      <div className="mt-6">{tab === "citations" ? <CitationsTab /> : <LinksTab />}</div>
+      <div className="mt-6">
+        {tab === "citations"
+          ? location ? <CitationsTab key={location.id} seed={citationsFor(location.id)} /> : (
+            <LocationOverview columns={["Citation health", "Wrong details", "Missing"]} row={(id) => {
+              const list = citationsFor(id);
+              return [`${citationScore(list)}`, list.filter((c) => c.status === "wrong" || c.status === "duplicate").length, list.filter((c) => c.status === "missing").length];
+            }} />
+          )
+          : website ? <LinksTab key={website.id} websiteId={website.id} /> : (
+            <WebsiteOverview columns={["Referring domains", "Local sites", "New, 30 days"]} row={(w) => { const y = linkData[w.id].you; return [y.refDomains, y.localDomains, `+${y.new30}`]; }} />
+          )}
+      </div>
     </>
   );
 }
@@ -30,8 +49,8 @@ export default function Citations() {
 
 type Building = Record<string, "running" | "submitted">;
 
-function CitationsTab() {
-  const [list, setList] = useState(seedCitations);
+function CitationsTab({ seed }: { seed: Citation[] }) {
+  const [list, setList] = useState(seed);
   const [filter, setFilter] = useState<CitationStatus | "all" | "ai">("all");
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [building, setBuilding] = useState<Building>({});
@@ -118,7 +137,7 @@ function CitationsTab() {
                   <td className="pl-5">{actionable(c) && <Checkbox label={`Select ${c.site}`} checked={sel.has(c.id)} onChange={() => { const s = new Set(sel); s.has(c.id) ? s.delete(c.id) : s.add(c.id); setSel(s); }} />}</td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-1.5 font-medium">{c.site}{c.aiCited && <span title="AI assistants cite this site for local recommendations"><Sparkles size={12} className="text-accent" /></span>}</div>
-                    <div className="text-[12px] text-muted">{c.domain} · {c.kind}</div>
+                    <div className="text-[12px] text-muted"><ExternalUrl domain={c.domain} /> · {c.kind}</div>
                   </td>
                   <td className="px-3 py-2.5">
                     <Badge tone={m.tone}>{m.label}</Badge>
@@ -172,12 +191,12 @@ const statusLabel: Record<LinkStatus, { label: string; tone: "neutral" | "info" 
 
 const order: Record<LinkStatus, number> = { idea: 0, outreach: 1, won: 2, lost: 3 };
 
-function LinksTab() {
+function LinksTab({ websiteId }: { websiteId: string }) {
   const [ops, setOps] = useState<LinkOpportunity[]>(linkOpportunities);
   const [only, setOnly] = useState<"all" | "local" | "gap">("all");
   const [draft, setDraft] = useState<LinkOpportunity | null>(null);
   const { toast, node } = useToast();
-  const s = linkSummary;
+  const s = { ...linkSummary, you: linkData[websiteId].you };
   const shown = useMemo(() => ops.filter((o) => only === "all" || (only === "local" ? o.local : o.linksTo.length >= 2)).sort((a, b) => order[a.status] - order[b.status] || b.linksTo.length - a.linksTo.length || b.authority - a.authority), [ops, only]);
   const setStatus = (id: string, status: LinkStatus) => setOps((xs) => xs.map((x) => (x.id === id ? { ...x, status } : x)));
   const email = (o: LinkOpportunity) => `Hi there,
@@ -208,7 +227,7 @@ Dr. Patel · ${business.phone}`;
         <Card>
           <CardHeader title="Sites linking to you, over time" sub="Referring domains" />
           <LineChart height={180} labels={linkHistory.labels} series={[
-            { name: "You", color: "var(--accent)", values: linkHistory.you },
+            { name: "You", color: "var(--accent)", values: linkData[websiteId].history },
             { name: s.leader.name, color: "var(--ink)", values: linkHistory.leader },
             { name: "Top 3 average", color: "var(--subtle)", values: linkHistory.top3, dashed: true },
           ]} />
@@ -220,7 +239,7 @@ Dr. Patel · ${business.phone}`;
               <li key={b.domain} className="flex items-center gap-3 px-5 py-2.5 text-[13px]">
                 {b.state === "new" ? <ArrowUp size={14} className="text-good" /> : <ArrowDown size={14} className="text-bad" />}
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium">{b.domain}</span>
+                  <ExternalUrl domain={b.domain} className="block font-medium" />
                   <span className="block truncate text-[12px] text-muted">“{b.anchor}” · {b.follow ? "counts for SEO" : "nofollow"}{b.local && " · local"}</span>
                 </span>
                 <span className="shrink-0 text-[12px] text-subtle">{b.state === "new" ? "Found" : "Lost"} {b.firstSeen}</span>
@@ -244,7 +263,7 @@ Dr. Patel · ${business.phone}`;
             <div key={o.id} className="flex flex-col gap-3 border-b border-line px-5 py-4 last:border-0 sm:flex-row sm:items-start">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium">{o.domain}</span>
+                  <ExternalUrl domain={o.domain} className="font-medium" />
                   <Badge>{o.type}</Badge>
                   {o.local && <Badge tone="accent"><MapPin size={10} /> Local</Badge>}
                   <span className="num text-[12px] text-subtle">authority {o.authority}</span>

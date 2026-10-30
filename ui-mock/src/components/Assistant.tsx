@@ -9,9 +9,9 @@ import { TaskButton } from "./Todo";
 import { gridStats, keywords } from "../data/mock";
 import { tasks, useRunState } from "../lib/tasks";
 import { timeAgo } from "../lib/runs";
-import { ChannelBadge, dayLabel } from "./Social";
+import { AccountBadge, dayLabel } from "./Social";
 import { PostPreview } from "./PostPreview";
-import { channelOf } from "../data/social";
+import { accountLabel } from "../data/social";
 import { schedulePost, useSocialPosts } from "../lib/social";
 import { skillName } from "../lib/skills";
 import { ask, closeAssistant, deleteChat, newChat, openChat, setWide, showHistory, suggestionsFor, toggleAssistant, useAssistant, type Block, type PageContext } from "../lib/assistant";
@@ -100,17 +100,17 @@ function PostBlock({ postId }: { postId: string }) {
   const p = useSocialPosts().find((x) => x.id === postId);
   const [tab, setTab] = useState(0);
   if (!p) return <p className="m-0 text-[13px] text-muted">That draft was deleted.</p>;
-  const ch = p.channels[Math.min(tab, p.channels.length - 1)];
+  const ch = p.accounts[Math.min(tab, p.accounts.length - 1)];
   return (
     <div className="overflow-hidden rounded-xl border border-line bg-surface">
       <div className="flex items-center gap-1 border-b border-line px-2 pt-2">
-        {p.channels.map((c, i) => (
+        {p.accounts.map((c, i) => (
           <button key={c} onClick={() => setTab(i)} aria-pressed={c === ch} className={cn("-mb-px flex items-center gap-1.5 border-b-2 px-2 pb-2 text-[12.5px]", c === ch ? "border-ink text-fg" : "border-transparent text-muted hover:text-fg")}>
-            <ChannelBadge id={c} size={16} /> {channelOf(c).name}
+            <AccountBadge id={c} size={16} /> {accountLabel(c)}
           </button>
         ))}
       </div>
-      <div className="flex justify-center bg-hover/50 px-3 py-3"><PostPreview channel={ch} text={p.texts[ch] ?? ""} format={p.format} /></div>
+      <div className="flex justify-center bg-hover/50 px-3 py-3"><PostPreview account={ch} text={p.texts[ch] ?? ""} format={p.format} /></div>
       <div className="flex flex-wrap items-center gap-2 border-t border-line px-3.5 py-2.5 text-[12px] text-muted">
         <span>{p.format}</span>
         <span className="flex-1" />

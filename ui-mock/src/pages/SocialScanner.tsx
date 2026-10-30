@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
 import { Bookmark, BookmarkCheck, Check, ChevronDown, Copy, ExternalLink, Flame, Loader2, Plus, Radar, Settings2, Trash2, Undo2, Wand2, X } from "lucide-react";
 import { Badge, Button, Card, Drawer, PageHeader, Segmented, Tabs, Toggle, cn, useToast } from "../components/ui";
-import { ChannelBadge, PostDrawer } from "../components/Social";
+import { PlatformMark, PostDrawer } from "../components/Social";
 import { WordList } from "./Brand";
 import { trendSources, type Trend } from "../data/social";
 import { opportunities, platformOf, platforms, type Opportunity, type PlatformId } from "../data/scanner";
@@ -207,7 +207,7 @@ function TrendingList() {
                 <p className="mt-1.5 mb-0 text-[13.5px] leading-[1.55] text-muted">{t.insight}</p>
                 <p className="mt-1.5 mb-0 text-[13.5px] leading-[1.55]"><span className="font-medium">Your version: </span>{t.angle}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px] text-subtle">
-                  {t.bestFor.map((c) => <ChannelBadge key={c} id={c} size={16} />)}
+                  {t.bestFor.map((c) => <PlatformMark key={c} platform={c} size={16} />)}
                   <span>{t.remix.format}</span>
                   {used && <Link to="/social/posts" className="ml-1 text-muted hover:text-fg">· {used.status === "published" ? "Posted" : used.status === "scheduled" ? "Scheduled" : "In drafts"} →</Link>}
                 </div>

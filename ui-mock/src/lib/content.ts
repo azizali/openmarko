@@ -6,12 +6,17 @@ import { blogPosts, contentArchive, keywords, type ContentItem, type ContentStat
 import { fmt } from "../components/ui";
 
 export type ContentType = "article" | "post";
-export type PlanItem = ContentItem & { type: ContentType; why?: string; isNew?: boolean };
+export type PlanItem = ContentItem & { type: ContentType; why?: string; isNew?: boolean; websiteId?: string }; // no websiteId = the first Website
 
 let items: PlanItem[] = [
   ...blogPosts.map((b) => ({ ...b, type: "article" as const })),
   ...contentArchive.filter((c) => c.type === "article"),
+  // The Mueller Website (web_2) is new: two articles so far.
+  { id: "w2a1", type: "article", title: "Kids' first dental visit: what to expect in Mueller", status: "published", keywordId: "kw_6", date: "Oct 2", words: 1100, metric: "41 clicks", websiteId: "web_2" },
+  { id: "w2a2", type: "article", title: "Same-day crowns: how one-visit crowns work", status: "draft", keywordId: "kw_7", date: "Edited yesterday", words: 980, websiteId: "web_2" },
 ];
+/** Articles on one Website. */
+export const onWebsite = (i: PlanItem, websiteId: string) => (i.websiteId ?? "web_1") === websiteId;
 const listeners = new Set<() => void>();
 const set = (next: PlanItem[]) => { items = next; listeners.forEach((l) => l()); };
 
@@ -42,7 +47,7 @@ const articleTitles = [
  * Suggests `n` ideas for keywords that have the least content aimed at them, biggest search volume first.
  * Real build: an LLM pass over the keyword's top results and the questions people ask.
  */
-export function suggestIdeas(n = 3, keywordId?: string) {
+export function suggestIdeas(n = 3, keywordId?: string, websiteId?: string) {
   const count = (id: string) => items.filter((i) => i.keywordId === id).length;
   const pool = keywords
     .filter((k) => !keywordId || k.id === keywordId)
@@ -58,7 +63,7 @@ export function suggestIdeas(n = 3, keywordId?: string) {
       titles.add(title);
       const covered = count(k.id);
       fresh.push({
-        id: `c${Date.now()}_${fresh.length}`, type, title, status: "idea", keywordId: k.id, date: "Suggested", isNew: true,
+        id: `c${Date.now()}_${fresh.length}`, type, title, status: "idea", keywordId: k.id, date: "Suggested", isNew: true, websiteId,
         words: 1200 + (k.volume % 5) * 100,
         why: `${fmt(k.volume)} searches/mo · ${covered ? `${covered} piece${covered === 1 ? "" : "s"} so far` : "nothing aimed at it yet"}`,
       });

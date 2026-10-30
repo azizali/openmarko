@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Pencil, Plus, Trash2, Wand2 } from "lucide-react";
 import { Badge, Button, Card, Drawer, PageHeader, Segmented, cn } from "../components/ui";
-import { ChannelBadge, PostDrawer } from "../components/Social";
-import { channels, type ChannelId, type Trend } from "../data/social";
+import { PlatformMark, PostDrawer } from "../components/Social";
+import { platformMeta, type SocialPlatform, type Trend } from "../data/social";
 import { asTrend, blankSwipe, markUsed, removeSwipe, saveSwipe, useSwipes, type Swipe, type SwipeKind } from "../lib/swipes";
 
 const sources = [
@@ -59,7 +59,7 @@ export default function SwipeFile() {
                 ))}
               </ol>
               {s.example && <p className="mt-2 mb-0 text-[13.5px] leading-[1.55]"><span className="font-medium">Yours: </span>{s.example}</p>}
-              <div className="mt-2 flex items-center gap-1">{s.channels.map((c) => <ChannelBadge key={c} id={c} size={16} />)}</div>
+              <div className="mt-2 flex items-center gap-1">{s.platforms.map((c) => <PlatformMark key={c} platform={c} size={16} />)}</div>
             </div>
             <div className="flex shrink-0 items-center gap-2 md:flex-col md:items-end">
               <Button size="sm" variant="primary" icon={<Wand2 size={12} />} onClick={() => { markUsed(s.id); setPost(asTrend(s)); }}>Create post</Button>
@@ -85,7 +85,7 @@ function SwipeEditor({ swipe, onClose }: { swipe: Swipe | null; onClose: () => v
   if (!swipe || !s) return null;
   const isNew = !saved.some((x) => x.id === swipe.id);
   const field = "w-full rounded-lg border border-line bg-surface p-3 text-[13.5px] leading-[1.55] outline-none focus:border-line-strong";
-  const toggleCh = (c: ChannelId) => setS({ ...s, channels: s.channels.includes(c) ? s.channels.filter((x) => x !== c) : [...s.channels, c] });
+  const toggleCh = (c: SocialPlatform) => setS({ ...s, platforms: s.platforms.includes(c) ? s.platforms.filter((x) => x !== c) : [...s.platforms, c] });
 
   return (
     <Drawer
@@ -124,9 +124,9 @@ function SwipeEditor({ swipe, onClose }: { swipe: Swipe | null; onClose: () => v
         <div>
           <span className="mb-1.5 block text-[12.5px] font-medium text-muted">Best on</span>
           <div className="flex flex-wrap gap-1.5">
-            {channels.map((c) => (
-              <button key={c.id} onClick={() => toggleCh(c.id)} aria-pressed={s.channels.includes(c.id)} className={cn("inline-flex h-8 items-center gap-2 rounded-full border pr-3 pl-1.5 text-[13px] transition-colors", s.channels.includes(c.id) ? "border-ink bg-active" : "border-line text-muted hover:bg-hover")}>
-                <ChannelBadge id={c.id} size={20} /> {c.name}
+            {(Object.keys(platformMeta) as SocialPlatform[]).map((p) => (
+              <button key={p} onClick={() => toggleCh(p)} aria-pressed={s.platforms.includes(p)} className={cn("inline-flex h-8 items-center gap-2 rounded-full border pr-3 pl-1.5 text-[13px] transition-colors", s.platforms.includes(p) ? "border-ink bg-active" : "border-line text-muted hover:bg-hover")}>
+                <PlatformMark platform={p} size={20} /> {platformMeta[p].name}
               </button>
             ))}
           </div>

@@ -2,28 +2,32 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, NavLink, useParams } from "react-router";
 import {
   Store, SearchCheck, BarChart3, Globe, Hash, Check, AudioLines, Puzzle, MapPin, Plug, Zap, Users, History,
-  UserRound, Palette, Bell, CreditCard, Sun, Moon, Monitor,
+  UserRound, Palette, Bell, CreditCard, Sun, Moon, Monitor, Plus, AtSign,
 } from "lucide-react";
 import { Badge, Button, Card, CardHeader, PageHeader, Progress, Toggle, cn } from "../components/ui";
 import { locations } from "../data/mock";
 import { brandFacts } from "../data/brand";
-import { channels } from "../data/social";
-import { ChannelBadge } from "../components/Social";
+import { accounts, platformMeta, type SocialPlatform } from "../data/social";
+import { PlatformMark } from "../components/Social";
+import { organization, shortLocation, websites } from "../data/org";
 import { setThemeMode, useThemeMode, type ThemeMode } from "../lib/theme";
 import Brand from "./Brand";
 import Skills from "./Skills";
+import { ExternalUrl } from "../components/Scope";
 import Runs from "./Runs";
 
-// Two scopes, one rule: Business settings are shared by everyone who works on
-// the business and travel with it (voice, skills, connections, who has access).
-// Account settings belong to the signed-in person and follow them to every
-// business they open (sign-in, theme, notifications, the plan they pay for).
+// Two scopes, one rule: Organization settings are shared by everyone who works on
+// the Organization and travel with it (voice, skills, Locations, Websites,
+// Accounts, who has access). "You" settings belong to the signed-in Member and
+// follow them to every Organization they open (sign-in, theme, notifications, plan).
 type Section = { id: string; label: string; icon: typeof Store; page: () => React.JSX.Element };
 
 export const businessSections: Section[] = [
   { id: "brand", label: "Brand voice", icon: AudioLines, page: Brand },
   { id: "skills", label: "Marko skills", icon: Puzzle, page: Skills },
   { id: "locations", label: "Locations", icon: MapPin, page: Locations },
+  { id: "websites", label: "Websites", icon: Globe, page: Websites },
+  { id: "accounts", label: "Accounts", icon: AtSign, page: Accounts },
   { id: "integrations", label: "Integrations", icon: Plug, page: Integrations },
   { id: "automation", label: "Automation", icon: Zap, page: Automation },
   { id: "team", label: "Team", icon: Users, page: Team },
@@ -57,9 +61,9 @@ function SubNav() {
   );
   return (
     <nav ref={ref} aria-label="Settings" className="-mx-4 flex gap-4 overflow-x-auto border-b border-line px-4 pb-2 lg:sticky lg:top-6 lg:mx-0 lg:flex-col lg:gap-6 lg:self-start lg:overflow-visible lg:border-0 lg:p-0">
-      {group("Business", `Shared by everyone on ${brandFacts.name}`, businessSections)}
+      {group("Organization", `Shared by everyone on ${organization.name}`, businessSections)}
       <span aria-hidden className="w-px shrink-0 self-stretch bg-line lg:hidden" />
-      {group("Account", "Just for you, in every business", accountSections)}
+      {group("You", "Just for you, in every organization", accountSections)}
     </nav>
   );
 }
@@ -77,60 +81,124 @@ export default function Settings() {
   );
 }
 
-const integrations = [
-  { icon: Store, name: "Google Business Profile", status: "Connected", detail: "2 locations · business.manage", ok: true },
-  { icon: SearchCheck, name: "Google Search Console", status: "Connected", detail: "sc-domain:mapleandmaindental.com", ok: true },
-  { icon: BarChart3, name: "Google Analytics 4", status: "Not connected", detail: "Attribute calls & bookings to SEO", ok: false },
-  { icon: Globe, name: "WordPress", status: "Connected", detail: "Application password · Yoast detected", ok: true },
-  { icon: Hash, name: "Slack", status: "Not connected", detail: "Alerts and weekly digests", ok: false },
-];
+// ---------- Organization structure ----------
 
-function Integrations() {
+function Locations() {
   return (
     <>
-      <PageHeader title="Integrations" sub={`Accounts ${brandFacts.name} is connected to. Everyone on the team works through these.`} />
-      <div className="max-w-3xl space-y-6">
-        <Card pad={false}>
-          {integrations.map((i) => (
-            <div key={i.name} className="flex items-center gap-4 border-b border-line px-5 py-4 last:border-0">
-              <span className="grid size-9 place-items-center rounded-lg bg-hover"><i.icon size={16} /></span>
+      <PageHeader title="Locations" sub={`Places customers visit. Each has its own Google profile, keywords and map rankings, and shares ${organization.name}'s brand voice.`} actions={<NavLink to="/onboarding"><Button size="sm" icon={<Plus size={13} />}>Add location</Button></NavLink>} />
+      <Card pad={false} className="max-w-3xl">
+        {locations.map((l) => {
+          const site = websites.find((w) => w.locationIds.includes(l.id));
+          const tagged = accounts.filter((a) => a.locationId === l.id && a.platform !== "google");
+          return (
+            <div key={l.id} className="flex flex-wrap items-start gap-4 border-b border-line px-5 py-4 last:border-0">
+              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-hover"><MapPin size={16} /></span>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 text-[14px] font-medium">{i.name}{i.ok && <Badge tone="good"><Check size={10} /> {i.status}</Badge>}</div>
-                <div className="truncate text-[12.5px] text-muted">{i.detail}</div>
+                <div className="text-[14px] font-medium">{shortLocation(l.id)}</div>
+                <div className="text-[12.5px] text-muted">{l.address}</div>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px]">
+                  <Badge tone={l.googleProfile === "connected" ? "good" : "warn"}><Store size={11} /> Google profile {l.googleProfile === "connected" ? "connected" : l.googleProfile === "verifying" ? "verifying" : "not connected"}</Badge>
+                  <Badge>{l.keywords} keywords</Badge>
+                  {site && <Badge><Globe size={11} /> <ExternalUrl domain={site.domain} /></Badge>}
+                  {tagged.map((a) => <Badge key={a.id}><PlatformMark platform={a.platform} size={12} /> {a.handle}</Badge>)}
+                </div>
               </div>
-              <Button size="sm" variant={i.ok ? "ghost" : "primary"}>{i.ok ? "Manage" : "Connect"}</Button>
+              <Button size="sm" variant="ghost">Edit</Button>
             </div>
-          ))}
-        </Card>
-        <Card pad={false}>
-          <div className="border-b border-line px-5 py-3 text-[13px] font-medium text-muted">Social accounts</div>
-          {channels.filter((c) => c.id !== "google").map((c) => (
-            <div key={c.id} className="flex items-center gap-4 border-b border-line px-5 py-4 last:border-0">
-              <ChannelBadge id={c.id} size={36} />
+          );
+        })}
+      </Card>
+    </>
+  );
+}
+
+function Websites() {
+  return (
+    <>
+      <PageHeader title="Websites" sub="Sites the organization owns. One website can serve several locations; site health, articles and search data are per website." actions={<Button size="sm" icon={<Plus size={13} />}>Add website</Button>} />
+      <div className="max-w-3xl space-y-4">
+        {websites.map((w) => (
+          <Card key={w.id} pad={false}>
+            <div className="flex flex-wrap items-center gap-3 border-b border-line px-5 py-4">
+              <span className="grid size-9 place-items-center rounded-lg bg-hover"><Globe size={16} /></span>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 text-[14px] font-medium">{c.name}{c.connected && <Badge tone="good"><Check size={10} /> Connected</Badge>}</div>
-                <div className="truncate text-[12.5px] text-muted">{c.connected ? `${c.handle} · ${c.followers.toLocaleString()} followers` : "Post and schedule from Posts & calendar"}</div>
+                <div className="text-[14px] font-medium"><ExternalUrl domain={w.domain} /></div>
+                <div className="text-[12.5px] text-muted">Serves {w.locationIds.length === locations.length ? "every location" : w.locationIds.map(shortLocation).join(", ")}</div>
               </div>
-              <Button size="sm" variant={c.connected ? "ghost" : "primary"}>{c.connected ? "Manage" : "Connect"}</Button>
+              <Button size="sm" variant="ghost">Edit</Button>
             </div>
-          ))}
-        </Card>
+            {w.tools.map((t) => (
+              <div key={t.name} className="flex items-center gap-4 border-b border-line px-5 py-3.5 last:border-0">
+                <span className="grid size-8 place-items-center rounded-lg bg-hover">{t.name === "Search Console" ? <SearchCheck size={15} /> : t.name === "WordPress" ? <Globe size={15} /> : <BarChart3 size={15} />}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 text-[13.5px] font-medium">{t.name}{t.connected && <Badge tone="good"><Check size={10} /> Connected</Badge>}</div>
+                  <div className="truncate text-[12.5px] text-muted">{t.detail}</div>
+                </div>
+                <Button size="sm" variant={t.connected ? "ghost" : "primary"}>{t.connected ? "Manage" : "Connect"}</Button>
+              </div>
+            ))}
+          </Card>
+        ))}
       </div>
     </>
   );
 }
 
-function Locations() {
+/** The organization's own profiles to post from, grouped by platform. Each speaks for every location unless it's tagged to one. */
+function Accounts() {
+  const [list, setList] = useState(accounts);
+  const [adding, setAdding] = useState(false);
+  const social = (Object.keys(platformMeta) as SocialPlatform[]).filter((p) => p !== "google");
+  const add = (p: SocialPlatform) => { setList([...list, { id: `${p}-${Date.now().toString(36)}`, platform: p, handle: `New ${platformMeta[p].name} account`, connected: false, followers: 0, followersPrev: 0 }]); setAdding(false); };
   return (
     <>
-      <PageHeader title="Locations" sub={`Each location has its own keywords and grid scans, and shares ${brandFacts.name}'s voice and skills.`} actions={<NavLink to="/onboarding"><Button size="sm">Add location</Button></NavLink>} />
-      <Card pad={false} className="max-w-3xl">
-        {locations.map((l, i) => (
-          <div key={l.id} className="flex items-center gap-4 border-b border-line px-5 py-4 last:border-0">
-            <div className="min-w-0 flex-1"><div className="text-[14px] font-medium">{l.name}</div><div className="text-[12.5px] text-muted">{l.city} · {i ? "9" : "16"} keywords · 7×7 grid weekly</div></div>
-            <Button size="sm" variant="ghost">Edit</Button>
-          </div>
+      <PageHeader title="Accounts" sub="Your profiles on each platform, the ones you post from. An account speaks for every location unless you tag it to one." actions={<Button size="sm" icon={<Plus size={13} />} onClick={() => setAdding(!adding)}>Add account</Button>} />
+      {adding && (
+        <div className="mb-4 flex max-w-3xl flex-wrap gap-1.5 rounded-lg bg-hover p-2.5">
+          {social.map((p) => <button key={p} onClick={() => add(p)} className="inline-flex h-8 items-center gap-2 rounded-full border border-line bg-surface pr-3 pl-1.5 text-[13px] hover:border-line-strong"><PlatformMark platform={p} size={20} /> {platformMeta[p].name}</button>)}
+        </div>
+      )}
+      <div className="max-w-3xl space-y-4">
+        {social.filter((p) => list.some((a) => a.platform === p)).map((p) => (
+          <Card key={p} pad={false}>
+            <div className="border-b border-line px-5 py-2.5 text-[12.5px] font-medium text-muted">{platformMeta[p].name}</div>
+            {list.filter((a) => a.platform === p).map((a) => (
+              <div key={a.id} className="flex flex-wrap items-center gap-4 border-b border-line px-5 py-3.5 last:border-0">
+                <PlatformMark platform={a.platform} size={32} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 text-[14px] font-medium">{a.handle}{a.connected && <Badge tone="good"><Check size={10} /> Connected</Badge>}</div>
+                  <div className="text-[12.5px] text-muted">{a.connected ? `${a.followers.toLocaleString()} followers` : "Not connected yet"}</div>
+                </div>
+                {locations.length > 1 && (
+                  <label className="flex items-center gap-2 text-[12.5px] text-muted">Speaks for
+                    <select value={a.locationId ?? ""} onChange={(e) => setList(list.map((x) => (x.id === a.id ? { ...x, locationId: e.target.value || undefined } : x)))} className="h-8 rounded-md border border-line bg-surface px-2 text-[13px] text-fg outline-none">
+                      <option value="">All locations</option>
+                      {locations.map((l) => <option key={l.id} value={l.id}>{shortLocation(l.id)}</option>)}
+                    </select>
+                  </label>
+                )}
+                <Button size="sm" variant={a.connected ? "ghost" : "primary"} onClick={() => !a.connected && setList(list.map((x) => (x.id === a.id ? { ...x, connected: true } : x)))}>{a.connected ? "Manage" : "Connect"}</Button>
+              </div>
+            ))}
+          </Card>
         ))}
+        <p className="text-[12.5px] text-subtle">Google profiles belong to a location and are under <NavLink to="/settings/locations" className="underline decoration-line-strong underline-offset-2 hover:text-fg">Locations</NavLink>.</p>
+      </div>
+    </>
+  );
+}
+
+function Integrations() {
+  return (
+    <>
+      <PageHeader title="Integrations" sub="Tools connected to the organization. Website tools (Search Console, Analytics, WordPress) are under Websites." />
+      <Card pad={false} className="max-w-3xl">
+        <div className="flex items-center gap-4 px-5 py-4">
+          <span className="grid size-9 place-items-center rounded-lg bg-hover"><Hash size={16} /></span>
+          <div className="min-w-0 flex-1"><div className="text-[14px] font-medium">Slack</div><div className="truncate text-[12.5px] text-muted">Alerts and weekly digests</div></div>
+          <Button size="sm" variant="primary">Connect</Button>
+        </div>
       </Card>
     </>
   );

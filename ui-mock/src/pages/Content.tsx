@@ -3,7 +3,9 @@ import { Link } from "react-router";
 import { Loader2, Newspaper, Sparkles, X } from "lucide-react";
 import { Badge, Button, Card, PageHeader, Stat, cn, fmt, useToast } from "../components/ui";
 import { keywords, type ContentStatus } from "../data/mock";
-import { advanceContent, removeContent, suggestIdeas, useContent, type PlanItem } from "../lib/content";
+import { advanceContent, onWebsite, removeContent, suggestIdeas, useContent, type PlanItem } from "../lib/content";
+import { ExternalUrl, ScopeBar, WebsiteOverview } from "../components/Scope";
+import { useScopedWebsite } from "../lib/scope";
 
 const columns: { id: ContentStatus; label: string; sub: string }[] = [
   { id: "idea", label: "Ideas", sub: "Suggested from your keywords" },
@@ -14,8 +16,25 @@ const columns: { id: ContentStatus; label: string; sub: string }[] = [
 const dot: Record<ContentStatus, string> = { idea: "bg-subtle", draft: "bg-warn", scheduled: "bg-info", published: "bg-good" };
 const action: Partial<Record<ContentStatus, string>> = { idea: "Write draft", draft: "Publish", scheduled: "Publish now" };
 
+// Articles live on a Website. "All websites" compares them.
 export default function Content() {
-  const items = useContent();
+  const { website } = useScopedWebsite();
+  const all = useContent();
+  if (website) return <ContentBody key={website.id} websiteId={website.id} domain={website.domain} />;
+  return (
+    <>
+      <PageHeader title="Articles" sub="Articles on each of the organization's websites, from idea to published." />
+      <ScopeBar kind="website" />
+      <WebsiteOverview columns={["Published", "Drafts & scheduled", "Ideas"]} row={(w) => {
+        const mine = all.filter((i) => onWebsite(i, w.id));
+        return [mine.filter((i) => i.status === "published").length, mine.filter((i) => i.status === "draft" || i.status === "scheduled").length, mine.filter((i) => i.status === "idea").length];
+      }} />
+    </>
+  );
+}
+
+function ContentBody({ websiteId, domain }: { websiteId: string; domain: string }) {
+  const items = useContent().filter((i) => onWebsite(i, websiteId));
   const [kw, setKw] = useState("all");
   const [busy, setBusy] = useState<string | null>(null);
   const [suggesting, setSuggesting] = useState(false);
@@ -37,7 +56,7 @@ export default function Content() {
   const suggest = () => {
     setSuggesting(true);
     setTimeout(() => {
-      const n = suggestIdeas(3, kw === "all" ? undefined : kw);
+      const n = suggestIdeas(3, kw === "all" ? undefined : kw, websiteId === "web_1" ? undefined : websiteId);
       setSuggesting(false);
       toast(n ? `${n} new idea${n === 1 ? "" : "s"} added` : "No new ideas for this keyword");
     }, 800);
@@ -47,9 +66,10 @@ export default function Content() {
     <>
       <PageHeader
         title="Articles"
-        sub="Every article on your website, from idea to published, each aimed at a keyword you track. Google profile and social posts are in Posts & calendar."
+        sub={<>Every article on <ExternalUrl domain={domain} />, from idea to published, each aimed at a keyword you track. Google profile and social posts are in Posts & calendar.</>}
         actions={<Button variant="primary" icon={suggesting ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} disabled={suggesting} onClick={suggest}>Suggest ideas</Button>}
       />
+      <ScopeBar kind="website" />
 
       <Card className="mb-6 grid grid-cols-2 gap-6 sm:grid-cols-4">
         <Stat label="Published" value={count("published")} />

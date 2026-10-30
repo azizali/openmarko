@@ -2,12 +2,42 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { Wand2, ChevronRight } from "lucide-react";
 import { Badge, Card, CardHeader, Delta, PageHeader, ScoreRing, Tabs, cn } from "../components/ui";
-import { auditIssues, auditSummary, type Severity } from "../data/mock";
+import { type Severity } from "../data/mock";
+import { websiteData } from "../data/scoped";
+import { ExternalUrl, ScopeBar, WebsiteOverview } from "../components/Scope";
+import { useScopedWebsite } from "../lib/scope";
 
 const sevTone = { critical: "bad", warning: "warn", notice: "info" } as const;
 const cats = ["All", "Technical", "On-page", "Local", "Performance", "Content"] as const;
 
+// Site health belongs to a Website. "All websites" compares them.
 export default function Audit() {
+  const { website } = useScopedWebsite();
+  return (
+    <>
+      <PageHeader
+        title="Site audit"
+        sub={website
+          ? <><ExternalUrl domain={website.domain} /> · {websiteData[website.id].summary.pages} pages · crawled {websiteData[website.id].summary.crawled} in {websiteData[website.id].summary.duration}</>
+          : "Every website the organization owns, checked weekly."}
+      />
+      <ScopeBar kind="website" />
+      {website ? <AuditBody key={website.id} websiteId={website.id} /> : (
+        <WebsiteOverview
+          columns={["Site health", "Critical", "Warnings", "Pages"]}
+          row={(w) => {
+            const d = websiteData[w.id];
+            const n = (s: Severity) => d.issues.filter((i) => i.severity === s).length;
+            return [<span className={d.summary.score >= 80 ? "text-good" : "text-warn"}>{d.summary.score}</span>, n("critical") ? <Badge tone="bad">{n("critical")}</Badge> : "0", n("warning"), d.summary.pages];
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function AuditBody({ websiteId }: { websiteId: string }) {
+  const { summary: auditSummary, issues: auditIssues } = websiteData[websiteId];
   const [sev, setSev] = useState<"all" | Severity>("all");
   const [cat, setCat] = useState<(typeof cats)[number]>("All");
   const list = auditIssues.filter((i) => (sev === "all" || i.severity === sev) && (cat === "All" || i.category === cat));
@@ -21,11 +51,6 @@ export default function Audit() {
 
   return (
     <>
-      <PageHeader
-        title="Site audit"
-        sub={`mapleandmaindental.com · ${auditSummary.pages} pages · crawled ${auditSummary.crawled} in ${auditSummary.duration}`}
-      />
-
       <div className="mb-6 grid gap-6 lg:grid-cols-[1fr_1fr]">
         <Card className="flex items-center gap-6">
           <ScoreRing score={auditSummary.score} size={88} stroke={7} label="Site health" />

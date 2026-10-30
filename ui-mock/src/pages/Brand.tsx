@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { Plus, RefreshCw, X } from "lucide-react";
 import { Badge, Button, Card, CardHeader, PageHeader, useToast } from "../components/ui";
+import { ExternalUrl } from "../components/Scope";
+import { websites } from "../data/org";
 import { brandFacts, inVoice, usedBy, voice } from "../data/brand";
 
 // Who the business is and how it sounds. Belongs to the business, not a
@@ -72,7 +74,7 @@ export default function Brand() {
               <dt className="text-muted">Business</dt><dd className="m-0">{brandFacts.name} · {brandFacts.category}</dd>
               <dt className="text-muted">Locations</dt><dd className="m-0">{brandFacts.locations.join(", ")}</dd>
               <dt className="text-muted">Hours</dt><dd className="m-0">{brandFacts.hours}</dd>
-              <dt className="text-muted">Contact</dt><dd className="m-0">{brandFacts.phone} · {brandFacts.website}</dd>
+              <dt className="text-muted">Contact</dt><dd className="m-0">{brandFacts.phone} · {websites.map((w, i) => <span key={w.id}>{i > 0 && ", "}<ExternalUrl domain={w.domain} /></span>)}</dd>
               <dt className="text-muted">Who it's for</dt><dd className="m-0">{brandFacts.audience}</dd>
             </dl>
             <div className="mt-5 flex flex-col gap-4">

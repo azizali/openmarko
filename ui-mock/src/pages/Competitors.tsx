@@ -1,9 +1,29 @@
 import { Link, useNavigate } from "react-router";
 import { Plus, Star } from "lucide-react";
 import { Badge, Button, Card, PageHeader, Progress, cn, fmt } from "../components/ui";
-import { competitors } from "../data/mock";
+import { competitorsFor } from "../data/scoped";
+import { LocationOverview, ScopeBar } from "../components/Scope";
+import { useScopedLocation } from "../lib/scope";
 
+// Competitors are whoever shares the map pack around a Location.
 export default function Competitors() {
+  const { location } = useScopedLocation();
+  if (location) return <CompetitorsBody key={location.id} locationId={location.id} />;
+  return (
+    <>
+      <PageHeader title="Competitors" sub="Businesses that share the map pack with each location." />
+      <ScopeBar kind="location" />
+      <LocationOverview columns={["Top 3 of nearby searches", "Leader", "Reviews vs leader"]} row={(id) => {
+        const list = competitorsFor(id);
+        const you = list.find((c) => c.isYou)!, lead = [...list].filter((c) => !c.isYou).sort((a, b) => b.solv - a.solv)[0];
+        return [`${you.solv}%`, `${lead.name} (${lead.solv}%)`, `${you.reviews} vs ${lead.reviews}`];
+      }} />
+    </>
+  );
+}
+
+function CompetitorsBody({ locationId }: { locationId: string }) {
+  const competitors = competitorsFor(locationId);
   const navigate = useNavigate();
   const you = competitors.find((c) => c.isYou)!;
   const sorted = [...competitors].sort((a, b) => b.solv - a.solv);
@@ -16,6 +36,7 @@ export default function Competitors() {
         sub="Businesses that share the map pack with you most often. Profiles refresh weekly."
         actions={<Button variant="primary" icon={<Plus size={14} />}>Add competitor</Button>}
       />
+      <ScopeBar kind="location" />
 
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
         {[

@@ -23,12 +23,21 @@ export const business = {
   lng: -97.7497,
 };
 
-/** Prospecting is an Agency-plan feature; a Local-plan workspace never sees it. */
-export const workspace = { plan: "agency" as "local" | "agency" };
+/** The signed-in Member. Their plan decides what they see: Prospecting and more than one Organization are Agency-plan features. */
+export const member = { plan: "agency" as "local" | "agency" };
 
-export const locations = [
-  { id: "loc_1", name: "Maple & Main — South Congress", city: "Austin, TX" },
-  { id: "loc_2", name: "Maple & Main — Mueller", city: "Austin, TX" },
+/** The Organization's Locations: places customers visit, each with at most one Google Business Profile. */
+export type Location = {
+  id: string;
+  name: string;
+  city: string;
+  address: string;
+  googleProfile: "connected" | "verifying" | "none";
+  keywords: number;
+};
+export const locations: Location[] = [
+  { id: "loc_1", name: "Maple & Main — South Congress", city: "Austin, TX", address: "1204 S Congress Ave, Austin, TX 78704", googleProfile: "connected", keywords: 16 },
+  { id: "loc_2", name: "Maple & Main — Mueller", city: "Austin, TX", address: "1900 Aldrich St, Austin, TX 78723", googleProfile: "connected", keywords: 9 },
 ];
 
 // ---------- Rankings ----------

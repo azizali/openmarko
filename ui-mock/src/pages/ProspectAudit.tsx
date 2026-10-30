@@ -6,6 +6,7 @@ import { ProspectMap } from "../components/ProspectMap";
 import { ContactCard } from "../components/ProspectContact";
 import { ShareAuditButton } from "../components/ShareAudit";
 import { prospectAi } from "../data/ai";
+import { ExternalUrl } from "../components/Scope";
 import { findProspect, leadersOf, opportunity, profileScore, searchMarket, specFromParams, specToQuery, visibilityScore, type Market, type Prospect } from "../data/prospects";
 
 const impactTone = { high: "good", medium: "info", low: "neutral" } as const;
@@ -282,7 +283,7 @@ function SiteAudit({ p, market }: { p: Prospect; market: Market }) {
       <Card>
         {site ? (
           <>
-            <CardHeader title="Website" sub={`${p.website} · ${site.pages} pages crawled`} right={<ScoreRing score={site.score} size={52} stroke={5} label="Website" />} />
+            <CardHeader title="Website" sub={<>{p.website && <ExternalUrl domain={p.website} />} · {site.pages} pages crawled</>} right={<ScoreRing score={site.score} size={52} stroke={5} label="Website" />} />
             <CheckList items={web} />
             {p.organicRank !== null && (
               <div className="mt-4 flex items-center gap-2 rounded-md bg-hover px-3 py-2 text-[13px]"><TrendingUp size={14} className="text-muted" /> Organic rank for “{market.keyword}”: <b className="num font-medium">#{p.organicRank}</b></div>
