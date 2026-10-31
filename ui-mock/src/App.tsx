@@ -26,6 +26,10 @@ import SocialPosts from "./pages/SocialPosts";
 import Ads from "./pages/Ads";
 import AdResearch from "./pages/AdResearch";
 import AdStudio from "./pages/AdStudio";
+import Contacts from "./pages/Contacts";
+import Inbox from "./pages/Inbox";
+import Campaigns from "./pages/Campaigns";
+import Automations from "./pages/Automations";
 
 // Rank pack now lives inside Rankings (Map pack view); keep old links working.
 function GridRedirect() {
@@ -81,6 +85,12 @@ export default function App() {
           <Route path="ads" element={<Ads />} />
           <Route path="ads/research" element={<AdResearch />} />
           <Route path="ads/studio" element={<AdStudio />} />
+          <Route path="contacts" element={<Contacts />} />
+          <Route path="inbox" element={<Inbox />} />
+          <Route path="campaigns" element={<Campaigns />} />
+          <Route path="campaigns/:id" element={<Campaigns />} />
+          <Route path="automations" element={<Automations />} />
+          <Route path="automations/:id" element={<Automations />} />
           <Route path="social/voice" element={<Navigate replace to="/settings/brand" />} />
           {/* Brand voice, Skills and Activity moved into Settings; keep old links working. */}
           <Route path="brand" element={<Navigate replace to="/settings/brand" />} />

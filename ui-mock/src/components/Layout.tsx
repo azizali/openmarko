@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import {
   LayoutGrid, ListChecks, TrendingUp, MessageSquareText, MapPinned, ScanSearch, FileText, Settings, Search, ChevronsUpDown, ChevronDown, ArrowLeft,
-  Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Sparkles, Radar, Bookmark, CalendarDays, Plus, Megaphone,
+  Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Sparkles, Radar, Bookmark, CalendarDays, Plus, Megaphone, Inbox, UsersRound, Send, Workflow,
 } from "lucide-react";
 import { cn } from "./ui";
 import { Logo } from "./Logo";
@@ -12,6 +12,7 @@ import { setScope, useScope } from "../lib/scope";
 import { openTasksFor, useRunState } from "../lib/tasks";
 import { runningOf, useRuns } from "../lib/runs";
 import { useTheme } from "../lib/theme";
+import { unreadCount, useCrm } from "../lib/crm";
 import { Freshness, RunButton, kindForPath } from "./RunStatus";
 import { AssistantPanel, MarkoLauncher } from "./Assistant";
 import { ask, toggleAssistant, type PageContext } from "../lib/assistant";
@@ -21,7 +22,7 @@ type Leaf = { to: string; label: string };
 type Nav = Leaf & { icon: typeof LayoutGrid; children?: Leaf[]; section?: string };
 
 // Every page is one click from the sidebar, under a section per kind of marketing
-// (SEO, Social, Ads, Sales). Groups list their pages as sub-items; the group holding
+// (SEO, Social, Ads, Customers, Sales). Groups list their pages as sub-items; the group holding
 // the current page is open, the rest open with their chevron. Marko's setup
 // (Brand voice, Skills) and Activity live in Settings.
 const nav: Nav[] = [
@@ -54,6 +55,10 @@ const nav: Nav[] = [
     { to: "/ads/research?tab=swipe", label: "Ad swipe file" },
     { to: "/ads/studio", label: "Creative studio" },
   ] },
+  { to: "/inbox", label: "Inbox", icon: Inbox, section: "Customers" },
+  { to: "/contacts", label: "Contacts", icon: UsersRound },
+  { to: "/campaigns", label: "Campaigns", icon: Send },
+  { to: "/automations", label: "Automations", icon: Workflow },
   ...(member.plan === "agency" ? [{ to: "/prospects", label: "Prospecting", icon: Target, section: "Sales", children: [
     { to: "/prospects", label: "Find businesses" },
     { to: "/outreach", label: "Outreach" },
@@ -246,6 +251,7 @@ export default function Layout() {
   const [cmd, setCmd] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const runState = useRunState();
+  const crm = useCrm();
   const live = runningOf(useRuns()).length;
   const loc = useLocation();
   const kind = kindForPath(loc.pathname);
@@ -283,7 +289,7 @@ export default function Layout() {
         {nav.map((n) => (
           <div key={n.label}>
             {n.section && <div className="mt-3 mb-0.5 px-2 text-[10.5px] font-medium tracking-[0.06em] text-subtle uppercase">{n.section}</div>}
-            <NavItem item={n} badge={n.to === "/todo" ? openTasksFor(runState).length : undefined} open={shown(n)} onToggle={() => toggle(n)} />
+            <NavItem item={n} badge={n.to === "/todo" ? openTasksFor(runState).length : n.to === "/inbox" ? unreadCount(crm) : undefined} open={shown(n)} onToggle={() => toggle(n)} />
           </div>
         ))}
       </nav>
@@ -318,7 +324,7 @@ export default function Layout() {
           <button onClick={() => setDark(!dark)} aria-label={dark ? "Light mode" : "Dark mode"} className="ml-auto rounded p-1.5 hover:bg-hover">{dark ? <Sun size={18} /> : <Moon size={18} />}</button>
         </div>
         {/* Long working lists (Prospecting, Outreach) get the full width; reading pages stay narrow. */}
-        <main className={cn("relative mx-auto w-full px-4 py-8 sm:px-8 lg:px-12 lg:py-10", /^\/(prospects|outreach|ads(\/\w+)?)$/.test(loc.pathname) ? "max-w-[1680px]" : "max-w-[1180px]")}>
+        <main className={cn("relative mx-auto w-full px-4 py-8 sm:px-8 lg:px-12 lg:py-10", /^\/(prospects|outreach|contacts|inbox|ads(\/\w+)?)$/.test(loc.pathname) ? "max-w-[1680px]" : "max-w-[1180px]")}>
           <div className="mb-5 flex min-h-9 flex-wrap items-center justify-between gap-3 print:hidden">
             {/* Detail pages one level down (an audit issue, a competitor) get a way back. */}
             {loc.pathname.split("/").length > 2 && !/^\/(prospects|social|settings)\//.test(loc.pathname) ? (

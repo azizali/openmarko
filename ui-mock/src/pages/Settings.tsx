@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, NavLink, useParams } from "react-router";
 import {
   Store, SearchCheck, BarChart3, Globe, Hash, Check, AudioLines, Puzzle, MapPin, Plug, Zap, Users, History,
-  UserRound, Palette, Bell, CreditCard, Sun, Moon, Monitor, Plus, AtSign, Send, Copy, Webhook, AlertTriangle, Megaphone,
+  UserRound, Palette, Bell, CreditCard, Sun, Moon, Monitor, Plus, AtSign, Send, Copy, Webhook, AlertTriangle, Megaphone, Mail, MessageSquareText, Phone, ShieldCheck,
 } from "lucide-react";
-import { Badge, Button, Card, CardHeader, PageHeader, Progress, Toggle, cn } from "../components/ui";
+import { Badge, Button, Card, CardHeader, PageHeader, Progress, Toggle, cn, useToast } from "../components/ui";
 import { locations, member } from "../data/mock";
 import { brandFacts } from "../data/brand";
 import { accounts, platformMeta, type SocialPlatform } from "../data/social";
@@ -24,6 +24,9 @@ import { timeAgo } from "../lib/runs";
 import { ConnectToolModal, ToolMark } from "../components/Ads";
 import { tools, type Tool, type ToolGroup } from "../data/ads";
 import { disconnectTool, useAds } from "../lib/ads";
+import { checkDns, disconnectEmail, disconnectPhone, setChannels, useCrm } from "../lib/crm";
+import { DnsTable, EmailSetup, PhoneSetup, ProviderMark as SendMark, regLabel, regTone } from "../components/Sending";
+import { emailProviders, phoneProviders } from "../data/providers";
 
 // Two scopes, one rule: Organization settings are shared by everyone who works on
 // the Organization and travel with it (voice, skills, Locations, Websites,
@@ -38,6 +41,7 @@ export const businessSections: Section[] = [
   { id: "websites", label: "Websites", icon: Globe, page: Websites },
   { id: "accounts", label: "Accounts", icon: AtSign, page: Accounts },
   { id: "ads", label: "Ad accounts", icon: Megaphone, page: AdAccounts },
+  { id: "messaging", label: "Email & texting", icon: MessageSquareText, page: Messaging },
   { id: "integrations", label: "Integrations", icon: Plug, page: Integrations },
   { id: "automation", label: "Automation", icon: Zap, page: Automation },
   { id: "team", label: "Team", icon: Users, page: Team },
@@ -203,6 +207,98 @@ function Accounts() {
         ))}
         <p className="text-[12.5px] text-subtle">Google profiles belong to a location and are under <NavLink to="/settings/locations" className="underline decoration-line-strong underline-offset-2 hover:text-fg">Locations</NavLink>.</p>
       </div>
+    </>
+  );
+}
+
+function Messaging() {
+  const st = useCrm();
+  const { email, sms, call } = st.channels;
+  const [setup, setSetup] = useState<"email" | "phone" | "numbers" | null>(null);
+  const [checking, setChecking] = useState(false);
+  const { toast, node } = useToast();
+  const field = "h-9 w-full rounded-lg border border-line bg-surface px-3 text-[13.5px] outline-none focus:border-line-strong";
+  const hours = Array.from({ length: 24 }, (_, h) => ({ h, label: new Date(2026, 0, 1, h).toLocaleTimeString("en-US", { hour: "numeric" }) }));
+  const missing = email.records.filter((r) => !r.ok).length;
+  const row = (label: string, control: React.ReactNode, hint?: string) => (
+    <div key={label} className="grid gap-1.5 border-t border-line py-3 first:border-0 first:pt-0 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center sm:gap-4">
+      <div><div className="text-[13px] font-medium">{label}</div>{hint && <div className="text-[12px] text-muted">{hint}</div>}</div>{control}
+    </div>
+  );
+  const empty = (icon: React.ReactNode, title: string, sub: string, cta: string, onClick: () => void) => (
+    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">{icon}</span>
+      <div className="min-w-0 flex-1"><div className="text-[14px] font-medium">{title}</div><div className="text-[12.5px] text-muted">{sub}</div></div>
+      <Button variant="primary" onClick={onClick}>{cta}</Button>
+    </div>
+  );
+  const ep = email.provider ? emailProviders[email.provider] : null;
+  const pp = sms.provider ? phoneProviders[sms.provider] : null;
+  return (
+    <>
+      <PageHeader title="Email & texting" sub="Who sends your campaigns, automations and Inbox replies. Shared by everyone on this organization." />
+      <div className="max-w-3xl space-y-4">
+        <Card>
+          {!ep ? empty(<Mail size={18} />, "Set up email sending", "Use OpenMarko's sending, or connect Amazon SES, Resend, Mailgun, Postmark or SendGrid. About 5 minutes plus DNS.", "Set up email", () => setSetup("email")) : (
+            <>
+              <div className="mb-4 flex flex-wrap items-center gap-3">
+                <SendMark mark={ep.mark} color={ep.color} size={34} />
+                <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2 text-[14px] font-medium">Email · {ep.name}{email.verified ? <Badge tone="good"><Check size={10} />Verified</Badge> : <Badge tone="warn">Waiting for DNS</Badge>}</div><div className="truncate text-[12.5px] text-muted">Sending from {email.domain}{email.region ? ` · ${email.region}` : ""}</div></div>
+                <Button size="sm" onClick={() => setSetup("email")}>{email.verified ? "Change" : "Finish setup"}</Button>
+                <Button size="sm" variant="ghost" onClick={() => { disconnectEmail(); toast("Disconnected. Emails stop until you connect again"); }}>Disconnect</Button>
+              </div>
+              {missing > 0 && email.verified && <p className="mb-3 flex items-start gap-2 text-[12.5px] text-muted"><AlertTriangle size={13} className="mt-0.5 shrink-0 text-warn" /><span>{missing} record still missing. Gmail and Yahoo require DMARC from anyone sending in bulk. Add it, then <button onClick={() => { setChecking(true); checkDns((m) => { setChecking(false); toast(m ? `${m} still missing` : "All records found"); }); }} className="underline underline-offset-2">{checking ? "checking…" : "check again"}</button>.</span></p>}
+              {(missing > 0 || !email.verified) && <div className="mb-4"><DnsTable records={email.records} /></div>}
+              {row("From", <input value={`${email.fromName} <${email.fromAddress}>`} readOnly aria-label="From" className={field} />)}
+              {row("Replies go to", <input value={email.replyTo} onChange={(e) => setChannels("email", { replyTo: e.target.value })} aria-label="Reply-to" className={field} />, "And show in the Inbox")}
+              {row("Footer address", <input value={email.footer} onChange={(e) => setChannels("email", { footer: e.target.value })} aria-label="Footer address" className={field} />, "Required by CAN-SPAM, with an unsubscribe link")}
+              <p className="mt-1 text-[12px] text-subtle">{ep.privacy}</p>
+            </>
+          )}
+        </Card>
+
+        <Card>
+          {!pp ? empty(<MessageSquareText size={18} />, "Set up texting & calls", "Get a local number per location, or text-enable the one you have. We file the carrier registration with you.", "Set up texting", () => setSetup("phone")) : (
+            <>
+              <div className="mb-4 flex flex-wrap items-center gap-3">
+                <SendMark mark={pp.mark} color={pp.color} size={34} />
+                <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2 text-[14px] font-medium">Texting & calls · {pp.name}{sms.campaign === "approved" ? <Badge tone="good"><Check size={10} />Texting live</Badge> : <Badge tone="info">Registration {regLabel(sms.campaign).toLowerCase()}</Badge>}</div><div className="text-[12.5px] text-muted">One number per location. Replies and missed calls come to the Inbox.</div></div>
+                <Button size="sm" variant="ghost" onClick={() => { disconnectPhone(); toast("Disconnected. Texts stop until you connect again"); }}>Disconnect</Button>
+              </div>
+              {sms.numbers.map((n) => row(n.location, <div className="flex flex-wrap items-center gap-2 text-[13.5px]"><span className="num">{n.number}</span><Badge tone={n.status === "active" ? "good" : "info"}>{n.status === "active" ? "Live" : n.how === "port" ? "Moving here" : "Being text-enabled"}</Badge></div>))}
+              {row("Numbers", <div><Button size="sm" onClick={() => setSetup("numbers")}>{sms.numbers.length ? "Change numbers" : "Add numbers"}</Button></div>)}
+              {row("Carrier registration", <div className="flex flex-wrap items-center gap-2 text-[13px]">Business <Badge tone={regTone(sms.brand)}>{regLabel(sms.brand)}</Badge> Campaign <Badge tone={regTone(sms.campaign)}>{regLabel(sms.campaign)}</Badge>{sms.brand === "none" && sms.numbers.length > 0 && <Button size="sm" variant="primary" onClick={() => setSetup("numbers")}>Register</Button>}</div>, "A2P 10DLC, required by US carriers")}
+              {row("Quiet hours", <div className="flex items-center gap-2 text-[13px]">Only between
+                <select value={sms.quietStart} onChange={(e) => setChannels("sms", { quietStart: +e.target.value })} aria-label="From" className="h-8 rounded-md border border-line bg-surface px-2">{hours.map((x) => <option key={x.h} value={x.h}>{x.label}</option>)}</select>and
+                <select value={sms.quietEnd} onChange={(e) => setChannels("sms", { quietEnd: +e.target.value })} aria-label="Until" className="h-8 rounded-md border border-line bg-surface px-2">{hours.map((x) => <option key={x.h} value={x.h}>{x.label}</option>)}</select></div>, "In their time zone. Later texts wait for morning")}
+              {row("Opt-out line", <input value={sms.optOutLine} onChange={(e) => setChannels("sms", { optOutLine: e.target.value })} aria-label="Opt-out line" className={field} />, "Added to the first text anyone gets. STOP, END and UNSUBSCRIBE are honored on their own")}
+            </>
+          )}
+        </Card>
+
+        {pp && (
+          <Card>
+            <CardHeader title={<span className="flex items-center gap-2"><Phone size={15} />Calls</span>} sub="Calls to your location numbers ring the front desk and show in each contact's timeline." />
+            {row("Rings", <span className="text-[13.5px]">{call.forwardTo}</span>)}
+            {row("Voicemail to text", <Toggle label="Voicemail to text" checked={call.voicemailToText} onChange={(v) => setChannels("call", { voicemailToText: v })} />, "Voicemails are written out in the Inbox")}
+            {row("Record calls", <Toggle label="Record calls" checked={call.recordCalls} onChange={(v) => setChannels("call", { recordCalls: v })} />, "Callers hear “this call may be recorded” first")}
+            {row("Missed calls", <NavLink to="/automations" className="text-[13px] underline underline-offset-2">{st.automations.some((a) => a.when.event === "missed_call" && a.on) ? "Texted back by the Missed call text-back automation" : "Turn on Missed call text-back in Automations"}</NavLink>)}
+            <p className="mt-1 text-[12px] text-subtle">OpenMarko never dials automatically. Call steps in automations make a task with a script for the front desk.</p>
+          </Card>
+        )}
+
+        <Card>
+          <CardHeader title={<span className="flex items-center gap-2"><ShieldCheck size={15} />Patient privacy</span>} sub="Messages to patients count as health information under HIPAA." />
+          <ul className="space-y-1.5 text-[13px]">
+            <li className="flex items-start gap-2"><Check size={14} className="mt-0.5 shrink-0 text-good" />Use providers that have signed a Business Associate Agreement with you. Each provider above says where it stands.</li>
+            <li className="flex items-start gap-2"><Check size={14} className="mt-0.5 shrink-0 text-good" />Messages that name a treatment get a warning before they're sent. Texts show on lock screens.</li>
+            <li className="flex items-start gap-2"><Check size={14} className="mt-0.5 shrink-0 text-good" />Who agreed to texts and email, and how, is kept on each contact.</li>
+          </ul>
+        </Card>
+      </div>
+      {setup === "email" && <EmailSetup open onClose={() => setSetup(null)} toast={toast} />}
+      {(setup === "phone" || setup === "numbers") && <PhoneSetup open onClose={() => setSetup(null)} toast={toast} startAt={setup === "numbers" ? "numbers" : undefined} />}
+      {node}
     </>
   );
 }
