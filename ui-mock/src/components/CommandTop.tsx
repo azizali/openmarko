@@ -1,17 +1,34 @@
 import { useId, type ReactNode } from "react";
 import { Link } from "react-router";
-import { ArrowDown, ArrowUp, Activity, MapPin, MousePointerClick, Navigation, Phone, Sparkles, Star, TrendingUp, Eye } from "lucide-react";
+import { ArrowDown, ArrowUp, Activity, MapPin, MousePointerClick, Navigation, Phone, Sparkles, Star, TrendingUp, Eye, Users } from "lucide-react";
 import { cn, fmt } from "./ui";
 import { scanFor } from "./KeywordTable";
 import { auditIssues, auditSummary, business, competitors, gbpInsights, gbpWeekly, gridStats, keywords, reviews, visibilitySeries } from "../data/mock";
 import { aiVisibility } from "../data/ai";
+import { accounts } from "../data/social";
+import { totals, useSocialPosts, type SocialPost } from "../lib/social";
+import { accountConnected, useSetup, type getSetup } from "../lib/setup";
+
+/** Social numbers for the scorecard: followers on connected Accounts, and views on posts from the last 7 days. */
+function socialData(posts: SocialPost[], setup: ReturnType<typeof getSetup>) {
+  const live = accounts.filter((a) => accountConnected(a.id, setup) && a.followers);
+  const followers = live.reduce((a, c) => a + c.followers, 0), prev = live.reduce((a, c) => a + c.followersPrev, 0);
+  const recent = posts.filter((p) => p.status === "published" && p.day >= -7);
+  const views = recent.reduce((a, p) => a + totals(p).views, 0);
+  const growth = prev ? ((followers - prev) / prev) * 100 : 0;
+  // Followers over the last 8 weeks, ending at today's count.
+  const weeks = Array.from({ length: 8 }, (_, i) => Math.round(prev + ((followers - prev) * i) / 7 - (i % 2) * 12));
+  // Posting at least 3 times a week and growing ~10% a month scores full marks.
+  const score = live.length ? Math.round(Math.min(1, recent.length / 3) * 50 + Math.min(1, growth / 10) * 50) : 0;
+  return { connected: live.length > 0, followers, growth, views, posts7: recent.length, weeks, score };
+}
 
 // The top of the home page: last 28 days in one sentence, plus the local presence
 // scorecard. Each scorecard row links to the page with the detail.
 
 // ---------- Data ----------
 
-export function pulseData(state: Record<string, string>) {
+export function pulseData(state: Record<string, string>, social: ReturnType<typeof socialData>) {
   const local = keywords.filter((k) => k.local);
   const solv = local.reduce((a, k) => a + gridStats(scanFor(k, 7)).solv, 0) / local.length;
   const raw = visibilitySeries.map((v) => v.value);
@@ -59,6 +76,7 @@ export function pulseData(state: Record<string, string>) {
     { key: "site", label: "Website", value: health, href: "/audit" },
     { key: "reviews", label: "Reviews", value: Math.round((business.rating / 5) * 70 + Math.min(1, you.reviewVelocity / leader.reviewVelocity) * 30), href: "/profile?tab=reviews" },
     { key: "ai", label: "AI answers", value: Math.round(ai.pct), href: "/ai" },
+    ...(social.connected ? [{ key: "social", label: "Social", value: social.score, href: "/social/posts" }] : []),
   ];
   const overall = Math.round(scores.reduce((a, s) => a + s.value, 0) / scores.length);
 
@@ -72,7 +90,7 @@ export function pulseData(state: Record<string, string>) {
     rating: business.rating, reviewCount: business.reviews, velocity: you.reviewVelocity, leader, unreplied,
     outcomes, actionsCur, actionsPrev, actionsPct: ((actionsCur - actionsPrev) / actionsPrev) * 100, actionsWeeks,
     ai, aiDelta: ai.pct - ai.prevPct,
-    scores, overall,
+    scores, overall, social,
   };
 }
 type P = ReturnType<typeof pulseData>;
@@ -138,8 +156,8 @@ function ScoreSummary({ d, size = 72 }: { d: P; size?: number }) {
     <div className="flex items-center gap-4">
       <Ring value={d.overall} size={size} stroke={Math.round(size / 11)} gradient />
       <div>
-        <div className="text-[12px] font-medium tracking-wide text-muted uppercase">Local presence score</div>
-        <div className="mt-0.5 text-[13px] text-muted">Map pack, Google, website, reviews and AI answers in one number, out of 100.</div>
+        <div className="text-[12px] font-medium tracking-wide text-muted uppercase">Presence score</div>
+        <div className="mt-0.5 text-[13px] text-muted">Map pack, Google, AI answers, website, reviews and social in one number, out of 100.</div>
       </div>
     </div>
   );
@@ -154,6 +172,7 @@ function Story({ d }: { d: P }) {
     { href: "/ai", icon: Sparkles, label: "AI answers", score: "ai", value: `${d.ai.pct.toFixed(0)}%`, sub: "of answers name you", delta: <Delta v={d.aiDelta} suffix=" pts" />, spark: <Area values={d.ai.weekly} h={26} color="var(--sheen-c)" dot={false} /> },
     { href: "/audit", icon: Activity, label: "Website", score: "site", value: String(d.health), sub: `${d.critical} critical to fix`, delta: <Delta v={d.healthDelta} suffix=" pts" />, spark: <Meter value={d.health} /> },
     { href: "/profile?tab=reviews", icon: Star, label: "Reviews", score: "reviews", value: `${d.rating}★`, sub: d.unreplied ? `${d.unreplied} waiting for a reply` : "all replied", delta: <span className="num text-[11.5px] text-muted">{d.velocity}/mo</span>, spark: <Meter value={(d.velocity / d.leader.reviewVelocity) * 100} tone="warn" /> },
+    ...(d.social.connected ? [{ href: "/social/posts", icon: Users, label: "Social", score: "social", value: compact(d.social.followers), sub: `followers · ${compact(d.social.views)} views this week`, delta: <Delta v={d.social.growth} />, spark: <Area values={d.social.weeks} h={26} color="var(--sheen-b)" dot={false} /> }] : []),
   ];
   return (
     <section className="mb-6 overflow-hidden rounded-2xl border border-line bg-surface">
@@ -162,7 +181,7 @@ function Story({ d }: { d: P }) {
           <div className="text-[12px] font-medium tracking-wide text-muted uppercase">Last 28 days</div>
           <p className="mt-2 max-w-xl font-serif text-[27px] leading-[1.2] tracking-tight">
             <span className="num">{fmt(calls.cur)}</span> people called you from Google, <span className={calls.pct >= 0 ? "text-good" : "text-bad"}>{calls.pct >= 0 ? "up" : "down"} {Math.abs(calls.pct).toFixed(0)}%</span>.
-            <span className="text-muted"> You're in the top 3 for {d.solv.toFixed(0)}% of nearby searches, and AI assistants name you in {d.ai.pct.toFixed(0)}% of answers.</span>
+            <span className="text-muted"> You're in the top 3 for {d.solv.toFixed(0)}% of nearby searches, AI assistants name you in {d.ai.pct.toFixed(0)}% of answers{d.social.connected ? <>, and your posts were seen {compact(d.social.views)} times this week</> : null}.</span>
           </p>
           <div className="mt-6">
             <div className="mb-1 flex items-baseline justify-between text-[12px] text-muted"><span>Customer actions per week · calls, directions, website</span><span className="num">{fmt(d.actionsCur)} total <Delta v={d.actionsPct} className="ml-1" /></span></div>
@@ -222,6 +241,10 @@ function Ring({ value, size = 64, stroke = 6, gradient = false }: { value: numbe
   );
 }
 
+const compact = (n: number) => (n >= 10_000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k` : fmt(n));
+
 export function CommandTop({ state }: { state: Record<string, string> }) {
-  return <Story d={pulseData(state)} />;
+  const posts = useSocialPosts();
+  const setup = useSetup();
+  return <Story d={pulseData(state, socialData(posts, setup))} />;
 }
