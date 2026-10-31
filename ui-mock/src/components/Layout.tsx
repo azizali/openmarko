@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import {
   LayoutGrid, ListChecks, TrendingUp, MessageSquareText, MapPinned, ScanSearch, FileText, Settings, Search, ChevronsUpDown, ChevronDown, ArrowLeft,
-  Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Sparkles, Radar, Bookmark, CalendarDays, Plus, Megaphone, Inbox, UsersRound, Send, Workflow,
+  Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Sparkles, Radar, Bookmark, CalendarDays, Plus, Megaphone, Inbox, UsersRound, Send, Workflow, Lock,
 } from "lucide-react";
 import { cn } from "./ui";
 import { Logo } from "./Logo";
@@ -18,7 +18,9 @@ import { featureOf } from "../data/features";
 import { Freshness, RunButton, kindForPath } from "./RunStatus";
 import { AssistantPanel, MarkoLauncher } from "./Assistant";
 import { ask, toggleAssistant, type PageContext } from "../lib/assistant";
-import { accountSections, businessSections } from "../pages/Settings";
+import { accountSections, businessSections, sectionAllowed } from "../pages/Settings";
+import { can, myRole, pageAllowed, setPreview, useAccess, viewOnly } from "../lib/access";
+import { ViewOnly } from "./ViewOnly";
 import { assistant, product } from "../lib/whitelabel";
 
 type Leaf = { to: string; label: string };
@@ -69,14 +71,14 @@ const nav: Nav[] = [
 ];
 const settingsNav: Nav = { to: "/settings", label: "Settings", icon: Settings };
 
-/** The sidebar without turned-off features. A group keeps its section heading if its first item is hidden. */
+/** The sidebar without turned-off features or pages the role can't see. A group keeps its section heading if its first item is hidden. */
 function visibleNav(f: ReturnType<typeof useFeatures>): Nav[] {
   let section: string | undefined;
   let shownSection: string | undefined;
   return nav.flatMap((n) => {
     if (n.section) section = n.section;
-    const kids = n.children?.filter((c) => pageOn(c.to, f));
-    if (kids ? !kids.length : !pageOn(n.to, f)) return [];
+    const kids = n.children?.filter((c) => pageOn(c.to, f) && pageAllowed(c.to));
+    if (kids ? !kids.length : !(pageOn(n.to, f) && pageAllowed(n.to))) return [];
     const item: Nav = { ...n, section: section !== shownSection ? section : undefined, children: kids, to: kids && !kids.some((k) => k.to === n.to) ? kids[0].to : n.to };
     shownSection = section;
     return [item];
@@ -205,10 +207,11 @@ function CommandPalette({ open, onClose, ctx }: { open: boolean; onClose: () => 
   const [idx, setIdx] = useState(0);
   const navigate = useNavigate();
   const flags = useFeatures();
+  const access = useAccess();
   const items = useMemo(() => {
     const pages = [
       ...visibleNav(flags).flatMap((n) => n.children ?? [n]).map((i) => ({ label: i.label, hint: "Page", to: i.to })),
-      ...settingsLeaves.filter((i) => { const o = settingsOwner(i.to.split("/").pop()!); return !o || isOn(o, flags); }).map((i) => ({ label: i.label, hint: "Settings", to: i.to })),
+      ...settingsLeaves.filter((i) => { const id = i.to.split("/").pop()!; const o = settingsOwner(id); return (!o || isOn(o, flags)) && sectionAllowed(id); }).map((i) => ({ label: i.label, hint: "Settings", to: i.to })),
     ];
     const extra = [
       ...(member.plan === "agency" && isOn("sales", flags) ? [{ label: "Audit a business", hint: "Prospecting", to: "/prospects?new=audit" }] : []),
@@ -220,7 +223,7 @@ function CommandPalette({ open, onClose, ctx }: { open: boolean; onClose: () => 
     if (q.trim().length < 2 || !isOn("marko", flags)) return found;
     const askRow = { label: `Ask ${assistant()}: “${q.trim()}”`, hint: "Ask", to: "", ask: true };
     return !found.length || q.trim().split(/\s+/).length >= 3 ? [askRow, ...found] : [...found, askRow];
-  }, [q, flags]);
+  }, [q, flags, access]);
   useEffect(() => { setIdx(0); }, [q]);
   useEffect(() => { if (open) setQ(""); }, [open]);
   if (!open) return null;
@@ -271,14 +274,17 @@ export default function Layout() {
   const runState = useRunState();
   const crm = useCrm();
   const flags = useFeatures();
+  const access = useAccess();
   const items = visibleNav(flags);
-  const marko = isOn("marko", flags);
+  const marko = isOn("marko", flags) && can("marko", "use", access);
   const live = runningOf(useRuns()).length;
   const loc = useLocation();
   const kind = kindForPath(loc.pathname);
   // A page whose feature is off shows how to turn it back on instead.
   const owner = featureForPage(loc.pathname, loc.search);
   const gated = owner && !isOn(owner, flags) ? owner : null;
+  // A page the role can't see says so; one it can only see gets a View only note.
+  const denied = owner && !gated && !pageAllowed(loc.pathname + loc.search, access) ? owner : null;
   const ctx = pageContext(loc.pathname, loc.search);
   // A group is open while it holds the current page, unless its chevron says otherwise.
   const [manual, setManual] = useState<Record<string, boolean>>({});
@@ -292,7 +298,7 @@ export default function Layout() {
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setCmd((v) => !v); }
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j" && isOn("marko")) { e.preventDefault(); toggleAssistant(); }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j" && isOn("marko") && can("marko", "use")) { e.preventDefault(); toggleAssistant(); }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
@@ -359,11 +365,35 @@ export default function Layout() {
               {kind && kind !== "prospect" && <RunButton kind={kind} variant={loc.pathname === "/" ? "primary" : "secondary"} />}
             </div>
           </div>
-          {gated ? <FeatureOff id={gated} /> : <Outlet context={ctx} />}
+          {access.preview && <PreviewBar />}
+          {gated ? <FeatureOff id={gated} /> : denied ? <NoAccess id={denied} /> : <>{owner && viewOnly(owner, access) && <ViewOnly />}<Outlet context={ctx} /></>}
         </main>
       </div>
       {marko && <><AssistantPanel ctx={ctx} /><MarkoLauncher /></>}
       <CommandPalette open={cmd} onClose={() => setCmd(false)} ctx={ctx} />
+    </div>
+  );
+}
+
+/** While previewing a role from Settings → Team: what that role sees, and a way out. */
+function PreviewBar() {
+  const role = myRole(useAccess());
+  return (
+    <div role="status" className="mb-4 flex flex-wrap items-center gap-2 rounded-lg bg-ink px-3 py-2 text-[13px] text-on-ink print:hidden">
+      <span className="flex-1">Previewing as <b>{role.name}</b>. The sidebar, pages and buttons show what this role can do.</span>
+      <Link to="/settings/team" onClick={() => setPreview(null)} className="rounded-md bg-surface/15 px-2.5 py-1 font-medium hover:bg-surface/25">Stop preview</Link>
+    </div>
+  );
+}
+
+/** Shown in place of a page the role can't open. */
+function NoAccess({ id }: { id: Parameters<typeof featureOf>[0] }) {
+  const role = myRole(useAccess());
+  return (
+    <div className="mx-auto max-w-md py-16 text-center">
+      <div className="mx-auto mb-4 grid size-11 place-items-center rounded-xl bg-hover text-muted"><Lock size={20} /></div>
+      <h1 className="font-serif text-[28px]">No access to {featureOf(id).label}</h1>
+      <p className="mt-2 text-[14px] text-muted">Your role ({role.name}) doesn't include it. Ask an admin on your team to change your role.</p>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { segments, sources, stages, tagOptions, type SegmentId, type Source, typ
 import { condMeta, dateFields, eventGroups, eventMeta, exitMeta, recipes, stepMeta, type Workflow, type Cond, type CondField, type DateField, type EventId, type Exit, type Step, type StepKind, type Wait, type When } from "../data/messaging";
 import { isOn } from "../lib/features";
 import { addWorkflow, addStep, deleteWorkflow, describeWhen, messageChecks, moveStep, removeStep, smsParts, withExamples, updateWorkflow, updateStep, useCrm } from "../lib/crm";
+import { Can } from "../components/Can";
 
 const stepIcon: Record<StepKind, typeof Mail> = { sms: MessageSquareText, email: Mail, call: Phone, wait: Hourglass, stage: FlagIcon, tag: Tag, untag: TagsIcon, start: Play };
 const waitText = (w: Wait) => `${w.n} ${w.n === 1 ? w.unit.replace(/s$/, "") : w.unit}${w.before ? " before the appointment" : ""}`;
@@ -118,7 +119,7 @@ function Editor({ id }: { id: string }) {
         sub={a.on ? "On. Changes apply to the next step each person reaches." : "Off. Nobody new starts it."}
         actions={<>
           <span className="flex items-center gap-2 text-[13px]"><Toggle label="On" checked={a.on} onChange={(v) => { if (v && !canOn) return toast("Fix the red items first"); up({ on: v }); toast(v ? "It's on" : "It's off"); }} />{a.on ? "On" : "Off"}</span>
-          <Button variant="ghost" icon={<Trash2 size={14} />} onClick={() => { deleteWorkflow(a.id); navigate("/workflows"); }}>Delete</Button>
+          <Can I="edit" on="workflows"><Button variant="ghost" icon={<Trash2 size={14} />} onClick={() => { deleteWorkflow(a.id); navigate("/workflows"); }}>Delete</Button></Can>
         </>}
       />
 

@@ -10,6 +10,7 @@ import { LocationOverview, ScopeBar } from "../components/Scope";
 import { useScopedLocation } from "../lib/scope";
 import { hasGoogleProfile, useSetup } from "../lib/setup";
 import { Needs } from "../components/Needs";
+import { Can } from "../components/Can";
 
 type Tab = "overview" | "reviews";
 
@@ -176,7 +177,7 @@ function ProfileBody({ locationId, tab }: { locationId: string; tab: Tab }) {
                           <Textarea aria-label={`Reply to ${r.author}`} value={r.draft} onChange={(e) => setReviews((rs) => rs.map((x) => (x.id === r.id ? { ...x, draft: e.target.value } : x)))} rows={3} className="resize-none" />
                           <div className="mt-2 flex justify-end gap-2">
                             <Button size="sm" variant="ghost" onClick={() => gen(r.id)}>Regenerate</Button>
-                            <Button size="sm" variant="primary" icon={<Send size={12} />} onClick={() => { setReviews((rs) => rs.map((x) => (x.id === r.id ? { ...x, replied: true } : x))); toast("Reply published to Google"); }}>Publish reply</Button>
+                            <Can I="post" on="reviews"><Button size="sm" variant="primary" icon={<Send size={12} />} onClick={() => { setReviews((rs) => rs.map((x) => (x.id === r.id ? { ...x, replied: true } : x))); toast("Reply published to Google"); }}>Publish reply</Button></Can>
                           </div>
                         </>
                       ) : (

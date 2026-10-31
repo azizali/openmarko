@@ -6,6 +6,7 @@ import { PostPreview } from "./PostPreview";
 import { accountConnected, useSetup } from "../lib/setup";
 import { accountLabel, accounts, bestTime, draftFor, mainAccount, platformMeta, platformOf, type AccountId, type SocialPlatform, type ToneTweak, type Trend } from "../data/social";
 import { dateOf, publishNow, reactions, remixTrend, removePost, savePost, schedulePost, unschedulePost, type SocialPost } from "../lib/social";
+import { Can } from "./Can";
 
 /** A Platform's mark (Instagram, X…). */
 export function PlatformMark({ platform, size = 20 }: { platform: SocialPlatform; size?: number }) {
@@ -87,8 +88,8 @@ export function PostDrawer({ trend, post, onClose }: { trend?: Trend | null; pos
         {post && <Button variant="ghost" icon={<Trash2 size={13} />} onClick={() => { removePost(post.id); onClose(); }}>Delete</Button>}
         <span className="flex-1" />
         {status === "scheduled" ? <Button onClick={() => finish("Moved back to drafts", unschedulePost)}>Unschedule</Button> : status !== "published" && <Button onClick={() => finish("Saved to drafts")}>Save draft</Button>}
-        {status !== "published" && <Button onClick={() => finish("Posted", publishNow)} icon={<Send size={13} />} disabled={!chs.length}>Post now</Button>}
-        {status !== "published" && status !== "scheduled" && <Button variant="primary" disabled={!chs.length} onClick={() => finish(`Scheduled for ${bestTime[platformOf(chs[0])]}`, schedulePost)}>Schedule{chs[0] ? ` · ${bestTime[platformOf(chs[0])]}` : ""}</Button>}
+        {status !== "published" && <Can I="publish" on="social_posts"><Button onClick={() => finish("Posted", publishNow)} icon={<Send size={13} />} disabled={!chs.length}>Post now</Button></Can>}
+        {status !== "published" && status !== "scheduled" && <Can I="publish" on="social_posts"><Button variant="primary" disabled={!chs.length} onClick={() => finish(`Scheduled for ${bestTime[platformOf(chs[0])]}`, schedulePost)}>Schedule{chs[0] ? ` · ${bestTime[platformOf(chs[0])]}` : ""}</Button></Can>}
       </>}
     >
       <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_340px]">

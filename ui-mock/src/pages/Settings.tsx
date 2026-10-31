@@ -6,7 +6,6 @@ import {
 } from "lucide-react";
 import { Badge, Button, Card, CardHeader, Field, Input, PageHeader, Progress, Select, Toggle, cn, useToast } from "../components/ui";
 import { locations, member } from "../data/mock";
-import { brandFacts } from "../data/brand";
 import { accounts, platformMeta, type SocialPlatform } from "../data/social";
 import { PlatformMark } from "../components/Social";
 import { memberships, organization, shortLocation, websites } from "../data/org";
@@ -16,9 +15,13 @@ import { setThemeMode, useThemeMode, type ThemeMode } from "../lib/theme";
 import Brand from "./Brand";
 import Skills from "./Skills";
 import { ExternalUrl } from "../components/Scope";
+import { ViewOnly } from "../components/ViewOnly";
 import Runs from "./Runs";
 import Features from "./Features";
 import Whitelabel, { Clients } from "./Whitelabel";
+import Team, { PartnerTeam } from "./Team";
+import { can, previewing, useAccess } from "../lib/access";
+import type { Resource } from "../data/access";
 import { partner } from "../data/partner";
 import { Autopilot, Schedules } from "./Autopilot";
 import { isOn, settingsOwner, useFeatures } from "../lib/features";
@@ -40,26 +43,30 @@ import { assistant, product } from "../lib/whitelabel";
 // Accounts, who has access). "You" settings belong to the signed-in Member and
 // follow them to every Organization they open (sign-in, theme, notifications, plan).
 // Partner settings sit above both: one whitelabel for every Client, for its admins only.
-type Section = { id: string; label: string; icon: typeof Store; page: () => React.JSX.Element };
+// `needs` hides a section from roles that can't see it; `edits` is the action that
+// changes it, and without it the section opens view only.
+type Perm = [Resource, string];
+type Section = { id: string; label: string; icon: typeof Store; page: () => React.JSX.Element; needs?: Perm; edits?: Perm };
 
 export const businessSections: Section[] = [
-  { id: "features", label: "Features", icon: ToggleRight, page: Features },
-  { id: "brand", label: "Brand voice", icon: AudioLines, page: Brand },
-  { id: "skills", label: `${assistant()} skills`, icon: Puzzle, page: Skills },
-  { id: "locations", label: "Locations", icon: MapPin, page: Locations },
-  { id: "websites", label: "Websites", icon: Globe, page: Websites },
-  { id: "accounts", label: "Accounts", icon: AtSign, page: Accounts },
-  { id: "ads", label: "Ad accounts", icon: Megaphone, page: AdAccounts },
-  { id: "messaging", label: "Email & texting", icon: MessageSquareText, page: Messaging },
-  { id: "integrations", label: "Integrations", icon: Plug, page: Integrations },
-  { id: "autopilot", label: "Autopilot", icon: Zap, page: Autopilot },
-  { id: "schedules", label: "Schedules", icon: CalendarClock, page: Schedules },
+  { id: "features", label: "Features", icon: ToggleRight, page: Features, needs: ["organization", "update"] },
+  { id: "brand", label: "Brand voice", icon: AudioLines, page: Brand, needs: ["brand", "view"], edits: ["brand", "edit"] },
+  { id: "skills", label: `${assistant()} skills`, icon: Puzzle, page: Skills, needs: ["brand", "view"], edits: ["brand", "edit"] },
+  { id: "locations", label: "Locations", icon: MapPin, page: Locations, needs: ["setup", "view"], edits: ["setup", "connect"] },
+  { id: "websites", label: "Websites", icon: Globe, page: Websites, needs: ["setup", "view"], edits: ["setup", "connect"] },
+  { id: "accounts", label: "Accounts", icon: AtSign, page: Accounts, needs: ["setup", "view"], edits: ["setup", "connect"] },
+  { id: "ads", label: "Ad accounts", icon: Megaphone, page: AdAccounts, needs: ["ads", "view"], edits: ["ads", "connect"] },
+  { id: "messaging", label: "Email & texting", icon: MessageSquareText, page: Messaging, needs: ["email", "view"], edits: ["email", "connect"] },
+  { id: "integrations", label: "Integrations", icon: Plug, page: Integrations, needs: ["setup", "view"], edits: ["setup", "connect"] },
+  { id: "autopilot", label: "Autopilot", icon: Zap, page: Autopilot, needs: ["autopilot", "view"], edits: ["autopilot", "edit"] },
+  { id: "schedules", label: "Schedules", icon: CalendarClock, page: Schedules, needs: ["autopilot", "view"], edits: ["autopilot", "edit"] },
   { id: "team", label: "Team", icon: Users, page: Team },
-  { id: "activity", label: "Activity", icon: History, page: Runs },
+  { id: "activity", label: "Activity", icon: History, page: Runs, needs: ["activity", "view"] },
 ];
 export const partnerSections: Section[] = partner?.role === "Admin" ? [
   { id: "whitelabel", label: "Whitelabel", icon: Paintbrush, page: Whitelabel },
   { id: "clients", label: "Clients", icon: Building2, page: Clients },
+  { id: "partner-team", label: "Partner team", icon: Users, page: PartnerTeam },
 ] : [];
 export const accountSections: Section[] = [
   { id: "profile", label: "Profile", icon: UserRound, page: AccountProfile },
@@ -70,14 +77,19 @@ export const accountSections: Section[] = [
   { id: "billing", label: "Plan & billing", icon: CreditCard, page: Billing },
 ];
 
+const allowed = (x: Section) => (!partnerSections.includes(x) || !previewing()) && (!x.needs || can(...x.needs));
+/** For links to a section from elsewhere (the command palette). */
+export const sectionAllowed = (id: string) => { const x = [...businessSections, ...partnerSections, ...accountSections].find((s) => s.id === id); return !x || allowed(x); };
+
 function SubNav() {
   const { orgId } = useScope();
   const current = memberships.find((m) => m.id === orgId) ?? organization;
   const ref = useRef<HTMLElement>(null);
   const { section } = useParams();
   const flags = useFeatures();
-  // Sections that belong to a turned-off feature (Ad accounts, Email & texting, Outreach) are hidden.
-  const visible = (items: Section[]) => items.filter((x) => { const o = settingsOwner(x.id); return !o || isOn(o, flags); });
+  useAccess();
+  // Sections that belong to a turned-off feature (Ad accounts, Email & texting, Outreach), or that the role can't see, are hidden.
+  const visible = (items: Section[]) => items.filter((x) => { const o = settingsOwner(x.id); return (!o || isOn(o, flags)) && allowed(x); });
   // On narrow screens the sections are a scrolling strip; keep the current one in view.
   useEffect(() => { ref.current?.querySelector("[aria-current=page]")?.scrollIntoView({ block: "nearest", inline: "center" }); }, [section]);
   const link = (s: Section) => (
@@ -97,8 +109,7 @@ function SubNav() {
   return (
     <nav ref={ref} aria-label="Settings" className="-mx-4 flex gap-4 overflow-x-auto border-b border-line px-4 pb-2 lg:sticky lg:top-6 lg:mx-0 lg:flex-col lg:gap-6 lg:self-start lg:overflow-visible lg:border-0 lg:p-0">
       {group(current.name, `Organization settings, shared by everyone on ${current.name}`, visible(businessSections))}
-      <span aria-hidden className="w-px shrink-0 self-stretch bg-line lg:hidden" />
-      {partner && partnerSections.length > 0 && (
+      {partner && partnerSections.some(allowed) && (
         <>
           <span aria-hidden className="w-px shrink-0 self-stretch bg-line lg:hidden" />
           {group(partner.name, "Partner settings, for every client", partnerSections)}
@@ -114,16 +125,22 @@ export default function Settings() {
   const { section } = useParams();
   const found = [...businessSections, ...partnerSections, ...accountSections].find((s) => s.id === section);
   useFeatures();
+  useAccess();
   // Settings → Automation became Autopilot.
   if (section === "automation") return <Navigate replace to="/settings/autopilot" />;
-  if (!found) return <Navigate replace to="/settings/brand" />;
+  // Unknown, or not for this role: the first section the role can open (Team is open to everyone).
+  if (!found || !allowed(found)) return <Navigate replace to={`/settings/${businessSections.find(allowed)!.id}`} />;
   const owner = settingsOwner(found.id);
   if (owner && !isOn(owner)) return <Navigate replace to={`/settings/features#${featureOf(owner).module ?? owner}`} />;
   const Page = found.page;
   return (
     <div className="grid gap-6 lg:grid-cols-[184px_minmax(0,1fr)] lg:gap-10">
       <SubNav />
-      <div className="min-w-0"><Page /></div>
+      <div className="min-w-0">
+        {found.edits && !can(...found.edits) && <ViewOnly />}
+        {/* Settings pages are forms, so view only disables the whole page at once. */}
+        <fieldset disabled={!!found.edits && !can(...found.edits)} className="contents"><Page /></fieldset>
+      </div>
     </div>
   );
 }
@@ -381,23 +398,6 @@ function AdAccounts() {
         ))}
       </div>
       <ConnectToolModal tool={connect} onClose={() => setConnect(null)} />
-    </>
-  );
-}
-
-function Team() {
-  return (
-    <>
-      <PageHeader title="Team" sub={`Who can open ${brandFacts.name}, and what they can change.`} actions={<Button size="sm">Invite teammate</Button>} />
-      <Card pad={false} className="max-w-3xl">
-        {[["Dr. Anika Patel", "Owner"], ["Sam Ortiz", "Marketing · Editor"], ["Agency partner", "Viewer"]].map(([n, r]) => (
-          <div key={n} className="flex items-center gap-3 border-b border-line px-5 py-3.5 last:border-0">
-            <span className="grid size-8 place-items-center rounded-full bg-hover text-[12px] font-medium">{n.split(" ").map((w) => w[0]).join("").slice(0, 2)}</span>
-            <span className="flex-1 text-[14px]">{n}</span>
-            <span className="text-[12.5px] text-muted">{r}</span>
-          </div>
-        ))}
-      </Card>
     </>
   );
 }

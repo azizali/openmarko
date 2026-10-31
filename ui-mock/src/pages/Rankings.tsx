@@ -9,6 +9,7 @@ import { keywordsFor } from "../data/scoped";
 import { LocationOverview, ScopeBar } from "../components/Scope";
 import { useScopedLocation } from "../lib/scope";
 import { openTasksFor, useRunState, type Task } from "../lib/tasks";
+import { Can } from "../components/Can";
 
 type Filter = "all" | "improved" | "declined" | "top3";
 const avg = (xs: (number | null)[]) => { const v = xs.filter((x): x is number => x !== null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0; };
@@ -95,7 +96,7 @@ function RankingsBody({ keywords }: { keywords: Keyword[] }) {
         sub="Where you show up on Google and in the map pack for every keyword. Open a keyword for its map grid, history and competitors."
         actions={<>
           <Button icon={<Download size={14} />} onClick={() => toast("CSV exported")}>Export</Button>
-          <Link to="/keywords"><Button variant="primary" icon={<Plus size={14} />}>Add keywords</Button></Link>
+          <Link to="/keywords"><Can I="edit" on="rankings"><Button variant="primary" icon={<Plus size={14} />}>Add keywords</Button></Can></Link>
         </>}
       />
       <ScopeBar kind="location" />

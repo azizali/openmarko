@@ -10,6 +10,7 @@ import { Badge, Button, Card, CardHeader, Checkbox, Drawer, LineChart, Modal, Pa
 import { business } from "../data/mock";
 import { backlinks, citationScore, citationStatusMeta, linkHistory, linkOpportunities, linkSummary, type Citation, type CitationStatus, type LinkOpportunity, type LinkStatus } from "../data/authority";
 import { startRun } from "../lib/runs";
+import { Can } from "../components/Can";
 
 type Tab = "citations" | "links";
 
@@ -285,7 +286,7 @@ Dr. Patel · ${business.phone}`;
 
       <Drawer open={!!draft} onClose={() => setDraft(null)} title={draft ? `Reach out to ${draft.domain}` : ""} footer={draft && <>
         <Button variant="ghost" icon={<Copy size={14} />} onClick={async () => { try { await navigator.clipboard.writeText(email(draft)); toast("Email copied"); } catch { toast("Couldn't access the clipboard"); } }}>Copy</Button>
-        <Button variant="primary" icon={<Mail size={14} />} onClick={() => { setStatus(draft.id, "outreach"); setDraft(null); toast(`Sent to ${draft.contact} · we'll remind you in 5 days if there's no reply`); }}>Send from my mailbox</Button>
+        <Can I="submit" on="citations"><Button variant="primary" icon={<Mail size={14} />} onClick={() => { setStatus(draft.id, "outreach"); setDraft(null); toast(`Sent to ${draft.contact} · we'll remind you in 5 days if there's no reply`); }}>Send from my mailbox</Button></Can>
       </>}>
         {draft && (
           <div className="space-y-4">

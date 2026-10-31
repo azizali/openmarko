@@ -13,6 +13,7 @@ import { googleCategories, opportunity, prospectGrid, prospectSources, searchMar
 import { startRun, timeAgo } from "../lib/runs";
 import { ensureShare, shareFor, shareUrl, useShares } from "../lib/shares";
 import { findSaved, recordSaved, removeSaved, sortSaved, togglePin, useSaved, type Saved } from "../lib/saved";
+import { Can } from "../components/Can";
 
 type Col = "name" | "score" | "rank" | "rating" | "contact" | "value" | "distance" | "status";
 type Tri = "any" | "yes" | "no";
@@ -354,9 +355,9 @@ export default function Prospects() {
                   <span className="text-muted">· {chosen.filter((r) => r.p.contact.email).length} with email · {chosen.filter((r) => r.p.contact.sms).length} can text</span>
                   <button onClick={() => setSel(new Set())} className="text-muted underline decoration-line-strong underline-offset-2 hover:text-fg">Clear</button>
                   <span className="ml-auto flex flex-wrap gap-1.5">
-                    <Button size="sm" icon={<Download size={12} />} onClick={() => exportCsv(chosen)}>Export</Button>
+                    <Can I="export" on="sales"><Button size="sm" icon={<Download size={12} />} onClick={() => exportCsv(chosen)}>Export</Button></Can>
                     <Button size="sm" icon={<UserPlus size={12} />} onClick={() => { toast(`${chosen.length} added to pipeline`); setSel(new Set()); }}>Add to pipeline</Button>
-                    {outreachOn && <Button size="sm" variant="primary" icon={<Send size={12} />} onClick={() => setSending(true)}>Send {chosen.length} to campaign</Button>}
+                    {outreachOn && <Can I="send" on="outreach"><Button size="sm" variant="primary" icon={<Send size={12} />} onClick={() => setSending(true)}>Send {chosen.length} to campaign</Button></Can>}
                   </span>
                 </>
               ) : (
@@ -372,7 +373,7 @@ export default function Prospects() {
                   ))}
                   <span className="ml-auto flex items-center gap-2">
                     <span className="hidden text-subtle lg:inline"><Kbd>j</Kbd><Kbd>k</Kbd> move · <Kbd>x</Kbd> select · <Kbd>↵</Kbd> open · <Kbd>a</Kbd> audit · <Kbd>s</Kbd> send</span>
-                    <Button size="sm" icon={<Download size={12} />} onClick={() => exportCsv(rows)}>Export {rows.length}</Button>
+                    <Can I="export" on="sales"><Button size="sm" icon={<Download size={12} />} onClick={() => exportCsv(rows)}>Export {rows.length}</Button></Can>
                   </span>
                 </>
               )}

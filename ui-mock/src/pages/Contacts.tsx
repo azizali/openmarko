@@ -8,6 +8,7 @@ import { addTag, enroll, importFromBooking, inSegment, lastTouch, needsReply, ne
 import { useAds } from "../lib/ads";
 import { timeAgo } from "../lib/runs";
 import { isOn, useFeatures } from "../lib/features";
+import { Can } from "../components/Can";
 
 type View = "list" | "pipeline";
 type Col = "name" | "stage" | "source" | "last" | "value";
@@ -115,7 +116,7 @@ export default function Contacts() {
                 {isOn("workflows", flags) && <Menu label="Workflow" icon={<WorkflowIcon size={12} />} items={st.workflows.filter((a) => a.on).map((a) => ({ label: a.name, onPick: () => { const n = enroll(picked.map((c) => c.id), a.id); toast(`${n} started ${a.name}${n < picked.length ? `; ${picked.length - n} can't get its first message` : ""}`); setSel([]); } }))} />}
                 <Menu label="Move to" items={stages.map((s) => ({ label: s.label, onPick: () => { const st2 = setStage(picked.map((c) => c.id), s.id); toast(`Moved ${picked.length} to ${s.label}.${startedText(st2)}`); setSel([]); } }))} />
                 <Menu label="Tag" icon={<Tag size={12} />} items={tagOptions.map((t) => ({ label: t, onPick: () => { const st2 = addTag(picked.map((c) => c.id), t); toast(`Tagged ${picked.length} “${t}”.${startedText(st2)}`); } }))} />
-                <Button size="sm" variant="ghost" icon={<Download size={12} />} onClick={() => toast(`Exported ${picked.length} as CSV`)}>Export</Button>
+                <Can I="export" on="customers"><Button size="sm" variant="ghost" icon={<Download size={12} />} onClick={() => toast(`Exported ${picked.length} as CSV`)}>Export</Button></Can>
                 <Button size="sm" variant="ghost" icon={<Trash2 size={12} />} onClick={() => { removeContacts(picked.map((c) => c.id)); toast(`Deleted ${picked.length}`); setSel([]); }} aria-label="Delete selected" />
               </>
             ) : (

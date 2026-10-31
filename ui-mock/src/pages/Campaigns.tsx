@@ -10,6 +10,7 @@ import { audienceLabel, audienceOf, deleteCampaign, draftCampaign, duplicateCamp
 import { timeAgo } from "../lib/runs";
 import { isOn, useOn } from "../lib/features";
 import { assistant } from "../lib/whitelabel";
+import { Can } from "../components/Can";
 
 const pct = (n: number | undefined, of: number) => (n === undefined ? "—" : of ? `${Math.round((n / of) * 100)}%` : "0%");
 const when = (c: Campaign) =>
@@ -118,7 +119,7 @@ function Editor({ id }: { id: string }) {
             {s && s.replied > 0 && <Link to="/inbox"><Button icon={<Inbox size={14} />}>{s.replied} replies</Button></Link>}
             <Button icon={<Copy size={14} />} onClick={() => { const n = duplicateCampaign(c.id); if (n) navigate(`/campaigns/${n}`); }}>Duplicate</Button>
           </>
-        ) : <Button variant="ghost" icon={<Trash2 size={14} />} onClick={() => { deleteCampaign(c.id); navigate("/campaigns"); }}>Delete draft</Button>}
+        ) : <Can I="edit" on="campaigns"><Button variant="ghost" icon={<Trash2 size={14} />} onClick={() => { deleteCampaign(c.id); navigate("/campaigns"); }}>Delete draft</Button></Can>}
       />
 
       {c.status === "sending" && <Card className="mb-5 flex items-center gap-3 text-[13.5px]"><Loader2 size={16} className="animate-spin" />Sending to {aud.will.length}…</Card>}
@@ -187,7 +188,7 @@ function Editor({ id }: { id: string }) {
                 <Button size="sm" variant="ghost" disabled={!c.body} onClick={() => toast(c.channel === "sms" ? "Test text sent to your phone" : "Test email sent to you")}>Send me a test</Button>
                 <span className="flex-1" />
                 {blocked && c.body && <span className="text-[12.5px] text-bad">{aud.will.length ? "Fix the red items first" : "Nobody on this list can get it"}</span>}
-                <Button variant="primary" icon={later ? <CalendarClock size={14} /> : <Send size={14} />} disabled={blocked} onClick={go}>{later ? "Schedule" : `Send to ${fmt(aud.will.length)}`}</Button>
+                <Can I="send" on="campaigns"><Button variant="primary" icon={later ? <CalendarClock size={14} /> : <Send size={14} />} disabled={blocked} onClick={go}>{later ? "Schedule" : `Send to ${fmt(aud.will.length)}`}</Button></Can>
               </div>
             </Card>
           )}

@@ -7,6 +7,7 @@ import { providers } from "../data/sequencers";
 import { markRead, providerName, reply, setStatus, statusMeta, suggestReply, useOutreach, type Lead, type LeadStatus } from "../lib/outreach";
 import { shareFor, useShares, type Share } from "../lib/shares";
 import { timeAgo } from "../lib/runs";
+import { Can } from "../components/Can";
 
 type Tab = "replies" | "leads";
 const replied = (l: Lead) => l.thread.some((m) => m.from === "them");
@@ -203,7 +204,7 @@ function Thread({ l, share, onBack, toast }: { l: Lead; share: Share | undefined
         <Textarea value={draft} onChange={(e) => { setDraft(e.target.value); setDrafted(false); }} rows={6} placeholder="Write a reply…" aria-label="Reply" />
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <Button size="sm" variant="ghost" icon={<CalendarCheck size={12} />} onClick={() => setDraft((d) => `${d}${d && !d.endsWith("\n") ? "\n\n" : ""}${st.rules.bookingUrl}`)}>Insert booking link</Button>
-          <Button className="ml-auto" variant="primary" icon={<Send size={13} />} disabled={!draft.trim()} onClick={send}>Send reply</Button>
+          <Can I="send" on="outreach"><Button className="ml-auto" variant="primary" icon={<Send size={13} />} disabled={!draft.trim()} onClick={send}>Send reply</Button></Can>
         </div>
       </div>
     </Card>

@@ -9,6 +9,7 @@ import {
   blankBrief, blockedStyles, costOf, editCreative, fileCount, generate, moreLike, removeBatch, removeCreatives, rewrite, saveRowToSwipe, setCreativeStatus, styles,
   useCreatives, variationCount, type Brief, type Creative, type CreativeStatus, type Style,
 } from "../lib/creatives";
+import { Can } from "../components/Can";
 
 type Col = "score" | "angle" | "status" | "checks";
 const statusMeta: Record<CreativeStatus, { label: string; tone: "neutral" | "good" | "bad" | "accent" }> = {
@@ -127,8 +128,8 @@ export default function AdStudio() {
                     <Button size="sm" icon={<Check size={12} />} onClick={() => mark(picked.filter((c) => c.status !== "published").map((c) => c.id), "approved")}>Approve</Button>
                     <Button size="sm" icon={<X size={12} />} onClick={() => mark(picked.filter((c) => c.status !== "published").map((c) => c.id), "rejected")}>Reject</Button>
                     <Button size="sm" icon={<Copy size={12} />} onClick={() => { const b = moreLike(picked.map((c) => c.id)); if (b) { setBatch(b.id); setSel([]); toast("New batch with more like these"); } }}>More like these</Button>
-                    <Button size="sm" variant="ghost" icon={<Trash2 size={12} />} onClick={() => { removeCreatives(picked.filter((c) => c.status !== "published").map((c) => c.id)); setSel([]); }}>Delete</Button>
-                    <Button size="sm" variant="primary" icon={<Rocket size={12} />} onClick={() => startPublish(picked)}>Publish {picked.length}</Button>
+                    <Can I="edit" on="ad_studio"><Button size="sm" variant="ghost" icon={<Trash2 size={12} />} onClick={() => { removeCreatives(picked.filter((c) => c.status !== "published").map((c) => c.id)); setSel([]); }}>Delete</Button></Can>
+                    <Can I="publish" on="ad_studio"><Button size="sm" variant="primary" icon={<Rocket size={12} />} onClick={() => startPublish(picked)}>Publish {picked.length}</Button></Can>
                   </>
                 ) : (
                   <>
@@ -141,7 +142,7 @@ export default function AdStudio() {
                     </div>
                     <span className="flex-1" />
                     {counts.draft > 0 && <Button size="sm" icon={<Check size={12} />} onClick={() => { mark(inBatch.filter((c) => c.status === "draft" && !blocked(c) && c.score >= 75).map((c) => c.id), "approved"); toast("Approved every draft scoring 75+ that passes the checks"); }}>Approve 75+ that pass</Button>}
-                    <Button size="sm" variant="primary" disabled={!approved.length} icon={<Rocket size={12} />} onClick={() => startPublish(approved)}>Publish {approved.length} approved</Button>
+                    <Can I="publish" on="ad_studio"><Button size="sm" variant="primary" disabled={!approved.length} icon={<Rocket size={12} />} onClick={() => startPublish(approved)}>Publish {approved.length} approved</Button></Can>
                   </>
                 )}
               </div>

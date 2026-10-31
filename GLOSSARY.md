@@ -16,6 +16,14 @@ _Avoid_: user, seat
 An agency, consultant or reseller that manages Organizations for others and puts its own brand on the app for them. The only level above Organization. Each Organization belongs to at most one Partner and can transfer out, keeping its data.
 _Avoid_: agency (in code and data), reseller, workspace, parent org
 
+**Role**:
+What a Member may do in an Organization: a level (None, View, Edit, Publish or Full) for everything, per module and per feature, or a hand-picked list of actions. Owner, Admin, Editor and Viewer are built in; each Organization can add its own. A Member has one Role, with no per-person exceptions.
+_Avoid_: permission set, access level, profile
+
+**Action**:
+One thing a Role can allow on a feature or area, such as posting review replies or sending a campaign. Each sits at a level, so setting a level grants every Action up to it.
+_Avoid_: permission, scope, capability
+
 **Client**:
 What a Partner's Members call an Organization they manage for someone else. It is an Organization, not a separate thing.
 _Avoid_: customer, sub-account
