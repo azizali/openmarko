@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { Play } from "lucide-react";
-import { Badge, Button, Card, PageHeader, Segmented, cn, useToast } from "../components/ui";
+import { Badge, Button, Card, PageHeader, Segmented, Select, cn, useToast } from "../components/ui";
 import { actions, applyPreset, levelMeta, presetLevel, setLevel, useAutopilot, type Action, type Level, type Preset } from "../lib/autopilot";
 import { describeEvery, everyMeta, jobs, setEvery, useSchedules, type Every, type Job } from "../lib/schedules";
 import { isOn, useFeatures } from "../lib/features";
@@ -83,9 +83,9 @@ export function Schedules() {
             {describeEvery(j, ev[j.id])}{ev[j.id] !== "paused" && (running || last) && <> · next: {running ? "running now" : nextRun(last, ev[j.id]).toLowerCase()}</>}{last && <> · last {timeAgo(last)}</>}
           </div>
         </div>
-        <select value={ev[j.id]} onChange={(e) => { setEvery(j.id, e.target.value as Every); toast(`${j.label}: ${describeEvery(j, e.target.value as Every)}`); }} aria-label={`${j.label} frequency`} className="h-8 rounded-md border border-line bg-surface px-2 text-[13px]">
+        <Select size="sm" className="w-auto" value={ev[j.id]} onChange={(e) => { setEvery(j.id, e.target.value as Every); toast(`${j.label}: ${describeEvery(j, e.target.value as Every)}`); }} aria-label={`${j.label} frequency`}>
           {j.options.map((o) => <option key={o} value={o}>{everyMeta[o].label}</option>)}
-        </select>
+        </Select>
         {j.run && <Button size="sm" variant="ghost" icon={<Play size={12} />} disabled={!!running} onClick={() => { startRun(j.run!); toast(`${j.label} started`); }}>Run now</Button>}
       </div>
     );

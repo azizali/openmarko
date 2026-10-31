@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import {
   AlertTriangle, Ban, CalendarCheck, CalendarDays, Check, Info, Mail, MessageSquareText, NotebookPen, Phone, PhoneIncoming, PhoneMissed, PhoneOutgoing, Plus, Send, Sparkles, Star, Workflow as WorkflowIcon, X,
 } from "lucide-react";
-import { Badge, Button, Drawer, Modal, Segmented, Toggle, cn, fmt } from "./ui";
+import { Badge, Button, Drawer, Field, Input, Modal, Segmented, Select, Textarea, Toggle, cn, fmt } from "./ui";
 import { mergeFields, sources, stageOf, stages, tagOptions, type Channel, type Contact, type Event, type Source, type Stage } from "../data/contacts";
 import {
   addContact, addNote, addTag, blockedOn, contactOf, eventsOf, logCall, markRead, notReady, removeTag, sendMessage, setConsent, setStage, smsParts, startedText, suggestReply, useCrm, type Flag, type NewContact, type Started,
@@ -165,10 +165,10 @@ export function Composer({ c, events, onDone, compact, call: callFirst }: { c: C
       ) : (
         <>
           {mode === "call" && <p className="mb-2 text-[12.5px] text-muted">Call <a href={`tel:${c.phone}`} className="font-medium text-fg underline decoration-line-strong underline-offset-2">{c.phone}</a>, then log how it went. Calls go out from {st.channels.sms.numbers.find((n) => n.location === c.location)?.number}, so they see your number.</p>}
-          {mode === "email" && <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" aria-label="Subject" className="mb-2 h-9 w-full rounded-lg border border-line bg-surface px-3 text-[13.5px] outline-none focus:border-line-strong" />}
-          <textarea ref={ta} value={body} onChange={(e) => { setBody(e.target.value); setDrafted(false); }} rows={compact ? 3 : mode === "email" ? 6 : 3}
+          {mode === "email" && <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" aria-label="Subject" className="mb-2" />}
+          <Textarea ref={ta} value={body} onChange={(e) => { setBody(e.target.value); setDrafted(false); }} rows={compact ? 3 : mode === "email" ? 6 : 3}
             placeholder={mode === "call" ? "What did you talk about? (optional)" : mode === "note" ? "Only your team sees notes" : mode === "sms" ? "Write a text…" : "Write an email…"} aria-label="Message"
-            className="w-full resize-y rounded-lg border border-line bg-surface p-3 text-[13.5px] outline-none focus:border-line-strong" />
+            />
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {mode === "call" ? (
               <>
@@ -216,9 +216,9 @@ export function ContactDrawer({ id, onClose, toast }: { id: string | null; onClo
         <div className="space-y-4 border-b border-line px-6 pb-4">
           <div className="flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-2 text-[12.5px] text-muted">Stage
-              <select value={c.stage} onChange={(e) => { const st2 = setStage([c.id], e.target.value as Stage); toast(`Moved to ${stageOf(e.target.value as Stage).label}.${startedText(st2)}`); }} className="h-8 rounded-md border border-line bg-surface px-2 text-[13px] text-fg">
+              <Select size="sm" className="w-auto" value={c.stage} onChange={(e) => { const st2 = setStage([c.id], e.target.value as Stage); toast(`Moved to ${stageOf(e.target.value as Stage).label}.${startedText(st2)}`); }}>
                 {stages.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-              </select>
+              </Select>
             </label>
             <span className="flex-1" />
             {isOn("inbox") && <Link to={`/inbox?c=${c.id}`} className="inline-flex h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 text-[12.5px] font-medium hover:bg-hover">Open in Inbox</Link>}
@@ -266,7 +266,6 @@ export function ContactDrawer({ id, onClose, toast }: { id: string | null; onClo
 
 // ---------- Add contact ----------
 
-const field = "h-9 w-full rounded-lg border border-line bg-surface px-3 text-[13.5px] outline-none focus:border-line-strong";
 export function AddContactModal({ open, onClose, onAdded }: { open: boolean; onClose: () => void; onAdded: (id: string, started: Started[]) => void }) {
   const blank: NewContact = { name: "", email: "", phone: "", source: "call", location: "South Congress", tags: [], smsOk: true, emailOk: true };
   const [x, setX] = useState<NewContact>(blank);
@@ -275,18 +274,18 @@ export function AddContactModal({ open, onClose, onAdded }: { open: boolean; onC
   return (
     <Modal open={open} onClose={onClose} title="Add a contact" footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" disabled={!ok} onClick={save}>Add contact</Button></>}>
       <div className="space-y-3">
-        <label className="block"><span className="mb-1 block text-[12.5px] font-medium text-muted">Name</span><input autoFocus value={x.name} onChange={(e) => setX({ ...x, name: e.target.value })} className={field} /></label>
+        <Field label="Name"><Input autoFocus value={x.name} onChange={(e) => setX({ ...x, name: e.target.value })} /></Field>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block"><span className="mb-1 block text-[12.5px] font-medium text-muted">Mobile</span><input value={x.phone ?? ""} onChange={(e) => setX({ ...x, phone: e.target.value })} placeholder="(512) 555-…" className={field} /></label>
-          <label className="block"><span className="mb-1 block text-[12.5px] font-medium text-muted">Email</span><input type="email" value={x.email ?? ""} onChange={(e) => setX({ ...x, email: e.target.value })} className={field} /></label>
+          <Field label="Mobile"><Input value={x.phone ?? ""} onChange={(e) => setX({ ...x, phone: e.target.value })} placeholder="(512) 555-…" /></Field>
+          <Field label="Email"><Input type="email" value={x.email ?? ""} onChange={(e) => setX({ ...x, email: e.target.value })} /></Field>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block"><span className="mb-1 block text-[12.5px] font-medium text-muted">How they found you</span>
-            <select value={x.source} onChange={(e) => setX({ ...x, source: e.target.value as Source })} className={field}>{(Object.keys(sources) as Source[]).map((s) => <option key={s} value={s}>{sources[s].label}</option>)}</select>
-          </label>
-          <label className="block"><span className="mb-1 block text-[12.5px] font-medium text-muted">Location</span>
-            <select value={x.location} onChange={(e) => setX({ ...x, location: e.target.value })} className={field}><option>South Congress</option><option>Mueller</option></select>
-          </label>
+          <Field label="How they found you">
+            <Select value={x.source} onChange={(e) => setX({ ...x, source: e.target.value as Source })}>{(Object.keys(sources) as Source[]).map((s) => <option key={s} value={s}>{sources[s].label}</option>)}</Select>
+          </Field>
+          <Field label="Location">
+            <Select value={x.location} onChange={(e) => setX({ ...x, location: e.target.value })}><option>South Congress</option><option>Mueller</option></Select>
+          </Field>
         </div>
         <div className="space-y-2 rounded-lg border border-line p-3 text-[13px]">
           <div className="flex items-center justify-between gap-3"><span>They said yes to texts</span><Toggle label="Texts allowed" checked={x.smsOk} onChange={(v) => setX({ ...x, smsOk: v })} /></div>

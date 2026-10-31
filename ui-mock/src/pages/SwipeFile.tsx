@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Pencil, Plus, Trash2, Wand2 } from "lucide-react";
-import { Badge, Button, Card, Drawer, PageHeader, Segmented, cn } from "../components/ui";
+import { Badge, Button, Card, Drawer, Field, FieldLabel, Input, PageHeader, Segmented, Textarea, cn } from "../components/ui";
 import { PlatformMark, PostDrawer } from "../components/Social";
 import { platformMeta, type SocialPlatform, type Trend } from "../data/social";
 import { asTrend, blankSwipe, markUsed, removeSwipe, saveSwipe, useSwipes, type Swipe, type SwipeKind } from "../lib/swipes";
@@ -84,7 +84,6 @@ function SwipeEditor({ swipe, onClose }: { swipe: Swipe | null; onClose: () => v
   useEffect(() => { setS(swipe); }, [swipe?.id]);
   if (!swipe || !s) return null;
   const isNew = !saved.some((x) => x.id === swipe.id);
-  const field = "w-full rounded-lg border border-line bg-surface p-3 text-[13.5px] leading-[1.55] outline-none focus:border-line-strong";
   const toggleCh = (c: SocialPlatform) => setS({ ...s, platforms: s.platforms.includes(c) ? s.platforms.filter((x) => x !== c) : [...s.platforms, c] });
 
   return (
@@ -101,28 +100,24 @@ function SwipeEditor({ swipe, onClose }: { swipe: Swipe | null; onClose: () => v
       </>}
     >
       <div className="flex flex-col gap-5">
-        <label className="block">
-          <span className="mb-1.5 block text-[12.5px] font-medium text-muted">Name</span>
-          <input value={s.title} onChange={(e) => setS({ ...s, title: e.target.value })} placeholder="e.g. Patient question of the week" className={cn(field, "h-10 py-0")} />
-        </label>
+        <Field label="Name">
+          <Input size="lg" value={s.title} onChange={(e) => setS({ ...s, title: e.target.value })} placeholder="e.g. Patient question of the week" className="p-3 leading-[1.55] py-0" />
+        </Field>
         <div>
-          <span className="mb-1.5 block text-[12.5px] font-medium text-muted">Kind</span>
+          <FieldLabel>Kind</FieldLabel>
           <Segmented label="Kind" value={s.kind} onChange={(k) => setS({ ...s, kind: k })} options={kinds} />
         </div>
-        <label className="block">
-          <span className="mb-1.5 block text-[12.5px] font-medium text-muted">Why it works</span>
-          <textarea value={s.why} onChange={(e) => setS({ ...s, why: e.target.value })} rows={2} placeholder="What makes people stop, save or share it" className={field} />
-        </label>
-        <label className="block">
-          <span className="mb-1.5 block text-[12.5px] font-medium text-muted">The beats, one per line</span>
-          <textarea value={s.structure.join("\n")} onChange={(e) => setS({ ...s, structure: e.target.value.split("\n") })} rows={5} placeholder={"Hook\nThe tip\nWhy it matters\nAsk a question"} className={field} />
-        </label>
-        <label className="block">
-          <span className="mb-1.5 block text-[12.5px] font-medium text-muted">Your version (optional)</span>
-          <textarea value={s.example} onChange={(e) => setS({ ...s, example: e.target.value })} rows={3} placeholder="A line or two of how it sounds for you" className={field} />
-        </label>
+        <Field label="Why it works">
+          <Textarea value={s.why} onChange={(e) => setS({ ...s, why: e.target.value })} rows={2} placeholder="What makes people stop, save or share it" />
+        </Field>
+        <Field label="The beats, one per line">
+          <Textarea value={s.structure.join("\n")} onChange={(e) => setS({ ...s, structure: e.target.value.split("\n") })} rows={5} placeholder={"Hook\nThe tip\nWhy it matters\nAsk a question"} />
+        </Field>
+        <Field label="Your version (optional)">
+          <Textarea value={s.example} onChange={(e) => setS({ ...s, example: e.target.value })} rows={3} placeholder="A line or two of how it sounds for you" />
+        </Field>
         <div>
-          <span className="mb-1.5 block text-[12.5px] font-medium text-muted">Best on</span>
+          <FieldLabel>Best on</FieldLabel>
           <div className="flex flex-wrap gap-1.5">
             {(Object.keys(platformMeta) as SocialPlatform[]).map((p) => (
               <button key={p} onClick={() => toggleCh(p)} aria-pressed={s.platforms.includes(p)} className={cn("inline-flex h-8 items-center gap-2 rounded-full border pr-3 pl-1.5 text-[13px] transition-colors", s.platforms.includes(p) ? "border-ink bg-active" : "border-line text-muted hover:bg-hover")}>

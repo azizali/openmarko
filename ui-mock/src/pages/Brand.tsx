@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { Plus, RefreshCw, X } from "lucide-react";
-import { Badge, Button, Card, CardHeader, PageHeader, useToast } from "../components/ui";
+import { Badge, Button, Card, CardHeader, PageHeader, Textarea, useToast } from "../components/ui";
 import { ExternalUrl } from "../components/Scope";
 import { websites } from "../data/org";
 import { brandFacts, inVoice, usedBy, voice } from "../data/brand";
@@ -39,7 +39,7 @@ export default function Brand() {
         <div className="flex flex-col gap-6">
           <Card>
             <CardHeader title="Your voice in a sentence" sub={`Learned from ${voice.learnedFrom.join(", ")}.`} />
-            <textarea aria-label="Voice summary" value={summary} onChange={(e) => setSummary(e.target.value)} rows={3} className="w-full resize-y rounded-lg border border-line bg-surface p-3 text-[14px] leading-[1.55] outline-none focus:border-line-strong" />
+            <Textarea aria-label="Voice summary" value={summary} onChange={(e) => setSummary(e.target.value)} rows={3} className="text-[14px]" />
           </Card>
 
           <Card>
@@ -88,7 +88,7 @@ export default function Brand() {
 
           <Card>
             <CardHeader title="Try it" sub="Paste anything and see it in your voice." />
-            <textarea aria-label="Text to rewrite" value={sample} onChange={(e) => setSample(e.target.value)} rows={3} className="w-full resize-y rounded-lg border border-line bg-surface p-3 text-[13.5px] leading-[1.55] outline-none focus:border-line-strong" />
+            <Textarea aria-label="Text to rewrite" value={sample} onChange={(e) => setSample(e.target.value)} rows={3} />
             <div className="mt-3 text-[12.5px] font-medium text-muted">In your voice</div>
             <p className="mt-1 mb-0 whitespace-pre-line rounded-lg bg-hover px-3 py-2.5 text-[13.5px] leading-[1.55]">{inVoice(sample) || "…"}</p>
           </Card>

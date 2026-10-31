@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { Send, Check, Loader2, KeyRound, Webhook, Inbox as InboxIcon, Flame, ChevronLeft, ChevronRight, AlertTriangle, Sparkles, Mail } from "lucide-react";
-import { Badge, Button, Checkbox, Modal, cn } from "./ui";
+import { Badge, Button, Checkbox, Field, Input, Modal, Select, cn } from "./ui";
 import { providers, starterCampaign, type ProviderId } from "../data/sequencers";
 import { isOn, useOn } from "../lib/features";
 import type { Market, Opportunity, Prospect } from "../data/prospects";
@@ -28,8 +28,6 @@ export function LeadBadge({ lead }: { lead: Lead }) {
 }
 
 // ---------- Connect ----------
-
-const field = "h-10 w-full rounded-lg border border-line bg-surface px-3 text-[13.5px] outline-none focus:border-line-strong";
 
 /**
  * Pick a sequencer, paste its API key, choose where prospects go by default.
@@ -86,8 +84,8 @@ export function ConnectFlow({ onConnect, onDone }: { onConnect?: () => void; onD
         <ProviderMark id={provider} size={36} />
         <div><div className="text-[15px] font-medium">Connect {meta.name}</div><div className="text-[12.5px] text-muted">Find it in {meta.keyWhere}</div></div>
       </div>
-      <label className="block"><span className="mb-1.5 block text-[12.5px] font-medium text-muted">API key</span><input type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} placeholder="Paste your API key" className={field} /></label>
-      {meta.needsWorkspace && <label className="block"><span className="mb-1.5 block text-[12.5px] font-medium text-muted">Workspace ID</span><input value={ws} onChange={(e) => setWs(e.target.value)} placeholder="e.g. 66f1c0…" className={cn(field, "font-mono text-[12.5px]")} /></label>}
+      <Field label="API key"><Input size="lg" type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} placeholder="Paste your API key" /></Field>
+      {meta.needsWorkspace && <Field label="Workspace ID"><Input size="lg" value={ws} onChange={(e) => setWs(e.target.value)} placeholder="e.g. 66f1c0…" className="font-mono text-[12.5px]" /></Field>}
       {meta.note && <p className="flex items-start gap-2 text-[12.5px] text-muted"><KeyRound size={13} className="mt-0.5 shrink-0" />{meta.note} The key is stored encrypted and only used to add leads and read replies.</p>}
       {error && <p className="rounded-md bg-bad-soft px-3 py-2 text-[13px] text-bad">{error}</p>}
       <Button variant="primary" className="w-full" disabled={checking} onClick={verify} icon={checking ? <Loader2 size={14} className="animate-spin" /> : undefined}>{checking ? `Checking ${meta.name}…` : `Connect ${meta.name}`}</Button>
@@ -187,14 +185,13 @@ export function SendToCampaignModal({ open, onClose, items, market, qsKey, onSen
       </>
     }>
       <div className="space-y-5">
-        <label className="block">
-          <span className="mb-1.5 block text-[12.5px] font-medium text-muted">Campaign</span>
-          <select value={camp?.id ?? ""} onChange={(e) => { if (e.target.value === "__new") { setCampaignId(createStarterCampaign()?.id ?? ""); } else setCampaignId(e.target.value); setStepIx(0); }} className={field}>
+        <Field label="Campaign">
+          <Select size="lg" value={camp?.id ?? ""} onChange={(e) => { if (e.target.value === "__new") { setCampaignId(createStarterCampaign()?.id ?? ""); } else setCampaignId(e.target.value); setStepIx(0); }}>
             {st.connection.campaigns.map((c) => <option key={c.id} value={c.id}>{c.name} · {c.steps.length} steps{c.status !== "active" ? ` · ${c.status}` : ""}</option>)}
             {!st.connection.campaigns.some((c) => c.fromOpenMarko) && <option value="__new">+ Create “{starterCampaign().name}” (3 steps)</option>}
-          </select>
+          </Select>
           {camp && !camp.usesAuditUrl && <p className="mt-1.5 flex items-start gap-1.5 text-[12.5px] text-warn"><AlertTriangle size={13} className="mt-0.5 shrink-0" />This campaign's emails don't use {"{{audit_url}}"}, so prospects won't get their audit link.</p>}
-        </label>
+        </Field>
 
         <div className="flex flex-wrap items-center gap-2 text-[13px]">
           <Badge tone="good"><Check size={11} /> {ready.length} ready</Badge>

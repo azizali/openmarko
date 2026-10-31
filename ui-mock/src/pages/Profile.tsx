@@ -2,7 +2,7 @@ import { useOn } from "../lib/features";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { Star, Phone, Navigation, MousePointerClick, Eye, Sparkles, Send, ImagePlus, Calendar, Check, Loader2 } from "lucide-react";
-import { Badge, Button, Card, CardHeader, Delta, PageHeader, Progress, ScoreRing, Segmented, Tabs, cn, fmt, useToast } from "../components/ui";
+import { Badge, Button, Card, CardHeader, Delta, PageHeader, Progress, ScoreRing, Segmented, Tabs, Textarea, cn, fmt, useToast } from "../components/ui";
 import { business, locations } from "../data/mock";
 import { locationData } from "../data/scoped";
 import { shortLocation } from "../data/org";
@@ -173,7 +173,7 @@ function ProfileBody({ locationId, tab }: { locationId: string; tab: Tab }) {
                     <div className="mt-4">
                       {r.draft ? (
                         <>
-                          <textarea aria-label={`Reply to ${r.author}`} value={r.draft} onChange={(e) => setReviews((rs) => rs.map((x) => (x.id === r.id ? { ...x, draft: e.target.value } : x)))} rows={3} className="w-full resize-none rounded-lg border border-line bg-bg p-3 text-[13.5px] outline-none focus:border-line-strong" />
+                          <Textarea aria-label={`Reply to ${r.author}`} value={r.draft} onChange={(e) => setReviews((rs) => rs.map((x) => (x.id === r.id ? { ...x, draft: e.target.value } : x)))} rows={3} className="resize-none" />
                           <div className="mt-2 flex justify-end gap-2">
                             <Button size="sm" variant="ghost" onClick={() => gen(r.id)}>Regenerate</Button>
                             <Button size="sm" variant="primary" icon={<Send size={12} />} onClick={() => { setReviews((rs) => rs.map((x) => (x.id === r.id ? { ...x, replied: true } : x))); toast("Reply published to Google"); }}>Publish reply</Button>

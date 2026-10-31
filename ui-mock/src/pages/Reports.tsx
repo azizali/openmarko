@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { FileText, Plus, Mail, Hash, Download, Newspaper, Store, ChevronRight } from "lucide-react";
-import { Badge, Button, Card, CardHeader, Checkbox, Modal, PageHeader, Segmented, Sparkline, cn, fmt, rankTone, shortDate, useToast } from "../components/ui";
+import { Badge, Button, Card, CardHeader, Checkbox, Input, Modal, PageHeader, Segmented, Select, Sparkline, cn, fmt, rankTone, shortDate, useToast } from "../components/ui";
 import { gridStats, keywords, reports, type GridScan, type Keyword } from "../data/mock";
 import { useContent } from "../lib/content";
 import { totals, useSocialPosts } from "../lib/social";
@@ -63,10 +63,10 @@ export default function Reports() {
 
       <Modal open={open} onClose={() => setOpen(false)} title="New report" width={520} footer={<><Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button variant="primary" onClick={() => { setOpen(false); toast("Report scheduled"); }}>Create</Button></>}>
         <div className="space-y-4 text-[13.5px]">
-          <label className="block"><span className="mb-1 block text-[12.5px] text-muted">Name</span><input defaultValue="Monthly client report" className="h-9 w-full rounded-md border border-line bg-surface px-3 outline-none focus:border-line-strong" /></label>
+          <label className="block"><span className="mb-1 block text-[12.5px] text-muted">Name</span><Input defaultValue="Monthly client report" /></label>
           <div className="grid grid-cols-2 gap-3">
-            <label className="block"><span className="mb-1 block text-[12.5px] text-muted">Frequency</span><select className="h-9 w-full rounded-md border border-line bg-surface px-2 outline-none"><option>Monthly</option><option>Weekly</option></select></label>
-            <label className="block"><span className="mb-1 block text-[12.5px] text-muted">Deliver to</span><select className="h-9 w-full rounded-md border border-line bg-surface px-2 outline-none"><option>Email</option><option>Slack</option><option>Shareable link</option></select></label>
+            <label className="block"><span className="mb-1 block text-[12.5px] text-muted">Frequency</span><Select className="px-2"><option>Monthly</option><option>Weekly</option></Select></label>
+            <label className="block"><span className="mb-1 block text-[12.5px] text-muted">Deliver to</span><Select className="px-2"><option>Email</option><option>Slack</option><option>Shareable link</option></Select></label>
           </div>
           <div>
             <span className="mb-1.5 block text-[12.5px] text-muted">Sections</span>

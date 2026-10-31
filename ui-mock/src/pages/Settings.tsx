@@ -4,7 +4,7 @@ import {
   Store, SearchCheck, BarChart3, Globe, Hash, Check, AudioLines, Puzzle, MapPin, Plug, Zap, Users, History,
   UserRound, Palette, Bell, Building2, Paintbrush, CreditCard, Sun, Moon, Monitor, Plus, AtSign, Send, Copy, Webhook, AlertTriangle, Megaphone, ToggleRight, CalendarClock, Mail, MessageSquareText, Phone, ShieldCheck,
 } from "lucide-react";
-import { Badge, Button, Card, CardHeader, PageHeader, Progress, Toggle, cn, useToast } from "../components/ui";
+import { Badge, Button, Card, CardHeader, Field, Input, PageHeader, Progress, Select, Toggle, cn, useToast } from "../components/ui";
 import { locations, member } from "../data/mock";
 import { brandFacts } from "../data/brand";
 import { accounts, platformMeta, type SocialPlatform } from "../data/social";
@@ -223,10 +223,10 @@ function Accounts() {
                 </div>
                 {locations.length > 1 && (
                   <label className="flex items-center gap-2 text-[12.5px] text-muted">Speaks for
-                    <select value={a.locationId ?? ""} onChange={(e) => setList(list.map((x) => (x.id === a.id ? { ...x, locationId: e.target.value || undefined } : x)))} className="h-8 rounded-md border border-line bg-surface px-2 text-[13px] text-fg outline-none">
+                    <Select size="sm" value={a.locationId ?? ""} onChange={(e) => setList(list.map((x) => (x.id === a.id ? { ...x, locationId: e.target.value || undefined } : x)))} className="w-auto">
                       <option value="">All locations</option>
                       {locations.map((l) => <option key={l.id} value={l.id}>{shortLocation(l.id)}</option>)}
-                    </select>
+                    </Select>
                   </label>
                 )}
                 <Button size="sm" variant={accountConnected(a.id, st) ? "ghost" : "primary"} onClick={() => setAccount(a.id, !accountConnected(a.id, st))}>{accountConnected(a.id, st) ? "Disconnect" : "Connect"}</Button>
@@ -246,7 +246,6 @@ function Messaging() {
   const [setup, setSetup] = useState<"email" | "phone" | "numbers" | null>(null);
   const [checking, setChecking] = useState(false);
   const { toast, node } = useToast();
-  const field = "h-9 w-full rounded-lg border border-line bg-surface px-3 text-[13.5px] outline-none focus:border-line-strong";
   const hours = Array.from({ length: 24 }, (_, h) => ({ h, label: new Date(2026, 0, 1, h).toLocaleTimeString("en-US", { hour: "numeric" }) }));
   const missing = email.records.filter((r) => !r.ok).length;
   const row = (label: string, control: React.ReactNode, hint?: string) => (
@@ -278,9 +277,9 @@ function Messaging() {
               </div>
               {missing > 0 && email.verified && <p className="mb-3 flex items-start gap-2 text-[12.5px] text-muted"><AlertTriangle size={13} className="mt-0.5 shrink-0 text-warn" /><span>{missing} record still missing. Gmail and Yahoo require DMARC from anyone sending in bulk. Add it, then <button onClick={() => { setChecking(true); checkDns((m) => { setChecking(false); toast(m ? `${m} still missing` : "All records found"); }); }} className="underline underline-offset-2">{checking ? "checking…" : "check again"}</button>.</span></p>}
               {(missing > 0 || !email.verified) && <div className="mb-4"><DnsTable records={email.records} /></div>}
-              {row("From", <input value={`${email.fromName} <${email.fromAddress}>`} readOnly aria-label="From" className={field} />)}
-              {row("Replies go to", <input value={email.replyTo} onChange={(e) => setChannels("email", { replyTo: e.target.value })} aria-label="Reply-to" className={field} />, "And show in the Inbox")}
-              {row("Footer address", <input value={email.footer} onChange={(e) => setChannels("email", { footer: e.target.value })} aria-label="Footer address" className={field} />, "Required by CAN-SPAM, with an unsubscribe link")}
+              {row("From", <Input value={`${email.fromName} <${email.fromAddress}>`} readOnly aria-label="From" />)}
+              {row("Replies go to", <Input value={email.replyTo} onChange={(e) => setChannels("email", { replyTo: e.target.value })} aria-label="Reply-to" />, "And show in the Inbox")}
+              {row("Footer address", <Input value={email.footer} onChange={(e) => setChannels("email", { footer: e.target.value })} aria-label="Footer address" />, "Required by CAN-SPAM, with an unsubscribe link")}
               <p className="mt-1 text-[12px] text-subtle">{ep.privacy}</p>
             </>
           )}
@@ -298,9 +297,9 @@ function Messaging() {
               {row("Numbers", <div><Button size="sm" onClick={() => setSetup("numbers")}>{sms.numbers.length ? "Change numbers" : "Add numbers"}</Button></div>)}
               {row("Carrier registration", <div className="flex flex-wrap items-center gap-2 text-[13px]">Business <Badge tone={regTone(sms.brand)}>{regLabel(sms.brand)}</Badge> Campaign <Badge tone={regTone(sms.campaign)}>{regLabel(sms.campaign)}</Badge>{sms.brand === "none" && sms.numbers.length > 0 && <Button size="sm" variant="primary" onClick={() => setSetup("numbers")}>Register</Button>}</div>, "A2P 10DLC, required by US carriers")}
               {row("Quiet hours", <div className="flex items-center gap-2 text-[13px]">Only between
-                <select value={sms.quietStart} onChange={(e) => setChannels("sms", { quietStart: +e.target.value })} aria-label="From" className="h-8 rounded-md border border-line bg-surface px-2">{hours.map((x) => <option key={x.h} value={x.h}>{x.label}</option>)}</select>and
-                <select value={sms.quietEnd} onChange={(e) => setChannels("sms", { quietEnd: +e.target.value })} aria-label="Until" className="h-8 rounded-md border border-line bg-surface px-2">{hours.map((x) => <option key={x.h} value={x.h}>{x.label}</option>)}</select></div>, "In their time zone. Later texts wait for morning")}
-              {row("Opt-out line", <input value={sms.optOutLine} onChange={(e) => setChannels("sms", { optOutLine: e.target.value })} aria-label="Opt-out line" className={field} />, "Added to the first text anyone gets. STOP, END and UNSUBSCRIBE are honored on their own")}
+                <Select size="sm" className="w-auto" value={sms.quietStart} onChange={(e) => setChannels("sms", { quietStart: +e.target.value })} aria-label="From">{hours.map((x) => <option key={x.h} value={x.h}>{x.label}</option>)}</Select>and
+                <Select size="sm" className="w-auto" value={sms.quietEnd} onChange={(e) => setChannels("sms", { quietEnd: +e.target.value })} aria-label="Until">{hours.map((x) => <option key={x.h} value={x.h}>{x.label}</option>)}</Select></div>, "In their time zone. Later texts wait for morning")}
+              {row("Opt-out line", <Input value={sms.optOutLine} onChange={(e) => setChannels("sms", { optOutLine: e.target.value })} aria-label="Opt-out line" />, "Added to the first text anyone gets. STOP, END and UNSUBSCRIBE are honored on their own")}
             </>
           )}
         </Card>
@@ -404,7 +403,6 @@ function Team() {
 }
 
 function AccountProfile() {
-  const field = "h-10 w-full rounded-lg border border-line bg-surface px-3 text-[13.5px] outline-none focus:border-line-strong";
   return (
     <>
       <PageHeader title="Profile" sub="How you sign in and how teammates see you." />
@@ -414,8 +412,8 @@ function AccountProfile() {
           <Button size="sm" variant="ghost">Change photo</Button>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block"><span className="mb-1.5 block text-[12.5px] font-medium text-muted">Name</span><input defaultValue="Dr. Anika Patel" className={field} /></label>
-          <label className="block"><span className="mb-1.5 block text-[12.5px] font-medium text-muted">Email</span><input defaultValue="anika@mapleandmaindental.com" className={field} /></label>
+          <Field label="Name"><Input size="lg" defaultValue="Dr. Anika Patel" /></Field>
+          <Field label="Email"><Input size="lg" defaultValue="anika@mapleandmaindental.com" /></Field>
         </div>
         <div className="mt-5 flex items-center gap-4 border-t border-line pt-4">
           <div className="flex-1"><div className="text-[14px]">Sign-in</div><div className="text-[12.5px] text-muted">Google · last signed in today</div></div>
@@ -548,7 +546,7 @@ function Outreach() {
           <label className="block border-t border-line pt-3.5">
             <span className="block text-[14px]">Booking link</span>
             <span className="mb-1.5 block text-[12.5px] text-muted">Used in drafted replies.</span>
-            <input value={st.rules.bookingUrl} onChange={(e) => setRules({ bookingUrl: e.target.value })} className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-[13.5px] outline-none focus:border-line-strong" />
+            <Input size="lg" value={st.rules.bookingUrl} onChange={(e) => setRules({ bookingUrl: e.target.value })} />
           </label>
         </Card>
 

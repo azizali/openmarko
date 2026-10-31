@@ -1,7 +1,10 @@
-import { useEffect, useId, useState, type ReactNode, type ButtonHTMLAttributes } from "react";
-import { ArrowDown, ArrowUp, Minus, X } from "lucide-react";
+import { useEffect, useId, useState, type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes, type Ref, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { ArrowDown, ArrowUp, Minus, Search, X } from "lucide-react";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
-export const cn = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
+/** Joins class names; a later class wins over an earlier one for the same property (shadcn's cn). */
+export const cn = (...c: ClassValue[]) => twMerge(clsx(c));
 export const fmt = (n: number) => n.toLocaleString("en-US");
 
 // ---------- Primitives ----------
@@ -185,6 +188,68 @@ export function Checkbox({ checked, onChange, label }: { checked: boolean; onCha
       onChange={(e) => onChange(e.target.checked)}
       className="size-4 cursor-pointer rounded border-line-strong accent-[var(--ink)]"
     />
+  );
+}
+
+// ---------- Form fields ----------
+// One look for every text box, dropdown and text area. Pass className to
+// change width, height or spacing; it wins over the defaults.
+
+/** xs sits beside small buttons in a toolbar row; lg beside a primary action. */
+export type FieldSize = "xs" | "sm" | "md" | "lg";
+const fieldBase = "w-full rounded-lg border border-line bg-surface text-[13.5px] text-fg outline-none transition-colors placeholder:text-subtle focus:border-line-strong focus-within:border-line-strong disabled:opacity-70";
+const fieldSizes: Record<FieldSize, string> = { xs: "h-7 rounded-md px-2 text-[12.5px]", sm: "h-8 px-2.5 text-[13px]", md: "h-9 px-3", lg: "h-10 px-3" };
+/** Field classes for markup that can't use Input/Select. */
+export const fieldClass = (size: FieldSize = "md", className?: string) => cn(fieldBase, fieldSizes[size], className);
+
+type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size"> & {
+  size?: FieldSize;
+  /** Shown inside the box, before the text. */
+  icon?: ReactNode;
+  /** Shown inside the box, after the text: a unit, a clear button. */
+  end?: ReactNode;
+  ref?: Ref<HTMLInputElement>;
+};
+export function Input({ size = "md", icon, end, className, ...rest }: InputProps) {
+  if (!icon && !end) return <input {...rest} className={fieldClass(size, className)} />;
+  // The border moves to a wrapper so the icon sits inside the box; className sizes the box.
+  return (
+    <span className={fieldClass(size, cn("flex items-center gap-2", className))}>
+      {icon && <span className="flex shrink-0 text-subtle">{icon}</span>}
+      <input {...rest} className="h-full w-full min-w-0 flex-1 bg-transparent outline-none placeholder:text-subtle" />
+      {end}
+    </span>
+  );
+}
+
+/** A text box with a search icon. */
+export function SearchInput({ size = "md", ...rest }: Omit<InputProps, "icon">) {
+  return <Input size={size} icon={<Search size={size === "xs" || size === "sm" ? 13 : 15} />} {...rest} />;
+}
+
+type SelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> & { size?: FieldSize; ref?: Ref<HTMLSelectElement> };
+export function Select({ size = "md", className, ...rest }: SelectProps) {
+  return <select {...rest} className={fieldClass(size, className)} />;
+}
+
+type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & { mono?: boolean; ref?: Ref<HTMLTextAreaElement> };
+export function Textarea({ mono, className, ...rest }: TextareaProps) {
+  return <textarea {...rest} className={cn(fieldBase, "resize-y p-3 leading-[1.55]", mono && "font-mono text-[12.5px] leading-[1.6]", className)} />;
+}
+
+/** The text above a field. On its own, for a group of buttons that isn't a single input. */
+export function FieldLabel({ children, className }: { children: ReactNode; className?: string }) {
+  return <span className={cn("mb-1.5 block text-[12.5px] font-medium text-muted", className)}>{children}</span>;
+}
+
+/** A label above a field, with an optional hint below it. */
+export function Field({ label, hint, className, children }: { label: ReactNode; hint?: ReactNode; className?: string; children: ReactNode }) {
+  return (
+    <label className={cn("block", className)}>
+      <FieldLabel>{label}</FieldLabel>
+      {children}
+      {hint && <span className="mt-1 block text-[12px] text-subtle">{hint}</span>}
+    </label>
   );
 }
 

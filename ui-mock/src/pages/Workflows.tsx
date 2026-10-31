@@ -1,7 +1,7 @@
 import { Fragment, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { ArrowDown, ArrowLeft, ArrowUp, ChevronRight, Hourglass, Mail, MessageSquareText, Phone, Plus, Tag, Trash2, Zap, Flag as FlagIcon, CircleStop, TagsIcon, Play, Link2, X } from "lucide-react";
-import { Badge, Button, Card, Checkbox, Modal, PageHeader, Stat, Toggle, cn, fmt, useToast } from "../components/ui";
+import { Badge, Button, Card, Checkbox, Input, Modal, PageHeader, Select, Stat, Textarea, Toggle, cn, fmt, useToast } from "../components/ui";
 import { FieldPicker, FlagList } from "../components/Crm";
 import { segments, sources, stages, tagOptions, type SegmentId, type Source, type Stage } from "../data/contacts";
 import { condMeta, dateFields, eventGroups, eventMeta, exitMeta, recipes, stepMeta, type Workflow, type Cond, type CondField, type DateField, type EventId, type Exit, type Step, type StepKind, type Wait, type When } from "../data/messaging";
@@ -98,7 +98,6 @@ function Strip({ steps }: { steps: Step[] }) {
   );
 }
 
-const input = "h-9 rounded-lg border border-line bg-surface px-3 text-[13.5px] outline-none focus:border-line-strong";
 
 function Editor({ id }: { id: string }) {
   const st = useCrm();
@@ -206,8 +205,8 @@ function StepCard({ a, s, i, optOut }: { a: Workflow; s: Step; i: number; optOut
   if (s.kind === "wait") return (
     <div className="mx-auto flex max-w-md flex-wrap items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-[13px] shadow-card">
       <Hourglass size={13} className="text-muted" />Wait
-      <input type="number" min={1} value={s.wait!.n} onChange={(e) => set({ wait: { ...s.wait!, n: Math.max(1, +e.target.value) } })} aria-label="How long" className="h-7 w-14 rounded-md border border-line bg-surface px-2 text-[13px]" />
-      <select value={s.wait!.unit} onChange={(e) => set({ wait: { ...s.wait!, unit: e.target.value as Wait["unit"] } })} aria-label="Unit" className="h-7 rounded-md border border-line bg-surface px-1.5 text-[13px]"><option value="minutes">minutes</option><option value="hours">hours</option><option value="days">days</option></select>
+      <Input size="xs" type="number" min={1} value={s.wait!.n} onChange={(e) => set({ wait: { ...s.wait!, n: Math.max(1, +e.target.value) } })} aria-label="How long" className="w-14" />
+      <Select size="xs" className="w-auto" value={s.wait!.unit} onChange={(e) => set({ wait: { ...s.wait!, unit: e.target.value as Wait["unit"] } })} aria-label="Unit"><option value="minutes">minutes</option><option value="hours">hours</option><option value="days">days</option></Select>
       {a.when.event === "appt_booked" && <label className="flex items-center gap-1.5"><Checkbox checked={!!s.wait!.before} onChange={(v) => set({ wait: { ...s.wait!, before: v } })} />before the appointment</label>}
       {tools}
       <span className="sr-only">{waitText(s.wait!)}</span>
@@ -225,17 +224,17 @@ function StepCard({ a, s, i, optOut }: { a: Workflow; s: Step; i: number; optOut
         <span className={cn("grid size-8 place-items-center rounded-lg", s.kind === "call" ? "bg-warn-soft text-warn" : "bg-hover text-fg")}><I size={15} /></span>
         <span className="text-[13.5px] font-medium">{stepMeta[s.kind].label}</span>
         {(msg || s.kind === "call") && i > 0 && (
-          <select value={s.onlyIf ?? ""} onChange={(e) => set({ onlyIf: (e.target.value || undefined) as Step["onlyIf"] })} aria-label="Only if" className="h-7 rounded-md border border-line bg-surface px-1.5 text-[12.5px] text-muted">
+          <Select size="xs" className="w-auto text-muted" value={s.onlyIf ?? ""} onChange={(e) => set({ onlyIf: (e.target.value || undefined) as Step["onlyIf"] })} aria-label="Only if">
             <option value="">Everyone still in it</option><option value="no_reply">Only if they haven't replied</option><option value="not_booked">Only if they haven't booked</option>
-          </select>
+          </Select>
         )}
         {tools}
       </div>
-      {s.kind === "email" && <input value={s.subject ?? ""} onChange={(e) => set({ subject: e.target.value })} placeholder="Subject" aria-label="Subject" className={cn(input, "w-full")} />}
+      {s.kind === "email" && <Input value={s.subject ?? ""} onChange={(e) => set({ subject: e.target.value })} placeholder="Subject" aria-label="Subject" />}
       {(msg || s.kind === "call") && (
         <>
           {s.kind === "call" && <p className="text-[12.5px] text-muted">The front desk gets a task in Inbox → Calls to make, with this script. Nothing is dialed automatically.</p>}
-          <textarea value={s.body ?? ""} onChange={(e) => set({ body: e.target.value })} rows={s.kind === "email" ? 5 : 3} aria-label={s.kind === "call" ? "Call script" : "Message"} placeholder={s.kind === "call" ? "What to say when they pick up" : "Write the message"} className="w-full resize-y rounded-lg border border-line bg-surface p-3 text-[13.5px] outline-none focus:border-line-strong" />
+          <Textarea value={s.body ?? ""} onChange={(e) => set({ body: e.target.value })} rows={s.kind === "email" ? 5 : 3} aria-label={s.kind === "call" ? "Call script" : "Message"} placeholder={s.kind === "call" ? "What to say when they pick up" : "Write the message"} />
           <div className="flex flex-wrap items-center gap-2">
             {msg && <FieldPicker onPick={(t) => set({ body: `${s.body ?? ""}${t}` })} />}
             {parts && <span className={cn("text-[12px]", parts.parts > 1 ? "text-warn" : "text-subtle")}>{parts.len} chars · {parts.parts} segment{parts.parts > 1 ? "s" : ""}</span>}
@@ -244,15 +243,14 @@ function StepCard({ a, s, i, optOut }: { a: Workflow; s: Step; i: number; optOut
           <FlagList flags={flags} />
         </>
       )}
-      {s.kind === "stage" && <select value={s.stage} onChange={(e) => set({ stage: e.target.value as Stage })} aria-label="Stage" className={input}>{stages.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</select>}
-      {s.kind === "start" && <select value={s.workflow ?? ""} onChange={(e) => set({ workflow: e.target.value })} aria-label="Workflow" className={input}>{all.filter((x) => x.id !== a.id).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>}
-      {(s.kind === "tag" || s.kind === "untag") && <select value={s.tag} onChange={(e) => set({ tag: e.target.value })} aria-label="Tag" className={input}>{[...new Set([...(s.tag ? [s.tag] : []), ...tagOptions])].map((t) => <option key={t}>{t}</option>)}</select>}
+      {s.kind === "stage" && <Select value={s.stage} onChange={(e) => set({ stage: e.target.value as Stage })} aria-label="Stage" className="w-auto">{stages.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</Select>}
+      {s.kind === "start" && <Select value={s.workflow ?? ""} onChange={(e) => set({ workflow: e.target.value })} aria-label="Workflow" className="w-auto">{all.filter((x) => x.id !== a.id).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</Select>}
+      {(s.kind === "tag" || s.kind === "untag") && <Select value={s.tag} onChange={(e) => set({ tag: e.target.value })} aria-label="Tag" className="w-auto">{[...new Set([...(s.tag ? [s.tag] : []), ...tagOptions])].map((t) => <option key={t}>{t}</option>)}</Select>}
     </Card>
   );
 }
 
 
-const field = "h-9 rounded-lg border border-line bg-surface px-2.5 text-[13.5px] outline-none focus:border-line-strong";
 
 /** When something happens, and only if the contact matches. */
 function WhenCard({ a }: { a: Workflow }) {
@@ -271,28 +269,28 @@ function WhenCard({ a }: { a: Workflow }) {
       <div className="flex flex-wrap items-center gap-2">
         <span className="grid size-8 place-items-center rounded-lg bg-accent-soft text-accent"><Zap size={15} /></span>
         <span className="w-14 text-[13px] font-medium">When</span>
-        <select value={w.event} onChange={(e) => pick(e.target.value as EventId)} aria-label="When" className={cn(field, "min-w-0 flex-1")}>
+        <Select value={w.event} onChange={(e) => pick(e.target.value as EventId)} aria-label="When" className="min-w-0 flex-1">
           {eventGroups.map((g) => <optgroup key={g.label} label={g.label}>{g.events.map((e) => <option key={e} value={e}>{eventMeta[e].label}</option>)}</optgroup>)}
-        </select>
+        </Select>
       </div>
       {needs && (
         <div className="flex flex-wrap items-center gap-2 sm:pl-[104px]">
-          {needs === "tag" && <select value={w.tag} onChange={(e) => set({ tag: e.target.value })} aria-label="Tag" className={field}>{[...new Set([...(w.tag ? [w.tag] : []), ...tagOptions])].map((t) => <option key={t}>{t}</option>)}</select>}
-          {needs === "stage" && <select value={w.stage} onChange={(e) => set({ stage: e.target.value as Stage })} aria-label="Stage" className={field}>{stages.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</select>}
-          {needs === "list" && <select value={w.list} onChange={(e) => set({ list: e.target.value as SegmentId })} aria-label="List" className={field}>{segments.filter((g) => g.id !== "all").map((g) => <option key={g.id} value={g.id}>{g.label}</option>)}</select>}
-          {needs === "keyword" && <input value={w.keyword ?? ""} onChange={(e) => set({ keyword: e.target.value || undefined })} placeholder="Any reply, or a word like YES" aria-label="Reply contains" className={cn(field, "w-60")} />}
+          {needs === "tag" && <Select value={w.tag} onChange={(e) => set({ tag: e.target.value })} aria-label="Tag" className="w-auto">{[...new Set([...(w.tag ? [w.tag] : []), ...tagOptions])].map((t) => <option key={t}>{t}</option>)}</Select>}
+          {needs === "stage" && <Select value={w.stage} onChange={(e) => set({ stage: e.target.value as Stage })} aria-label="Stage" className="w-auto">{stages.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</Select>}
+          {needs === "list" && <Select value={w.list} onChange={(e) => set({ list: e.target.value as SegmentId })} aria-label="List" className="w-auto">{segments.filter((g) => g.id !== "all").map((g) => <option key={g.id} value={g.id}>{g.label}</option>)}</Select>}
+          {needs === "keyword" && <Input value={w.keyword ?? ""} onChange={(e) => set({ keyword: e.target.value || undefined })} placeholder="Any reply, or a word like YES" aria-label="Reply contains" className="w-60" />}
           {needs === "date" && w.date && <>
-            <input type="number" min={0} value={w.date.days} onChange={(e) => set({ date: { ...w.date!, days: Math.max(0, +e.target.value) } })} aria-label="Days" className={cn(field, "w-20")} />
+            <Input type="number" min={0} value={w.date.days} onChange={(e) => set({ date: { ...w.date!, days: Math.max(0, +e.target.value) } })} aria-label="Days" className="w-20" />
             <span className="text-[13px]">days</span>
-            <select value={w.date.dir} onChange={(e) => set({ date: { ...w.date!, dir: e.target.value as "before" | "after" } })} aria-label="Before or after" className={field}><option value="after">after</option><option value="before">before</option></select>
+            <Select value={w.date.dir} onChange={(e) => set({ date: { ...w.date!, dir: e.target.value as "before" | "after" } })} aria-label="Before or after" className="w-auto"><option value="after">after</option><option value="before">before</option></Select>
             <span className="text-[13px]">their</span>
-            <select value={w.date.field} onChange={(e) => set({ date: { ...w.date!, field: e.target.value as DateField } })} aria-label="Date" className={field}>{(Object.keys(dateFields) as DateField[]).map((f) => <option key={f} value={f}>{dateFields[f]}</option>)}</select>
+            <Select value={w.date.field} onChange={(e) => set({ date: { ...w.date!, field: e.target.value as DateField } })} aria-label="Date" className="w-auto">{(Object.keys(dateFields) as DateField[]).map((f) => <option key={f} value={f}>{dateFields[f]}</option>)}</Select>
           </>}
           {needs === "workflow" && <>
-            <select value={w.workflow} onChange={(e) => set({ workflow: e.target.value })} aria-label="Workflow" className={field}>{st.workflows.filter((x) => x.id !== a.id).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
-            <select value={w.ended ?? "any"} onChange={(e) => set({ ended: e.target.value as When["ended"] })} aria-label="How it ended" className={field}><option value="any">ends either way</option><option value="finished">gets through every step</option><option value="stopped">stops early (replied, booked…)</option></select>
+            <Select value={w.workflow} onChange={(e) => set({ workflow: e.target.value })} aria-label="Workflow" className="w-auto">{st.workflows.filter((x) => x.id !== a.id).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</Select>
+            <Select value={w.ended ?? "any"} onChange={(e) => set({ ended: e.target.value as When["ended"] })} aria-label="How it ended" className="w-auto"><option value="any">ends either way</option><option value="finished">gets through every step</option><option value="stopped">stops early (replied, booked…)</option></Select>
           </>}
-          {needs === "campaign" && <select value={w.campaign} onChange={(e) => set({ campaign: e.target.value })} aria-label="Campaign" className={field}><option value="any">Any campaign</option>{st.campaigns.map((c) => <option key={c.id} value={c.id}>{c.name || "Untitled"}</option>)}</select>}
+          {needs === "campaign" && <Select value={w.campaign} onChange={(e) => set({ campaign: e.target.value })} aria-label="Campaign" className="w-auto"><option value="any">Any campaign</option>{st.campaigns.map((c) => <option key={c.id} value={c.id}>{c.name || "Untitled"}</option>)}</Select>}
         </div>
       )}
       {eventMeta[w.event].hint && <p className="text-[12.5px] text-muted sm:pl-[104px]">{eventMeta[w.event].hint}</p>}
@@ -323,8 +321,8 @@ function CondRow({ k, first, onChange, onRemove }: { k: Cond; first: boolean; on
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span className="w-24 shrink-0 text-[13px] font-medium sm:pl-10">{first ? "Only if" : "and"}</span>
-      <select value={k.field} onChange={(e) => onChange({ field: e.target.value as CondField, op: "is", values: [] })} aria-label="Field" className={field}>{(Object.keys(condMeta) as CondField[]).map((f) => <option key={f} value={f}>{condMeta[f].label}</option>)}</select>
-      <select value={k.op} onChange={(e) => onChange({ ...k, op: e.target.value as Cond["op"] })} aria-label="Is or is not" className={field}><option value="is">{m.isLabel[0]}</option><option value="is_not">{m.isLabel[1]}</option></select>
+      <Select value={k.field} onChange={(e) => onChange({ field: e.target.value as CondField, op: "is", values: [] })} aria-label="Field" className="w-auto">{(Object.keys(condMeta) as CondField[]).map((f) => <option key={f} value={f}>{condMeta[f].label}</option>)}</Select>
+      <Select value={k.op} onChange={(e) => onChange({ ...k, op: e.target.value as Cond["op"] })} aria-label="Is or is not" className="w-auto"><option value="is">{m.isLabel[0]}</option><option value="is_not">{m.isLabel[1]}</option></Select>
       <button onClick={onRemove} aria-label="Remove condition" className="rounded p-1 text-subtle hover:bg-hover hover:text-bad"><X size={13} /></button>
       {opts.length > 0 && (
         <span className="flex min-w-0 basis-full flex-wrap gap-1 sm:pl-[104px]">

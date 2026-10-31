@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import {
-  ArrowDown, ArrowUp, Bookmark, ChevronsUpDown, Loader2, Pause, Play, Plug, RefreshCw, Scissors, Search, Settings2, ShieldBan, Sparkles, TrendingUp, Undo2, Wand2, X,
+  ArrowDown, ArrowUp, Bookmark, ChevronsUpDown, Loader2, Pause, Play, Plug, RefreshCw, Scissors, Settings2, ShieldBan, Sparkles, TrendingUp, Undo2, Wand2, X,
 } from "lucide-react";
-import { Badge, Button, Card, Checkbox, Drawer, LineChart, PageHeader, Segmented, Sparkline, Tabs, Toggle, cn, useToast } from "../components/ui";
+import { Badge, Button, Card, Checkbox, Drawer, Field, Input, LineChart, PageHeader, SearchInput, Segmented, Select, Sparkline, Tabs, Toggle, cn, useToast } from "../components/ui";
 import { AdPlatformMark, ConnectToolModal, CreativeThumb, VerdictBadge, styleFor } from "../components/Ads";
 import { adPlatforms, goalHistory, resultKinds, toolOf, type AdPlatform, type Level, type ResultKind, type Row } from "../data/ads";
 import {
@@ -186,10 +186,7 @@ export default function Ads() {
                       ))}
                     </div>
                     <span className="flex-1" />
-                    <label className="relative">
-                      <Search size={13} className="absolute top-1/2 left-2.5 -translate-y-1/2 text-subtle" />
-                      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find" aria-label="Find in table" className="h-8 w-44 rounded-lg border border-line bg-surface pr-2 pl-7 text-[13px] outline-none focus:border-line-strong" />
-                    </label>
+                    <SearchInput size="sm" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find" aria-label="Find in table" className="w-44" />
                   </>
                 )}
               </div>
@@ -283,20 +280,18 @@ function GoalDrawer({ open, onClose, goal }: { open: boolean; onClose: () => voi
   const [g, setG] = useState(goal);
   const [was, setWas] = useState(open);
   if (open !== was) { setWas(open); if (open) setG(goal); }
-  const field = "h-9 w-full rounded-lg border border-line bg-surface px-3 text-[13.5px] outline-none focus:border-line-strong";
-  const label = "mb-1.5 block text-[12.5px] font-medium text-muted";
   return (
     <Drawer open={open} onClose={onClose} title="Goal & guardrails" width={520} footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" onClick={() => { setGoal(g); onClose(); }}>Save</Button></>}>
       <div className="space-y-6">
         <section className="space-y-3">
           <h3 className="text-[14px] font-medium">What counts as a result</h3>
-          <select value={g.result} onChange={(e) => setG({ ...g, result: e.target.value as ResultKind })} className={field}>
+          <Select value={g.result} onChange={(e) => setG({ ...g, result: e.target.value as ResultKind })}>
             {(Object.keys(resultKinds) as ResultKind[]).map((k) => <option key={k} value={k}>{resultKinds[k].label}</option>)}
-          </select>
+          </Select>
           <p className="m-0 text-[12.5px] text-muted">Bookings come from your booking system, calls from CallRail. Connect them under <Link to="/settings/ads" className="underline">Ad accounts</Link> so {assistant()} optimizes for patients, not clicks.</p>
           <div className="grid grid-cols-2 gap-3">
-            <label><span className={label}>Target cost per {resultKinds[g.result].one}</span><input type="number" value={g.target} onChange={(e) => setG({ ...g, target: +e.target.value })} className={cn(field, "num")} /></label>
-            <label><span className={label}>Never spend more than, a month</span><input type="number" value={g.monthly} onChange={(e) => setG({ ...g, monthly: +e.target.value })} className={cn(field, "num")} /></label>
+            <Field label={<>Target cost per {resultKinds[g.result].one}</>}><Input type="number" value={g.target} onChange={(e) => setG({ ...g, target: +e.target.value })} className="num" /></Field>
+            <Field label="Never spend more than, a month"><Input type="number" value={g.monthly} onChange={(e) => setG({ ...g, monthly: +e.target.value })} className="num" /></Field>
           </div>
         </section>
         <section className="space-y-3">
@@ -308,8 +303,8 @@ function GoalDrawer({ open, onClose, goal }: { open: boolean; onClose: () => voi
           <h3 className="text-[14px] font-medium">What {assistant()} may do</h3>
           <Segmented label="Mode" value={g.mode} onChange={(m) => setG({ ...g, mode: m })} options={[{ id: "recommend", label: "Recommend, I approve" }, { id: "auto", label: "Auto within guardrails" }]} />
           <div className="grid grid-cols-2 gap-3">
-            <label><span className={label}>Biggest budget change at once</span><div className="relative"><input type="number" value={g.step} onChange={(e) => setG({ ...g, step: +e.target.value })} className={cn(field, "num pr-8")} /><span className="absolute top-1/2 right-3 -translate-y-1/2 text-muted">%</span></div></label>
-            <label><span className={label}>Judge an ad after spending</span><select value={g.minSpend} onChange={(e) => setG({ ...g, minSpend: +e.target.value })} className={field}>{[1.5, 2, 3, 4].map((x) => <option key={x} value={x}>{x}× target ({money(x * g.target)})</option>)}</select></label>
+            <Field label="Biggest budget change at once"><div className="relative"><Input type="number" value={g.step} onChange={(e) => setG({ ...g, step: +e.target.value })} className="num pr-8" /><span className="absolute top-1/2 right-3 -translate-y-1/2 text-muted">%</span></div></Field>
+            <Field label="Judge an ad after spending"><Select value={g.minSpend} onChange={(e) => setG({ ...g, minSpend: +e.target.value })}>{[1.5, 2, 3, 4].map((x) => <option key={x} value={x}>{x}× target ({money(x * g.target)})</option>)}</Select></Field>
           </div>
           <label className="flex items-start justify-between gap-4 rounded-lg border border-line p-3">
             <span><span className="block text-[13.5px]">Launch new ads without asking</span><span className="text-[12.5px] text-muted">Fresh versions of tired ads go live on their own. Off means they wait in Creative studio.</span></span>

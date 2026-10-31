@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { Check, Search, MapPin, Loader2, Plus, ArrowLeft, ArrowRight, ShieldCheck, Store, BarChart3, SearchCheck, Globe, Sparkles } from "lucide-react";
-import { Button, Badge, Card, Checkbox, Modal, Segmented, Toggle, cn, fmt } from "../components/ui";
+import { Check, MapPin, Loader2, Plus, ArrowLeft, ArrowRight, ShieldCheck, Store, BarChart3, SearchCheck, Globe, Sparkles } from "lucide-react";
+import { Badge, Button, Card, Checkbox, Input, Modal, SearchInput, Segmented, Select, Textarea, Toggle, cn, fmt } from "../components/ui";
 import { Logo } from "../components/Logo";
 import { ExternalUrl } from "../components/Scope";
 import { PlatformMark } from "../components/Social";
@@ -136,10 +136,7 @@ export default function Onboarding() {
                 <h1 className="font-serif text-[34px] leading-tight">Add an organization</h1>
                 <p className="mt-2 text-muted">Start with the website, or the business name if there isn't one. We'll find the locations, Google profiles and social accounts, and learn how the business sounds.</p>
                 <form onSubmit={(e) => { e.preventDefault(); if (query.trim()) setRead(0); }} className="mt-8 flex gap-2">
-                  <div className="flex flex-1 items-center gap-2 rounded-lg border border-line bg-surface px-3 focus-within:border-line-strong">
-                    <Search size={16} className="text-subtle" />
-                    <input aria-label="Website or business name" value={query} onChange={(e) => { setQuery(e.target.value); setRead(-1); }} className="h-11 flex-1 bg-transparent outline-none" placeholder="yourbusiness.com, or a business name" />
-                  </div>
+                  <SearchInput size="lg" className="h-11 flex-1" aria-label="Website or business name" value={query} onChange={(e) => { setQuery(e.target.value); setRead(-1); }} placeholder="yourbusiness.com, or a business name" />
                   <Button type="submit" variant="primary" className="h-11" disabled={!query.trim() || (read >= 0 && !doneReading)}>{read < 0 ? "Read it" : doneReading ? "Read again" : "Reading…"}</Button>
                 </form>
                 {read >= 0 && (
@@ -154,8 +151,8 @@ export default function Onboarding() {
                 )}
                 {doneReading && (
                   <Card className="anim-fade mt-6 grid gap-4 sm:grid-cols-2">
-                    <label className="block text-[13px]"><span className="mb-1 block text-muted">Organization name</span><input value={name} onChange={(e) => setName(e.target.value)} className="h-9 w-full rounded-md border border-line bg-surface px-3 outline-none focus:border-line-strong" /></label>
-                    <label className="block text-[13px]"><span className="mb-1 block text-muted">What it is</span><input value={category} onChange={(e) => setCategory(e.target.value)} className="h-9 w-full rounded-md border border-line bg-surface px-3 outline-none focus:border-line-strong" /></label>
+                    <label className="block text-[13px]"><span className="mb-1 block text-muted">Organization name</span><Input value={name} onChange={(e) => setName(e.target.value)} /></label>
+                    <label className="block text-[13px]"><span className="mb-1 block text-muted">What it is</span><Input value={category} onChange={(e) => setCategory(e.target.value)} /></label>
                     <p className="m-0 text-[12.5px] text-muted sm:col-span-2">Found {locations.length} locations, {websites.length} websites and {found.length} social profiles. Check them on the next step.</p>
                   </Card>
                 )}
@@ -187,10 +184,10 @@ export default function Onboarding() {
                       <Globe size={16} className="shrink-0 text-muted" />
                       <span className="min-w-0 flex-1 text-[14px]"><ExternalUrl domain={w.domain} /></span>
                       <label className="flex items-center gap-2 text-[12.5px] text-muted">Serves
-                        <select value={siteFor[w.id]} onChange={(e) => setSiteFor({ ...siteFor, [w.id]: e.target.value })} className="h-8 rounded-md border border-line bg-surface px-2 text-[13px] text-fg outline-none">
+                        <Select size="sm" value={siteFor[w.id]} onChange={(e) => setSiteFor({ ...siteFor, [w.id]: e.target.value })} className="w-auto">
                           <option value="all">All locations</option>
                           {chosenLocs.map((l) => <option key={l.id} value={l.id}>{shortLocation(l.id)}</option>)}
-                        </select>
+                        </Select>
                       </label>
                     </div>
                   ))}
@@ -206,10 +203,10 @@ export default function Onboarding() {
                         <span className="block text-[12.5px] text-muted">{platformMeta[a.platform].name}{a.followers ? ` · ${fmt(a.followers)} followers` : " · found on your website, not confirmed"}</span>
                       </span>
                       {chosenLocs.length > 1 && (
-                        <select aria-label={`${a.handle} speaks for`} value={speaksFor[a.id]} onChange={(e) => setSpeaksFor({ ...speaksFor, [a.id]: e.target.value })} className="h-8 rounded-md border border-line bg-surface px-2 text-[13px] outline-none">
+                        <Select size="sm" aria-label={`${a.handle} speaks for`} value={speaksFor[a.id]} onChange={(e) => setSpeaksFor({ ...speaksFor, [a.id]: e.target.value })} className="w-auto">
                           <option value="">All locations</option>
                           {chosenLocs.map((l) => <option key={l.id} value={l.id}>{shortLocation(l.id)}</option>)}
-                        </select>
+                        </Select>
                       )}
                     </div>
                   ))}
@@ -265,7 +262,7 @@ export default function Onboarding() {
                 <p className="mt-2 text-muted">Drafted from the websites and {locations.reduce((a, l) => a + locationData[l.id].reviewCount, 0)} review replies. Every post, reply and article will use it, for every location.</p>
                 <Card className="mt-8">
                   <div className="mb-2 flex items-center gap-1.5 text-[12.5px] font-medium text-muted"><Sparkles size={13} className="text-accent" /> The voice in a sentence</div>
-                  <textarea aria-label="Voice summary" value={summary} onChange={(e) => setSummary(e.target.value)} rows={3} className="w-full resize-y rounded-lg border border-line bg-surface p-3 text-[14px] leading-[1.55] outline-none focus:border-line-strong" />
+                  <Textarea aria-label="Voice summary" value={summary} onChange={(e) => setSummary(e.target.value)} rows={3} className="text-[14px]" />
                   <div className="mt-4 flex flex-col gap-4">
                     <WordList label="Say" words={use} onChange={setUse} />
                     <WordList label="Never say" words={avoid} onChange={setAvoid} />
@@ -378,7 +375,7 @@ function AddRow({ placeholder, onAdd }: { placeholder: string; onAdd: (v: string
   const [v, setV] = useState("");
   return (
     <form onSubmit={(e) => { e.preventDefault(); onAdd(v); setV(""); }} className="flex items-center gap-2 bg-hover/40 px-4 py-2.5">
-      <input value={v} onChange={(e) => setV(e.target.value)} placeholder={placeholder} aria-label={placeholder} className="h-8 min-w-0 flex-1 rounded-md border border-line bg-surface px-2.5 text-[13px] outline-none focus:border-line-strong" />
+      <Input size="sm" value={v} onChange={(e) => setV(e.target.value)} placeholder={placeholder} aria-label={placeholder} className="min-w-0 flex-1" />
       <Button size="sm" type="submit" icon={<Plus size={13} />} disabled={!v.trim()}>Add</Button>
     </form>
   );

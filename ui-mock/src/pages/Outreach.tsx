@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { ArrowLeft, CalendarCheck, Eye, FileSearch, Inbox, Plug, Send, Settings2, ThumbsDown, ThumbsUp, Target } from "lucide-react";
-import { Badge, Button, Card, Empty, PageHeader, Segmented, Stat, Tabs, cn, useToast } from "../components/ui";
+import { Badge, Button, Card, Empty, PageHeader, Segmented, Stat, Tabs, Textarea, cn, useToast } from "../components/ui";
 import { ConnectSequencerModal, LeadBadge, ProviderMark, SuggestedTag } from "../components/Outreach";
 import { providers } from "../data/sequencers";
 import { markRead, providerName, reply, setStatus, statusMeta, suggestReply, useOutreach, type Lead, type LeadStatus } from "../lib/outreach";
@@ -200,7 +200,7 @@ function Thread({ l, share, onBack, toast }: { l: Lead; share: Share | undefined
           <span className="text-[12.5px] font-medium text-muted">Reply from {l.thread[0]?.inbox ?? "your inbox"}</span>
           {drafted ? <SuggestedTag /> : <button onClick={() => { setDraft(suggestReply(l, st.rules)); setDrafted(true); }} className="text-[12.5px] text-muted underline decoration-line-strong underline-offset-2 hover:text-fg">Draft a reply</button>}
         </div>
-        <textarea value={draft} onChange={(e) => { setDraft(e.target.value); setDrafted(false); }} rows={6} placeholder="Write a reply…" aria-label="Reply" className="w-full resize-y rounded-lg border border-line bg-surface p-3 text-[13.5px] outline-none focus:border-line-strong" />
+        <Textarea value={draft} onChange={(e) => { setDraft(e.target.value); setDrafted(false); }} rows={6} placeholder="Write a reply…" aria-label="Reply" />
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <Button size="sm" variant="ghost" icon={<CalendarCheck size={12} />} onClick={() => setDraft((d) => `${d}${d && !d.endsWith("\n") ? "\n\n" : ""}${st.rules.bookingUrl}`)}>Insert booking link</Button>
           <Button className="ml-auto" variant="primary" icon={<Send size={13} />} disabled={!draft.trim()} onClick={send}>Send reply</Button>

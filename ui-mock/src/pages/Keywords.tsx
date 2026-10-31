@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Search, MapPin, Plus, Loader2, Sparkles } from "lucide-react";
-import { Badge, Button, Card, Checkbox, Modal, PageHeader, Segmented, Sparkline, Tabs, cn, fmt, useToast } from "../components/ui";
+import { MapPin, Plus, Loader2, Sparkles } from "lucide-react";
+import { Badge, Button, Card, Checkbox, Input, Modal, PageHeader, SearchInput, Segmented, Sparkline, Tabs, cn, fmt, useToast } from "../components/ui";
 import { competitorNames, keywordIdeas, keywords, type KeywordIdea } from "../data/mock";
 
 type Tab = "ideas" | "questions" | "gap" | "nearme";
@@ -121,10 +121,7 @@ export default function Keywords() {
       <PageHeader title="Keyword ideas" sub="Find local keywords worth tracking, from Google search data and your Search Console queries." />
 
       <form onSubmit={(e) => { e.preventDefault(); run(); }} className="mb-6 flex flex-wrap gap-2">
-        <div className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-line bg-surface px-3 focus-within:border-line-strong">
-          <Search size={16} className="text-subtle" />
-          <input aria-label="Seed keyword" value={seed} onChange={(e) => setSeed(e.target.value)} className="flex-1 bg-transparent outline-none" placeholder="Seed keyword or competitor domain" />
-        </div>
+        <SearchInput size="lg" className="min-w-0 flex-1" aria-label="Seed keyword" value={seed} onChange={(e) => setSeed(e.target.value)} placeholder="Seed keyword or competitor domain" />
         <div className="flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-3 text-[13.5px] text-muted"><MapPin size={14} /> Austin, TX · English</div>
         <Button type="submit" variant="primary" className="h-10">{loading ? <Loader2 size={14} className="animate-spin" /> : "Search"}</Button>
       </form>
@@ -202,7 +199,7 @@ export default function Keywords() {
         <div className="space-y-3 text-[13.5px]">
           <label className="flex items-center justify-between"><span>Daily organic rank</span><input type="checkbox" defaultChecked className="size-4 accent-[var(--ink)]" /></label>
           <label className="flex items-center justify-between"><span>Weekly geo-grid (7×7)</span><input type="checkbox" defaultChecked className="size-4 accent-[var(--ink)]" /></label>
-          <label className="flex items-center justify-between"><span>Tag</span><input defaultValue="new" className="h-8 w-32 rounded-md border border-line bg-surface px-2 text-[13px] outline-none" /></label>
+          <label className="flex items-center justify-between"><span>Tag</span><Input size="sm" defaultValue="new" className="w-32" /></label>
           <p className="num border-t border-line pt-3 text-[12.5px] text-muted">Uses {sel.size} of your 9 remaining keyword slots.</p>
         </div>
       </Modal>

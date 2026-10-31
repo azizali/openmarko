@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Check, ExternalLink, Loader2, Play, ShieldCheck, Star } from "lucide-react";
-import { Badge, Button, Checkbox, Modal, Segmented, cn } from "./ui";
+import { Badge, Button, Checkbox, Field, FieldLabel, Input, Modal, Segmented, Select, cn } from "./ui";
 import { adPlatforms, angles, formats, type AdPlatform, type Angle, type Format, type Size, type Tool } from "../data/ads";
 import { brandFacts } from "../data/brand";
 import { locations } from "../data/mock";
@@ -163,7 +163,6 @@ export function PublishModal({ open, onClose, ads, batchId, batchName, onDone }:
   const groups = byAngle ? new Set(ok.map((a) => a.angle)).size : 1;
   const camps = st.rows.filter((r) => r.level === "campaign" && r.platform === platform);
   const g = st.goal;
-  const field = "h-9 w-full rounded-lg border border-line bg-surface px-3 text-[13.5px] outline-none focus:border-line-strong";
   const after = dailyBudget(st.rows.filter((r) => st.connected[r.platform])) + (paused ? 0 : budget * groups);
   const publish = () => {
     const cid = publishAds({ platform, name: name.trim() || batchName, into: into === "new" ? null : into, byAngle, budget, places: places.map(shortLocation), paused, batchId }, ok);
@@ -189,18 +188,16 @@ export function PublishModal({ open, onClose, ads, batchId, batchName, onDone }:
           {skipped > 0 && <p className="mt-1.5 mb-0 text-[12.5px] text-warn">{skipped} {skipped === 1 ? "creative doesn't" : "creatives don't"} fit {adPlatforms[platform].name} ({[...new Set(ads.filter((a) => !ok.includes(a)).map((a) => formats[a.format].label.toLowerCase()))].join(", ")}) and will stay approved for another platform.</p>}
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block">
-            <span className="mb-1.5 block text-[12.5px] font-medium text-muted">Campaign</span>
-            <select value={into} onChange={(e) => setInto(e.target.value)} className={field}>
+          <Field label="Campaign">
+            <Select value={into} onChange={(e) => setInto(e.target.value)}>
               <option value="new">New test campaign</option>
               {camps.map((c) => <option key={c.id} value={c.id}>Add to {c.name}</option>)}
-            </select>
-          </label>
+            </Select>
+          </Field>
           {into === "new" && (
-            <label className="block">
-              <span className="mb-1.5 block text-[12.5px] font-medium text-muted">Name</span>
-              <input value={name} onChange={(e) => setName(e.target.value)} className={field} />
-            </label>
+            <Field label="Name">
+              <Input value={name} onChange={(e) => setName(e.target.value)} />
+            </Field>
           )}
         </div>
         <div>
@@ -209,12 +206,11 @@ export function PublishModal({ open, onClose, ads, batchId, batchName, onDone }:
           <p className="mt-1.5 mb-0 text-[12.5px] text-muted">{byAngle ? "Each angle gets its own budget, so you learn which angle wins, not just which ad." : `${adPlatforms[platform].name} spreads the budget across all of them and favors early leaders. Faster, but a slow starter may never get a fair test.`}</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block">
-            <span className="mb-1.5 block text-[12.5px] font-medium text-muted">Daily budget per ad set</span>
-            <div className="relative"><span className="absolute top-1/2 left-3 -translate-y-1/2 text-muted">$</span><input type="number" min={5} value={budget} onChange={(e) => setBudget(Math.max(1, +e.target.value))} className={cn(field, "num pl-6")} /></div>
-          </label>
+          <Field label="Daily budget per ad set">
+            <div className="relative"><span className="absolute top-1/2 left-3 -translate-y-1/2 text-muted">$</span><Input type="number" min={5} value={budget} onChange={(e) => setBudget(Math.max(1, +e.target.value))} className="num pl-6" /></div>
+          </Field>
           <div>
-            <span className="mb-1.5 block text-[12.5px] font-medium text-muted">Around</span>
+            <FieldLabel>Around</FieldLabel>
             <div className="flex flex-wrap gap-3 pt-2">
               {locations.map((l) => <label key={l.id} className="flex items-center gap-2 text-[13.5px]"><Checkbox checked={places.includes(l.id)} onChange={(v) => setPlaces(v ? [...places, l.id] : places.filter((x) => x !== l.id))} />{shortLocation(l.id)} · 3 mi</label>)}
             </div>

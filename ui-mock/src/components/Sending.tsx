@@ -1,15 +1,13 @@
 import { useState } from "react";
 import { Check, ChevronLeft, ChevronRight, Copy, Globe, KeyRound, Loader2, PhoneForwarded, Search, ShieldCheck, Webhook } from "lucide-react";
-import { Badge, Button, Modal, cn } from "./ui";
+import { Badge, Button, Field, Input, Modal, Select, Textarea, cn } from "./ui";
 import { brandFacts } from "../data/brand";
 import { business } from "../data/mock";
-import { emailProviders, phoneProviders, searchNumbers, type DnsRecord, type EmailProviderId, type Field, type PhoneProviderId } from "../data/providers";
+import { emailProviders, phoneProviders, searchNumbers, type DnsRecord, type EmailProviderId, type Field as KeyField, type PhoneProviderId } from "../data/providers";
 import type { PhoneNumber, Reg } from "../data/messaging";
 import { recipes } from "../data/messaging";
 import { addNumbers, checkDns, connectEmail, connectPhone, registerTexting, useCrm, withExamples } from "../lib/crm";
 import { product } from "../lib/whitelabel";
-
-const input = "h-9 w-full rounded-lg border border-line bg-surface px-3 text-[13.5px] outline-none focus:border-line-strong";
 
 export function ProviderMark({ mark, color, size = 32 }: { mark: string; color: string; size?: number }) {
   const dark = ["#ffde00", "#ff9900"].includes(color);
@@ -38,16 +36,15 @@ function Pick<T extends string>({ items, onPick }: { items: Record<T, { name: st
   );
 }
 
-function Keys({ fields, where, values, onChange }: { fields: Field[]; where: string; values: Record<string, string>; onChange: (v: Record<string, string>) => void }) {
+function Keys({ fields, where, values, onChange }: { fields: KeyField[]; where: string; values: Record<string, string>; onChange: (v: Record<string, string>) => void }) {
   return (
     <div className="space-y-3">
       {fields.map((f) => (
-        <label key={f.key} className="block">
-          <span className="mb-1 block text-[12.5px] font-medium text-muted">{f.label}</span>
+        <Field key={f.key} label={f.label}>
           {f.options
-            ? <select value={values[f.key] ?? f.options[0]} onChange={(e) => onChange({ ...values, [f.key]: e.target.value })} className={input}>{f.options.map((o) => <option key={o}>{o}</option>)}</select>
-            : <input type={f.secret ? "password" : "text"} autoComplete="off" value={values[f.key] ?? ""} onChange={(e) => onChange({ ...values, [f.key]: e.target.value })} placeholder={f.placeholder} className={cn(input, "font-mono text-[12.5px]")} />}
-        </label>
+            ? <Select value={values[f.key] ?? f.options[0]} onChange={(e) => onChange({ ...values, [f.key]: e.target.value })}>{f.options.map((o) => <option key={o}>{o}</option>)}</Select>
+            : <Input type={f.secret ? "password" : "text"} autoComplete="off" value={values[f.key] ?? ""} onChange={(e) => onChange({ ...values, [f.key]: e.target.value })} placeholder={f.placeholder} className="font-mono text-[12.5px]" />}
+        </Field>
       ))}
       <p className="flex items-start gap-2 text-[12.5px] text-muted"><KeyRound size={13} className="mt-0.5 shrink-0" />Find it in {where} Keys are stored encrypted and only used to send, read delivery events and receive replies.</p>
     </div>
@@ -132,11 +129,11 @@ export function EmailSetup({ open, onClose, toast }: { open: boolean; onClose: (
         <>
           <Back onClick={() => setStep(p.fields.length ? "keys" : "pick")} label="Back" />
           <div className="space-y-3">
-            <label className="block"><span className="mb-1 block text-[12.5px] font-medium text-muted">Send from this domain</span><input value={domain} onChange={(ev) => setDomain(ev.target.value.trim().toLowerCase())} className={input} /></label>
+            <Field label="Send from this domain"><Input value={domain} onChange={(ev) => setDomain(ev.target.value.trim().toLowerCase())} /></Field>
             <p className="flex items-start gap-2 rounded-lg bg-hover px-3 py-2.5 text-[12.5px] text-muted"><Globe size={13} className="mt-0.5 shrink-0" /><span>We suggest a subdomain like <b>mail.{brandFacts.website}</b>. If a campaign ever gets marked as spam, your everyday email from {brandFacts.website} isn't affected. Replies still reach you.</span></p>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="block"><span className="mb-1 block text-[12.5px] font-medium text-muted">From name</span><input value={fromName} onChange={(ev) => setFromName(ev.target.value)} className={input} /></label>
-              <label className="block"><span className="mb-1 block text-[12.5px] font-medium text-muted">From address</span><span className="flex items-center gap-1"><input value={local} onChange={(ev) => setLocal(ev.target.value)} className={cn(input, "w-28")} /><span className="truncate text-[13px] text-muted">@{domain}</span></span></label>
+              <Field label="From name"><Input value={fromName} onChange={(ev) => setFromName(ev.target.value)} /></Field>
+              <Field label="From address"><span className="flex items-center gap-1"><Input value={local} onChange={(ev) => setLocal(ev.target.value)} className="w-28" /><span className="truncate text-[13px] text-muted">@{domain}</span></span></Field>
             </div>
           </div>
           <Button variant="primary" className="mt-4 w-full" disabled={!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(domain) || !local} onClick={() => { connectEmail(provider, domain, fromName, local, keys.region ?? (p.fields.find((f) => f.key === "region")?.options?.[0])); setStep("dns"); }}>Get the DNS records</Button>
@@ -256,7 +253,7 @@ export function PhoneSetup({ open, onClose, toast, startAt }: { open: boolean; o
                     {x.how === "new" ? (
                       <>
                         <div className="flex items-center gap-2">
-                          <input value={x.area} onChange={(e) => set(l, { area: e.target.value.replace(/\D/g, "").slice(0, 3) })} aria-label="Area code" placeholder="Area code" className={cn(input, "w-28")} />
+                          <Input value={x.area} onChange={(e) => set(l, { area: e.target.value.replace(/\D/g, "").slice(0, 3) })} aria-label="Area code" placeholder="Area code" className="w-28" />
                           <Button size="sm" icon={<Search size={12} />} onClick={() => setSearched({ ...searched, [l]: searchNumbers(x.area) })}>Find numbers</Button>
                         </div>
                         {searched[l] && (
@@ -266,7 +263,7 @@ export function PhoneSetup({ open, onClose, toast, startAt }: { open: boolean; o
                         )}
                       </>
                     ) : (
-                      <input value={x.existing} onChange={(e) => set(l, { existing: e.target.value })} aria-label="Your current number" className={cn(input, "w-48")} />
+                      <Input value={x.existing} onChange={(e) => set(l, { existing: e.target.value })} aria-label="Your current number" className="w-48" />
                     )}
                   </div>
                 </section>
@@ -282,18 +279,18 @@ export function PhoneSetup({ open, onClose, toast, startAt }: { open: boolean; o
           <div className="space-y-3">
             <div className="text-[12.5px] font-medium tracking-wide text-subtle uppercase">Your business</div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="block"><span className="mb-1 block text-[12.5px] font-medium text-muted">Legal business name</span><input value={reg.legal} onChange={(e) => setReg({ ...reg, legal: e.target.value })} className={input} /></label>
-              <label className="block"><span className="mb-1 block text-[12.5px] font-medium text-muted">EIN (tax ID)</span><input value={reg.ein} onChange={(e) => setReg({ ...reg, ein: e.target.value })} placeholder="12-3456789" className={input} /></label>
-              <label className="block"><span className="mb-1 block text-[12.5px] font-medium text-muted">Business type</span><select value={reg.type} onChange={(e) => setReg({ ...reg, type: e.target.value })} className={input}><option>Private company</option><option>Sole proprietor</option><option>Nonprofit</option></select></label>
-              <label className="block"><span className="mb-1 block text-[12.5px] font-medium text-muted">Website</span><input value={reg.website} onChange={(e) => setReg({ ...reg, website: e.target.value })} className={input} /></label>
+              <Field label="Legal business name"><Input value={reg.legal} onChange={(e) => setReg({ ...reg, legal: e.target.value })} /></Field>
+              <Field label="EIN (tax ID)"><Input value={reg.ein} onChange={(e) => setReg({ ...reg, ein: e.target.value })} placeholder="12-3456789" /></Field>
+              <Field label="Business type"><Select value={reg.type} onChange={(e) => setReg({ ...reg, type: e.target.value })}><option>Private company</option><option>Sole proprietor</option><option>Nonprofit</option></Select></Field>
+              <Field label="Website"><Input value={reg.website} onChange={(e) => setReg({ ...reg, website: e.target.value })} /></Field>
             </div>
-            <label className="block"><span className="mb-1 block text-[12.5px] font-medium text-muted">Address (must match the IRS record)</span><input value={reg.address} onChange={(e) => setReg({ ...reg, address: e.target.value })} className={input} /></label>
+            <Field label="Address (must match the IRS record)"><Input value={reg.address} onChange={(e) => setReg({ ...reg, address: e.target.value })} /></Field>
             <div className="pt-2 text-[12.5px] font-medium tracking-wide text-subtle uppercase">What you'll text</div>
-            <label className="block"><span className="mb-1 block text-[12.5px] font-medium text-muted">Use case</span><select value={reg.useCase} onChange={(e) => setReg({ ...reg, useCase: e.target.value })} className={input}><option>Mixed: appointment reminders, customer care and marketing</option><option>Customer care and reminders only</option><option>Marketing only</option></select></label>
+            <Field label="Use case"><Select value={reg.useCase} onChange={(e) => setReg({ ...reg, useCase: e.target.value })}><option>Mixed: appointment reminders, customer care and marketing</option><option>Customer care and reminders only</option><option>Marketing only</option></Select></Field>
             {(["description", "optIn", "sample1", "sample2"] as const).map((k) => (
-              <label key={k} className="block"><span className="mb-1 block text-[12.5px] font-medium text-muted">{{ description: "What the messages are for", optIn: "How people agree to texts", sample1: "Sample message 1", sample2: "Sample message 2" }[k]}</span>
-                <textarea value={reg[k]} onChange={(e) => setReg({ ...reg, [k]: e.target.value })} rows={k === "optIn" || k === "description" ? 3 : 2} className="w-full resize-y rounded-lg border border-line bg-surface p-2.5 text-[13px] outline-none focus:border-line-strong" />
-              </label>
+              <Field key={k} label={<>{{ description: "What the messages are for", optIn: "How people agree to texts", sample1: "Sample message 1", sample2: "Sample message 2" }[k]}</>}>
+                <Textarea value={reg[k]} onChange={(e) => setReg({ ...reg, [k]: e.target.value })} rows={k === "optIn" || k === "description" ? 3 : 2} className="p-2.5 text-[13px]" />
+              </Field>
             ))}
             <p className="text-[12px] text-subtle">Most rejections come from a vague opt-in description or a website without a privacy policy that mentions texting. Ours links yours at {brandFacts.website}/privacy.</p>
           </div>

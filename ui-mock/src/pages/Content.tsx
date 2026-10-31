@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { Loader2, Newspaper, Sparkles, X } from "lucide-react";
-import { Badge, Button, Card, PageHeader, Stat, cn, fmt, useToast } from "../components/ui";
+import { Badge, Button, Card, PageHeader, Select, Stat, cn, fmt, useToast } from "../components/ui";
 import { keywords, type ContentStatus } from "../data/mock";
 import { advanceContent, onWebsite, removeContent, suggestIdeas, useContent, type PlanItem } from "../lib/content";
 import { ExternalUrl, ScopeBar, WebsiteOverview } from "../components/Scope";
@@ -89,10 +89,10 @@ function ContentBody({ websiteId, domain }: { websiteId: string; domain: string 
       )}
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <select aria-label="Keyword" value={kw} onChange={(e) => setKw(e.target.value)} className="h-8 max-w-60 rounded-md border border-line bg-surface px-2 text-[13px] outline-none">
+        <Select size="sm" aria-label="Keyword" value={kw} onChange={(e) => setKw(e.target.value)} className="max-w-60">
           <option value="all">All keywords</option>
           {keywords.map((k) => <option key={k.id} value={k.id}>{k.term}</option>)}
-        </select>
+        </Select>
         <span className="num ml-auto text-[12.5px] text-subtle">{shown.length} of {items.length} articles</span>
       </div>
 

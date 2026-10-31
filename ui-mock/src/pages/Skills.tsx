@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { ArrowLeft, BadgeCheck, Download, Lock, Plus, RotateCcw, Search, Trash2, Upload } from "lucide-react";
-import { Badge, Button, Card, Drawer, Empty, Modal, PageHeader, Segmented, Tabs, Toggle, cn, fmt, useToast } from "../components/ui";
+import { Badge, Button, Card, Drawer, Empty, Modal, PageHeader, SearchInput, Segmented, Tabs, Textarea, Toggle, cn, fmt, useToast } from "../components/ui";
 import { LogoMark } from "../components/Logo";
 import { backgroundLabels, parseSkillMd, publicSkills, type PublicSkill, type Skill } from "../data/skills";
 import { assistant, product, whitelabeled } from "../lib/whitelabel";
@@ -163,15 +163,7 @@ function SkillEditor({ open, onClose, onSaved }: { open: Open; onClose: () => vo
           <span className="text-[12px] text-subtle">Frontmatter: name, description, background ({Object.keys(backgroundLabels).join(", ")})</span>
         </div>
         {view === "edit" ? (
-          <textarea
-            value={md}
-            onChange={(e) => setMd(e.target.value)}
-            readOnly={readOnly}
-            spellCheck={false}
-            aria-label="SKILL.md"
-            rows={26}
-            className={cn("w-full resize-y rounded-lg border border-line bg-surface p-3 font-mono text-[12.5px] leading-[1.6] outline-none focus:border-line-strong", readOnly && "text-muted")}
-          />
+          <Textarea mono value={md} onChange={(e) => setMd(e.target.value)} readOnly={readOnly} spellCheck={false} aria-label="SKILL.md" rows={26} className={cn(readOnly && "text-muted")} />
         ) : (
           <div className="rounded-lg border border-line p-4"><MdPreview md={md} /></div>
         )}
@@ -225,10 +217,7 @@ function PublicSkills({ open, onClose, onAdded }: { open: boolean; onClose: () =
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          <span className="relative block">
-            <Search size={14} className="absolute top-1/2 left-3 -translate-y-1/2 text-subtle" />
-            <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search skills: newsletter, ads, hiring…" aria-label="Search public skills" className="h-10 w-full rounded-lg border border-line bg-surface pr-3 pl-8 text-[13.5px] outline-none focus:border-line-strong" />
-          </span>
+          <SearchInput size="lg" autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search skills: newsletter, ads, hiring…" aria-label="Search public skills" />
           {hits.length === 0 && <p className="py-8 text-center text-[13px] text-muted">No public skills match “{q}”.</p>}
           <div className="divide-y divide-line">
             {hits.map(({ p, s }) => (

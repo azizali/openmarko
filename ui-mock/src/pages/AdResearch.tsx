@@ -1,7 +1,7 @@
 import { Fragment, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { ArrowDown, ArrowUp, Bookmark, BookmarkCheck, ChevronsUpDown, Eye, Loader2, Plus, Search, Sparkles, Trash2, Wand2 } from "lucide-react";
-import { Badge, Button, Card, Checkbox, Modal, PageHeader, Segmented, Tabs, cn, useToast } from "../components/ui";
+import { Badge, Button, Card, Checkbox, Field, FieldLabel, Input, Modal, PageHeader, SearchInput, Segmented, Select, Tabs, Textarea, cn, useToast } from "../components/ui";
 import { AdPlatformMark, CreativeThumb, styleFor } from "../components/Ads";
 import { adPlatforms, angles, formats, library, researchStarters, watchedAdvertisers, type AdPlatform, type Angle, type Format, type LibraryAd } from "../data/ads";
 import { brandFacts } from "../data/brand";
@@ -85,22 +85,19 @@ function FindAds() {
   );
   const save = (ads: LibraryAd[]) => { const n = saveToSwipe(ads); toast(n ? `Saved ${n} to the ad swipe file` : "Already in the swipe file"); };
   const variations = (ads: LibraryAd[]) => { saveToSwipe(ads); navigate(`/ads/studio?refs=${ads.map((a) => `sw_${a.id}`).join(",")}`); };
-  const field = "h-9 rounded-lg border border-line bg-surface px-3 text-[13.5px] outline-none focus:border-line-strong";
 
   return (
     <>
       <Card className="mb-4">
         <form onSubmit={(e) => { e.preventDefault(); run(); }} className="flex flex-wrap items-end gap-3">
-          <label className="min-w-[220px] flex-[2]">
-            <span className="mb-1.5 block text-[12.5px] font-medium text-muted">Advertiser, keyword or service</span>
-            <span className="relative block"><Search size={14} className="absolute top-1/2 left-3 -translate-y-1/2 text-subtle" /><input value={q} onChange={(e) => setQ(e.target.value)} className={cn(field, "w-full pl-8")} placeholder="Bright Smile Austin, invisalign…" /></span>
-          </label>
-          <label className="min-w-[160px] flex-1">
-            <span className="mb-1.5 block text-[12.5px] font-medium text-muted">Shown in</span>
-            <input value={where} onChange={(e) => setWhere(e.target.value)} className={cn(field, "w-full")} />
-          </label>
+          <Field label="Advertiser, keyword or service" className="min-w-[220px] flex-[2]">
+            <SearchInput value={q} onChange={(e) => setQ(e.target.value)} placeholder="Bright Smile Austin, invisalign…" />
+          </Field>
+          <Field label="Shown in" className="min-w-[160px] flex-1">
+            <Input value={where} onChange={(e) => setWhere(e.target.value)} />
+          </Field>
           <div>
-            <span className="mb-1.5 block text-[12.5px] font-medium text-muted">Libraries</span>
+            <FieldLabel>Libraries</FieldLabel>
             <div className="flex gap-1.5">
               {allPlatforms.map((p) => (
                 <button type="button" key={p} aria-pressed={platforms.includes(p)} onClick={() => setPlatforms(platforms.includes(p) ? platforms.filter((x) => x !== p) : [...platforms, p])} className={cn("inline-flex h-9 items-center gap-1.5 rounded-lg border pr-2.5 pl-1.5 text-[13px]", platforms.includes(p) ? "border-ink bg-active" : "border-line text-muted opacity-60 hover:bg-hover")}>
@@ -296,22 +293,20 @@ function AddAdModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const blank = { link: "", advertiser: "", headline: "", text: "", angle: "price" as Angle, format: "image" as Format, platform: "meta" as AdPlatform };
   const [a, setA] = useState(blank);
   if (!open) return null;
-  const field = "w-full rounded-lg border border-line bg-surface px-3 text-[13.5px] outline-none focus:border-line-strong";
-  const label = "mb-1.5 block text-[12.5px] font-medium text-muted";
   const done = () => { addSwipe({ advertiser: a.advertiser || "Unknown", platform: a.platform, format: a.format, angle: a.angle, headline: a.headline, text: a.text, why: a.link ? `Saved from ${a.link}` : "Added by hand.", note: "" }); setA(blank); onClose(); };
   return (
     <Modal open onClose={onClose} title="Add an ad" width={520} footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" disabled={!a.headline.trim()} onClick={done}>Save to swipe file</Button></>}>
       <div className="space-y-4">
-        <label className="block"><span className={label}>Link (Ad Library, TikTok or a post)</span><input value={a.link} onChange={(e) => setA({ ...a, link: e.target.value })} placeholder="https://www.facebook.com/ads/library/?id=…" className={cn(field, "h-9")} /></label>
+        <Field label="Link (Ad Library, TikTok or a post)"><Input value={a.link} onChange={(e) => setA({ ...a, link: e.target.value })} placeholder="https://www.facebook.com/ads/library/?id=…" /></Field>
         <div className="grid grid-cols-2 gap-3">
-          <label className="block"><span className={label}>Advertiser</span><input value={a.advertiser} onChange={(e) => setA({ ...a, advertiser: e.target.value })} className={cn(field, "h-9")} /></label>
-          <label className="block"><span className={label}>Where</span><select value={a.platform} onChange={(e) => setA({ ...a, platform: e.target.value as AdPlatform })} className={cn(field, "h-9")}>{allPlatforms.map((p) => <option key={p} value={p}>{adPlatforms[p].name}</option>)}</select></label>
+          <Field label="Advertiser"><Input value={a.advertiser} onChange={(e) => setA({ ...a, advertiser: e.target.value })} /></Field>
+          <Field label="Where"><Select value={a.platform} onChange={(e) => setA({ ...a, platform: e.target.value as AdPlatform })}>{allPlatforms.map((p) => <option key={p} value={p}>{adPlatforms[p].name}</option>)}</Select></Field>
         </div>
-        <label className="block"><span className={label}>Headline or hook</span><input value={a.headline} onChange={(e) => setA({ ...a, headline: e.target.value })} className={cn(field, "h-9")} /></label>
-        <label className="block"><span className={label}>Text</span><textarea value={a.text} onChange={(e) => setA({ ...a, text: e.target.value })} rows={3} className={cn(field, "py-2")} /></label>
+        <Field label="Headline or hook"><Input value={a.headline} onChange={(e) => setA({ ...a, headline: e.target.value })} /></Field>
+        <Field label="Text"><Textarea value={a.text} onChange={(e) => setA({ ...a, text: e.target.value })} rows={3} className="py-2" /></Field>
         <div className="grid grid-cols-2 gap-3">
-          <label className="block"><span className={label}>Angle</span><select value={a.angle} onChange={(e) => setA({ ...a, angle: e.target.value as Angle })} className={cn(field, "h-9")}>{(Object.keys(angles) as Angle[]).map((x) => <option key={x} value={x}>{angles[x].label}</option>)}</select></label>
-          <label className="block"><span className={label}>Format</span><select value={a.format} onChange={(e) => setA({ ...a, format: e.target.value as Format })} className={cn(field, "h-9")}>{(Object.keys(formats) as Format[]).map((x) => <option key={x} value={x}>{formats[x].label}</option>)}</select></label>
+          <Field label="Angle"><Select value={a.angle} onChange={(e) => setA({ ...a, angle: e.target.value as Angle })}>{(Object.keys(angles) as Angle[]).map((x) => <option key={x} value={x}>{angles[x].label}</option>)}</Select></Field>
+          <Field label="Format"><Select value={a.format} onChange={(e) => setA({ ...a, format: e.target.value as Format })}>{(Object.keys(formats) as Format[]).map((x) => <option key={x} value={x}>{formats[x].label}</option>)}</Select></Field>
         </div>
       </div>
     </Modal>

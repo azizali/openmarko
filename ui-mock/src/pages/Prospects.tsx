@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { Search, MapPin, Loader2, Star, ChevronRight, Flame, Zap, Target, Globe, ShieldAlert, Megaphone, SlidersHorizontal, Crosshair, Database, Download, UserPlus, X, MessageSquare, Mail, User, FileSearch, Bookmark, History, RefreshCw, Trash2, Eye, Send, ArrowUp, ArrowDown, ChevronsUpDown } from "lucide-react";
-import { Badge, Button, Card, Checkbox, Modal, PageHeader, Progress, Segmented, cn, fmt, useToast } from "../components/ui";
+import { Badge, Button, Card, Checkbox, Field, Input, Modal, PageHeader, Progress, SearchInput, Segmented, Select, Textarea, cn, fmt, useToast } from "../components/ui";
 import { GridThumb } from "../components/GridMap";
 import { ProspectMap } from "../components/ProspectMap";
 import { ContactCard, ContactIcons } from "../components/ProspectContact";
@@ -69,7 +69,6 @@ const ease = {
   Warm: { label: "Medium", tone: "warn", bar: "warn" },
   Cool: { label: "Hard", tone: "bad", bar: "ink" },
 } as const;
-const field = "h-9 rounded-md border border-line bg-bg px-2.5 text-[13.5px] outline-none focus:border-line-strong placeholder:text-subtle";
 
 /** Rough DataForSEO + partner cost for a search, so nobody is surprised by the bill. */
 const searchCost = (depth: number) => 0.002 + depth * (0.0006 * 25 + 0.006); // 5×5 grid each + enrichment
@@ -256,30 +255,16 @@ export default function Prospects() {
               </div>
               {mode === "one" ? (
                 <div className="flex flex-col gap-2 lg:flex-row">
-                  <label className="flex h-10 flex-1 items-center gap-2 rounded-md border border-line bg-bg px-3 focus-within:border-line-strong">
-                    <Search size={15} className="text-subtle" />
-                    <span className="sr-only">{draft.by === "keyword" ? "Keyword" : "Category"}</span>
-                    <input list={draft.by === "category" ? "gcats" : undefined} value={draft.q} onChange={(e) => D({ q: e.target.value })} placeholder={draft.by === "keyword" ? "Keyword, e.g. emergency plumber" : "Category, e.g. Roofing contractor"} className="h-full flex-1 bg-transparent text-[14px] outline-none placeholder:text-subtle" />
-                  </label>
+                  <SearchInput size="lg" className="flex-1" aria-label={draft.by === "keyword" ? "Keyword" : "Category"} list={draft.by === "category" ? "gcats" : undefined} value={draft.q} onChange={(e) => D({ q: e.target.value })} placeholder={draft.by === "keyword" ? "Keyword, e.g. emergency plumber" : "Category, e.g. Roofing contractor"} />
                   {loc === "pin" ? (
                     <div className="flex gap-2">
-                      <label className="flex h-10 items-center gap-2 rounded-md border border-line bg-bg px-3 focus-within:border-line-strong">
-                        <Crosshair size={15} className="text-subtle" /><span className="sr-only">Latitude</span>
-                        <input inputMode="decimal" value={draft.lat ?? ""} onChange={(e) => D({ lat: e.target.value === "" ? null : Number(e.target.value) })} placeholder="30.2672" className="num h-full w-24 bg-transparent text-[14px] outline-none placeholder:text-subtle" />
-                      </label>
-                      <label className="flex h-10 items-center rounded-md border border-line bg-bg px-3 focus-within:border-line-strong">
-                        <span className="sr-only">Longitude</span>
-                        <input inputMode="decimal" value={draft.lng ?? ""} onChange={(e) => D({ lng: e.target.value === "" ? null : Number(e.target.value) })} placeholder="-97.7431" className="num h-full w-24 bg-transparent text-[14px] outline-none placeholder:text-subtle" />
-                      </label>
+                      <Input size="lg" icon={<Crosshair size={15} />} aria-label="Latitude" inputMode="decimal" value={draft.lat ?? ""} onChange={(e) => D({ lat: e.target.value === "" ? null : Number(e.target.value) })} placeholder="30.2672" className="num w-36" />
+                      <Input size="lg" aria-label="Longitude" inputMode="decimal" value={draft.lng ?? ""} onChange={(e) => D({ lng: e.target.value === "" ? null : Number(e.target.value) })} placeholder="-97.7431" className="num w-30" />
                     </div>
                   ) : (
-                    <label className="flex h-10 items-center gap-2 rounded-md border border-line bg-bg px-3 focus-within:border-line-strong lg:w-52">
-                      <MapPin size={15} className="text-subtle" />
-                      <span className="sr-only">{loc === "zip" ? "ZIP code" : "City"}</span>
-                      {loc === "zip"
-                        ? <input inputMode="numeric" maxLength={5} value={draft.zip ?? ""} onChange={(e) => D({ zip: e.target.value.replace(/\D/g, "") || null })} placeholder="78704" className="num h-full flex-1 bg-transparent text-[14px] outline-none placeholder:text-subtle" />
-                        : <input value={draft.city} onChange={(e) => D({ city: e.target.value })} placeholder="City, state" className="h-full flex-1 bg-transparent text-[14px] outline-none placeholder:text-subtle" />}
-                    </label>
+                    loc === "zip"
+                      ? <Input size="lg" icon={<MapPin size={15} />} aria-label="ZIP code" inputMode="numeric" maxLength={5} value={draft.zip ?? ""} onChange={(e) => D({ zip: e.target.value.replace(/\D/g, "") || null })} placeholder="78704" className="num lg:w-52" />
+                      : <Input size="lg" icon={<MapPin size={15} />} aria-label="City" value={draft.city} onChange={(e) => D({ city: e.target.value })} placeholder="City, state" className="lg:w-52" />
                   )}
                   <SearchSize draft={draft} D={D} />
                   <Button type="submit" variant="primary" className="h-10" disabled={busy || (loc === "pin" && (draft.lat === null || draft.lng === null)) || (loc === "zip" && (draft.zip ?? "").length !== 5)} icon={loading ? <Loader2 size={14} className="animate-spin" /> : <Target size={14} />}>
@@ -288,14 +273,12 @@ export default function Prospects() {
                 </div>
               ) : (
                 <div className="grid gap-2 md:grid-cols-2">
-                  <label className="block">
-                    <span className="mb-1 block text-[12.5px] font-medium text-muted">{draft.by === "keyword" ? "Keywords" : "Categories"}, one per line</span>
-                    <textarea rows={4} value={bulkKw} onChange={(e) => setBulkKw(e.target.value)} placeholder={"plumber\nwater heater repair\ndrain cleaning"} className="w-full resize-y rounded-md border border-line bg-bg p-2.5 text-[13.5px] outline-none placeholder:text-subtle focus:border-line-strong" />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1 block text-[12.5px] font-medium text-muted">Cities or ZIPs, one per line</span>
-                    <textarea rows={4} value={bulkWhere} onChange={(e) => setBulkWhere(e.target.value)} placeholder={"Austin, TX\nRound Rock, TX\n78704"} className="w-full resize-y rounded-md border border-line bg-bg p-2.5 text-[13.5px] outline-none placeholder:text-subtle focus:border-line-strong" />
-                  </label>
+                  <Field label={<>{draft.by === "keyword" ? "Keywords" : "Categories"}, one per line</>}>
+                    <Textarea rows={4} value={bulkKw} onChange={(e) => setBulkKw(e.target.value)} placeholder={"plumber\nwater heater repair\ndrain cleaning"} className="p-2.5" />
+                  </Field>
+                  <Field label="Cities or ZIPs, one per line">
+                    <Textarea rows={4} value={bulkWhere} onChange={(e) => setBulkWhere(e.target.value)} placeholder={"Austin, TX\nRound Rock, TX\n78704"} className="p-2.5" />
+                  </Field>
                   <div className="flex flex-wrap items-center gap-2 md:col-span-2">
                     <SearchSize draft={draft} D={D} />
                     <span className="num text-[12.5px] text-muted">{bulkSpecs.length} search{bulkSpecs.length === 1 ? "" : "es"} · up to {fmt(bulkSpecs.length * draft.depth)} businesses · ≈ ${(bulkSpecs.length * searchCost(draft.depth)).toFixed(2)}</span>
@@ -345,10 +328,7 @@ export default function Prospects() {
             </div>
 
             <div className="mb-3 flex flex-wrap items-center gap-1.5">
-              <label className="flex h-7 items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 focus-within:border-line-strong">
-                <Search size={12} className="text-subtle" /><span className="sr-only">Find in results</span>
-                <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Find in results" className="w-32 bg-transparent text-[12.5px] outline-none placeholder:text-subtle" />
-              </label>
+              <SearchInput size="xs" aria-label="Find in results" value={text} onChange={(e) => setText(e.target.value)} placeholder="Find in results" className="w-44 rounded-full" />
               <button onClick={() => setPanel(!panel)} aria-expanded={panel} className={cn("inline-flex h-7 items-center gap-1.5 rounded-full border px-3 text-[12.5px] font-medium transition-colors", panel || active ? "border-ink bg-ink text-on-ink" : "border-line-strong hover:bg-hover")}>
                 <SlidersHorizontal size={12} /> All filters{active ? <span className="num rounded-full bg-on-ink/20 px-1.5">{active}</span> : null}
               </button>
@@ -528,18 +508,12 @@ const Kbd = ({ children }: { children: React.ReactNode }) => <kbd className="mx-
 function SearchSize({ draft, D }: { draft: Spec; D: (p: Partial<Spec>) => void }) {
   return (
     <>
-      <label className="flex h-10 items-center gap-1.5 rounded-md border border-line bg-bg pl-3 text-[13px] text-muted">
-        Within
-        <select aria-label="Radius" value={draft.radiusMi} onChange={(e) => D({ radiusMi: Number(e.target.value) })} className="h-full bg-transparent pr-2 text-fg outline-none">
-          {[1, 3, 5, 10, 15, 25].map((r) => <option key={r} value={r}>{r} mi</option>)}
-        </select>
-      </label>
-      <label className="flex h-10 items-center gap-1.5 rounded-md border border-line bg-bg pl-3 text-[13px] text-muted">
-        Pull
-        <select aria-label="Number of businesses" value={draft.depth} onChange={(e) => D({ depth: Number(e.target.value) })} className="h-full bg-transparent pr-2 text-fg outline-none">
-          {[20, 50, 100].map((d) => <option key={d} value={d}>{d}</option>)}
-        </select>
-      </label>
+      <Select size="lg" aria-label="Radius" value={draft.radiusMi} onChange={(e) => D({ radiusMi: Number(e.target.value) })} className="w-auto">
+        {[1, 3, 5, 10, 15, 25].map((r) => <option key={r} value={r}>Within {r} mi</option>)}
+      </Select>
+      <Select size="lg" aria-label="Number of businesses" value={draft.depth} onChange={(e) => D({ depth: Number(e.target.value) })} className="w-auto">
+        {[20, 50, 100].map((d) => <option key={d} value={d}>Pull {d}</option>)}
+      </Select>
     </>
   );
 }
@@ -591,10 +565,7 @@ function SavedRail({ items, active, onOpen }: { items: Saved[]; active: string; 
       <Card pad={false} className={cn("mt-2 flex max-h-[60dvh] flex-col 2xl:mt-0 2xl:max-h-[calc(100dvh-3rem)]", !open && "hidden 2xl:flex")}>
         <div className="space-y-2 border-b border-line p-3">
           <div className="flex items-center gap-1.5"><History size={14} className="text-muted" /><h2 className="text-[13.5px] font-medium">Saved</h2><span className="num text-[12px] text-subtle">{items.length}</span></div>
-          <label className="flex h-8 items-center gap-1.5 rounded-md border border-line bg-bg px-2 focus-within:border-line-strong">
-            <Search size={12} className="text-subtle" /><span className="sr-only">Filter saved</span>
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter by keyword or place" className="min-w-0 flex-1 bg-transparent text-[12.5px] outline-none placeholder:text-subtle" />
-          </label>
+          <SearchInput size="sm" aria-label="Filter saved" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter by keyword or place" />
           <Segmented label="Show" value={kind} onChange={setKind} options={[{ id: "all", label: "All" }, { id: "search", label: "Searches" }, { id: "audit", label: "Audits" }]} />
         </div>
         <ul className="min-h-0 flex-1 overflow-y-auto pb-2">
@@ -623,9 +594,9 @@ function FilterPanel({ f, F }: { f: Filters; F: (p: Partial<Filters>) => void })
     <div className="flex items-center justify-between gap-2">
       <span className="text-[13px]">{label}</span>
       <span className="flex items-center gap-1">
-        <input aria-label={`${label} from`} type="number" step={step} value={f[k][0]} onChange={(e) => F({ [k]: [e.target.value, f[k][1]] } as Partial<Filters>)} placeholder="min" className={cn(field, "num h-8 w-[72px]")} />
+        <Input aria-label={`${label} from`} type="number" step={step} value={f[k][0]} onChange={(e) => F({ [k]: [e.target.value, f[k][1]] } as Partial<Filters>)} placeholder="min" className="num w-[72px]" />
         <span className="text-subtle">–</span>
-        <input aria-label={`${label} to`} type="number" step={step} value={f[k][1]} onChange={(e) => F({ [k]: [f[k][0], e.target.value] } as Partial<Filters>)} placeholder="max" className={cn(field, "num h-8 w-[72px]")} />
+        <Input aria-label={`${label} to`} type="number" step={step} value={f[k][1]} onChange={(e) => F({ [k]: [f[k][0], e.target.value] } as Partial<Filters>)} placeholder="max" className="num w-[72px]" />
       </span>
     </div>
   );
@@ -635,9 +606,9 @@ function FilterPanel({ f, F }: { f: Filters; F: (p: Partial<Filters>) => void })
   const Sel = ({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) => (
     <div className="flex items-center justify-between gap-2">
       <span className="text-[13px]">{label}</span>
-      <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)} className={cn(field, "h-8")}>
+      <Select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)} className="w-auto">
         <option value="">Any</option>{options.map((o) => <option key={o}>{o}</option>)}
-      </select>
+      </Select>
     </div>
   );
 
@@ -651,7 +622,7 @@ function FilterPanel({ f, F }: { f: Filters; F: (p: Partial<Filters>) => void })
           {Range({ label: "Map rank", k: "rank" })}
           {Range({ label: "Rating", k: "rating", step: "0.1" })}
           {Range({ label: "Reviews", k: "reviews" })}
-          <div className="flex items-center justify-between gap-2"><span className="text-[13px]">Photos at most</span><input aria-label="Photos at most" type="number" value={f.maxPhotos} onChange={(e) => F({ maxPhotos: e.target.value })} placeholder="e.g. 20" className={cn(field, "num h-8 w-[90px]")} /></div>
+          <div className="flex items-center justify-between gap-2"><span className="text-[13px]">Photos at most</span><Input aria-label="Photos at most" type="number" value={f.maxPhotos} onChange={(e) => F({ maxPhotos: e.target.value })} placeholder="e.g. 20" className="num w-[90px]" /></div>
           {C({ label: "Hours missing", k: "noHours" })}
           {C({ label: "Description missing", k: "noDescription" })}
           {C({ label: "No review in 60+ days", k: "staleReviews" })}

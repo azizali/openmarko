@@ -1,7 +1,7 @@
 import { Fragment, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { Sparkles, Plus, Check, X, ChevronRight, ExternalLink, ArrowUp, ArrowDown, Link2 } from "lucide-react";
-import { Badge, Button, Card, CardHeader, LineChart, PageHeader, Progress, cn, useToast } from "../components/ui";
+import { Badge, Button, Card, CardHeader, Input, LineChart, PageHeader, Progress, cn, useToast } from "../components/ui";
 import { business, keywords } from "../data/mock";
 import { aiVisibility, engines, type AiPrompt } from "../data/ai";
 import { aiPromptsFor } from "../data/scoped";
@@ -115,7 +115,7 @@ function AiBody({ seed }: { seed: AiPrompt[] }) {
           <p className="mt-0.5 text-[13px] text-muted">Phrased the way customers ask. Open one to read every engine's answer.</p>
         </div>
         <form onSubmit={(e) => { e.preventDefault(); add(); }} className="flex gap-2">
-          <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Add a question, e.g. best dentist for anxious patients" aria-label="New question" className="h-8 w-72 max-w-full rounded-md border border-line bg-surface px-2.5 text-[13px] outline-none focus:border-line-strong" />
+          <Input size="sm" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Add a question, e.g. best dentist for anxious patients" aria-label="New question" className="w-72 max-w-full" />
           <Button size="sm" type="submit" icon={<Plus size={12} />} disabled={!draft.trim()}>Track</Button>
         </form>
       </div>

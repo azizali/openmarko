@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Check, Copy, Globe, ImageUp, Mail, Sparkles, Trash2 } from "lucide-react";
-import { Badge, Button, Card, CardHeader, Modal, PageHeader, Toggle, useToast } from "../components/ui";
+import { Badge, Button, Card, CardHeader, Input, Modal, PageHeader, Toggle, useToast } from "../components/ui";
 import { Logo, LogoMark } from "../components/Logo";
 import { DnsTable } from "../components/Sending";
 import { dnsRecords } from "../data/providers";
@@ -11,7 +11,6 @@ import { assistant, DEFAULT_ASSISTANT, setWhitelabel, useWhitelabel } from "../l
 
 // One focus colour: the accent border and a soft accent ring, in place of the global :focus-visible outline.
 const focus = "outline-none! transition-shadow focus:border-accent focus:ring-3 focus:ring-accent-soft";
-const field = `h-9 w-full rounded-lg border border-line bg-surface px-3 text-[13.5px] ${focus}`;
 // Logos live in localStorage in the mock, so keep them small. Real build: uploaded to storage, served from the Partner's domain.
 const MAX_BYTES = 400_000;
 
@@ -111,17 +110,17 @@ export default function Whitelabel() {
           <CardHeader title="Brand" sub="Changes show right away for everyone, in the app and in anything shared from now on." />
           <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_220px]">
             <div>
-              {row("App name", <input value={wl.name} onChange={(e) => setWhitelabel({ name: e.target.value })} placeholder={partner.name} className={field} />, "Tab titles, emails, sign-in")}
-              {row("Assistant name", <input value={wl.assistant} onChange={(e) => setWhitelabel({ assistant: e.target.value })} placeholder={DEFAULT_ASSISTANT} className={field} />, "Blank keeps “AI Assistant”")}
+              {row("App name", <Input value={wl.name} onChange={(e) => setWhitelabel({ name: e.target.value })} placeholder={partner.name} />, "Tab titles, emails, sign-in")}
+              {row("Assistant name", <Input value={wl.assistant} onChange={(e) => setWhitelabel({ assistant: e.target.value })} placeholder={DEFAULT_ASSISTANT} />, "Blank keeps “AI Assistant”")}
               {row("Logo", <Upload value={wl.logo} onChange={(logo) => setWhitelabel({ logo })} label="Upload logo" toast={toast} />, "Wide, for the sidebar and reports. SVG or PNG")}
               {row("Icon", <Upload square value={wl.icon} onChange={(icon) => setWhitelabel({ icon })} label="Upload icon" toast={toast} />, "Square, for the browser tab. Blank shows your initial")}
               {row("Accent colour", (
                 <div className="flex items-center gap-2">
                   <input type="color" value={wl.accent} onChange={(e) => setWhitelabel({ accent: e.target.value })} aria-label="Accent colour" className={`h-9 w-12 cursor-pointer rounded-lg border border-line bg-surface p-1 ${focus}`} />
-                  <input value={wl.accent} onChange={(e) => /^#[0-9a-f]{6}$/i.test(e.target.value) && setWhitelabel({ accent: e.target.value })} aria-label="Accent colour hex" className={`${field} w-28 font-mono`} />
+                  <Input value={wl.accent} onChange={(e) => /^#[0-9a-f]{6}$/i.test(e.target.value) && setWhitelabel({ accent: e.target.value })} aria-label="Accent colour hex" className="w-28 font-mono" />
                 </div>
               ), "Buttons, links and highlights")}
-              {row("Support contact", <input value={wl.support} onChange={(e) => setWhitelabel({ support: e.target.value })} placeholder="help@youragency.com" className={field} />, "Where Help and “Contact support” go")}
+              {row("Support contact", <Input value={wl.support} onChange={(e) => setWhitelabel({ support: e.target.value })} placeholder="help@youragency.com" />, "Where Help and “Contact support” go")}
             </div>
             <Preview />
           </div>
@@ -132,7 +131,7 @@ export default function Whitelabel() {
           <div className="mt-4 space-y-4">
             {wl.domain.status === "none" ? (
               <div className="flex flex-col gap-2 sm:flex-row">
-                <input value={host} onChange={(e) => setHost(e.target.value)} onKeyDown={(e) => e.key === "Enter" && connect()} placeholder="app.youragency.com" aria-label="Custom domain" className={field} />
+                <Input value={host} onChange={(e) => setHost(e.target.value)} onKeyDown={(e) => e.key === "Enter" && connect()} placeholder="app.youragency.com" aria-label="Custom domain" />
                 <Button variant="primary" icon={<Globe size={13} />} onClick={connect}>Connect domain</Button>
               </div>
             ) : (
@@ -156,10 +155,10 @@ export default function Whitelabel() {
         <Card>
           <CardHeader title="Emails" sub="Invites, password resets, weekly digests and report emails your clients get." />
           <div className="mt-4">
-            {row("Sender name", <input value={wl.email.sender} onChange={(e) => setWhitelabel({ email: { ...wl.email, sender: e.target.value } })} placeholder={partner.name} className={field} />)}
+            {row("Sender name", <Input value={wl.email.sender} onChange={(e) => setWhitelabel({ email: { ...wl.email, sender: e.target.value } })} placeholder={partner.name} />)}
             {row("From address", (
               <div className="flex items-center gap-2">
-                <input value={wl.email.address} onChange={(e) => setWhitelabel({ email: { ...wl.email, address: e.target.value.trim(), verified: false } })} placeholder="hello@youragency.com" aria-label="From address" className={field} />
+                <Input value={wl.email.address} onChange={(e) => setWhitelabel({ email: { ...wl.email, address: e.target.value.trim(), verified: false } })} placeholder="hello@youragency.com" aria-label="From address" />
                 {emailDomain && (wl.email.verified ? <Badge tone="good"><Check size={10} />Verified</Badge> : <Badge tone="warn">Not verified</Badge>)}
               </div>
             ), "Until it's verified, emails come from your fallback address")}

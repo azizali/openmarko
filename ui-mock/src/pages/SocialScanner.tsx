@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
 import { Bookmark, BookmarkCheck, Check, ChevronDown, Copy, ExternalLink, Flame, Loader2, Plus, Radar, Settings2, Trash2, Undo2, Wand2, X } from "lucide-react";
-import { Badge, Button, Card, Drawer, PageHeader, Segmented, Tabs, Toggle, cn, fmt, useToast } from "../components/ui";
+import { Badge, Button, Card, Drawer, Input, PageHeader, Segmented, Tabs, Textarea, Toggle, cn, fmt, useToast } from "../components/ui";
 import { PlatformMark, PostDrawer } from "../components/Social";
 import { WordList } from "./Brand";
 import { trendSources, type Trend } from "../data/social";
@@ -166,7 +166,7 @@ function OppCard({ o, open, onToggle }: { o: Opportunity; open: boolean; onToggl
 
           <label className="mt-4 block">
             <span className="mb-1.5 flex items-baseline justify-between text-[12.5px] font-medium text-muted">Your reply <span className="font-normal text-subtle">{text.length} characters</span></span>
-            <textarea value={text} onChange={(e) => editDraft(o.id, e.target.value)} rows={Math.min(10, Math.max(4, Math.ceil(text.length / 80)))} className="w-full resize-y rounded-lg border border-line bg-surface p-3 text-[13.5px] leading-[1.55] outline-none focus:border-line-strong" />
+            <Textarea value={text} onChange={(e) => editDraft(o.id, e.target.value)} rows={Math.min(10, Math.max(4, Math.ceil(text.length / 80)))} />
           </label>
           <div className="mt-1 text-[11.5px] text-subtle">Written with the <Link to="/settings/skills" className="underline decoration-line-strong underline-offset-2 hover:text-fg">Community replies</Link> skill, in your brand voice.</div>
 
@@ -403,7 +403,7 @@ function ScanSettings({ open, initial, onClose }: { open: boolean; initial: Tab;
               <WordList label="Topics" words={t.topics} onChange={(topics) => updateTrending({ topics })} />
               <div className="flex flex-wrap items-center justify-between gap-3 text-[13.5px]">
                 <label className="flex items-center gap-2">Area
-                  <input value={t.area} onChange={(e) => updateTrending({ area: e.target.value })} aria-label="Area" className="h-8 w-40 rounded-md border border-line bg-surface px-2.5 text-[13px] outline-none focus:border-line-strong" />
+                  <Input size="sm" value={t.area} onChange={(e) => updateTrending({ area: e.target.value })} aria-label="Area" className="w-40" />
                 </label>
                 <Segmented label="Reach" value={t.reach} onChange={(reach) => updateTrending({ reach })} options={[{ id: "city", label: "City" }, { id: "state", label: "State" }, { id: "country", label: "Country" }]} />
               </div>

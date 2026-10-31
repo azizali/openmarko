@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { AlertTriangle, ArrowDown, ArrowUp, Check, ChevronsUpDown, Copy, Loader2, Rocket, Trash2, Wand2, X } from "lucide-react";
-import { Badge, Button, Card, Checkbox, Empty, PageHeader, Progress, Segmented, cn, useToast } from "../components/ui";
+import { Badge, Button, Card, Checkbox, Empty, Field, FieldLabel, Input, PageHeader, Progress, Segmented, Select, Textarea, cn, useToast } from "../components/ui";
 import { AdPlatformMark, CreativeThumb, PublishModal } from "../components/Ads";
 import { angles, ctas, formats, sizes, type Angle, type Format, type Size } from "../data/ads";
 import { useAds } from "../lib/ads";
@@ -215,13 +215,11 @@ function BriefCard({ brief, setBrief, busy, onRun }: { brief: Brief; setBrief: (
   const visual = b.formats.some((f) => f !== "search");
   const refs = cr.swipe.filter((s) => b.refs.includes(s.id));
   const n = variationCount(b);
-  const field = "h-9 w-full rounded-lg border border-line bg-surface px-3 text-[13.5px] outline-none focus:border-line-strong";
-  const label = "mb-1.5 block text-[12.5px] font-medium text-muted";
   return (
     <Card pad={false}>
       <div className="space-y-4 p-4">
         <div>
-          <span className={label}>Learn from</span>
+          <FieldLabel>Learn from</FieldLabel>
           {refs.length > 0 && (
             <ul className="mb-2 list-none space-y-1 pl-0">
               {refs.map((r) => (
@@ -232,32 +230,32 @@ function BriefCard({ brief, setBrief, busy, onRun }: { brief: Brief; setBrief: (
               ))}
             </ul>
           )}
-          <select value="" onChange={(e) => { const s = cr.swipe.find((x) => x.id === e.target.value); if (s) set({ refs: [...b.refs, s.id], angles: b.angles.includes(s.angle) ? b.angles : [...b.angles, s.angle] }); }} className={cn(field, "text-muted")}>
+          <Select value="" onChange={(e) => { const s = cr.swipe.find((x) => x.id === e.target.value); if (s) set({ refs: [...b.refs, s.id], angles: b.angles.includes(s.angle) ? b.angles : [...b.angles, s.angle] }); }} className="text-muted">
             <option value="">{cr.swipe.length ? "Add an ad from your swipe file…" : "Your swipe file is empty"}</option>
             {cr.swipe.filter((s) => !b.refs.includes(s.id)).map((s) => <option key={s.id} value={s.id}>{s.advertiser}: {s.headline}</option>)}
-          </select>
+          </Select>
         </div>
-        <label className="block"><span className={label}>Offer</span><input value={b.offer} onChange={(e) => set({ offer: e.target.value })} className={field} /></label>
-        <label className="block"><span className={label}>Landing page</span><input value={b.landing} onChange={(e) => set({ landing: e.target.value })} className={field} /></label>
+        <Field label="Offer"><Input value={b.offer} onChange={(e) => set({ offer: e.target.value })} /></Field>
+        <Field label="Landing page"><Input value={b.landing} onChange={(e) => set({ landing: e.target.value })} /></Field>
         <div>
-          <span className={label}>Angles</span>
+          <FieldLabel>Angles</FieldLabel>
           <div className="flex flex-wrap gap-1.5">{(Object.keys(angles) as Angle[]).map((a) => <button key={a} title={angles[a].blurb} aria-pressed={b.angles.includes(a)} onClick={() => set({ angles: toggle(b.angles, a) })} className={chip(b.angles.includes(a))}><span className="size-2 rounded-full" style={{ background: `hsl(${angles[a].hue} 60% 50%)` }} />{angles[a].label}</button>)}</div>
         </div>
         <div>
-          <span className={label}>Hooks per angle</span>
+          <FieldLabel>Hooks per angle</FieldLabel>
           <Segmented label="Hooks per angle" value={String(b.hooks)} onChange={(v) => set({ hooks: +v })} options={["1", "2", "3", "4", "5"].map((x) => ({ id: x, label: x }))} />
         </div>
         <div>
-          <span className={label}>Formats</span>
+          <FieldLabel>Formats</FieldLabel>
           <div className="flex flex-wrap gap-1.5">{(Object.keys(formats) as Format[]).map((f) => <button key={f} aria-pressed={b.formats.includes(f)} onClick={() => set({ formats: toggle(b.formats, f) })} className={chip(b.formats.includes(f))}>{formats[f].label}<span className="flex gap-0.5">{formats[f].platforms.map((p) => <AdPlatformMark key={p} platform={p} size={12} />)}</span></button>)}</div>
         </div>
         {visual && <>
           <div>
-            <span className={label}>Sizes</span>
+            <FieldLabel>Sizes</FieldLabel>
             <div className="flex flex-wrap gap-1.5">{sizes.map((s) => <button key={s.id} title={s.where} aria-pressed={b.sizes.includes(s.id)} onClick={() => set({ sizes: toggle(b.sizes, s.id as Size) })} className={chip(b.sizes.includes(s.id))}>{s.id}</button>)}</div>
           </div>
           <div>
-            <span className={label}>Looks</span>
+            <FieldLabel>Looks</FieldLabel>
             <div className="flex flex-wrap gap-1.5">
               {styles.map((s) => <button key={s.id} aria-pressed={b.styles.includes(s.id)} onClick={() => set({ styles: toggle(b.styles, s.id as Style) })} className={chip(b.styles.includes(s.id))}>{s.label}</button>)}
               {blockedStyles.map((s) => <span key={s.label} title={s.why} className="inline-flex h-8 cursor-not-allowed items-center rounded-full border border-dashed border-line px-3 text-[13px] text-subtle line-through">{s.label}</span>)}
@@ -280,7 +278,6 @@ function CreativeEditor({ c }: { c: Creative }) {
   const cr = useCreatives();
   const ref = cr.swipe.find((s) => s.id === c.refId);
   const locked = c.status === "published";
-  const field = "w-full rounded-lg border border-line bg-surface px-3 text-[13.5px] outline-none focus:border-line-strong disabled:opacity-70";
   return (
     <div className="flex flex-wrap gap-6">
       <div className="min-w-0">
@@ -295,17 +292,17 @@ function CreativeEditor({ c }: { c: Creative }) {
         {ref && <p className="mt-3 mb-0 text-[12.5px] text-muted">Learned from {ref.advertiser === "You" ? "your ad" : ref.advertiser}: “{ref.headline}”</p>}
       </div>
       <div className="max-w-[420px] min-w-[260px] flex-1 space-y-3">
-        <label className="block"><span className="mb-1 block text-[12px] font-medium text-muted">{c.format === "search" ? "Headlines (separated by | , 30 characters each)" : "Headline"}</span>
-          <input key={c.headline} defaultValue={c.headline} disabled={locked} onBlur={(e) => e.target.value !== c.headline && editCreative(c.id, { headline: e.target.value })} className={cn(field, "h-9")} />
-        </label>
-        <label className="block"><span className="mb-1 block text-[12px] font-medium text-muted">{c.format === "search" ? "Description" : "Text"}</span>
-          <textarea key={c.text} defaultValue={c.text} disabled={locked} rows={3} onBlur={(e) => e.target.value !== c.text && editCreative(c.id, { text: e.target.value })} className={cn(field, "py-2 leading-[1.5]")} />
-        </label>
+        <Field label={<>{c.format === "search" ? "Headlines (separated by | , 30 characters each)" : "Headline"}</>}>
+          <Input key={c.headline} defaultValue={c.headline} disabled={locked} onBlur={(e) => e.target.value !== c.headline && editCreative(c.id, { headline: e.target.value })} />
+        </Field>
+        <Field label={<>{c.format === "search" ? "Description" : "Text"}</>}>
+          <Textarea key={c.text} defaultValue={c.text} disabled={locked} rows={3} onBlur={(e) => e.target.value !== c.text && editCreative(c.id, { text: e.target.value })} className="py-2 leading-[1.5]" />
+        </Field>
         {!locked && (
           <div className="flex flex-wrap items-center gap-1.5">
             {(["shorter", "punchier", "local"] as const).map((h) => <Button key={h} size="sm" variant="ghost" onClick={() => editCreative(c.id, { text: rewrite(c.text, h) })}>{h === "local" ? "More local" : h[0].toUpperCase() + h.slice(1)}</Button>)}
             <span className="flex-1" />
-            <select value={c.cta} onChange={(e) => editCreative(c.id, { cta: e.target.value })} aria-label="Button" className="h-7 rounded-md border border-line bg-surface px-2 text-[12.5px]">{ctas.map((x) => <option key={x}>{x}</option>)}</select>
+            <Select size="xs" className="w-auto" value={c.cta} onChange={(e) => editCreative(c.id, { cta: e.target.value })} aria-label="Button">{ctas.map((x) => <option key={x}>{x}</option>)}</Select>
           </div>
         )}
         {c.flags.length > 0 && (

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
-import { Download, Plus, Search, X } from "lucide-react";
-import { Button, PageHeader, Segmented, Tabs, cn, useToast } from "../components/ui";
+import { Download, Plus, X } from "lucide-react";
+import { Button, PageHeader, SearchInput, Segmented, Tabs, cn, useToast } from "../components/ui";
 import { KeywordTable, scanFor, type RankView } from "../components/KeywordTable";
 import { TaskDrawer } from "../components/Todo";
 import { gridStats, type Keyword } from "../data/mock";
@@ -125,11 +125,7 @@ function RankingsBody({ keywords }: { keywords: Keyword[] }) {
       ]} />
 
       <div className="my-4 flex flex-wrap items-center gap-2">
-        <div className="flex h-8 items-center gap-2 rounded-md border border-line bg-surface px-2.5">
-          <Search size={14} className="text-subtle" />
-          <input aria-label="Filter keywords" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find a keyword" className="w-40 bg-transparent text-[13px] outline-none" />
-          {q && <button onClick={() => setQ("")} aria-label="Clear search" className="text-subtle hover:text-fg"><X size={13} /></button>}
-        </div>
+        <SearchInput size="sm" className="w-52" aria-label="Filter keywords" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find a keyword" end={q && <button onClick={() => setQ("")} aria-label="Clear search" className="text-subtle hover:text-fg"><X size={13} /></button>} />
         <span className="mx-1 hidden h-5 w-px bg-line sm:block" />
         <button onClick={() => setTag(null)} className={cn("h-7 rounded-full border px-2.5 text-[12.5px] transition-colors", !tag ? "border-ink bg-ink text-on-ink" : "border-line text-muted hover:bg-hover")}>All topics</button>
         {tags.map((t) => (

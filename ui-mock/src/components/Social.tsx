@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Clapperboard, Send, Trash2 } from "lucide-react";
-import { Button, Drawer, cn, useToast } from "./ui";
+import { Button, Drawer, Textarea, cn, useToast } from "./ui";
 import { PostPreview } from "./PostPreview";
 import { accountConnected, useSetup } from "../lib/setup";
 import { accountLabel, accounts, bestTime, draftFor, mainAccount, platformMeta, platformOf, type AccountId, type SocialPlatform, type ToneTweak, type Trend } from "../data/social";
@@ -137,12 +137,12 @@ export function PostDrawer({ trend, post, onClose }: { trend?: Trend | null; pos
                 </button>
               ))}
             </div>
-            <textarea
+            <Textarea
               aria-label={`${accountLabel(tab)} text`}
               value={texts[tab] ?? ""}
               onChange={(e) => { setTexts({ ...texts, [tab]: e.target.value }); setEdited(new Set(edited).add(tab)); }}
               rows={9}
-              className="mt-3 w-full resize-y rounded-lg border border-line bg-surface p-3 text-[13.5px] leading-[1.55] outline-none focus:border-line-strong"
+              className="mt-3"
             />
             <div className="mt-1.5 flex flex-wrap justify-between gap-2 text-[12px] text-subtle">
               <span>{(texts[tab] ?? "").length} characters{edited.has(tab) && trend && !post ? " · edited, so Adjust leaves it alone" : ""}</span>

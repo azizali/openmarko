@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus, X } from "lucide-react";
-import { Badge, Button, Segmented, cn, fmt } from "./ui";
+import { Badge, Button, Input, Segmented, Select, cn, fmt } from "./ui";
 import { PlatformMark } from "./Social";
 import { platformMeta, type SocialPlatform } from "../data/social";
 import { profileUrl, type WatchKind } from "../data/watch";
@@ -33,10 +33,10 @@ export function WatchEditor({ compact = false }: { compact?: boolean }) {
         {!list.length && <li className="px-4 py-4 text-[13px] text-muted">Not watching anyone yet.</li>}
       </ul>
       <form onSubmit={(e) => { e.preventDefault(); add(); }} className="flex flex-wrap items-center gap-2 border-t border-line bg-hover/40 px-4 py-3">
-        <select aria-label="Platform" value={platform} onChange={(e) => setPlatform(e.target.value as SocialPlatform)} className="h-8 rounded-md border border-line bg-surface px-2 text-[13px] outline-none">
+        <Select size="sm" aria-label="Platform" value={platform} onChange={(e) => setPlatform(e.target.value as SocialPlatform)} className="w-auto">
           {platforms.map((p) => <option key={p} value={p}>{platformMeta[p].name}</option>)}
-        </select>
-        <input aria-label="Handle" value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="@handle" className="h-8 min-w-0 flex-1 rounded-md border border-line bg-surface px-2.5 text-[13px] outline-none focus:border-line-strong" />
+        </Select>
+        <Input size="sm" aria-label="Handle" value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="@handle" className="min-w-0 flex-1" />
         <Segmented label="Why watch" value={kind} onChange={setKind} options={[{ id: "Competitor", label: "Competitor" }, { id: "Inspiration", label: "Inspiration" }]} />
         <Button size="sm" type="submit" icon={<Plus size={13} />} disabled={!handle.trim()}>Watch</Button>
       </form>

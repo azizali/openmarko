@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { Crosshair, Settings2, X } from "lucide-react";
-import { Card, PageHeader, Tabs, Toggle, useToast } from "../components/ui";
+import { Card, PageHeader, Select, Tabs, Toggle, useToast } from "../components/ui";
 import { TaskDrawer, TodoList, type TodoStatus } from "../components/Todo";
 import { keywords } from "../data/mock";
 import { openTasksFor, tasks, useRunState } from "../lib/tasks";
@@ -49,10 +49,10 @@ export default function Todo() {
         <div className="flex flex-wrap items-center gap-2">
           <Crosshair size={14} className="text-subtle" />
           <label htmlFor="todo-kw" className="text-[13px] text-muted">For keyword</label>
-          <select id="todo-kw" value={focus?.id ?? ""} onChange={(e) => update("kw", e.target.value || null)} className="h-8 rounded-md border border-line bg-surface px-2 text-[13px] outline-none">
+          <Select size="sm" id="todo-kw" value={focus?.id ?? ""} onChange={(e) => update("kw", e.target.value || null)} className="w-auto">
             <option value="">All keywords</option>
             {keywords.map((k) => <option key={k.id} value={k.id}>{k.term} ({openTasksFor(state, k.id).length})</option>)}
-          </select>
+          </Select>
           {focus && <button onClick={() => update("kw", null)} className="inline-flex items-center gap-1 rounded px-2 py-1 text-[12.5px] text-muted hover:bg-hover"><X size={12} /> Clear</button>}
         </div>
       </div>

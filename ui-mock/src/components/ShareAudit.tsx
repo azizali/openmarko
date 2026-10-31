@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link2, Copy, Eye, ExternalLink, Smartphone, Monitor } from "lucide-react";
-import { Badge, Button, Modal, Toggle, cn, useToast } from "./ui";
+import { Badge, Button, Input, Modal, Toggle, cn, useToast } from "./ui";
 import { ensureShare, setShareEnabled, shareFor, shareUrl, useShares } from "../lib/shares";
 import { timeAgo } from "../lib/runs";
 
@@ -28,7 +28,7 @@ export function ShareAuditButton({ path, name }: { path: string; name: string })
           <div className="space-y-5">
             <p className="text-[13.5px] text-muted">Send this link in your email instead of a PDF. It opens a clean, mobile-friendly audit with a button to book a call. Contact details and your pitch are never shown.</p>
             <div className="flex gap-2">
-              <input readOnly value={url} onFocus={(e) => e.currentTarget.select()} aria-label="Share link" className={cn("h-10 min-w-0 flex-1 rounded-md border border-line bg-bg px-3 font-mono text-[12.5px] outline-none", !s.enabled && "text-subtle line-through")} />
+              <Input size="lg" readOnly value={url} onFocus={(e) => e.currentTarget.select()} aria-label="Share link" className={cn("min-w-0 flex-1 font-mono text-[12.5px]", !s.enabled && "text-subtle line-through")} />
               <Button className="h-10" variant="primary" icon={<Copy size={14} />} disabled={!s.enabled} onClick={() => copy(url)}>Copy</Button>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line px-3 py-2.5">

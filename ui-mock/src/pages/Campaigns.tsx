@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { ArrowLeft, CalendarClock, ChevronLeft, ChevronRight, Copy, Inbox, Loader2, Mail, MessageSquareText, Send, Sparkles, Trash2, Workflow as WorkflowIcon } from "lucide-react";
-import { Badge, Button, Card, PageHeader, Segmented, Stat, cn, fmt, useToast } from "../components/ui";
+import { Badge, Button, Card, Input, PageHeader, Segmented, Select, Stat, Textarea, cn, fmt, useToast } from "../components/ui";
 import { FieldPicker, FlagList, insertAt } from "../components/Crm";
 import { fillFields, segments, type SegmentId } from "../data/contacts";
 import { brandFacts } from "../data/brand";
@@ -83,7 +83,6 @@ function CampaignList() {
   );
 }
 
-const input = "h-9 w-full rounded-lg border border-line bg-surface px-3 text-[13.5px] outline-none focus:border-line-strong";
 
 function Editor({ id }: { id: string }) {
   const st = useCrm();
@@ -148,10 +147,10 @@ function Editor({ id }: { id: string }) {
               <div className="flex flex-wrap items-start gap-3">
                 <span className="w-20 pt-2 text-[13px] font-medium">To</span>
                 <div className="min-w-0 flex-1">
-                  <select value={"segment" in c.audience ? c.audience.segment : "ids"} onChange={(e) => e.target.value !== "ids" && up({ audience: { segment: e.target.value as SegmentId } })} aria-label="Audience" className={input}>
+                  <Select value={"segment" in c.audience ? c.audience.segment : "ids"} onChange={(e) => e.target.value !== "ids" && up({ audience: { segment: e.target.value as SegmentId } })} aria-label="Audience">
                     {"ids" in c.audience && <option value="ids">{c.audience.label}</option>}
                     {segments.map((sg) => <option key={sg.id} value={sg.id}>{sg.label}</option>)}
-                  </select>
+                  </Select>
                   <p className="mt-1.5 text-[12.5px]"><span className="font-medium">{fmt(aud.will.length)} will get it</span>{aud.skipped.length > 0 && <span className="text-muted"> · skipping {aud.skipped.map((x) => `${x.n} ${x.why.toLowerCase()}`).join(", ")}</span>}</p>
                 </div>
               </div>
@@ -163,10 +162,10 @@ function Editor({ id }: { id: string }) {
               <h2 className="text-[14px] font-medium">Message</h2>
               {!locked && <Button size="sm" variant="ghost" icon={<Sparkles size={12} />} onClick={write}>{c.body ? `Rewrite with ${assistant()}` : `Write with ${assistant()}`}</Button>}
             </div>
-            {c.channel === "email" && <input value={c.subject} disabled={locked} onChange={(e) => up({ subject: e.target.value })} placeholder="Subject" aria-label="Subject" className={input} />}
-            <textarea ref={ta} value={c.body} disabled={locked} onChange={(e) => up({ body: e.target.value })} rows={c.channel === "email" ? 10 : 4} aria-label="Message"
+            {c.channel === "email" && <Input value={c.subject} disabled={locked} onChange={(e) => up({ subject: e.target.value })} placeholder="Subject" aria-label="Subject" />}
+            <Textarea ref={ta} value={c.body} disabled={locked} onChange={(e) => up({ body: e.target.value })} rows={c.channel === "email" ? 10 : 4} aria-label="Message"
               placeholder={c.channel === "sms" ? "Keep it under 160 characters, with one link." : `Write it like ${brandFacts.name} talks. Use Insert field for their name.`}
-              className="w-full resize-y rounded-lg border border-line bg-surface p-3 text-[13.5px] outline-none focus:border-line-strong disabled:opacity-80" />
+              className="disabled:opacity-80" />
             {!locked && (
               <div className="flex flex-wrap items-center gap-2">
                 <FieldPicker onPick={(t) => up({ body: insertAt(ta.current, c.body, t) })} />
@@ -181,7 +180,7 @@ function Editor({ id }: { id: string }) {
               <div className="flex flex-wrap items-center gap-3">
                 <span className="w-20 text-[13px] font-medium">When</span>
                 <Segmented label="When" value={later ? "later" : "now"} onChange={(v) => setLater(v === "later")} options={[{ id: "now", label: "Now" }, { id: "later", label: "Schedule" }]} />
-                {later && <input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} aria-label="Send at" className={cn(input, "w-auto")} />}
+                {later && <Input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} aria-label="Send at" className="w-auto" />}
               </div>
               {c.status === "scheduled" && <p className="flex items-center gap-1.5 text-[12.5px] text-info"><CalendarClock size={13} />{when(c)}. Change anything and schedule again to update it.</p>}
               <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">

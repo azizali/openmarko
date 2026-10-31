@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { ArrowDown, ArrowUp, ChevronDown, ChevronsUpDown, Download, Kanban, List, Mail, MessageSquareText, Search, Tag, Trash2, Upload, UserPlus, Workflow as WorkflowIcon } from "lucide-react";
-import { Button, Card, Checkbox, Modal, PageHeader, Segmented, cn, fmt, useToast } from "../components/ui";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronsUpDown, Download, Kanban, List, Mail, MessageSquareText, Tag, Trash2, Upload, UserPlus, Workflow as WorkflowIcon } from "lucide-react";
+import { Button, Card, Checkbox, Modal, PageHeader, SearchInput, Segmented, Select, cn, fmt, useToast } from "../components/ui";
 import { AddContactModal, ChannelIcon, ContactDrawer, Reach, StageBadge } from "../components/Crm";
 import { segments, sources, stageOf, stages, tagOptions, type Contact, type SegmentId, type Source, type Stage } from "../data/contacts";
 import { addTag, enroll, importFromBooking, inSegment, lastTouch, needsReply, newCampaign, removeContacts, setStage, startedText, useCrm } from "../lib/crm";
@@ -88,9 +88,9 @@ export default function Contacts() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[232px_minmax(0,1fr)]">
         {/* Lists: saved filters, vertical, with live counts. */}
         <nav aria-label="Lists" className="self-start lg:sticky lg:top-4">
-          <select value={seg} onChange={(e) => pickList(e.target.value as SegmentId)} aria-label="List" className="h-9 w-full rounded-lg border border-line bg-surface px-2.5 text-[13.5px] lg:hidden">
+          <Select value={seg} onChange={(e) => pickList(e.target.value as SegmentId)} aria-label="List" className="lg:hidden">
             {segments.map((s) => <option key={s.id} value={s.id}>{s.label} ({counts[s.id]})</option>)}
-          </select>
+          </Select>
           <ul className="hidden space-y-px lg:block">
             {segments.map((s) => (
               <li key={s.id}>
@@ -121,14 +121,11 @@ export default function Contacts() {
             ) : (
               <>
                 <Segmented<View> label="View" value={view} onChange={(v) => go({ view: v === "list" ? null : v })} options={[{ id: "list", label: <span className="inline-flex items-center gap-1"><List size={13} />List</span> }, { id: "pipeline", label: <span className="inline-flex items-center gap-1"><Kanban size={13} />Pipeline</span> }]} />
-                <label className="relative min-w-[180px] flex-1 sm:max-w-[260px]">
-                  <Search size={14} className="absolute top-1/2 left-2.5 -translate-y-1/2 text-subtle" />
-                  <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name, phone, email or tag" aria-label="Find a contact" className="h-8 w-full rounded-md border border-line bg-surface pr-2 pl-8 text-[13px] outline-none focus:border-line-strong" />
-                </label>
-                <select value={source} onChange={(e) => setSource(e.target.value as Source | "ads" | "all")} aria-label="Came from" className="h-8 rounded-md border border-line bg-surface px-2 text-[13px]">
+                <SearchInput size="sm" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name, phone, email or tag" aria-label="Find a contact" className="min-w-[180px] flex-1 sm:max-w-[260px]" />
+                <Select size="sm" value={source} onChange={(e) => setSource(e.target.value as Source | "ads" | "all")} aria-label="Came from" className="w-auto">
                   <option value="all">From anywhere</option><option value="ads">Any ad</option>
                   {(Object.keys(sources) as Source[]).map((s) => <option key={s} value={s}>{sources[s].label}</option>)}
-                </select>
+                </Select>
                 {view === "list" && (
                   <div className="flex flex-wrap gap-1">
                     {stages.map((s) => <button key={s.id} onClick={() => setStageF(stage === s.id ? null : s.id)} aria-pressed={stage === s.id} className={cn("h-7 rounded-full border px-2.5 text-[12.5px]", stage === s.id ? "border-ink bg-ink text-on-ink" : "border-line text-muted hover:text-fg")}>{s.label}</button>)}
