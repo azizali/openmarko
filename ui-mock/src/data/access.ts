@@ -40,14 +40,14 @@ const view = (label: string) => act("view", label, "view");
 
 // `satisfies` makes a FeatureId without actions a type error.
 const featureActions = {
-  seo: [view("See Business Profile and the SEO overview"), act("edit", "Edit Business Profile details", "edit"), act("publish", "Publish profile changes and Google posts", "publish")],
+  seo: [view("See Business Profile and the SEO overview"), act("edit", "Edit Business Profile details", "edit"), act("publish", "Publish profile changes and Google posts", "publish"), act("connect", "Connect Google profiles", "manage")],
   rankings: [view("See rankings, competitors and keywords"), act("edit", "Add keywords and competitors", "edit"), act("scan", "Run grid scans", "edit")],
   ai_answers: [view("See AI answers"), act("edit", "Track questions", "edit")],
   reviews: [view("Read reviews"), act("reply", "Draft replies", "edit"), act("post", "Post replies", "publish"), act("request", "Send review requests", "publish")],
   content: [view("Read articles"), act("edit", "Write and edit articles", "edit"), act("publish", "Publish to the website", "publish")],
   citations: [view("See citations and backlinks"), act("submit", "Submit and fix listings", "publish")],
   site_health: [view("See site issues"), act("fix", "Apply fixes to the website", "publish")],
-  social: [view("See the social overview")],
+  social: [view("See the social overview"), act("connect", "Connect social accounts", "publish")],
   social_scanner: [view("See trends and watched profiles"), act("edit", "Watch and unwatch profiles", "edit")],
   social_swipe: [view("See the swipe file"), act("edit", "Save and organise ideas", "edit")],
   social_posts: [view("See the calendar"), act("edit", "Draft and schedule posts", "edit"), act("publish", "Publish posts", "publish")],

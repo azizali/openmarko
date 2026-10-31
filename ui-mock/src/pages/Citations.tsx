@@ -63,7 +63,6 @@ function CitationsTab({ seed }: { seed: Citation[] }) {
   const rows = list.filter((c) => filter === "all" || (filter === "ai" ? c.aiCited : c.status === filter));
   const actionable = (c: Citation) => c.status !== "correct" && !building[c.id];
   const chosen = list.filter((c) => sel.has(c.id) && actionable(c));
-  const cost = chosen.reduce((a, c) => a + c.cost, 0);
   const gap = list.filter((c) => c.status === "missing" && c.rivalsListed >= 3);
 
   const run = (ids: string[]) => {
@@ -147,7 +146,7 @@ function CitationsTab({ seed }: { seed: Citation[] }) {
                   </td>
                   <td className="num px-3 py-2.5 text-right">{c.authority}</td>
                   <td className={cn("num px-3 py-2.5 text-right", c.status === "missing" && c.rivalsListed >= 3 && "font-medium text-bad")}>{c.rivalsListed}/5</td>
-                  <td className="px-3 py-2.5 text-[12.5px] text-muted">{c.method}{c.cost ? <span className="num"> · ${c.cost}</span> : <span> · free</span>}</td>
+                  <td className="px-3 py-2.5 text-[12.5px] text-muted">{c.method}</td>
                   <td className="px-3 py-2.5 pr-5 text-right">
                     {c.status === "correct" && !b ? <span className="inline-flex items-center gap-1 text-[12.5px] text-good"><Check size={13} /> Good</span>
                       : b === "running" ? <Button size="sm" disabled><Loader2 size={12} className="animate-spin" /></Button>
@@ -164,7 +163,7 @@ function CitationsTab({ seed }: { seed: Citation[] }) {
 
       <Modal open={confirm} onClose={() => setConfirm(false)} title={`Fix & build ${chosen.length} citations`} footer={<>
         <Button variant="ghost" onClick={() => setConfirm(false)}>Cancel</Button>
-        <Button variant="primary" onClick={() => run(chosen.map((c) => c.id))}>Start · ${cost.toFixed(2)}</Button>
+        <Button variant="primary" onClick={() => run(chosen.map((c) => c.id))}>Start</Button>
       </>}>
         <div className="space-y-3 text-[13.5px]">
           {(["Direct API", "Aggregator", "Partner submission", "Claim it yourself"] as const).map((mth) => {
@@ -173,7 +172,7 @@ function CitationsTab({ seed }: { seed: Citation[] }) {
             return (
               <div key={mth} className="flex items-start justify-between gap-3">
                 <div><div className="font-medium">{mth}</div><div className="text-[12.5px] text-muted">{xs.map((c) => c.site).join(", ")}</div></div>
-                <span className="num shrink-0 text-muted">{mth === "Claim it yourself" ? "added to To-do" : `$${xs.reduce((a, c) => a + c.cost, 0).toFixed(2)}`}</span>
+                {mth === "Claim it yourself" && <span className="shrink-0 text-muted">added to To-do</span>}
               </div>
             );
           })}

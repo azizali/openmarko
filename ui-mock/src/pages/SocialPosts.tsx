@@ -61,7 +61,7 @@ export default function SocialPosts() {
           ))}
         </div>
         <div className="border-t border-line px-5 py-2.5 text-[12px] text-subtle">
-          From each account's own insights: Meta for Instagram and Facebook, TikTok analytics, X analytics and Google Business Profile performance. Updated 1 hour ago.{notConnected.length > 0 && <> {notConnected.map((c) => accountLabel(c.id)).join(", ")} isn't connected, so it's not counted. <Link to="/settings/accounts" className="underline decoration-line-strong underline-offset-2 hover:text-fg">Connect</Link></>}
+          From each account's own insights: Meta for Instagram and Facebook, TikTok analytics, X analytics and Google Business Profile performance. Updated 1 hour ago.{notConnected.length > 0 && <> {notConnected.map((c) => accountLabel(c.id)).join(", ")} isn't connected, so it's not counted. <Link to="/settings/integrations?cat=Social" className="underline decoration-line-strong underline-offset-2 hover:text-fg">Connect</Link></>}
         </div>
       </Card>
 

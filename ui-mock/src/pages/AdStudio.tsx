@@ -6,7 +6,7 @@ import { AdPlatformMark, CreativeThumb, PublishModal } from "../components/Ads";
 import { angles, ctas, formats, sizes, type Angle, type Format, type Size } from "../data/ads";
 import { useAds } from "../lib/ads";
 import {
-  blankBrief, blockedStyles, costOf, editCreative, fileCount, generate, moreLike, removeBatch, removeCreatives, rewrite, saveRowToSwipe, setCreativeStatus, styles,
+  blankBrief, blockedStyles, editCreative, fileCount, generate, moreLike, removeBatch, removeCreatives, rewrite, saveRowToSwipe, setCreativeStatus, styles,
   useCreatives, variationCount, type Brief, type Creative, type CreativeStatus, type Style,
 } from "../lib/creatives";
 import { Can } from "../components/Can";
@@ -267,7 +267,7 @@ function BriefCard({ brief, setBrief, busy, onRun }: { brief: Brief; setBrief: (
       </div>
       <div className="flex items-center gap-3 border-t border-line px-4 py-3">
         <div className="min-w-0 flex-1 text-[12.5px] leading-snug text-muted">
-          <span className="num font-medium text-fg">{n}</span> variations{visual && <>, <span className="num">{fileCount(b)}</span> files</>}<br />≈ <span className="num">${costOf(b).toFixed(2)}</span> to render
+          <span className="num font-medium text-fg">{n}</span> variations{visual && <>, <span className="num">{fileCount(b)}</span> files</>}
         </div>
         <Button variant="primary" disabled={busy || !n || (visual && !b.sizes.length)} onClick={onRun} icon={busy ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}>{busy ? "Writing…" : `Make ${n}`}</Button>
       </div>

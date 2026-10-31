@@ -26,7 +26,7 @@ const copy: Record<Kind, { icon: typeof Store; title: (place: string) => string;
     icon: AtSign,
     title: () => "Connect a social account",
     unlocks: ["Schedule and post to Instagram, Facebook, TikTok, X and your Google profile", "See followers, views and reactions in one place"],
-    settings: "/settings/accounts",
+    settings: "/settings/integrations?cat=Social",
     action: "Connect an account",
   },
 };

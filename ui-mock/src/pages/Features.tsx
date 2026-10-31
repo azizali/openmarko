@@ -22,8 +22,8 @@ function useConnections(): Record<Connection, { ok: boolean; text: string; to: s
   const adCount = (["meta", "google", "tiktok"] as const).filter((k) => ads.connected[k]).length;
   const { email, sms } = crm.channels;
   return {
-    social_accounts: { ok: social > 0, text: social ? `${social} accounts connected` : "No accounts connected", to: "/settings/accounts" },
-    ad_account: { ok: adCount > 0, text: adCount ? `${adCount} ad account${adCount > 1 ? "s" : ""} connected` : "No ad account connected", to: "/settings/ads" },
+    social_accounts: { ok: social > 0, text: social ? `${social} accounts connected` : "No accounts connected", to: "/settings/integrations?cat=Social" },
+    ad_account: { ok: adCount > 0, text: adCount ? `${adCount} ad account${adCount > 1 ? "s" : ""} connected` : "No ad account connected", to: "/settings/integrations?cat=Ads" },
     email_sending: { ok: !!email.provider && email.verified, text: !email.provider ? "Not set up" : email.verified ? `Sending from ${email.domain}` : "Waiting for DNS", to: "/settings/messaging" },
     texting: { ok: !!sms.provider && sms.campaign === "approved", text: !sms.provider ? "Not set up" : sms.campaign === "approved" ? `${sms.numbers.length} numbers live` : "Registration in review", to: "/settings/messaging" },
     sequencer: { ok: !!out.connection, text: out.connection ? `${out.connection.workspace} connected` : "No sequencer connected", to: "/settings/outreach" },

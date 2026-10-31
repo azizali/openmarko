@@ -78,7 +78,7 @@ export function Schedules() {
       <div key={j.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line px-5 py-3.5 last:border-0">
         <div className="min-w-0 flex-1 basis-64">
           <div className="text-[13.5px]">{j.label}</div>
-          <div className="text-[12.5px] text-muted">{j.what}{j.cost ? ` · ${j.cost}` : ""}</div>
+          <div className="text-[12.5px] text-muted">{j.what}</div>
           <div className={cn("mt-0.5 text-[12px]", ev[j.id] === "paused" ? "text-warn" : "text-subtle")}>
             {describeEvery(j, ev[j.id])}{ev[j.id] !== "paused" && (running || last) && <> · next: {running ? "running now" : nextRun(last, ev[j.id]).toLowerCase()}</>}{last && <> · last {timeAgo(last)}</>}
           </div>

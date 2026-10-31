@@ -87,7 +87,7 @@ export default function Ads() {
         title="Ads"
         sub={`Every campaign against one goal: ${resultKinds[g.result].label.toLowerCase()} at ${money(g.target)} or less. ${assistant()} reviews ${cadences[g.cadence].label.toLowerCase()} and ${g.mode === "auto" ? "makes the safe changes itself" : "recommends changes for you to approve"}.`}
         actions={<>
-          {live.map((p) => <Link key={p} to="/settings/ads" title={`${adPlatforms[p].name} · ${toolOf(p).account}`} className="inline-flex h-9 items-center gap-2 rounded-lg border border-line bg-surface px-2.5 text-[13px] shadow-card hover:bg-hover"><AdPlatformMark platform={p} size={20} /><Settings2 size={13} className="text-muted" /></Link>)}
+          {live.map((p) => <Link key={p} to="/settings/integrations?cat=Ads" title={`${adPlatforms[p].name} · ${toolOf(p).account}`} className="inline-flex h-9 items-center gap-2 rounded-lg border border-line bg-surface px-2.5 text-[13px] shadow-card hover:bg-hover"><AdPlatformMark platform={p} size={20} /><Settings2 size={13} className="text-muted" /></Link>)}
           {studioOn && <Link to="/ads/studio"><Button icon={<Wand2 size={14} />}>Make creatives</Button></Link>}
           {live.length > 0 && <Button variant="primary" disabled={st.reviewing} onClick={review} icon={st.reviewing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}>{st.reviewing ? "Reviewing…" : "Review now"}</Button>}
         </>}
@@ -178,13 +178,10 @@ export default function Ads() {
                   <>
                     <Segmented label="Level" value={level} onChange={(v) => { setLevel(v); setSel([]); setOnly(null); }} options={levels} />
                     <Segmented label="Platform" value={platform} onChange={setPlatform} options={[{ id: "all", label: "All" }, ...live.map((p) => ({ id: p, label: adPlatforms[p].name.replace(" Ads", "") }))]} />
-                    <div className="flex flex-wrap gap-1">
-                      {verdictOrder.filter((v) => counts[v]).map((v) => (
-                        <button key={v} onClick={() => setOnly(only === v ? null : v)} aria-pressed={only === v} className={cn("inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[12.5px]", only === v ? "border-ink bg-ink text-on-ink" : "border-line text-muted hover:bg-hover")}>
-                          {verdicts[v].label}<span className="num opacity-70">{counts[v]}</span>
-                        </button>
-                      ))}
-                    </div>
+                    <Select size="sm" value={only ?? ""} onChange={(e) => setOnly((e.target.value || null) as typeof only)} aria-label="Verdict" className="w-auto">
+                      <option value="">Any verdict</option>
+                      {verdictOrder.filter((v) => counts[v]).map((v) => <option key={v} value={v}>{verdicts[v].label} ({counts[v]})</option>)}
+                    </Select>
                     <span className="flex-1" />
                     <SearchInput size="sm" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find" aria-label="Find in table" className="w-44" />
                   </>
@@ -288,7 +285,7 @@ function GoalDrawer({ open, onClose, goal }: { open: boolean; onClose: () => voi
           <Select value={g.result} onChange={(e) => setG({ ...g, result: e.target.value as ResultKind })}>
             {(Object.keys(resultKinds) as ResultKind[]).map((k) => <option key={k} value={k}>{resultKinds[k].label}</option>)}
           </Select>
-          <p className="m-0 text-[12.5px] text-muted">Bookings come from your booking system, calls from CallRail. Connect them under <Link to="/settings/ads" className="underline">Ad accounts</Link> so {assistant()} optimizes for patients, not clicks.</p>
+          <p className="m-0 text-[12.5px] text-muted">Bookings come from your booking system, calls from CallRail. Connect them under <Link to="/settings/integrations?cat=Ads" className="underline">Ad accounts</Link> so {assistant()} optimizes for patients, not clicks.</p>
           <div className="grid grid-cols-2 gap-3">
             <Field label={<>Target cost per {resultKinds[g.result].one}</>}><Input type="number" value={g.target} onChange={(e) => setG({ ...g, target: +e.target.value })} className="num" /></Field>
             <Field label="Never spend more than, a month"><Input type="number" value={g.monthly} onChange={(e) => setG({ ...g, monthly: +e.target.value })} className="num" /></Field>

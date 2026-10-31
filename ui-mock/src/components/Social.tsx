@@ -112,7 +112,7 @@ export function PostDrawer({ trend, post, onClose }: { trend?: Trend | null; pos
                 <PlatformMark platform={a.platform} size={20} /> {accountLabel(a.id)}
               </button>
             ) : (
-              <Link key={a.id} to="/settings/accounts" className="inline-flex h-8 items-center gap-2 rounded-full border border-dashed border-line pr-3 pl-1.5 text-[13px] text-muted hover:bg-hover">
+              <Link key={a.id} to="/settings/integrations?cat=Social" className="inline-flex h-8 items-center gap-2 rounded-full border border-dashed border-line pr-3 pl-1.5 text-[13px] text-muted hover:bg-hover">
                 <PlatformMark platform={a.platform} size={20} /> Connect {accountLabel(a.id)}
               </Link>
             );

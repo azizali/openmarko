@@ -25,13 +25,13 @@ export const everyMeta: Record<Every, { label: string; hours: number }> = {
 };
 
 export type JobId = "profile" | "rank" | "competitors" | "ai" | "citations" | "links" | "audit" | "social_scan" | "ad_watch" | "ads_review" | "workflow_checks";
-export type Job = { id: JobId; feature: FeatureId; section: string; label: string; what: string; options: Every[]; start: Every; at?: string; run?: RunKind; cost?: string };
+export type Job = { id: JobId; feature: FeatureId; section: string; label: string; what: string; options: Every[]; start: Every; at?: string; run?: RunKind };
 
 export const jobs: Job[] = [
   { id: "profile", feature: "seo", section: "Local SEO", label: "Business Profile sync", what: "New reviews, posts and insights from Google", options: ["hourly", "6h", "daily"], start: "6h", run: "profile" },
-  { id: "rank", feature: "rankings", section: "Local SEO", label: "Rank scan", what: "Every keyword across the map grid", options: ["daily", "3d", "weekly", "paused"], start: "daily", at: "06:00", run: "rank", cost: "~$0.47 a scan" },
+  { id: "rank", feature: "rankings", section: "Local SEO", label: "Rank scan", what: "Every keyword across the map grid", options: ["daily", "3d", "weekly", "paused"], start: "daily", at: "06:00", run: "rank" },
   { id: "competitors", feature: "rankings", section: "Local SEO", label: "Competitor refresh", what: "Competitors' profiles, reviews and links", options: ["weekly", "monthly", "paused"], start: "weekly", at: "Sundays", run: "competitors" },
-  { id: "ai", feature: "ai_answers", section: "Local SEO", label: "AI answer check", what: "Asks ChatGPT, Gemini and others who they recommend", options: ["weekly", "monthly", "paused"], start: "weekly", at: "Mondays", run: "ai", cost: "~$0.86 a check" },
+  { id: "ai", feature: "ai_answers", section: "Local SEO", label: "AI answer check", what: "Asks ChatGPT, Gemini and others who they recommend", options: ["weekly", "monthly", "paused"], start: "weekly", at: "Mondays", run: "ai" },
   { id: "citations", feature: "citations", section: "Local SEO", label: "Citation check", what: "Your listings on 18 directories", options: ["weekly", "monthly", "paused"], start: "weekly", at: "Wednesdays", run: "citations" },
   { id: "links", feature: "citations", section: "Local SEO", label: "Backlink refresh", what: "Links to you and to competitors", options: ["weekly", "monthly", "paused"], start: "weekly", at: "Thursdays", run: "links" },
   { id: "audit", feature: "site_health", section: "Local SEO", label: "Site crawl", what: "Every page on your site, mobile and desktop", options: ["daily", "weekly", "monthly", "paused"], start: "weekly", at: "Mondays", run: "audit" },

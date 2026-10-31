@@ -2,7 +2,7 @@ import { useState } from "react";
 import { scheduleForRun } from "../lib/schedules";
 import { Link } from "react-router";
 import { Loader2, Radar, RefreshCw, Clock } from "lucide-react";
-import { Badge, Button, Modal, Segmented } from "./ui";
+import { Button, Modal, Segmented } from "./ui";
 import { keywords } from "../data/mock";
 import { estimateGridCost } from "../lib/api";
 import { lastDone, runKinds, runningOf, startRun, stamp, timeAgo, useRuns, type Run, type RunKind } from "../lib/runs";
@@ -86,9 +86,6 @@ export function RunButton({ kind, variant = "secondary" }: { kind: RunKind; vari
             <div className="flex justify-between"><span className="text-muted">Scope</span><span>{lastDone(runs, kind)?.scope ?? "Everything"}</span></div>
           )}
           <div className="flex justify-between"><span className="text-muted">Schedule</span><span>{scheduleForRun(kind)}</span></div>
-          <div className="flex justify-between border-t border-line pt-3"><span className="text-muted">Estimated cost</span>
-            <Badge className="num">${(kind === "rank" ? rankCost : lastDone(runs, kind)?.cost ?? 0.05).toFixed(3)}</Badge>
-          </div>
           <p className="text-[12.5px] text-subtle">You can keep working. Pages update when the run finishes, and it's logged under Runs.</p>
         </div>
       </Modal>

@@ -155,7 +155,7 @@ export function PublishModal({ open, onClose, ads, batchId, batchName, onDone }:
   if (!platform) return (
     <Modal open onClose={onClose} title="Connect an ad account first">
       <p className="m-0 text-[13.5px] text-muted">Publishing needs Meta Ads, Google Ads or TikTok Ads connected.</p>
-      <Link to="/settings/ads" className="mt-3 inline-block"><Button variant="primary">Open ad accounts</Button></Link>
+      <Link to="/settings/integrations?cat=Ads" className="mt-3 inline-block"><Button variant="primary">Open ad accounts</Button></Link>
     </Modal>
   );
   const ok = fits(platform);

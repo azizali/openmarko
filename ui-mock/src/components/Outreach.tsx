@@ -33,10 +33,10 @@ export function LeadBadge({ lead }: { lead: Lead }) {
  * Pick a sequencer, paste its API key, choose where prospects go by default.
  * OpenMarko registers the webhooks itself, so there's nothing to set up on the other side.
  */
-export function ConnectFlow({ onConnect, onDone }: { onConnect?: () => void; onDone: () => void }) {
+export function ConnectFlow({ onConnect, onDone, initial }: { onConnect?: () => void; onDone: () => void; initial?: ProviderId }) {
   const st = useOutreach();
   const [step, setStep] = useState<"pick" | "key" | "setup">(st.connection ? "setup" : "pick");
-  const [provider, setProvider] = useState<ProviderId>(st.connection?.provider ?? "plusvibe");
+  const [provider, setProvider] = useState<ProviderId>(initial ?? st.connection?.provider ?? "plusvibe");
   const [key, setKey] = useState("");
   const [ws, setWs] = useState("");
   const [checking, setChecking] = useState(false);

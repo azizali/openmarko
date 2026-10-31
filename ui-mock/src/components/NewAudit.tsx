@@ -115,7 +115,7 @@ export function NewAuditModal({ open, onClose, initialCity = defaultSpec.city }:
           </div>
         )}
 
-        {pick && <p className="num text-[12px] text-subtle">≈ $0.05 · profile + reviews, site check, 7×7 map grid for them and the top 3. Saved to your list, so reopening it is free.</p>}
+        {pick && <p className="num text-[12px] text-subtle">Includes profile + reviews, site check, 7×7 map grid for them and the top 3. Saved to your list.</p>}
       </div>
     </Modal>
   );

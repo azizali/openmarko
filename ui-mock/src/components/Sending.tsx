@@ -89,11 +89,11 @@ export function DnsTable({ records }: { records: DnsRecord[] }) {
  * records, verify. Webhooks for delivery, bounces, complaints, clicks and
  * replies are registered on the provider by OpenMarko.
  */
-export function EmailSetup({ open, onClose, toast }: { open: boolean; onClose: () => void; toast: (m: string) => void }) {
+export function EmailSetup({ open, onClose, toast, initial }: { open: boolean; onClose: () => void; toast: (m: string) => void; initial?: EmailProviderId }) {
   const st = useCrm();
   const e = st.channels.email;
   const [step, setStep] = useState<"pick" | "keys" | "domain" | "dns" | "done">(e.provider && !e.verified ? "dns" : "pick");
-  const [provider, setProvider] = useState<EmailProviderId>(e.provider ?? "managed");
+  const [provider, setProvider] = useState<EmailProviderId>(initial ?? e.provider ?? "managed");
   const [keys, setKeys] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [domain, setDomain] = useState(`mail.${brandFacts.website}`);
@@ -188,11 +188,11 @@ export const regTone = (r: Reg) => (r === "approved" ? "good" : r === "pending" 
  * file the carrier registration (A2P 10DLC) that US carriers require before a
  * business number can text.
  */
-export function PhoneSetup({ open, onClose, toast, startAt }: { open: boolean; onClose: () => void; toast: (m: string) => void; startAt?: "numbers" }) {
+export function PhoneSetup({ open, onClose, toast, startAt, initial }: { open: boolean; onClose: () => void; toast: (m: string) => void; startAt?: "numbers"; initial?: PhoneProviderId }) {
   const st = useCrm();
   const sms = st.channels.sms;
   const [step, setStep] = useState<"pick" | "keys" | "numbers" | "register" | "done">(startAt ?? "pick");
-  const [provider, setProvider] = useState<PhoneProviderId>(sms.provider ?? "managed");
+  const [provider, setProvider] = useState<PhoneProviderId>(initial ?? sms.provider ?? "managed");
   const [keys, setKeys] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const locs = brandFacts.locations;

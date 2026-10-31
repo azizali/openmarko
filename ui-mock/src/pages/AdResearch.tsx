@@ -254,9 +254,10 @@ function SwipeList() {
         ) : (
           <>
             <Segmented label="Source" value={source} onChange={setSource} options={sources.map((s) => ({ id: s.id, label: s.label }))} />
-            <div className="flex flex-wrap gap-1">
-              {usedAngles.map((a) => <button key={a} onClick={() => setAngle(angle === a ? null : a)} aria-pressed={angle === a} className={cn("inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[12.5px]", angle === a ? "border-ink bg-ink text-on-ink" : "border-line text-muted hover:bg-hover")}>{angles[a].label}<span className="num opacity-70">{cr.swipe.filter((s) => s.angle === a).length}</span></button>)}
-            </div>
+            <Select size="sm" value={angle ?? ""} onChange={(e) => setAngle((e.target.value || null) as typeof angle)} aria-label="Angle" className="w-auto">
+              <option value="">Any angle</option>
+              {usedAngles.map((a) => <option key={a} value={a}>{angles[a].label} ({cr.swipe.filter((s) => s.angle === a).length})</option>)}
+            </Select>
             <span className="flex-1" />
             <Button size="sm" icon={<Plus size={13} />} onClick={() => setAdding(true)}>Add an ad</Button>
           </>

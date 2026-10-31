@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { Search, MapPin, Loader2, Star, ChevronRight, Flame, Zap, Target, Globe, ShieldAlert, Megaphone, SlidersHorizontal, Crosshair, Database, Download, UserPlus, X, MessageSquare, Mail, User, FileSearch, Bookmark, History, RefreshCw, Trash2, Eye, Send, ArrowUp, ArrowDown, ChevronsUpDown } from "lucide-react";
+import { Search, MapPin, Loader2, Star, ChevronRight, Flame, Zap, Target, Globe, ShieldAlert, Megaphone, SlidersHorizontal, Crosshair, Database, Download, UserPlus, X, FileSearch, Bookmark, History, RefreshCw, Trash2, Eye, Send, ArrowUp, ArrowDown, ChevronsUpDown } from "lucide-react";
 import { Badge, Button, Card, Checkbox, Field, Input, Modal, PageHeader, Progress, SearchInput, Segmented, Select, Textarea, cn, fmt, useToast } from "../components/ui";
 import { GridThumb } from "../components/GridMap";
 import { ProspectMap } from "../components/ProspectMap";
@@ -52,18 +52,6 @@ function passes(p: Prospect, f: Filters) {
     && (f.email === "any" || (f.email === "found" ? !!c.email : c.emailStatus === "verified"))
     && (!f.sms || c.sms) && (!f.owner || !!c.owner) && (!f.employees || co.employees === f.employees) && (!f.young || (co.founded ?? 0) >= 2023);
 }
-
-// One-tap presets. Each one just sets fields in the full filter panel, so the two never disagree.
-const presets: { id: string; label: string; icon?: typeof Globe; on: (f: Filters) => boolean; set: (f: Filters, v: boolean) => Filters }[] = [
-  { id: "fruit", label: "Low-hanging fruit (#4–15)", on: (f) => f.rank[0] === "4" && f.rank[1] === "15", set: (f, v) => ({ ...f, rank: v ? ["4", "15"] : ["", ""] }) },
-  { id: "nosite", label: "No website", icon: Globe, on: (f) => f.website === "no", set: (f, v) => ({ ...f, website: v ? "no" : "any" }) },
-  { id: "unclaimed", label: "Unclaimed profile", icon: ShieldAlert, on: (f) => f.claimed === "no", set: (f, v) => ({ ...f, claimed: v ? "no" : "any" }) },
-  { id: "noagency", label: "No agency", on: (f) => f.agency === "no", set: (f, v) => ({ ...f, agency: v ? "no" : "any" }) },
-  { id: "ads", label: "Already pays for ads", icon: Megaphone, on: (f) => f.ads === "yes", set: (f, v) => ({ ...f, ads: v ? "yes" : "any" }) },
-  { id: "sms", label: "Can text", icon: MessageSquare, on: (f) => f.sms, set: (f, v) => ({ ...f, sms: v }) },
-  { id: "email", label: "Email found", icon: Mail, on: (f) => f.email !== "any", set: (f, v) => ({ ...f, email: v ? "found" : "any" }) },
-  { id: "owner", label: "Owner known", icon: User, on: (f) => f.owner, set: (f, v) => ({ ...f, owner: v }) },
-];
 
 const ease = {
   Hot: { label: "Easy", tone: "good", bar: "good" },
@@ -151,6 +139,12 @@ export default function Prospects() {
   const cur = Math.min(cursor, rows.length - 1);
   const toggle = (id: string) => setSel((s0) => { const s = new Set(s0); s.has(id) ? s.delete(id) : s.add(id); return s; });
   const selectWhere = (fn: (x: (typeof rows)[number]) => boolean) => setSel(new Set(rows.filter(fn).map((r) => r.p.id)));
+  const quickPicks: [string, (x: (typeof rows)[number]) => boolean][] = [
+    ["All", () => true],
+    ["Easy", (x) => x.o.label === "Hot"],
+    ["Verified email", (x) => x.p.contact.emailStatus === "verified"],
+    ["Not contacted", (x) => !leadFor(outreach, pathOf(x.p))],
+  ];
   const sortBy = (col: Col) => setSort((s) => (s.col === col ? { col, dir: s.dir === "asc" ? "desc" : "asc" } : { col, dir: col === "name" || col === "rank" || col === "distance" ? "asc" : "desc" }));
   const clearFilters = () => { setF(noFilters); setFresh(false); setText(""); };
 
@@ -282,7 +276,7 @@ export default function Prospects() {
                   </Field>
                   <div className="flex flex-wrap items-center gap-2 md:col-span-2">
                     <SearchSize draft={draft} D={D} />
-                    <span className="num text-[12.5px] text-muted">{bulkSpecs.length} search{bulkSpecs.length === 1 ? "" : "es"} · up to {fmt(bulkSpecs.length * draft.depth)} businesses · ≈ ${(bulkSpecs.length * searchCost(draft.depth)).toFixed(2)}</span>
+                    <span className="num text-[12.5px] text-muted">{bulkSpecs.length} search{bulkSpecs.length === 1 ? "" : "es"} · up to {fmt(bulkSpecs.length * draft.depth)} businesses</span>
                     <Button type="submit" variant="primary" className="ml-auto h-10" disabled={busy || !bulkSpecs.length} icon={bulk ? <Loader2 size={14} className="animate-spin" /> : <Target size={14} />}>
                       {bulk ? `Running ${bulk.done} of ${bulk.total}…` : `Run ${bulkSpecs.length || ""} searches`}
                     </Button>
@@ -304,7 +298,7 @@ export default function Prospects() {
                     ))}
                   </span>
                 )}
-                {mode === "one" && <span className="num ml-auto text-subtle">≈ ${searchCost(draft.depth).toFixed(2)} per search, with profiles, site checks and contacts</span>}
+                {mode === "one" && <span className="ml-auto text-subtle">Each search includes profiles, site checks and contacts</span>}
               </div>
             </form>
           </Card>
@@ -323,7 +317,7 @@ export default function Prospects() {
                 <span className="ml-auto flex items-center gap-1.5 text-[12.5px] text-muted">
                   Fetched {timeAgo(current.refreshedAt)}
                   <Button size="sm" variant="ghost" icon={<Bookmark size={12} className={current.pinned ? "fill-current text-accent" : ""} />} onClick={() => togglePin(current.id)}>{current.pinned ? "Pinned" : "Pin"}</Button>
-                  <Button size="sm" icon={<RefreshCw size={12} />} disabled={busy} onClick={() => run(spec)}>Refresh · ≈${searchCost(spec.depth).toFixed(2)}</Button>
+                  <Button size="sm" icon={<RefreshCw size={12} />} disabled={busy} onClick={() => run(spec)}>Refresh</Button>
                 </span>
               )}
             </div>
@@ -333,19 +327,10 @@ export default function Prospects() {
               <button onClick={() => setPanel(!panel)} aria-expanded={panel} className={cn("inline-flex h-7 items-center gap-1.5 rounded-full border px-3 text-[12.5px] font-medium transition-colors", panel || active ? "border-ink bg-ink text-on-ink" : "border-line-strong hover:bg-hover")}>
                 <SlidersHorizontal size={12} /> All filters{active ? <span className="num rounded-full bg-on-ink/20 px-1.5">{active}</span> : null}
               </button>
-              <button aria-pressed={fresh} onClick={() => setFresh(!fresh)} className={cn("inline-flex h-7 items-center gap-1.5 rounded-full border px-3 text-[12.5px] transition-colors", fresh ? "border-ink bg-ink text-on-ink" : "border-line text-muted hover:bg-hover")}><Send size={12} />Not contacted yet</button>
-              {presets.map((pr) => {
-                const on = pr.on(f);
-                return (
-                  <button key={pr.id} aria-pressed={on} onClick={() => setF(pr.set(f, !on))} className={cn("inline-flex h-7 items-center gap-1.5 rounded-full border px-3 text-[12.5px] transition-colors", on ? "border-ink bg-ink text-on-ink" : "border-line text-muted hover:bg-hover")}>
-                    {pr.icon && <pr.icon size={12} />}{pr.label}
-                  </button>
-                );
-              })}
               {active > 0 && <button onClick={clearFilters} className="inline-flex h-7 items-center gap-1 px-2 text-[12.5px] text-muted hover:text-fg"><X size={12} /> Clear</button>}
             </div>
 
-            {panel && <FilterPanel f={f} F={F} />}
+            {panel && <FilterPanel f={f} F={F} fresh={fresh} setFresh={setFresh} />}
 
             {/* Select and act in one place. Stays in view while you scroll the list. */}
             <div className="sticky top-12 z-10 -mx-1 mb-2 lg:top-0 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-lg border border-line bg-surface px-3 py-2 text-[12.5px] shadow-card">
@@ -363,14 +348,10 @@ export default function Prospects() {
               ) : (
                 <>
                   <span className="num text-muted"><b className="font-medium text-fg">{rows.length}</b>{rows.length !== allScored.length ? ` of ${allScored.length}` : ""} shown · select</span>
-                  {([
-                    ["All", () => true],
-                    ["Easy", (x) => x.o.label === "Hot"],
-                    ["Verified email", (x) => x.p.contact.emailStatus === "verified"],
-                    ["Not contacted", (x) => !leadFor(outreach, pathOf(x.p))],
-                  ] as [string, (x: (typeof rows)[number]) => boolean][]).map(([l, fn]) => (
-                    <button key={l} onClick={() => selectWhere(fn)} className="num h-6 rounded-full border border-line px-2.5 text-muted hover:bg-hover hover:text-fg">{l} <span className="text-subtle">{rows.filter(fn).length}</span></button>
-                  ))}
+                  <Select size="xs" aria-label="Select rows" value="" onChange={(e) => { const fn = quickPicks.find(([l]) => l === e.target.value)?.[1]; if (fn) selectWhere(fn); }} className="w-auto text-muted">
+                    <option value="" disabled>Select…</option>
+                    {quickPicks.map(([l, fn]) => <option key={l} value={l}>{l} ({rows.filter(fn).length})</option>)}
+                  </Select>
                   <span className="ml-auto flex items-center gap-2">
                     <span className="hidden text-subtle lg:inline"><Kbd>j</Kbd><Kbd>k</Kbd> move · <Kbd>x</Kbd> select · <Kbd>↵</Kbd> open · <Kbd>a</Kbd> audit · <Kbd>s</Kbd> send</span>
                     <Can I="export" on="sales"><Button size="sm" icon={<Download size={12} />} onClick={() => exportCsv(rows)}>Export {rows.length}</Button></Can>
@@ -584,7 +565,7 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   return <div><div className="mb-2.5 text-[12px] font-medium tracking-wide text-muted uppercase">{title}</div><div className="space-y-2.5">{children}</div></div>;
 }
 
-function FilterPanel({ f, F }: { f: Filters; F: (p: Partial<Filters>) => void }) {
+function FilterPanel({ f, F, fresh, setFresh }: { f: Filters; F: (p: Partial<Filters>) => void; fresh: boolean; setFresh: (v: boolean) => void }) {
   const T = ({ label, k, yes = "Yes", no = "No" }: { label: string; k: "website" | "claimed" | "ads" | "agency" | "posts"; yes?: string; no?: string }) => (
     <div className="flex items-center justify-between gap-2">
       <span className="text-[13px]">{label}</span>
@@ -649,6 +630,7 @@ function FilterPanel({ f, F }: { f: Filters; F: (p: Partial<Filters>) => void })
           </div>
           {C({ label: "Phone can receive texts", k: "sms" })}
           {C({ label: "Owner name known", k: "owner" })}
+          <label className="flex cursor-pointer items-center gap-2 text-[13px]"><Checkbox checked={fresh} onChange={setFresh} />Not contacted yet</label>
           <p className="pt-1 text-[12px] leading-relaxed text-subtle">Filters run on results you already pulled, so they don't cost anything extra.</p>
         </Group>
       </div>

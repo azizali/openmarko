@@ -49,7 +49,7 @@ export const features: Feature[] = [
   { id: "social_swipe", module: "social", label: "Swipe file", blurb: "Posts you've saved for ideas.", links: ["/social/swipe"] },
   { id: "social_posts", module: "social", label: "Posts & calendar", blurb: "Plan, schedule and publish to your accounts.", links: ["/social/posts"], connection: "social_accounts" },
 
-  { id: "ads", label: "Ads", blurb: "Run Meta, Google and TikTok ads against a cost per booked patient.", links: ["/ads"], settings: ["ads"], connection: "ad_account" },
+  { id: "ads", label: "Ads", blurb: "Run Meta, Google and TikTok ads against a cost per booked patient.", links: ["/ads"], connection: "ad_account" },
   { id: "ad_research", module: "ads", label: "Ad research & swipe file", blurb: "See competitors' ads and save the ones that work.", links: ["/ads/research"] },
   { id: "ad_studio", module: "ads", label: "Creative studio", blurb: "Make ad creatives in bulk and publish them.", links: ["/ads/studio"], off: "“Make creatives”, “Make variations” and “Make my versions” leave Campaigns and Ad research; recommendations to make fresh versions are left out." },
 

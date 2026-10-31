@@ -1,10 +1,10 @@
-// The Member's connected sequencer and every prospect handed to it. Pushing a
+// The Organization's connected sequencer and every prospect handed to it. Pushing a
 // prospect sends it to a campaign with its audit link and numbers as custom
 // variables; the sequencer sends, rotates inboxes and warms them up, and its
 // webhooks move the lead along here (sent → replied → interested / booked).
 // The Outreach page reads these leads as a unibox. Mock: localStorage, with
 // timers standing in for webhooks. Real build: a sequencer_connections row per
-// Member (API key encrypted), an outreach_leads table keyed by the sequencer's
+// Organization (API key encrypted), an outreach_leads table keyed by the sequencer's
 // lead id, and a webhook endpoint that appends to each lead's thread.
 
 import { useSyncExternalStore } from "react";

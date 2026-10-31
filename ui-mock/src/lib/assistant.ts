@@ -213,7 +213,7 @@ function socialReply(q: string): Message | null {
     const on = (p: SocialPlatform) => { const a = mainAccount(p); return !!a && accountConnected(a.id); };
     const notConnected = wanted.filter((p) => !on(p));
     const chs = wanted.filter(on).map((p) => mainAccount(p)!.id);
-    if (!chs.length) return reply([{ type: "text", text: `${notConnected.map((p) => platformMeta[p].name).join(" and ")} isn't connected yet.` }, { type: "links", items: [{ label: "Connect it in Settings", to: "/settings/accounts" }] }]);
+    if (!chs.length) return reply([{ type: "text", text: `${notConnected.map((p) => platformMeta[p].name).join(" and ")} isn't connected yet.` }, { type: "links", items: [{ label: "Connect it in Settings", to: "/settings/integrations?cat=Social" }] }]);
     const gate = off("social-viral") ?? off("trend-remix");
     if (gate) return gate;
     const post = remixTrend(t.id, chs);

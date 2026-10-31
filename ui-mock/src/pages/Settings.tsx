@@ -1,20 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import { Navigate, NavLink, useParams } from "react-router";
 import {
-  Store, SearchCheck, BarChart3, Globe, Hash, Check, AudioLines, Puzzle, MapPin, Plug, Zap, Users, History,
-  UserRound, Palette, Bell, Building2, Paintbrush, CreditCard, Sun, Moon, Monitor, Plus, AtSign, Send, Copy, Webhook, AlertTriangle, Megaphone, ToggleRight, CalendarClock, Mail, MessageSquareText, Phone, ShieldCheck,
+  Store, Globe, Check, AudioLines, Puzzle, MapPin, Plug, Zap, Users, History,
+  UserRound, Palette, Bell, Building2, Paintbrush, CreditCard, Sun, Moon, Monitor, Plus, Send, Copy, Webhook, AlertTriangle, ToggleRight, CalendarClock, MessageSquareText, Pencil, Phone, ShieldCheck, Trash2,
 } from "lucide-react";
-import { Badge, Button, Card, CardHeader, Field, Input, PageHeader, Progress, Select, Toggle, cn, useToast } from "../components/ui";
-import { locations, member } from "../data/mock";
-import { accounts, platformMeta, type SocialPlatform } from "../data/social";
+import { Badge, Button, Card, CardHeader, Checkbox, Field, FieldLabel, Input, Modal, PageHeader, Progress, Select, Toggle, cn, useToast } from "../components/ui";
+import { locations, member, type Location } from "../data/mock";
+import { accounts } from "../data/social";
 import { PlatformMark } from "../components/Social";
-import { memberships, organization, shortLocation, websites } from "../data/org";
-import { useScope } from "../lib/scope";
-import { accountConnected, setAccount, setGoogleProfile, setWebsite, useSetup } from "../lib/setup";
+import { memberships, organization, shortLocation, websites, type Website } from "../data/org";
+import { setScope, useScope } from "../lib/scope";
+import { addLocation, addWebsite, removeLocation, setWebsite, updateLocation, updateWebsite, useSetup } from "../lib/setup";
 import { setThemeMode, useThemeMode, type ThemeMode } from "../lib/theme";
 import Brand from "./Brand";
 import Skills from "./Skills";
 import { ExternalUrl } from "../components/Scope";
+import { CapabilityCard, ConnectionsAt } from "../components/Integrations";
+import Integrations from "./Integrations";
+import { locationTarget, websiteTarget } from "../lib/integrations";
 import { ViewOnly } from "../components/ViewOnly";
 import Runs from "./Runs";
 import Features from "./Features";
@@ -26,21 +29,16 @@ import { partner } from "../data/partner";
 import { Autopilot, Schedules } from "./Autopilot";
 import { isOn, settingsOwner, useFeatures } from "../lib/features";
 import { featureOf } from "../data/features";
-import { ConnectFlow, ProviderMark } from "../components/Outreach";
 import { leadVariables, providers } from "../data/sequencers";
-import { createStarterCampaign, disconnect, setRules, useOutreach } from "../lib/outreach";
-import { timeAgo } from "../lib/runs";
-import { ConnectToolModal, ToolMark } from "../components/Ads";
-import { tools, type Tool, type ToolGroup } from "../data/ads";
-import { disconnectTool, useAds } from "../lib/ads";
-import { checkDns, disconnectEmail, disconnectPhone, setChannels, useCrm } from "../lib/crm";
-import { DnsTable, EmailSetup, PhoneSetup, ProviderMark as SendMark, regLabel, regTone } from "../components/Sending";
+import { createStarterCampaign, setRules, useOutreach } from "../lib/outreach";
+import { checkDns, setChannels, useCrm } from "../lib/crm";
+import { DnsTable, PhoneSetup, regLabel, regTone } from "../components/Sending";
 import { emailProviders, phoneProviders } from "../data/providers";
 import { assistant, product } from "../lib/whitelabel";
 
 // Two scopes, one rule: Organization settings are shared by everyone who works on
 // the Organization and travel with it (voice, skills, Locations, Websites,
-// Accounts, who has access). "You" settings belong to the signed-in Member and
+// Accounts, the outreach sequencer, who has access). "You" settings belong to the signed-in Member and
 // follow them to every Organization they open (sign-in, theme, notifications, plan).
 // Partner settings sit above both: one whitelabel for every Client, for its admins only.
 // `needs` hides a section from roles that can't see it; `edits` is the action that
@@ -54,10 +52,10 @@ export const businessSections: Section[] = [
   { id: "skills", label: `${assistant()} skills`, icon: Puzzle, page: Skills, needs: ["brand", "view"], edits: ["brand", "edit"] },
   { id: "locations", label: "Locations", icon: MapPin, page: Locations, needs: ["setup", "view"], edits: ["setup", "connect"] },
   { id: "websites", label: "Websites", icon: Globe, page: Websites, needs: ["setup", "view"], edits: ["setup", "connect"] },
-  { id: "accounts", label: "Accounts", icon: AtSign, page: Accounts, needs: ["setup", "view"], edits: ["setup", "connect"] },
-  { id: "ads", label: "Ad accounts", icon: Megaphone, page: AdAccounts, needs: ["ads", "view"], edits: ["ads", "connect"] },
   { id: "messaging", label: "Email & texting", icon: MessageSquareText, page: Messaging, needs: ["email", "view"], edits: ["email", "connect"] },
-  { id: "integrations", label: "Integrations", icon: Plug, page: Integrations, needs: ["setup", "view"], edits: ["setup", "connect"] },
+  ...(member.plan === "agency" ? [{ id: "outreach", label: "Outreach", icon: Send, page: Outreach, needs: ["outreach", "view"], edits: ["outreach", "connect"] } satisfies Section] : []),
+  // Connections are gated one by one, by what each powers (data/integrations.ts).
+  { id: "integrations", label: "Integrations", icon: Plug, page: Integrations },
   { id: "autopilot", label: "Autopilot", icon: Zap, page: Autopilot, needs: ["autopilot", "view"], edits: ["autopilot", "edit"] },
   { id: "schedules", label: "Schedules", icon: CalendarClock, page: Schedules, needs: ["autopilot", "view"], edits: ["autopilot", "edit"] },
   { id: "team", label: "Team", icon: Users, page: Team },
@@ -72,8 +70,6 @@ export const accountSections: Section[] = [
   { id: "profile", label: "Profile", icon: UserRound, page: AccountProfile },
   { id: "appearance", label: "Appearance", icon: Palette, page: Appearance },
   { id: "notifications", label: "Notifications", icon: Bell, page: Notifications },
-  // The sequencer is the agency's, so it follows the Member across Organizations.
-  ...(member.plan === "agency" ? [{ id: "outreach", label: "Outreach", icon: Send, page: Outreach }] : []),
   { id: "billing", label: "Plan & billing", icon: CreditCard, page: Billing },
 ];
 
@@ -126,8 +122,10 @@ export default function Settings() {
   const found = [...businessSections, ...partnerSections, ...accountSections].find((s) => s.id === section);
   useFeatures();
   useAccess();
-  // Settings → Automation became Autopilot.
+  // Settings → Automation became Autopilot; Ad accounts and Accounts became Integrations.
   if (section === "automation") return <Navigate replace to="/settings/autopilot" />;
+  if (section === "ads") return <Navigate replace to="/settings/integrations?cat=Ads" />;
+  if (section === "accounts") return <Navigate replace to="/settings/integrations?cat=Social" />;
   // Unknown, or not for this role: the first section the role can open (Team is open to everyone).
   if (!found || !allowed(found)) return <Navigate replace to={`/settings/${businessSections.find(allowed)!.id}`} />;
   const owner = settingsOwner(found.id);
@@ -149,13 +147,28 @@ export default function Settings() {
 
 function Locations() {
   const st = useSetup();
+  // "new" for Add location, or the Location being edited.
+  const [editing, setEditing] = useState<Location | "new" | null>(null);
+  const [deleting, setDeleting] = useState<Location | null>(null);
+  const { toast, node } = useToast();
+  const { locationId } = useScope();
+  const only = locations.length < 2;
+  const del = (l: Location) => {
+    const name = shortLocation(l.id);
+    removeLocation(l.id);
+    if (locationId === l.id) setScope({ locationId: null });
+    setDeleting(null);
+    toast(`${name} deleted`);
+  };
   return (
     <>
-      <PageHeader title="Locations" sub={`Places customers visit. Rankings, competitors and citations work from the address alone; connecting the Google profile adds reviews, calls and posting. Every location shares ${organization.name}'s brand voice.`} actions={<Button size="sm" icon={<Plus size={13} />}>Add location</Button>} />
+      <PageHeader title="Locations" sub={`Places customers visit. Rankings, competitors and citations work from the address alone; connecting the Google profile adds reviews, calls and posting. Every location shares ${organization.name}'s brand voice.`} actions={<Button size="sm" icon={<Plus size={13} />} onClick={() => setEditing("new")}>Add location</Button>} />
+      {editing && <LocationForm location={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSaved={(msg) => { setEditing(null); toast(msg); }} />}
+      {deleting && <DeleteLocation location={deleting} onClose={() => setDeleting(null)} onDelete={() => del(deleting)} />}
+      {node}
       <Card pad={false} className="max-w-3xl">
         {locations.map((l) => {
           const site = websites.find((w) => w.locationIds.includes(l.id) && st.website[w.id]);
-          const gp = st.googleProfile[l.id];
           const tagged = accounts.filter((a) => a.locationId === l.id && a.platform !== "google");
           return (
             <div key={l.id} className="flex flex-wrap items-start gap-4 border-b border-line px-5 py-4 last:border-0">
@@ -164,13 +177,16 @@ function Locations() {
                 <div className="text-[14px] font-medium">{shortLocation(l.id)}</div>
                 <div className="text-[12.5px] text-muted">{l.address}</div>
                 <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px]">
-                  <Badge tone={gp ? "good" : "warn"}><Store size={11} /> Google profile {gp ? "connected" : "not connected"}</Badge>
                   <Badge>{l.keywords} keywords</Badge>
                   {site && <Badge><Globe size={11} /> <ExternalUrl domain={site.domain} /></Badge>}
                   {tagged.map((a) => <Badge key={a.id}><PlatformMark platform={a.platform} size={12} /> {a.handle}</Badge>)}
                 </div>
+                <div className="mt-2.5"><ConnectionsAt target={locationTarget(l.id)} /></div>
               </div>
-              <Button size="sm" variant={gp ? "ghost" : "primary"} onClick={() => setGoogleProfile(l.id, !gp)}>{gp ? "Disconnect Google profile" : "Connect Google profile"}</Button>
+              <span className="flex gap-1">
+                <Button size="sm" variant="ghost" icon={<Pencil size={12} />} onClick={() => setEditing(l)}>Edit</Button>
+                <Button size="sm" variant="ghost" icon={<Trash2 size={12} />} disabled={only} title={only ? "An organization needs at least one location" : undefined} onClick={() => setDeleting(l)} className="hover:text-bad">Delete</Button>
+              </span>
             </div>
           );
         })}
@@ -181,9 +197,14 @@ function Locations() {
 
 function Websites() {
   const st = useSetup();
+  // "new" for Add website, or the Website being edited.
+  const [editing, setEditing] = useState<Website | "new" | null>(null);
+  const { toast, node } = useToast();
   return (
     <>
-      <PageHeader title="Websites" sub="Sites the organization owns. One website can serve several locations; site health, articles and search data are per website." actions={<Button size="sm" icon={<Plus size={13} />}>Add website</Button>} />
+      <PageHeader title="Websites" sub="Sites the organization owns. One website can serve several locations; site health, articles and search data are per website." actions={<Button size="sm" icon={<Plus size={13} />} onClick={() => setEditing("new")}>Add website</Button>} />
+      {editing && <WebsiteForm website={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSaved={(msg) => { setEditing(null); toast(msg); }} />}
+      {node}
       <div className="max-w-3xl space-y-4">
         {websites.map((w) => (
           <Card key={w.id} pad={false} className={cn(!st.website[w.id] && "opacity-70")}>
@@ -191,20 +212,12 @@ function Websites() {
               <span className="grid size-9 place-items-center rounded-lg bg-hover"><Globe size={16} /></span>
               <div className="min-w-0 flex-1">
                 <div className="text-[14px] font-medium"><ExternalUrl domain={w.domain} /></div>
-                <div className="text-[12.5px] text-muted">Serves {w.locationIds.length === locations.length ? "every location" : w.locationIds.map(shortLocation).join(", ")}</div>
+                <div className="text-[12.5px] text-muted">{!w.locationIds.length ? "Serves no location yet" : `Serves ${w.locationIds.length === locations.length ? "every location" : w.locationIds.map(shortLocation).join(", ")}`}</div>
               </div>
+              {st.website[w.id] && <Button size="sm" variant="ghost" icon={<Pencil size={12} />} onClick={() => setEditing(w)}>Edit</Button>}
               <Button size="sm" variant={st.website[w.id] ? "ghost" : "primary"} onClick={() => setWebsite(w.id, !st.website[w.id])}>{st.website[w.id] ? "Remove" : "Add website"}</Button>
             </div>
-            {st.website[w.id] && w.tools.map((t) => (
-              <div key={t.name} className="flex items-center gap-4 border-b border-line px-5 py-3.5 last:border-0">
-                <span className="grid size-8 place-items-center rounded-lg bg-hover">{t.name === "Search Console" ? <SearchCheck size={15} /> : t.name === "WordPress" ? <Globe size={15} /> : <BarChart3 size={15} />}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 text-[13.5px] font-medium">{t.name}{t.connected && <Badge tone="good"><Check size={10} /> Connected</Badge>}</div>
-                  <div className="truncate text-[12.5px] text-muted">{t.detail}</div>
-                </div>
-                <Button size="sm" variant={t.connected ? "ghost" : "primary"}>{t.connected ? "Manage" : "Connect"}</Button>
-              </div>
-            ))}
+            {st.website[w.id] && <div className="px-5 py-3.5"><ConnectionsAt target={websiteTarget(w.id)} /></div>}
           </Card>
         ))}
       </div>
@@ -212,48 +225,98 @@ function Websites() {
   );
 }
 
-/** The organization's own profiles to post from, grouped by platform. Each speaks for every location unless it's tagged to one. */
-function Accounts() {
-  const st = useSetup();
-  const [list, setList] = useState(accounts);
-  const [adding, setAdding] = useState(false);
-  const social = (Object.keys(platformMeta) as SocialPlatform[]).filter((p) => p !== "google");
-  const add = (p: SocialPlatform) => { setList([...list, { id: `${p}-${Date.now().toString(36)}`, platform: p, handle: `New ${platformMeta[p].name} account`, connected: false, followers: 0, followersPrev: 0 }]); setAdding(false); };
+/** Strips a pasted URL down to its domain: "https://www.example.com/about" → "example.com". */
+const toDomain = (v: string) => v.trim().toLowerCase().replace(/^[a-z]+:\/\//, "").replace(/^www\./, "").split(/[/?#]/)[0];
+const isDomain = (d: string) => /^([a-z0-9-]+\.)+[a-z]{2,}$/.test(d);
+
+/** Says what goes with a Location before deleting it. */
+function DeleteLocation({ location, onClose, onDelete }: { location: Location; onClose: () => void; onDelete: () => void }) {
+  const name = shortLocation(location.id);
+  const google = accounts.some((a) => a.platform === "google" && a.locationId === location.id);
+  const tagged = accounts.filter((a) => a.platform !== "google" && a.locationId === location.id);
+  const sites = websites.filter((w) => w.locationIds.includes(location.id));
   return (
-    <>
-      <PageHeader title="Accounts" sub="Your profiles on each platform, the ones you post from. An account speaks for every location unless you tag it to one." actions={<Button size="sm" icon={<Plus size={13} />} onClick={() => setAdding(!adding)}>Add account</Button>} />
-      {adding && (
-        <div className="mb-4 flex max-w-3xl flex-wrap gap-1.5 rounded-lg bg-hover p-2.5">
-          {social.map((p) => <button key={p} onClick={() => add(p)} className="inline-flex h-8 items-center gap-2 rounded-full border border-line bg-surface pr-3 pl-1.5 text-[13px] hover:border-line-strong"><PlatformMark platform={p} size={20} /> {platformMeta[p].name}</button>)}
-        </div>
-      )}
-      <div className="max-w-3xl space-y-4">
-        {social.filter((p) => list.some((a) => a.platform === p)).map((p) => (
-          <Card key={p} pad={false}>
-            <div className="border-b border-line px-5 py-2.5 text-[12.5px] font-medium text-muted">{platformMeta[p].name}</div>
-            {list.filter((a) => a.platform === p).map((a) => (
-              <div key={a.id} className="flex flex-wrap items-center gap-4 border-b border-line px-5 py-3.5 last:border-0">
-                <PlatformMark platform={a.platform} size={32} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 text-[14px] font-medium">{a.handle}{accountConnected(a.id, st) && <Badge tone="good"><Check size={10} /> Connected</Badge>}</div>
-                  <div className="text-[12.5px] text-muted">{accountConnected(a.id, st) ? `${a.followers.toLocaleString()} followers` : "Not connected yet"}</div>
-                </div>
-                {locations.length > 1 && (
-                  <label className="flex items-center gap-2 text-[12.5px] text-muted">Speaks for
-                    <Select size="sm" value={a.locationId ?? ""} onChange={(e) => setList(list.map((x) => (x.id === a.id ? { ...x, locationId: e.target.value || undefined } : x)))} className="w-auto">
-                      <option value="">All locations</option>
-                      {locations.map((l) => <option key={l.id} value={l.id}>{shortLocation(l.id)}</option>)}
-                    </Select>
-                  </label>
-                )}
-                <Button size="sm" variant={accountConnected(a.id, st) ? "ghost" : "primary"} onClick={() => setAccount(a.id, !accountConnected(a.id, st))}>{accountConnected(a.id, st) ? "Disconnect" : "Connect"}</Button>
-              </div>
+    <Modal open onClose={onClose} title={`Delete ${name}?`} footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="danger" icon={<Trash2 size={13} />} onClick={onDelete}>Delete location</Button></>}>
+      <p className="mt-0 text-[13.5px] text-muted">{location.address}</p>
+      <ul className="mb-0 space-y-1.5 pl-4 text-[13.5px]">
+        <li>Its {location.keywords ? `${location.keywords} tracked keywords, ` : ""}rank history, map scans, competitors and citations are deleted.</li>
+        {google && <li>Its Google profile is disconnected. The profile itself stays on Google.</li>}
+        {sites.length > 0 && <li>{sites.map((w) => w.domain).join(" and ")} will stop serving it.</li>}
+        {tagged.length > 0 && <li>{tagged.map((a) => a.handle).join(", ")} will speak for the whole organization instead.</li>}
+      </ul>
+      <p className="mb-0 text-[12.5px] text-subtle">This can't be undone.</p>
+    </Modal>
+  );
+}
+
+/** Adds a Location (location null) or edits one. */
+function LocationForm({ location, onClose, onSaved }: { location: Location | null; onClose: () => void; onSaved: (msg: string) => void }) {
+  const [label, setLabel] = useState(location ? shortLocation(location.id) : "");
+  const [address, setAddress] = useState(location?.address ?? "");
+  const [site, setSite] = useState(location ? websites.find((w) => w.locationIds.includes(location.id))?.id ?? "" : "");
+  const name = label.trim();
+  const taken = locations.some((l) => l.id !== location?.id && shortLocation(l.id).toLowerCase() === name.toLowerCase());
+  const ok = !!name && address.trim().length > 5 && !taken;
+  const save = () => {
+    if (!ok) return;
+    if (location) { updateLocation(location.id, name, address.trim(), site || null); onSaved(`${name} saved`); }
+    else { addLocation(name, address.trim(), site || null); onSaved(`${name} added. Connect its Google profile below.`); }
+  };
+  return (
+    <Modal open onClose={onClose} title={location ? `Edit ${shortLocation(location.id)}` : "Add a location"} footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" disabled={!ok} onClick={save}>{location ? "Save" : "Add location"}</Button></>}>
+      <form onSubmit={(e) => { e.preventDefault(); save(); }} className="space-y-4">
+        <Field label="Name" hint={taken ? "There's already a location with this name." : `Shown as “${organization.name} — ${name || "Downtown"}”`}>
+          <Input autoFocus value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Downtown" />
+        </Field>
+        <Field label="Address" hint={location ? "Changing it moves where rankings and map scans are measured from." : "Rankings, competitors and citations start from this."}>
+          <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street, city, state ZIP" />
+        </Field>
+        <Field label="Website">
+          <Select value={site} onChange={(e) => setSite(e.target.value)}>
+            <option value="">None yet</option>
+            {websites.map((w) => <option key={w.id} value={w.id}>{w.domain}</option>)}
+          </Select>
+        </Field>
+        <button type="submit" hidden />
+      </form>
+    </Modal>
+  );
+}
+
+/** Adds a Website (website null) or edits one. */
+function WebsiteForm({ website, onClose, onSaved }: { website: Website | null; onClose: () => void; onSaved: (msg: string) => void }) {
+  const [url, setUrl] = useState(website?.domain ?? "");
+  const [serves, setServes] = useState<string[]>(website ? website.locationIds : locations.length === 1 ? [locations[0].id] : []);
+  const domain = toDomain(url);
+  const taken = websites.some((w) => w.id !== website?.id && w.domain === domain);
+  const ok = isDomain(domain) && !taken && serves.length > 0;
+  const save = () => {
+    if (!ok) return;
+    if (website) { updateWebsite(website.id, domain, serves); onSaved(`${domain} saved`); }
+    else { addWebsite(domain, serves); onSaved(`${domain} added. Connect Search Console below.`); }
+  };
+  const hint = !url.trim() ? "Paste the address or type the domain." : taken ? "This website is already added." : !isDomain(domain) ? "That doesn't look like a website address." : website && domain !== website.domain ? "Reconnect Search Console and Analytics for the new address." : undefined;
+  return (
+    <Modal open onClose={onClose} title={website ? `Edit ${website.domain}` : "Add a website"} footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" disabled={!ok} onClick={save}>{website ? "Save" : "Add website"}</Button></>}>
+      <form onSubmit={(e) => { e.preventDefault(); save(); }} className="space-y-4">
+        <Field label="Website" hint={hint}>
+          <Input autoFocus value={url} onChange={(e) => setUrl(e.target.value)} placeholder="yourbusiness.com" inputMode="url" />
+        </Field>
+        <div>
+          <FieldLabel>Serves</FieldLabel>
+          <div className="space-y-2">
+            {locations.map((l) => (
+              <label key={l.id} className="flex cursor-pointer items-center gap-2 text-[13.5px]">
+                <Checkbox checked={serves.includes(l.id)} onChange={(v) => setServes(v ? [...serves, l.id] : serves.filter((x) => x !== l.id))} />
+                {shortLocation(l.id) || l.name}<span className="text-[12.5px] text-muted">{l.address}</span>
+              </label>
             ))}
-          </Card>
-        ))}
-        <p className="text-[12.5px] text-subtle">Google profiles belong to a location and are under <NavLink to="/settings/locations" className="underline decoration-line-strong underline-offset-2 hover:text-fg">Locations</NavLink>.</p>
-      </div>
-    </>
+          </div>
+          {serves.length === 0 && <p className="mt-1 mb-0 text-[12px] text-subtle">Pick at least one location.</p>}
+        </div>
+        <button type="submit" hidden />
+      </form>
+    </Modal>
   );
 }
 
@@ -270,46 +333,30 @@ function Messaging() {
       <div><div className="text-[13px] font-medium">{label}</div>{hint && <div className="text-[12px] text-muted">{hint}</div>}</div>{control}
     </div>
   );
-  const empty = (icon: React.ReactNode, title: string, sub: string, cta: string, onClick: () => void) => (
-    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">{icon}</span>
-      <div className="min-w-0 flex-1"><div className="text-[14px] font-medium">{title}</div><div className="text-[12.5px] text-muted">{sub}</div></div>
-      <Button variant="primary" onClick={onClick}>{cta}</Button>
-    </div>
-  );
   const ep = email.provider ? emailProviders[email.provider] : null;
   const pp = sms.provider ? phoneProviders[sms.provider] : null;
   return (
     <>
-      <PageHeader title="Email & texting" sub="Who sends your campaigns, workflows and Inbox replies. Shared by everyone on this organization." />
+      <PageHeader title="Email & texting" sub="Who sends your campaigns, workflows and Inbox replies, and how. The connections themselves are also under Integrations." />
       <div className="max-w-3xl space-y-4">
         <Card>
-          {!ep ? empty(<Mail size={18} />, "Set up email sending", `Use ${product()}'s sending, or connect Amazon SES, Resend, Mailgun, Postmark or SendGrid. About 5 minutes plus DNS.`, "Set up email", () => setSetup("email")) : (
-            <>
-              <div className="mb-4 flex flex-wrap items-center gap-3">
-                <SendMark mark={ep.mark} color={ep.color} size={34} />
-                <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2 text-[14px] font-medium">Email · {ep.name}{email.verified ? <Badge tone="good"><Check size={10} />Verified</Badge> : <Badge tone="warn">Waiting for DNS</Badge>}</div><div className="truncate text-[12.5px] text-muted">Sending from {email.domain}{email.region ? ` · ${email.region}` : ""}</div></div>
-                <Button size="sm" onClick={() => setSetup("email")}>{email.verified ? "Change" : "Finish setup"}</Button>
-                <Button size="sm" variant="ghost" onClick={() => { disconnectEmail(); toast("Disconnected. Emails stop until you connect again"); }}>Disconnect</Button>
-              </div>
+          <CapabilityCard cap="email.send" title="Email" />
+          {ep && (
+            <div className="mt-4">
               {missing > 0 && email.verified && <p className="mb-3 flex items-start gap-2 text-[12.5px] text-muted"><AlertTriangle size={13} className="mt-0.5 shrink-0 text-warn" /><span>{missing} record still missing. Gmail and Yahoo require DMARC from anyone sending in bulk. Add it, then <button onClick={() => { setChecking(true); checkDns((m) => { setChecking(false); toast(m ? `${m} still missing` : "All records found"); }); }} className="underline underline-offset-2">{checking ? "checking…" : "check again"}</button>.</span></p>}
               {(missing > 0 || !email.verified) && <div className="mb-4"><DnsTable records={email.records} /></div>}
               {row("From", <Input value={`${email.fromName} <${email.fromAddress}>`} readOnly aria-label="From" />)}
               {row("Replies go to", <Input value={email.replyTo} onChange={(e) => setChannels("email", { replyTo: e.target.value })} aria-label="Reply-to" />, "And show in the Inbox")}
               {row("Footer address", <Input value={email.footer} onChange={(e) => setChannels("email", { footer: e.target.value })} aria-label="Footer address" />, "Required by CAN-SPAM, with an unsubscribe link")}
               <p className="mt-1 text-[12px] text-subtle">{ep.privacy}</p>
-            </>
+            </div>
           )}
         </Card>
 
         <Card>
-          {!pp ? empty(<MessageSquareText size={18} />, "Set up texting & calls", "Get a local number per location, or text-enable the one you have. We file the carrier registration with you.", "Set up texting", () => setSetup("phone")) : (
-            <>
-              <div className="mb-4 flex flex-wrap items-center gap-3">
-                <SendMark mark={pp.mark} color={pp.color} size={34} />
-                <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2 text-[14px] font-medium">Texting & calls · {pp.name}{sms.campaign === "approved" ? <Badge tone="good"><Check size={10} />Texting live</Badge> : <Badge tone="info">Registration {regLabel(sms.campaign).toLowerCase()}</Badge>}</div><div className="text-[12.5px] text-muted">One number per location. Replies and missed calls come to the Inbox.</div></div>
-                <Button size="sm" variant="ghost" onClick={() => { disconnectPhone(); toast("Disconnected. Texts stop until you connect again"); }}>Disconnect</Button>
-              </div>
+          <CapabilityCard cap="sms.send" title="Texting & calls" />
+          {pp && (
+            <div className="mt-4">
               {sms.numbers.map((n) => row(n.location, <div className="flex flex-wrap items-center gap-2 text-[13.5px]"><span className="num">{n.number}</span><Badge tone={n.status === "active" ? "good" : "info"}>{n.status === "active" ? "Live" : n.how === "port" ? "Moving here" : "Being text-enabled"}</Badge></div>))}
               {row("Numbers", <div><Button size="sm" onClick={() => setSetup("numbers")}>{sms.numbers.length ? "Change numbers" : "Add numbers"}</Button></div>)}
               {row("Carrier registration", <div className="flex flex-wrap items-center gap-2 text-[13px]">Business <Badge tone={regTone(sms.brand)}>{regLabel(sms.brand)}</Badge> Campaign <Badge tone={regTone(sms.campaign)}>{regLabel(sms.campaign)}</Badge>{sms.brand === "none" && sms.numbers.length > 0 && <Button size="sm" variant="primary" onClick={() => setSetup("numbers")}>Register</Button>}</div>, "A2P 10DLC, required by US carriers")}
@@ -317,7 +364,7 @@ function Messaging() {
                 <Select size="sm" className="w-auto" value={sms.quietStart} onChange={(e) => setChannels("sms", { quietStart: +e.target.value })} aria-label="From">{hours.map((x) => <option key={x.h} value={x.h}>{x.label}</option>)}</Select>and
                 <Select size="sm" className="w-auto" value={sms.quietEnd} onChange={(e) => setChannels("sms", { quietEnd: +e.target.value })} aria-label="Until">{hours.map((x) => <option key={x.h} value={x.h}>{x.label}</option>)}</Select></div>, "In their time zone. Later texts wait for morning")}
               {row("Opt-out line", <Input value={sms.optOutLine} onChange={(e) => setChannels("sms", { optOutLine: e.target.value })} aria-label="Opt-out line" />, "Added to the first text anyone gets. STOP, END and UNSUBSCRIBE are honored on their own")}
-            </>
+            </div>
           )}
         </Card>
 
@@ -341,63 +388,8 @@ function Messaging() {
           </ul>
         </Card>
       </div>
-      {setup === "email" && <EmailSetup open onClose={() => setSetup(null)} toast={toast} />}
       {(setup === "phone" || setup === "numbers") && <PhoneSetup open onClose={() => setSetup(null)} toast={toast} startAt={setup === "numbers" ? "numbers" : undefined} />}
       {node}
-    </>
-  );
-}
-
-function Integrations() {
-  return (
-    <>
-      <PageHeader title="Integrations" sub="Tools connected to the organization. Website tools (Search Console, Analytics, WordPress) are under Websites." />
-      <Card pad={false} className="max-w-3xl">
-        <div className="flex items-center gap-4 px-5 py-4">
-          <span className="grid size-9 place-items-center rounded-lg bg-hover"><Hash size={16} /></span>
-          <div className="min-w-0 flex-1"><div className="text-[14px] font-medium">Slack</div><div className="truncate text-[12.5px] text-muted">Alerts and weekly digests</div></div>
-          <Button size="sm" variant="primary">Connect</Button>
-        </div>
-      </Card>
-    </>
-  );
-}
-
-const toolGroups: { id: ToolGroup; hint: string }[] = [
-  { id: "Ad accounts", hint: `Where ads run. ${assistant()} reads results here and publishes what you approve.` },
-  { id: "Counting results", hint: "Without these, platforms optimize for clicks. With them, for booked patients." },
-  { id: "Making creatives", hint: "Renders every size from one design and turns scripts into video." },
-  { id: "Research", hint: "Ad libraries are built in. Bring in boards you've saved elsewhere." },
-];
-
-function AdAccounts() {
-  const st = useAds();
-  const [connect, setConnect] = useState<Tool | null>(null);
-  return (
-    <>
-      <PageHeader title="Ad accounts" sub="Where ads run, how results are counted, and the tools that make creatives. Shared by everyone on this organization." />
-      <div className="max-w-3xl space-y-4">
-        {toolGroups.map((g) => (
-          <Card key={g.id} pad={false}>
-            <div className="border-b border-line px-5 py-3"><div className="text-[14px] font-medium">{g.id}</div><div className="text-[12.5px] text-muted">{g.hint}</div></div>
-            {tools.filter((t) => t.group === g.id).map((t) => {
-              const on = st.connected[t.id];
-              const blocked = t.needs && !st.connected[t.needs];
-              return (
-                <div key={t.id} className="flex flex-wrap items-center gap-4 border-b border-line px-5 py-3.5 last:border-0">
-                  <ToolMark tool={t} size={34} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2 text-[14px] font-medium">{t.name}{on && <Badge tone="good"><Check size={10} /> Connected</Badge>}</div>
-                    <div className="text-[12.5px] text-muted">{on ? `${t.account} · connected ${timeAgo(on)}` : blocked ? `Connect ${tools.find((x) => x.id === t.needs)?.name} first` : t.what}</div>
-                  </div>
-                  {on ? <Button size="sm" variant="danger" onClick={() => disconnectTool(t.id)}>Disconnect</Button> : <Button size="sm" variant="primary" disabled={!!blocked} onClick={() => setConnect(t)}>Connect</Button>}
-                </div>
-              );
-            })}
-          </Card>
-        ))}
-      </div>
-      <ConnectToolModal tool={connect} onClose={() => setConnect(null)} />
     </>
   );
 }
@@ -473,13 +465,12 @@ function Notifications() {
 function Outreach() {
   const st = useOutreach();
   const [copied, setCopied] = useState<string | null>(null);
-  const [connecting, setConnecting] = useState(false);
   const c = st.connection;
   const copy = async (t: string) => { try { await navigator.clipboard.writeText(t); setCopied(t); setTimeout(() => setCopied(null), 1500); } catch {} };
-  if (!c || connecting) return (
+  if (!c) return (
     <>
       <PageHeader title="Outreach" sub="Connect the sequencer you send cold email from. Prospects go to it with their audit link in one click, and replies come back to Outreach." />
-      <Card className="max-w-xl"><ConnectFlow onConnect={() => setConnecting(true)} onDone={() => setConnecting(false)} /></Card>
+      <Card className="max-w-3xl"><CapabilityCard cap="leads.push" title="Sequencer" /></Card>
     </>
   );
   const name = providers[c.provider].name;
@@ -489,14 +480,7 @@ function Outreach() {
       <PageHeader title="Outreach" sub={`${name} sends, warms up and rotates your inboxes. ${product()} hands it prospects and reads back replies, labels and bounces.`} />
       <div className="max-w-3xl space-y-4">
         <Card pad={false}>
-          <div className={row}>
-            <ProviderMark id={c.provider} size={36} />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 text-[14px] font-medium">{name} · {c.workspace}<Badge tone="good"><Check size={10} /> Connected</Badge></div>
-              <div className="text-[12.5px] text-muted">API key ••••{c.keyLast4} · connected {timeAgo(c.connectedAt)}</div>
-            </div>
-            <Button size="sm" variant="danger" onClick={disconnect}>Disconnect</Button>
-          </div>
+          <div className="px-5 py-4"><CapabilityCard cap="leads.push" title="Sequencer" /></div>
           <div className="flex items-start gap-3 px-5 py-3 text-[12.5px] text-muted"><Webhook size={14} className="mt-0.5 shrink-0" /><span>Listening for replies, label changes, bounces and unibox sends. Disconnecting stops updates here; anything already sent keeps going in {name}.</span></div>
         </Card>
 

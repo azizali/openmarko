@@ -15,7 +15,6 @@ import { brandFacts, voice } from "../data/brand";
 import { competitorsFor, keywordsFor, locationData } from "../data/scoped";
 import { platformOf as scanPlatform, type PlatformId } from "../data/scanner";
 import { useScanner } from "../lib/scanner";
-import { estimateGridCost } from "../lib/api";
 import { setScope } from "../lib/scope";
 import { product } from "../lib/whitelabel";
 
@@ -324,7 +323,6 @@ export default function Onboarding() {
                   <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-[13.5px]">
                     <Segmented label="Grid size" value={size} onChange={setSize} options={[{ id: "5", label: "5×5" }, { id: "7", label: "7×7" }, { id: "9", label: "9×9" }]} />
                     <Segmented label="Scan frequency" value={freq} onChange={setFreq} options={[{ id: "weekly", label: "Weekly" }, { id: "daily", label: "Daily" }]} />
-                    <span className="num text-[12.5px] text-muted">≈ ${(estimateGridCost(Number(size), kwCount) * (freq === "daily" ? 30 : 4)).toFixed(2)} / month</span>
                   </div>
                 </Section>}
 

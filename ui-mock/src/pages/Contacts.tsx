@@ -128,9 +128,10 @@ export default function Contacts() {
                   {(Object.keys(sources) as Source[]).map((s) => <option key={s} value={s}>{sources[s].label}</option>)}
                 </Select>
                 {view === "list" && (
-                  <div className="flex flex-wrap gap-1">
-                    {stages.map((s) => <button key={s.id} onClick={() => setStageF(stage === s.id ? null : s.id)} aria-pressed={stage === s.id} className={cn("h-7 rounded-full border px-2.5 text-[12.5px]", stage === s.id ? "border-ink bg-ink text-on-ink" : "border-line text-muted hover:text-fg")}>{s.label}</button>)}
-                  </div>
+                  <Select size="sm" value={stage ?? ""} onChange={(e) => setStageF((e.target.value || null) as Stage | null)} aria-label="Stage" className="w-auto">
+                    <option value="">Any stage</option>
+                    {stages.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                  </Select>
                 )}
               </>
             )}
@@ -183,7 +184,7 @@ export default function Contacts() {
               <Upload size={18} className="mt-0.5 shrink-0 text-muted" /><span><span className="block text-[14px] font-medium">Sync from your booking system</span><span className="block text-[12.5px] text-muted">Patients, visits and appointments from NexHealth. Keeps syncing every 15 minutes.</span></span>
             </button>
           ) : (
-            <Link to="/settings/ads" className="flex items-start gap-3 rounded-xl border border-line p-3.5 hover:border-line-strong hover:bg-hover">
+            <Link to="/settings/integrations?cat=Ads" className="flex items-start gap-3 rounded-xl border border-line p-3.5 hover:border-line-strong hover:bg-hover">
               <Upload size={18} className="mt-0.5 shrink-0 text-muted" /><span><span className="block text-[14px] font-medium">Connect your booking system</span><span className="block text-[12.5px] text-muted">Patients, visits and appointments sync in, and stay in sync. Settings → Ad accounts → Booking system.</span></span>
             </Link>
           )}

@@ -49,12 +49,16 @@ A service where people post and talk, such as Instagram, Facebook, X, TikTok, Li
 _Avoid_: network, channel, social
 
 **Account**:
-The Organization's own profile on one Platform, the thing it posts from (an Instagram profile, a Facebook Page). It speaks for the whole Organization unless it's tagged to one Location.
+The Organization's own profile on one Platform, the thing it posts from (an Instagram profile, a Facebook Page). It speaks for the whole Organization unless it's tagged to one Location. Connecting one is an Integration.
 _Avoid_: channel, handle, page, social account
 
 **Integration**:
-A tool connected to the Organization or one of its Websites so OpenMarko can read data or make changes, such as Search Console, Analytics or WordPress. Nothing is posted from an Integration.
-_Avoid_: connection, app, plugin
+An outside service connected to the Partner, the Organization, a Location or a Website so the app can read data, make changes or send on its behalf: Amazon SES, Twilio, Instantly, Meta Ads, Search Console, an Instagram Account. Each one provides Capabilities. All of them are managed in one place, Settings → Integrations. In code, the catalog entry is a `Provider` and one connected instance is a `Connection`.
+_Avoid_: tool, app, plugin, connection (in what people read)
+
+**Capability**:
+Something the app needs done that an Integration can provide, such as sending email, publishing ads or replying to reviews. Features depend on Capabilities, never on one Integration. Each says how many it takes: one per Organization (the email sender), one per Location (the Google profile), or any number (ad accounts).
+_Avoid_: feature, permission, scope, ability
 
 **Scope**:
 What a screen is about right now: the whole Organization, one Location, one Website or one Account.

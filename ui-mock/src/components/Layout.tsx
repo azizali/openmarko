@@ -21,7 +21,9 @@ import { ask, toggleAssistant, type PageContext } from "../lib/assistant";
 import { accountSections, businessSections, sectionAllowed } from "../pages/Settings";
 import { can, myRole, pageAllowed, setPreview, useAccess, viewOnly } from "../lib/access";
 import { ViewOnly } from "./ViewOnly";
+import { IntegrationHost } from "./Integrations";
 import { assistant, product } from "../lib/whitelabel";
+import { useSetup } from "../lib/setup";
 
 type Leaf = { to: string; label: string };
 type Nav = Leaf & { icon: typeof LayoutGrid; children?: Leaf[]; section?: string };
@@ -149,6 +151,7 @@ function OrgSwitcher() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { orgId, locationId } = useScope();
+  useSetup(); // re-render when a Location is added
   const org = memberships.find((m) => m.id === orgId) ?? memberships[0];
   const sub = locationId ? shortLocation(locationId) : locations.length > 1 ? `All ${locations.length} locations` : locations[0]?.city;
   const row = "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[13px] hover:bg-hover";
@@ -371,6 +374,7 @@ export default function Layout() {
       </div>
       {marko && <><AssistantPanel ctx={ctx} /><MarkoLauncher /></>}
       <CommandPalette open={cmd} onClose={() => setCmd(false)} ctx={ctx} />
+      <IntegrationHost />
     </div>
   );
 }
