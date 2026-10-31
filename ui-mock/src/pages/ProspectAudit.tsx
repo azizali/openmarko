@@ -5,6 +5,7 @@ import { Badge, Button, Card, CardHeader, PageHeader, ScoreRing, cn, fmt, useToa
 import { ProspectMap } from "../components/ProspectMap";
 import { ContactCard } from "../components/ProspectContact";
 import { ShareAuditButton } from "../components/ShareAudit";
+import { SendToCampaignButton } from "../components/Outreach";
 import { prospectAi } from "../data/ai";
 import { ExternalUrl } from "../components/Scope";
 import { findProspect, leadersOf, opportunity, profileScore, searchMarket, specFromParams, specToQuery, visibilityScore, type Market, type Prospect } from "../data/prospects";
@@ -49,7 +50,8 @@ export default function ProspectAudit() {
             <ShareAuditButton path={`/prospects/${p.id}${qs}`} name={p.name} />
             <Button icon={<Copy size={14} />} onClick={copy}>Copy pitch</Button>
             <Button icon={<Printer size={14} />} onClick={() => window.print()}>Save as PDF</Button>
-            <Button variant="primary" icon={<UserPlus size={14} />} onClick={() => toast(`${p.name} added to pipeline`)}>Add to pipeline</Button>
+            <Button icon={<UserPlus size={14} />} onClick={() => toast(`${p.name} added to pipeline`)}>Add to pipeline</Button>
+            <SendToCampaignButton p={p} o={o} market={market} qsKey={qs} onSent={toast} />
           </div>
         }
       />

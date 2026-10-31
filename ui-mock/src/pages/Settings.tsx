@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, NavLink, useParams } from "react-router";
 import {
   Store, SearchCheck, BarChart3, Globe, Hash, Check, AudioLines, Puzzle, MapPin, Plug, Zap, Users, History,
-  UserRound, Palette, Bell, CreditCard, Sun, Moon, Monitor, Plus, AtSign,
+  UserRound, Palette, Bell, CreditCard, Sun, Moon, Monitor, Plus, AtSign, Send, Copy, Webhook, AlertTriangle,
 } from "lucide-react";
 import { Badge, Button, Card, CardHeader, PageHeader, Progress, Toggle, cn } from "../components/ui";
-import { locations } from "../data/mock";
+import { locations, member } from "../data/mock";
 import { brandFacts } from "../data/brand";
 import { accounts, platformMeta, type SocialPlatform } from "../data/social";
 import { PlatformMark } from "../components/Social";
@@ -17,6 +17,10 @@ import Brand from "./Brand";
 import Skills from "./Skills";
 import { ExternalUrl } from "../components/Scope";
 import Runs from "./Runs";
+import { ConnectFlow, ProviderMark } from "../components/Outreach";
+import { leadVariables, providers } from "../data/sequencers";
+import { createStarterCampaign, disconnect, setRules, useOutreach } from "../lib/outreach";
+import { timeAgo } from "../lib/runs";
 
 // Two scopes, one rule: Organization settings are shared by everyone who works on
 // the Organization and travel with it (voice, skills, Locations, Websites,
@@ -39,6 +43,8 @@ export const accountSections: Section[] = [
   { id: "profile", label: "Profile", icon: UserRound, page: AccountProfile },
   { id: "appearance", label: "Appearance", icon: Palette, page: Appearance },
   { id: "notifications", label: "Notifications", icon: Bell, page: Notifications },
+  // The sequencer is the agency's, so it follows the Member across Organizations.
+  ...(member.plan === "agency" ? [{ id: "outreach", label: "Outreach", icon: Send, page: Outreach }] : []),
   { id: "billing", label: "Plan & billing", icon: CreditCard, page: Billing },
 ];
 
@@ -317,6 +323,101 @@ function Notifications() {
           </div>
         ))}
       </Card>
+    </>
+  );
+}
+
+function Outreach() {
+  const st = useOutreach();
+  const [copied, setCopied] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
+  const c = st.connection;
+  const copy = async (t: string) => { try { await navigator.clipboard.writeText(t); setCopied(t); setTimeout(() => setCopied(null), 1500); } catch {} };
+  if (!c || connecting) return (
+    <>
+      <PageHeader title="Outreach" sub="Connect the sequencer you send cold email from. Prospects go to it with their audit link in one click, and replies come back to Outreach." />
+      <Card className="max-w-xl"><ConnectFlow onConnect={() => setConnecting(true)} onDone={() => setConnecting(false)} /></Card>
+    </>
+  );
+  const name = providers[c.provider].name;
+  const row = "flex flex-wrap items-center gap-4 border-b border-line px-5 py-3.5 last:border-0";
+  return (
+    <>
+      <PageHeader title="Outreach" sub={`${name} sends, warms up and rotates your inboxes. OpenMarko hands it prospects and reads back replies, labels and bounces.`} />
+      <div className="max-w-3xl space-y-4">
+        <Card pad={false}>
+          <div className={row}>
+            <ProviderMark id={c.provider} size={36} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 text-[14px] font-medium">{name} · {c.workspace}<Badge tone="good"><Check size={10} /> Connected</Badge></div>
+              <div className="text-[12.5px] text-muted">API key ••••{c.keyLast4} · connected {timeAgo(c.connectedAt)}</div>
+            </div>
+            <Button size="sm" variant="danger" onClick={disconnect}>Disconnect</Button>
+          </div>
+          <div className="flex items-start gap-3 px-5 py-3 text-[12.5px] text-muted"><Webhook size={14} className="mt-0.5 shrink-0" /><span>Listening for replies, label changes, bounces and unibox sends. Disconnecting stops updates here; anything already sent keeps going in {name}.</span></div>
+        </Card>
+
+        <Card pad={false}>
+          <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
+            <div><div className="text-[14px] font-medium">Campaigns</div><div className="text-[12.5px] text-muted">The default is where one-click sends go.</div></div>
+            {!c.campaigns.some((x) => x.fromOpenMarko) && <Button size="sm" icon={<Plus size={13} />} onClick={() => { const n = createStarterCampaign(); if (n) setRules({ defaultCampaign: n.id }); }}>Create audit campaign</Button>}
+          </div>
+          {c.campaigns.map((x) => (
+            <div key={x.id} className={row}>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2 text-[13.5px] font-medium">{x.name}{st.rules.defaultCampaign === x.id && <Badge tone="accent">Default</Badge>}{x.fromOpenMarko && <Badge>Made by OpenMarko</Badge>}</div>
+                <div className="text-[12.5px] text-muted">{x.steps.length} steps over {x.steps[x.steps.length - 1].day} days · {x.leads} leads · {x.replyRate}% reply rate · {x.status}</div>
+                {!x.usesAuditUrl && <div className="mt-1 flex items-center gap-1.5 text-[12px] text-warn"><AlertTriangle size={12} />Doesn't use {"{{audit_url}}"}. Add it to the first email in {name}.</div>}
+              </div>
+              {st.rules.defaultCampaign !== x.id && <Button size="sm" variant="ghost" onClick={() => setRules({ defaultCampaign: x.id })}>Make default</Button>}
+            </div>
+          ))}
+        </Card>
+
+        <Card pad={false}>
+          <div className="border-b border-line px-5 py-3"><div className="text-[14px] font-medium">Sending inboxes</div><div className="text-[12.5px] text-muted">Read from {name}. Add inboxes and change warmup there.</div></div>
+          {c.inboxes.map((i) => (
+            <div key={i.email} className={row}>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[13.5px]">{i.email}</div>
+                <div className="mt-1.5 flex items-center gap-2"><Progress value={i.warmup} tone={i.warmup >= 90 ? "good" : "warn"} className="w-24" /><span className="num text-[12px] text-muted">Warmup {i.warmup}%</span></div>
+              </div>
+              <span className="num text-[12.5px] text-muted">{i.dailyLimit ? `${i.sentToday} / ${i.dailyLimit} today` : "Not sending"}</span>
+              <Badge tone={i.status === "ready" ? "good" : i.status === "warming" ? "warn" : "neutral"} className="capitalize">{i.status}</Badge>
+            </div>
+          ))}
+        </Card>
+
+        <Card>
+          <CardHeader title="Sending" />
+          {([
+            ["review", "Review before sending", "Off: Send to campaign on a prospect or audit sends straight to the default campaign."],
+            ["verifiedOnly", "Only verified emails", "Skips catch-all and unverified addresses to protect your inboxes' reputation."],
+            ["alertOnAudit", "Tell me when a prospect opens their audit twice", "Usually the best moment to call."],
+          ] as const).map(([k, l, d]) => (
+            <div key={k} className="flex items-center gap-4 border-t border-line py-3.5 first:border-0 first:pt-0">
+              <div className="flex-1"><div className="text-[14px]">{l}</div><div className="text-[12.5px] text-muted">{d}</div></div>
+              <Toggle label={l} checked={st.rules[k]} onChange={(v) => setRules({ [k]: v })} />
+            </div>
+          ))}
+          <label className="block border-t border-line pt-3.5">
+            <span className="block text-[14px]">Booking link</span>
+            <span className="mb-1.5 block text-[12.5px] text-muted">Used in drafted replies.</span>
+            <input value={st.rules.bookingUrl} onChange={(e) => setRules({ bookingUrl: e.target.value })} className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-[13.5px] outline-none focus:border-line-strong" />
+          </label>
+        </Card>
+
+        <Card pad={false}>
+          <div className="border-b border-line px-5 py-3"><div className="text-[14px] font-medium">Variables sent with each prospect</div><div className="text-[12.5px] text-muted">Use these in your {name} templates.</div></div>
+          {leadVariables.map((v) => (
+            <div key={v.key} className="flex items-center gap-3 border-b border-line px-5 py-2.5 last:border-0">
+              <code className="w-36 shrink-0 font-mono text-[12.5px]">{`{{${v.key}}}`}</code>
+              <span className="min-w-0 flex-1 truncate text-[13px]">{v.label} <span className="text-subtle">· {v.example}</span></span>
+              <button onClick={() => copy(`{{${v.key}}}`)} aria-label={`Copy {{${v.key}}}`} className="rounded p-1 text-muted hover:bg-hover hover:text-fg">{copied === `{{${v.key}}}` ? <Check size={13} /> : <Copy size={13} />}</button>
+            </div>
+          ))}
+        </Card>
+      </div>
     </>
   );
 }

@@ -15,6 +15,7 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import Prospects from "./pages/Prospects";
 import ProspectAudit from "./pages/ProspectAudit";
+import Outreach from "./pages/Outreach";
 import AiVisibility from "./pages/AiVisibility";
 import Citations from "./pages/Citations";
 import PublicAudit from "./pages/PublicAudit";
@@ -65,6 +66,7 @@ export default function App() {
           <Route path="settings/:section" element={<Settings />} />
           <Route path="prospects" element={<Prospects />} />
           <Route path="prospects/:id" element={<ProspectAudit />} />
+          <Route path="outreach" element={<Outreach />} />
           <Route path="runs" element={<Navigate replace to="/settings/activity" />} />
           <Route path="ai" element={<AiVisibility />} />
           <Route path="citations" element={<Citations />} />

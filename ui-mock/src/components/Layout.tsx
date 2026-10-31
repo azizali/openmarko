@@ -48,7 +48,10 @@ const nav: Nav[] = [
   { to: "/social/scanner", label: "Social scanner", icon: Radar, section: "Social" },
   { to: "/social/swipe", label: "Swipe file", icon: Bookmark },
   { to: "/social/posts", label: "Posts & calendar", icon: CalendarDays },
-  ...(member.plan === "agency" ? [{ to: "/prospects", label: "Prospecting", icon: Target, section: "Sales" }] : []),
+  ...(member.plan === "agency" ? [{ to: "/prospects", label: "Prospecting", icon: Target, section: "Sales", children: [
+    { to: "/prospects", label: "Find businesses" },
+    { to: "/outreach", label: "Outreach" },
+  ] }] : []),
 ];
 const settingsNav: Nav = { to: "/settings", label: "Settings", icon: Settings };
 const settingsLeaves: Leaf[] = [...businessSections, ...accountSections].map((s) => ({ to: `/settings/${s.id}`, label: s.label }));

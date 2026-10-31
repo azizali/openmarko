@@ -1,11 +1,13 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { Search, MapPin, Loader2, Star, ChevronRight, Flame, Zap, Target, Globe, ShieldAlert, Megaphone, SlidersHorizontal, Crosshair, Database, Download, UserPlus, X, MessageSquare, Mail, User, FileSearch, Bookmark, History, RefreshCw, Trash2, Eye } from "lucide-react";
+import { Search, MapPin, Loader2, Star, ChevronRight, Flame, Zap, Target, Globe, ShieldAlert, Megaphone, SlidersHorizontal, Crosshair, Database, Download, UserPlus, X, MessageSquare, Mail, User, FileSearch, Bookmark, History, RefreshCw, Trash2, Eye, Send } from "lucide-react";
 import { Badge, Button, Card, Checkbox, Modal, PageHeader, Progress, Segmented, cn, fmt, useToast } from "../components/ui";
 import { GridMap, GridLegend, GridThumb } from "../components/GridMap";
 import { ProspectMap } from "../components/ProspectMap";
 import { ContactCard, ContactIcons } from "../components/ProspectContact";
 import { NewAuditModal } from "../components/NewAudit";
+import { LeadBadge, SendToCampaignButton, SendToCampaignModal } from "../components/Outreach";
+import { leadFor, useOutreach } from "../lib/outreach";
 import { gridStats } from "../data/mock";
 import { googleCategories, leadersOf, opportunity, prospectGrid, prospectSources, searchMarket, specFromParams, specToQuery, suggestedSearches, type Market, type Opportunity, type Prospect, type Spec } from "../data/prospects";
 import { startRun, timeAgo } from "../lib/runs";
@@ -73,6 +75,8 @@ export default function Prospects() {
   const navigate = useNavigate();
   const saved = useSaved();
   const shares = useShares();
+  const outreach = useOutreach();
+  const [sending, setSending] = useState(false);
   const spec = specFromParams(params);
   const [draft, setDraft] = useState<Spec>(spec);
   const [loc, setLoc] = useState<LocMode>(spec.lat !== null ? "pin" : spec.zip ? "zip" : "city");
@@ -291,7 +295,8 @@ export default function Prospects() {
             <span className="text-muted">· {chosen.filter((r) => r.p.contact.email).length} with email · {chosen.filter((r) => r.p.contact.sms).length} can text</span>
             <div className="ml-auto flex gap-2">
               <Button size="sm" icon={<Download size={12} />} onClick={() => exportCsv(chosen)}>Export CSV</Button>
-              <Button size="sm" variant="primary" icon={<UserPlus size={12} />} onClick={() => { toast(`${chosen.length} added to pipeline`); setSel(new Set()); }}>Add to pipeline</Button>
+              <Button size="sm" icon={<UserPlus size={12} />} onClick={() => { toast(`${chosen.length} added to pipeline`); setSel(new Set()); }}>Add to pipeline</Button>
+              <Button size="sm" variant="primary" icon={<Send size={12} />} onClick={() => setSending(true)}>Send to campaign</Button>
             </div>
           </div>
         )}
@@ -343,6 +348,7 @@ export default function Prospects() {
                   <td className="px-3 py-3"><Signals p={p} /></td>
                   <td className="pr-5 text-right">
                     <span className="inline-flex items-center gap-1.5">
+                      {(() => { const l = leadFor(outreach, `/prospects/${p.id}${qsKey}`); return l ? <LeadBadge lead={l} /> : null; })()}
                       {(() => { const v = shareFor(shares, `/prospects/${p.id}${qsKey}`)?.views.length ?? 0; return v ? <span title={`Opened the shared audit ${v} time${v > 1 ? "s" : ""}`} className="num inline-flex items-center gap-0.5 rounded-full bg-good-soft px-1.5 py-0.5 text-[11.5px] font-medium text-good"><Eye size={11} />{v}</span> : null; })()}
                       <Link to={`/prospects/${p.id}${qsKey}`} onClick={(e) => e.stopPropagation()} className="inline-flex h-7 items-center gap-1 rounded-md border border-line bg-surface px-2.5 text-[12.5px] font-medium whitespace-nowrap hover:bg-hover">Audit <ChevronRight size={12} /></Link>
                     </span>
@@ -362,6 +368,7 @@ export default function Prospects() {
                             {o.reasons.slice(0, 3).map((r) => <li key={r}>· {r}</li>)}
                           </ul>
                           <Link to={`/prospects/${p.id}${qsKey}`} className="mt-4 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md bg-ink text-[13.5px] font-medium text-on-ink hover:opacity-90">Open sales audit <ChevronRight size={14} /></Link>
+                          <SendToCampaignButton p={p} o={o} market={market} qsKey={qsKey} onSent={toast} className="mt-2 flex w-full justify-center" />
                         </div>
                         <ContactCard p={p} />
                       </div>
@@ -399,6 +406,7 @@ export default function Prospects() {
           <p className="text-[12px] text-subtle">Emails, line types and owner names come from the business's own website plus the partner lookups marked above.</p>
         </div>
       </Modal>
+      <SendToCampaignModal open={sending} onClose={() => setSending(false)} items={chosen} market={market} qsKey={qsKey} onSent={(m) => { toast(m); setSel(new Set()); }} />
       <NewAuditModal open={auditOpen} onClose={closeAudit} initialCity={spec.city} />
       {node}
     </>
