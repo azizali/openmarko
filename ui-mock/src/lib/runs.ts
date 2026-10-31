@@ -1,6 +1,7 @@
 // Every data refresh is a Run: rank scans, site crawls, profile syncs,
 // competitor refreshes and prospect searches. Pages read "last updated" and
-// "in progress" from this store, and the Runs page shows the full log.
+// "in progress" from this store, and the Runs page shows the full log. When
+// each kind runs is set in Settings → Schedules (lib/schedules.ts).
 // Real build: rows in a runs table, progress from DataForSEO task postbacks.
 
 import { useSyncExternalStore } from "react";
@@ -22,15 +23,15 @@ export type Run = {
   note?: string;
 };
 
-export const runKinds: Record<RunKind, { label: string; noun: string; button: string; schedule: string }> = {
-  rank: { label: "Rank scan", noun: "rankings", button: "Run scan", schedule: "Daily at 06:00" },
-  audit: { label: "Site crawl", noun: "site audit", button: "Re-crawl site", schedule: "Weekly, Mondays" },
-  profile: { label: "Profile sync", noun: "Business Profile", button: "Sync profile", schedule: "Every 6 hours" },
-  competitors: { label: "Competitor refresh", noun: "competitor data", button: "Refresh competitors", schedule: "Weekly, Sundays" },
-  ai: { label: "AI answer check", noun: "AI answers", button: "Check AI answers", schedule: "Weekly, Mondays" },
-  citations: { label: "Citation check", noun: "citations", button: "Re-check citations", schedule: "Weekly, Wednesdays" },
-  links: { label: "Backlink refresh", noun: "backlinks", button: "Refresh backlinks", schedule: "Weekly, Thursdays" },
-  prospect: { label: "Prospect search", noun: "prospect data", button: "Search", schedule: "On demand" },
+export const runKinds: Record<RunKind, { label: string; noun: string; button: string }> = {
+  rank: { label: "Rank scan", noun: "rankings", button: "Run scan" },
+  audit: { label: "Site crawl", noun: "site audit", button: "Re-crawl site" },
+  profile: { label: "Profile sync", noun: "Business Profile", button: "Sync profile" },
+  competitors: { label: "Competitor refresh", noun: "competitor data", button: "Refresh competitors" },
+  ai: { label: "AI answer check", noun: "AI answers", button: "Check AI answers" },
+  citations: { label: "Citation check", noun: "citations", button: "Re-check citations" },
+  links: { label: "Backlink refresh", noun: "backlinks", button: "Refresh backlinks" },
+  prospect: { label: "Prospect search", noun: "prospect data", button: "Search" },
 };
 
 const NOW = Date.now();

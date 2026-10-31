@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { scheduleForRun } from "../lib/schedules";
 import { Link } from "react-router";
 import { Loader2, Radar, RefreshCw, Clock } from "lucide-react";
 import { Badge, Button, Modal, Segmented } from "./ui";
@@ -84,7 +85,7 @@ export function RunButton({ kind, variant = "secondary" }: { kind: RunKind; vari
           ) : (
             <div className="flex justify-between"><span className="text-muted">Scope</span><span>{lastDone(runs, kind)?.scope ?? "Everything"}</span></div>
           )}
-          <div className="flex justify-between"><span className="text-muted">Schedule</span><span>{meta.schedule}</span></div>
+          <div className="flex justify-between"><span className="text-muted">Schedule</span><span>{scheduleForRun(kind)}</span></div>
           <div className="flex justify-between border-t border-line pt-3"><span className="text-muted">Estimated cost</span>
             <Badge className="num">${(kind === "rank" ? rankCost : lastDone(runs, kind)?.cost ?? 0.05).toFixed(3)}</Badge>
           </div>

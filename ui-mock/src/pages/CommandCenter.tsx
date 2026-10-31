@@ -17,6 +17,7 @@ import { standoutPosts } from "../data/watch";
 import { platformOf as scanPlatform } from "../data/scanner";
 import { accounts } from "../data/social";
 import { accountConnected, useSetup } from "../lib/setup";
+import { isOn, useFeatures } from "../lib/features";
 
 // Home is Marko's weekly brief: how search and social did, what's happening on
 // social this week, what Marko already did, the three things that need you, and
@@ -24,6 +25,7 @@ import { accountConnected, useSetup } from "../lib/setup";
 export default function CommandCenter() {
   const ctx = useOutletContext<PageContext>();
   const state = useRunState();
+  const flags = useFeatures();
   const [open, setOpen] = useState<Task | null>(null);
   const top3 = openTasksFor(state).slice(0, 3).map((t) => t.id);
   useEffect(() => { primeTasks(top3); }, [top3.join()]);
@@ -36,11 +38,12 @@ export default function CommandCenter() {
       <div className="mb-6">
         <div className="text-[12.5px] text-muted">Friday, Oct 30 · Weekly brief</div>
         <h1 className="mt-1 font-serif text-[40px] leading-[1.1] tracking-[-0.02em]">Good morning, Dr. Patel.</h1>
-        <p className="mt-1.5 max-w-2xl text-[14px] text-muted">How {business.name} did on search and social, and what needs you this week.</p>
+        <p className="mt-1.5 max-w-2xl text-[14px] text-muted">How {business.name} did{isOn("seo", flags) && isOn("social", flags) ? " on search and social" : isOn("seo", flags) ? " on search" : isOn("social", flags) ? " on social" : ""}, and what needs you this week.</p>
       </div>
 
-      <CommandTop state={state} />
-      <SocialThisWeek />
+      {/* Each block belongs to a feature; a turned-off one leaves Home. */}
+      {isOn("seo", flags) && <CommandTop state={state} />}
+      {isOn("social", flags) && <SocialThisWeek />}
 
       <div className="flex gap-3">
         <MarkoAvatar />
@@ -51,9 +54,9 @@ export default function CommandCenter() {
             </p>
           )}
           <ThisWeek onOpen={setOpen} heading={<p className="m-0 text-[14px] leading-[1.55]">Three things need you this week:</p>} />
-          <div className="mt-5">
+          {isOn("marko", flags) && <div className="mt-5">
             <Composer big ctx={ctx} placeholder="Reply, ask a question or tell Marko what to do…" chips={["Do all three", "Who should I reply to today?", "What's trending this week?", "Which keywords dropped?"]} />
-          </div>
+          </div>}
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import {
-  AlertTriangle, Ban, CalendarCheck, CalendarDays, Check, Info, Mail, MessageSquareText, NotebookPen, Phone, PhoneIncoming, PhoneMissed, PhoneOutgoing, Plus, Send, Sparkles, Star, Workflow, X,
+  AlertTriangle, Ban, CalendarCheck, CalendarDays, Check, Info, Mail, MessageSquareText, NotebookPen, Phone, PhoneIncoming, PhoneMissed, PhoneOutgoing, Plus, Send, Sparkles, Star, Workflow as WorkflowIcon, X,
 } from "lucide-react";
 import { Badge, Button, Drawer, Modal, Segmented, Toggle, cn, fmt } from "./ui";
 import { mergeFields, sources, stageOf, stages, tagOptions, type Channel, type Contact, type Event, type Source, type Stage } from "../data/contacts";
@@ -9,6 +9,7 @@ import {
   addContact, addNote, addTag, blockedOn, contactOf, eventsOf, logCall, markRead, notReady, removeTag, sendMessage, setConsent, setStage, smsParts, startedText, suggestReply, useCrm, type Flag, type NewContact, type Started,
 } from "../lib/crm";
 import { timeAgo } from "../lib/runs";
+import { isOn } from "../lib/features";
 
 export const channelIcon: Record<Channel, typeof Mail> = { email: Mail, sms: MessageSquareText, call: Phone };
 export function ChannelIcon({ ch, size = 13, className }: { ch: Channel; size?: number; className?: string }) {
@@ -126,7 +127,9 @@ export function Composer({ c, events, onDone, compact, call: callFirst }: { c: C
   const last = talk[talk.length - 1];
   const theirTurn = last?.dir === "in" && (last.kind !== "call" || last.call?.result === "missed");
   const lastCh: Mode = last?.kind === "email" ? "email" : "sms";
-  const start: Mode = callFirst ? "call" : !blockedOn(c, lastCh) ? lastCh : !blockedOn(c, "sms") ? "sms" : !blockedOn(c, "email") ? "email" : "call";
+  // Start on the channel they last used, if it's on and allowed for them.
+  const usable = (m: "sms" | "email") => isOn(m) && !blockedOn(c, m);
+  const start: Mode = callFirst ? "call" : usable(lastCh as "sms" | "email") ? lastCh : usable("sms") ? "sms" : usable("email") ? "email" : "call";
   const [mode, setMode] = useState<Mode>(start);
   const [body, setBody] = useState(theirTurn && start !== "call" ? suggestReply(c, last) : "");
   const [subject, setSubject] = useState(last?.kind === "email" && last.subject ? (last.subject.startsWith("Re:") ? last.subject : `Re: ${last.subject}`) : "");
@@ -149,7 +152,10 @@ export function Composer({ c, events, onDone, compact, call: callFirst }: { c: C
     <div className={cn(!compact && "border-t border-line px-5 py-4")}>
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <Segmented<Mode> label="Reply by" value={mode} onChange={(m) => { setMode(m); if (m === "call" || m === "note") { setBody(""); setDrafted(false); } }}
-          options={[{ id: "sms", label: <span className="inline-flex items-center gap-1"><MessageSquareText size={12} />Text</span> }, { id: "email", label: <span className="inline-flex items-center gap-1"><Mail size={12} />Email</span> }, { id: "call", label: <span className="inline-flex items-center gap-1"><Phone size={12} />Call</span> }, { id: "note", label: <span className="inline-flex items-center gap-1"><NotebookPen size={12} />Note</span> }]} />
+          options={[
+            ...(isOn("sms") ? [{ id: "sms" as Mode, label: <span className="inline-flex items-center gap-1"><MessageSquareText size={12} />Text</span> }] : []),
+            ...(isOn("email") ? [{ id: "email" as Mode, label: <span className="inline-flex items-center gap-1"><Mail size={12} />Email</span> }] : []),
+            { id: "call", label: <span className="inline-flex items-center gap-1"><Phone size={12} />Call</span> }, { id: "note", label: <span className="inline-flex items-center gap-1"><NotebookPen size={12} />Note</span> }]} />
         <span className="flex-1" />
         {(mode === "sms" || mode === "email") && !blocked && (drafted ? <span className="inline-flex items-center gap-1 text-[12px] text-accent"><Sparkles size={12} />Marko's draft</span> : <button onClick={() => { setBody(suggestReply(c, last)); setDrafted(true); }} className="text-[12.5px] text-muted underline decoration-line-strong underline-offset-2 hover:text-fg">Draft a reply</button>)}
       </div>
@@ -214,7 +220,7 @@ export function ContactDrawer({ id, onClose, toast }: { id: string | null; onClo
               </select>
             </label>
             <span className="flex-1" />
-            <Link to={`/inbox?c=${c.id}`} className="inline-flex h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 text-[12.5px] font-medium hover:bg-hover">Open in Inbox</Link>
+            {isOn("inbox") && <Link to={`/inbox?c=${c.id}`} className="inline-flex h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 text-[12.5px] font-medium hover:bg-hover">Open in Inbox</Link>}
           </div>
           <dl className="grid grid-cols-[110px_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-[13px]">
             <dt className="text-muted">Mobile</dt><dd className="truncate">{c.phone ?? "—"}{c.phone && !c.mobile && <span className="text-subtle"> · landline</span>}</dd>
@@ -223,7 +229,7 @@ export function ContactDrawer({ id, onClose, toast }: { id: string | null; onClo
             <dt className="text-muted">Location</dt><dd>{c.location}</dd>
             <dt className="text-muted">Appointments</dt><dd>{c.nextAppt ? <>Next {dateOf(c.nextAppt)} ({daysFrom(c.nextAppt)})</> : "Nothing booked"}{c.lastVisit && <span className="text-muted"> · last visit {dateOf(c.lastVisit)}</span>}</dd>
             <dt className="text-muted">Worth</dt><dd>${fmt(c.value)} <span className="text-subtle">first year, estimated</span></dd>
-            {inAuto.length > 0 && <><dt className="text-muted">Automations</dt><dd className="flex flex-wrap gap-1">{[...new Set(inAuto)].map((a) => <Badge key={a}><Workflow size={10} />{a}</Badge>)}</dd></>}
+            {inAuto.length > 0 && isOn("workflows") && <><dt className="text-muted">Workflows</dt><dd className="flex flex-wrap gap-1">{[...new Set(inAuto)].map((a) => <Badge key={a}><WorkflowIcon size={10} />{a}</Badge>)}</dd></>}
           </dl>
           <div className="flex flex-wrap items-center gap-1.5">
             {c.tags.map((t) => <Badge key={t} className="gap-1">{t}<button onClick={() => { const st2 = removeTag([c.id], t); if (st2.length) toast(`Removed “${t}”.${startedText(st2)}`); }} aria-label={`Remove ${t}`} className="hover:text-fg"><X size={10} /></button></Badge>)}
@@ -243,7 +249,7 @@ export function ContactDrawer({ id, onClose, toast }: { id: string | null; onClo
                 <div key={ch} className="flex items-center gap-3 text-[13px]">
                   <ChannelIcon ch={ch} className="text-muted" />
                   <span className="flex-1">{ch === "sms" ? "Texts" : "Email"}{(ch === "sms" ? !c.phone || !c.mobile : !c.email) && <span className="text-subtle"> · {ch === "sms" ? "no mobile number" : "no email address"}</span>}</span>
-                  <Toggle label={`${ch === "sms" ? "Texts" : "Email"} allowed`} checked={c.consent[ch]} onChange={(v) => { setConsent(c.id, ch, v); toast(v ? "Turned on" : "Turned off. They won't get campaigns or automations on it"); }} />
+                  <Toggle label={`${ch === "sms" ? "Texts" : "Email"} allowed`} checked={c.consent[ch]} onChange={(v) => { setConsent(c.id, ch, v); toast(v ? "Turned on" : "Turned off. They won't get campaigns or workflows on it"); }} />
                 </div>
               ))}
             </div>

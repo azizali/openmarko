@@ -181,7 +181,7 @@ export function AssistantPanel({ ctx }: { ctx: PageContext }) {
             <MarkoAvatar />
             <div className="text-[13.5px] leading-[1.55]">
               <p className="m-0">Hi, I'm Marko. I can look into your rankings, reply to reviews, fix listings, write posts and send reports.</p>
-              <p className="mt-2 mb-0 text-muted">I ask before changing anything, unless you've allowed it in <Link to="/settings/automation" className="underline decoration-line-strong underline-offset-2 hover:text-fg">Settings → Automation</Link>. Every change can be undone.</p>
+              <p className="mt-2 mb-0 text-muted">I ask before changing anything, unless you've allowed it in <Link to="/settings/autopilot" className="underline decoration-line-strong underline-offset-2 hover:text-fg">Settings → Autopilot</Link>. Every change can be undone.</p>
             </div>
           </div>
         )}

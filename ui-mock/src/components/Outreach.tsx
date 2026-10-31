@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { Send, Check, Loader2, KeyRound, Webhook, Inbox as InboxIcon, Flame, ChevronLeft, ChevronRight, AlertTriangle, Sparkles, Mail } from "lucide-react";
 import { Badge, Button, Checkbox, Modal, cn } from "./ui";
 import { providers, starterCampaign, type ProviderId } from "../data/sequencers";
+import { isOn, useOn } from "../lib/features";
 import type { Market, Opportunity, Prospect } from "../data/prospects";
 import {
   campaignOf, connect, createStarterCampaign, leadFor, leadFrom, providerName, pushLeads, render, setRules, statusMeta, useOutreach, type Lead,
@@ -15,6 +16,7 @@ export function ProviderMark({ id, size = 28 }: { id: ProviderId; size?: number 
 
 /** Where a prospect is in the sequence; links to its thread in Outreach. */
 export function LeadBadge({ lead }: { lead: Lead }) {
+  if (!isOn("outreach")) return null;
   const m = statusMeta[lead.status];
   const label = lead.status === "sent" ? `Step ${lead.step}` : m.label;
   return (
@@ -131,6 +133,7 @@ export type SendItem = { p: Prospect; o: Opportunity };
 
 /** Review and send selected prospects to a campaign. Connects a sequencer first if there isn't one. */
 export function SendToCampaignModal({ open, onClose, items, market, qsKey, onSent }: { open: boolean; onClose: () => void; items: SendItem[]; market: Market; qsKey: string; onSent: (msg: string) => void }) {
+  const outreachOn = useOn("outreach");
   const st = useOutreach();
   const [campaignId, setCampaignId] = useState<string>("");
   const [i, setI] = useState(0);
@@ -173,6 +176,7 @@ export function SendToCampaignModal({ open, onClose, items, market, qsKey, onSen
     onClose();
   };
 
+  if (!outreachOn) return null;
   return (
     <Modal open onClose={onClose} title={`Send to ${name}`} width={640} footer={
       <>
@@ -234,6 +238,7 @@ export function SendToCampaignModal({ open, onClose, items, market, qsKey, onSen
  * turned off review; otherwise opens the send dialog. Shows the lead's status once sent.
  */
 export function SendToCampaignButton({ p, o, market, qsKey, onSent, className, compact }: { p: Prospect; o: Opportunity; market: Market; qsKey: string; onSent: (msg: string) => void; className?: string; compact?: boolean }) {
+  const outreachOn = useOn("outreach");
   const st = useOutreach();
   const [open, setOpen] = useState(false);
   const path = `/prospects/${p.id}${qsKey}`;
@@ -247,6 +252,7 @@ export function SendToCampaignButton({ p, o, market, qsKey, onSent, className, c
     const l = leadFrom(p, o, market, path);
     if (l && pushLeads([l], camp.id)) onSent(`${p.name} sent to “${camp.name}”`);
   };
+  if (!outreachOn) return null;
   return (
     <>
       {compact ? (

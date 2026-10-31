@@ -13,6 +13,8 @@ import { openTasksFor, useRunState } from "../lib/tasks";
 import { runningOf, useRuns } from "../lib/runs";
 import { useTheme } from "../lib/theme";
 import { unreadCount, useCrm } from "../lib/crm";
+import { featureForPage, isOn, pageOn, settingsOwner, statusOf, useFeatures } from "../lib/features";
+import { featureOf } from "../data/features";
 import { Freshness, RunButton, kindForPath } from "./RunStatus";
 import { AssistantPanel, MarkoLauncher } from "./Assistant";
 import { ask, toggleAssistant, type PageContext } from "../lib/assistant";
@@ -58,13 +60,27 @@ const nav: Nav[] = [
   { to: "/inbox", label: "Inbox", icon: Inbox, section: "Customers" },
   { to: "/contacts", label: "Contacts", icon: UsersRound },
   { to: "/campaigns", label: "Campaigns", icon: Send },
-  { to: "/automations", label: "Automations", icon: Workflow },
+  { to: "/workflows", label: "Workflows", icon: Workflow },
   ...(member.plan === "agency" ? [{ to: "/prospects", label: "Prospecting", icon: Target, section: "Sales", children: [
     { to: "/prospects", label: "Find businesses" },
     { to: "/outreach", label: "Outreach" },
   ] }] : []),
 ];
 const settingsNav: Nav = { to: "/settings", label: "Settings", icon: Settings };
+
+/** The sidebar without turned-off features. A group keeps its section heading if its first item is hidden. */
+function visibleNav(f: ReturnType<typeof useFeatures>): Nav[] {
+  let section: string | undefined;
+  let shownSection: string | undefined;
+  return nav.flatMap((n) => {
+    if (n.section) section = n.section;
+    const kids = n.children?.filter((c) => pageOn(c.to, f));
+    if (kids ? !kids.length : !pageOn(n.to, f)) return [];
+    const item: Nav = { ...n, section: section !== shownSection ? section : undefined, children: kids, to: kids && !kids.some((k) => k.to === n.to) ? kids[0].to : n.to };
+    shownSection = section;
+    return [item];
+  });
+}
 const settingsLeaves: Leaf[] = [...businessSections, ...accountSections].map((s) => ({ to: `/settings/${s.id}`, label: s.label }));
 
 const split = (to: string) => { const [path, q = ""] = to.split("?"); return { path, params: new URLSearchParams(q) }; };
@@ -187,22 +203,23 @@ function CommandPalette({ open, onClose, ctx }: { open: boolean; onClose: () => 
   const [q, setQ] = useState("");
   const [idx, setIdx] = useState(0);
   const navigate = useNavigate();
+  const flags = useFeatures();
   const items = useMemo(() => {
     const pages = [
-      ...nav.flatMap((n) => n.children ?? [n]).map((i) => ({ label: i.label, hint: "Page", to: i.to })),
-      ...settingsLeaves.map((i) => ({ label: i.label, hint: "Settings", to: i.to })),
+      ...visibleNav(flags).flatMap((n) => n.children ?? [n]).map((i) => ({ label: i.label, hint: "Page", to: i.to })),
+      ...settingsLeaves.filter((i) => { const o = settingsOwner(i.to.split("/").pop()!); return !o || isOn(o, flags); }).map((i) => ({ label: i.label, hint: "Settings", to: i.to })),
     ];
     const extra = [
-      ...(member.plan === "agency" ? [{ label: "Audit a business", hint: "Prospecting", to: "/prospects?new=audit" }] : []),
+      ...(member.plan === "agency" && isOn("sales", flags) ? [{ label: "Audit a business", hint: "Prospecting", to: "/prospects?new=audit" }] : []),
       { label: "Add organization", hint: "Setup", to: "/onboarding" },
     ];
     const kws = keywords.map((k) => ({ label: k.term, hint: "Keyword", to: `/rankings/${k.id}` }));
     const found = [...pages, ...extra, ...kws].filter((i) => i.label.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
     // Anything typed can go to Marko. It leads when nothing matches or it reads like a sentence.
-    if (q.trim().length < 2) return found;
+    if (q.trim().length < 2 || !isOn("marko", flags)) return found;
     const askRow = { label: `Ask Marko: “${q.trim()}”`, hint: "Ask", to: "", ask: true };
     return !found.length || q.trim().split(/\s+/).length >= 3 ? [askRow, ...found] : [...found, askRow];
-  }, [q]);
+  }, [q, flags]);
   useEffect(() => { setIdx(0); }, [q]);
   useEffect(() => { if (open) setQ(""); }, [open]);
   if (!open) return null;
@@ -252,9 +269,15 @@ export default function Layout() {
   const [mobileNav, setMobileNav] = useState(false);
   const runState = useRunState();
   const crm = useCrm();
+  const flags = useFeatures();
+  const items = visibleNav(flags);
+  const marko = isOn("marko", flags);
   const live = runningOf(useRuns()).length;
   const loc = useLocation();
   const kind = kindForPath(loc.pathname);
+  // A page whose feature is off shows how to turn it back on instead.
+  const owner = featureForPage(loc.pathname, loc.search);
+  const gated = owner && !isOn(owner, flags) ? owner : null;
   const ctx = pageContext(loc.pathname, loc.search);
   // A group is open while it holds the current page, unless its chevron says otherwise.
   const [manual, setManual] = useState<Record<string, boolean>>({});
@@ -268,7 +291,7 @@ export default function Layout() {
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setCmd((v) => !v); }
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j") { e.preventDefault(); toggleAssistant(); }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j" && isOn("marko")) { e.preventDefault(); toggleAssistant(); }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
@@ -282,11 +305,11 @@ export default function Layout() {
       <div className="flex h-8 items-center gap-0.5">
         <NavLink to="/" aria-label="OpenMarko home" className="mr-auto flex h-7 items-center rounded-md px-2 hover:bg-hover"><Logo size={17} /></NavLink>
         <button onClick={() => setCmd(true)} aria-label="Search" title="Search (⌘K)" className={iconBtn}><Search size={15} strokeWidth={1.75} /></button>
-        <button onClick={toggleAssistant} aria-label="Ask Marko" title="Ask Marko (⌘J)" className={iconBtn}><Sparkles size={15} strokeWidth={1.75} /></button>
+        {marko && <button onClick={toggleAssistant} aria-label="Ask Marko" title="Ask Marko (⌘J)" className={iconBtn}><Sparkles size={15} strokeWidth={1.75} /></button>}
       </div>
       <OrgSwitcher />
       <nav className="mt-1 flex flex-1 flex-col gap-px overflow-y-auto" aria-label="Main">
-        {nav.map((n) => (
+        {items.map((n) => (
           <div key={n.label}>
             {n.section && <div className="mt-3 mb-0.5 px-2 text-[10.5px] font-medium tracking-[0.06em] text-subtle uppercase">{n.section}</div>}
             <NavItem item={n} badge={n.to === "/todo" ? openTasksFor(runState).length : n.to === "/inbox" ? unreadCount(crm) : undefined} open={shown(n)} onToggle={() => toggle(n)} />
@@ -335,12 +358,25 @@ export default function Layout() {
               {kind && kind !== "prospect" && <RunButton kind={kind} variant={loc.pathname === "/" ? "primary" : "secondary"} />}
             </div>
           </div>
-          <Outlet context={ctx} />
+          {gated ? <FeatureOff id={gated} /> : <Outlet context={ctx} />}
         </main>
       </div>
-      <AssistantPanel ctx={ctx} />
-      <MarkoLauncher />
+      {marko && <><AssistantPanel ctx={ctx} /><MarkoLauncher /></>}
       <CommandPalette open={cmd} onClose={() => setCmd(false)} ctx={ctx} />
+    </div>
+  );
+}
+
+/** Shown in place of a page whose feature is off. */
+function FeatureOff({ id }: { id: Parameters<typeof featureOf>[0] }) {
+  const f = featureOf(id);
+  const why = statusOf(id).why;
+  return (
+    <div className="mx-auto max-w-md py-16 text-center">
+      <div className="mx-auto mb-4 grid size-11 place-items-center rounded-xl bg-hover text-muted"><Settings size={20} /></div>
+      <h1 className="font-serif text-[28px]">{f.label} is off</h1>
+      <p className="mt-2 text-[14px] text-muted">{why === "Turned off" ? `It's turned off for this organization. Nothing was deleted; turning it on brings everything back.` : `${why}.`}</p>
+      <Link to={`/settings/features#${f.module ?? f.id}`} className="mt-5 inline-flex h-9 items-center rounded-lg bg-ink px-4 text-[13.5px] font-medium text-on-ink">Open Features</Link>
     </div>
   );
 }

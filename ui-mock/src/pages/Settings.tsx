@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, NavLink, useParams } from "react-router";
 import {
   Store, SearchCheck, BarChart3, Globe, Hash, Check, AudioLines, Puzzle, MapPin, Plug, Zap, Users, History,
-  UserRound, Palette, Bell, CreditCard, Sun, Moon, Monitor, Plus, AtSign, Send, Copy, Webhook, AlertTriangle, Megaphone, Mail, MessageSquareText, Phone, ShieldCheck,
+  UserRound, Palette, Bell, CreditCard, Sun, Moon, Monitor, Plus, AtSign, Send, Copy, Webhook, AlertTriangle, Megaphone, ToggleRight, CalendarClock, Mail, MessageSquareText, Phone, ShieldCheck,
 } from "lucide-react";
 import { Badge, Button, Card, CardHeader, PageHeader, Progress, Toggle, cn, useToast } from "../components/ui";
 import { locations, member } from "../data/mock";
@@ -17,6 +17,10 @@ import Brand from "./Brand";
 import Skills from "./Skills";
 import { ExternalUrl } from "../components/Scope";
 import Runs from "./Runs";
+import Features from "./Features";
+import { Autopilot, Schedules } from "./Autopilot";
+import { isOn, settingsOwner, useFeatures } from "../lib/features";
+import { featureOf } from "../data/features";
 import { ConnectFlow, ProviderMark } from "../components/Outreach";
 import { leadVariables, providers } from "../data/sequencers";
 import { createStarterCampaign, disconnect, setRules, useOutreach } from "../lib/outreach";
@@ -35,6 +39,7 @@ import { emailProviders, phoneProviders } from "../data/providers";
 type Section = { id: string; label: string; icon: typeof Store; page: () => React.JSX.Element };
 
 export const businessSections: Section[] = [
+  { id: "features", label: "Features", icon: ToggleRight, page: Features },
   { id: "brand", label: "Brand voice", icon: AudioLines, page: Brand },
   { id: "skills", label: "Marko skills", icon: Puzzle, page: Skills },
   { id: "locations", label: "Locations", icon: MapPin, page: Locations },
@@ -43,7 +48,8 @@ export const businessSections: Section[] = [
   { id: "ads", label: "Ad accounts", icon: Megaphone, page: AdAccounts },
   { id: "messaging", label: "Email & texting", icon: MessageSquareText, page: Messaging },
   { id: "integrations", label: "Integrations", icon: Plug, page: Integrations },
-  { id: "automation", label: "Automation", icon: Zap, page: Automation },
+  { id: "autopilot", label: "Autopilot", icon: Zap, page: Autopilot },
+  { id: "schedules", label: "Schedules", icon: CalendarClock, page: Schedules },
   { id: "team", label: "Team", icon: Users, page: Team },
   { id: "activity", label: "Activity", icon: History, page: Runs },
 ];
@@ -61,6 +67,9 @@ function SubNav() {
   const current = memberships.find((m) => m.id === orgId) ?? organization;
   const ref = useRef<HTMLElement>(null);
   const { section } = useParams();
+  const flags = useFeatures();
+  // Sections that belong to a turned-off feature (Ad accounts, Email & texting, Outreach) are hidden.
+  const visible = (items: Section[]) => items.filter((x) => { const o = settingsOwner(x.id); return !o || isOn(o, flags); });
   // On narrow screens the sections are a scrolling strip; keep the current one in view.
   useEffect(() => { ref.current?.querySelector("[aria-current=page]")?.scrollIntoView({ block: "nearest", inline: "center" }); }, [section]);
   const link = (s: Section) => (
@@ -79,9 +88,9 @@ function SubNav() {
   );
   return (
     <nav ref={ref} aria-label="Settings" className="-mx-4 flex gap-4 overflow-x-auto border-b border-line px-4 pb-2 lg:sticky lg:top-6 lg:mx-0 lg:flex-col lg:gap-6 lg:self-start lg:overflow-visible lg:border-0 lg:p-0">
-      {group(current.name, `Organization settings, shared by everyone on ${current.name}`, businessSections)}
+      {group(current.name, `Organization settings, shared by everyone on ${current.name}`, visible(businessSections))}
       <span aria-hidden className="w-px shrink-0 self-stretch bg-line lg:hidden" />
-      {group("You", "Just for you, in every organization", accountSections)}
+      {group("You", "Just for you, in every organization", visible(accountSections))}
     </nav>
   );
 }
@@ -89,7 +98,12 @@ function SubNav() {
 export default function Settings() {
   const { section } = useParams();
   const found = [...businessSections, ...accountSections].find((s) => s.id === section);
+  useFeatures();
+  // Settings → Automation became Autopilot.
+  if (section === "automation") return <Navigate replace to="/settings/autopilot" />;
   if (!found) return <Navigate replace to="/settings/brand" />;
+  const owner = settingsOwner(found.id);
+  if (owner && !isOn(owner)) return <Navigate replace to={`/settings/features#${featureOf(owner).module ?? owner}`} />;
   const Page = found.page;
   return (
     <div className="grid gap-6 lg:grid-cols-[184px_minmax(0,1fr)] lg:gap-10">
@@ -236,7 +250,7 @@ function Messaging() {
   const pp = sms.provider ? phoneProviders[sms.provider] : null;
   return (
     <>
-      <PageHeader title="Email & texting" sub="Who sends your campaigns, automations and Inbox replies. Shared by everyone on this organization." />
+      <PageHeader title="Email & texting" sub="Who sends your campaigns, workflows and Inbox replies. Shared by everyone on this organization." />
       <div className="max-w-3xl space-y-4">
         <Card>
           {!ep ? empty(<Mail size={18} />, "Set up email sending", "Use OpenMarko's sending, or connect Amazon SES, Resend, Mailgun, Postmark or SendGrid. About 5 minutes plus DNS.", "Set up email", () => setSetup("email")) : (
@@ -282,8 +296,8 @@ function Messaging() {
             {row("Rings", <span className="text-[13.5px]">{call.forwardTo}</span>)}
             {row("Voicemail to text", <Toggle label="Voicemail to text" checked={call.voicemailToText} onChange={(v) => setChannels("call", { voicemailToText: v })} />, "Voicemails are written out in the Inbox")}
             {row("Record calls", <Toggle label="Record calls" checked={call.recordCalls} onChange={(v) => setChannels("call", { recordCalls: v })} />, "Callers hear “this call may be recorded” first")}
-            {row("Missed calls", <NavLink to="/automations" className="text-[13px] underline underline-offset-2">{st.automations.some((a) => a.when.event === "missed_call" && a.on) ? "Texted back by the Missed call text-back automation" : "Turn on Missed call text-back in Automations"}</NavLink>)}
-            <p className="mt-1 text-[12px] text-subtle">OpenMarko never dials automatically. Call steps in automations make a task with a script for the front desk.</p>
+            {row("Missed calls", <NavLink to="/workflows" className="text-[13px] underline underline-offset-2">{st.workflows.some((a) => a.when.event === "missed_call" && a.on) ? "Texted back by the Missed call text-back workflow" : "Turn on Missed call text-back in Workflows"}</NavLink>)}
+            <p className="mt-1 text-[12px] text-subtle">OpenMarko never dials automatically. Call steps in workflows make a task with a script for the front desk.</p>
           </Card>
         )}
 
@@ -353,29 +367,6 @@ function AdAccounts() {
         ))}
       </div>
       <ConnectToolModal tool={connect} onClose={() => setConnect(null)} />
-    </>
-  );
-}
-
-function Automation() {
-  const [auto, setAuto] = useState({ posts: true, alt: true, schema: false, categories: false, replies: false });
-  return (
-    <>
-      <PageHeader title="Automation" sub="What OpenMarko can change without asking. Everything else waits in To-do for approval." />
-      <Card className="max-w-3xl">
-        {([
-          ["posts", "Publish scheduled GBP posts", "Low risk"],
-          ["alt", "Write image alt text on your site", "Low risk"],
-          ["schema", "Add or update structured data", "Medium risk"],
-          ["categories", "Change GBP categories or description", "High risk. Can trigger re-verification"],
-          ["replies", "Reply to reviews", "Always reviewed by a person (recommended)"],
-        ] as const).map(([k, l, d]) => (
-          <div key={k} className="flex items-center gap-4 border-t border-line py-3.5 first:border-0 first:pt-0 last:pb-0">
-            <div className="flex-1"><div className="text-[14px]">{l}</div><div className="text-[12.5px] text-muted">{d}</div></div>
-            <Toggle label={l} checked={auto[k]} onChange={(v) => setAuto({ ...auto, [k]: v })} />
-          </div>
-        ))}
-      </Card>
     </>
   );
 }

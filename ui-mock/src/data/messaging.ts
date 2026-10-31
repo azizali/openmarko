@@ -1,6 +1,6 @@
 // Sending to contacts. Two kinds of send, the same three channels:
 // - A campaign goes once, to a list, on one channel (an email or a text).
-// - An automation runs for each person when something happens, as a sequence
+// - A workflow runs for each person when something happens, as a sequence
 //   of texts, emails, waits, call tasks and changes to the contact.
 // Calls are never blasted: a call step makes a task for the front desk, with a
 // script, in the Inbox. Replies on every channel land in one Inbox.
@@ -8,14 +8,14 @@
 // Triggers are "when something happens" plus "only if" conditions on the
 // contact. Something happening can be a change to the contact (a tag added or
 // removed, a stage change, joining or leaving a list), a message, an
-// appointment, a date, or another automation or campaign, so automations can
+// appointment, a date, or another workflow or campaign, so workflows can
 // chain. Lists are saved filters, so "joins a list" covers any combination of
 // tags, stage and dates without inventing a tag for it.
 //
 // Real build: email through the business's own domain on the provider they
 // connect (data/providers.ts), texts and calls through Twilio or Telnyx (10DLC
 // registration; one number per location), every change to a contact written as
-// an event that automations subscribe to, automations as durable jobs per
+// an event that workflows subscribe to, workflows as durable jobs per
 // enrolled contact. Each provider needs a signed BAA before patient data is sent.
 
 import { brandFacts } from "./brand";
@@ -29,11 +29,11 @@ export type EventId =
   | "reply_received" | "missed_call" | "link_clicked" | "opted_out"
   | "appt_booked" | "appt_visited" | "appt_no_show" | "appt_cancelled"
   | "date"
-  | "automation_finished" | "campaign_received" | "campaign_clicked" | "campaign_replied";
-type Needs = "tag" | "stage" | "list" | "keyword" | "date" | "automation" | "campaign";
+  | "workflow_finished" | "campaign_received" | "campaign_clicked" | "campaign_replied";
+type Needs = "tag" | "stage" | "list" | "keyword" | "date" | "workflow" | "campaign";
 export const eventMeta: Record<EventId, { label: string; needs?: Needs; hint: string }> = {
   contact_created: { label: "A contact is added", hint: "From an ad, a form, a call, the booking system or by hand. Narrow it with Only if." },
-  tag_added: { label: "A tag is added", needs: "tag", hint: "By a person, an import, or another automation's Add a tag step" },
+  tag_added: { label: "A tag is added", needs: "tag", hint: "By a person, an import, or another workflow's Add a tag step" },
   tag_removed: { label: "A tag is removed", needs: "tag", hint: "" },
   stage_changed: { label: "Their stage changes to", needs: "stage", hint: "" },
   list_joined: { label: "They join a list", needs: "list", hint: "The moment they start matching it, e.g. when a cleaning becomes due" },
@@ -47,7 +47,7 @@ export const eventMeta: Record<EventId, { label: string; needs?: Needs; hint: st
   appt_no_show: { label: "They miss an appointment", hint: "Marked no-show in the booking system" },
   appt_cancelled: { label: "They cancel", hint: "" },
   date: { label: "A date comes around", needs: "date", hint: "Checked every morning" },
-  automation_finished: { label: "Another automation ends for them", needs: "automation", hint: "Chain automations: start this one when that one is done" },
+  workflow_finished: { label: "Another workflow ends for them", needs: "workflow", hint: "Chain workflows: start this one when that one is done" },
   campaign_received: { label: "They get a campaign", needs: "campaign", hint: "" },
   campaign_clicked: { label: "They click a campaign", needs: "campaign", hint: "Someone who clicked and didn't book is worth a call" },
   campaign_replied: { label: "They reply to a campaign", needs: "campaign", hint: "" },
@@ -57,7 +57,7 @@ export const eventGroups: { label: string; events: EventId[] }[] = [
   { label: "Messages", events: ["reply_received", "missed_call", "link_clicked", "opted_out"] },
   { label: "Appointments", events: ["appt_booked", "appt_visited", "appt_no_show", "appt_cancelled"] },
   { label: "Dates", events: ["date"] },
-  { label: "Automations & campaigns", events: ["automation_finished", "campaign_received", "campaign_clicked", "campaign_replied"] },
+  { label: "Workflows & campaigns", events: ["workflow_finished", "campaign_received", "campaign_clicked", "campaign_replied"] },
 ];
 export type DateField = "last_visit" | "next_appt" | "birthday" | "created";
 export const dateFields: Record<DateField, string> = { last_visit: "last visit", next_appt: "next appointment", birthday: "birthday", created: "date they were added" };
@@ -68,7 +68,7 @@ export type When = {
   list?: SegmentId;
   keyword?: string;
   date?: { field: DateField; days: number; dir: "before" | "after" };
-  automation?: string; // automation id
+  workflow?: string; // workflow id
   ended?: "any" | "finished" | "stopped"; // finished every step, or stopped early (replied, booked…)
   campaign?: string; // campaign id or "any"
 };
@@ -95,7 +95,7 @@ export type Step = {
   body?: string;
   stage?: Stage;
   tag?: string;
-  automation?: string;
+  workflow?: string;
   onlyIf?: "no_reply" | "not_booked";
   stats?: { done: number; replied: number; booked: number };
 };
@@ -105,14 +105,14 @@ export const stepMeta: Record<StepKind, { label: string; hint: string }> = {
   call: { label: "Call task", hint: "The front desk gets a task with a script" },
   wait: { label: "Wait", hint: "" },
   stage: { label: "Move to a stage", hint: "" },
-  tag: { label: "Add a tag", hint: "Can start other automations" },
+  tag: { label: "Add a tag", hint: "Can start other workflows" },
   untag: { label: "Remove a tag", hint: "" },
-  start: { label: "Start another automation", hint: "Hands them on; this one carries on too" },
+  start: { label: "Start another workflow", hint: "Hands them on; this one carries on too" },
 };
 export type Exit = "replied" | "booked" | "opted_out";
 export const exitMeta: Record<Exit, string> = { replied: "They reply", booked: "They book", opted_out: "They opt out" };
 
-export type Automation = {
+export type Workflow = {
   id: string;
   name: string;
   on: boolean;
@@ -214,8 +214,8 @@ export const recipes: { id: string; name: string; blurb: string; when: When; onl
     ],
   },
   {
-    id: "recall2", name: "Recall, second try", when: { event: "automation_finished", automation: "au_recall", ended: "finished" }, exits: ["booked", "opted_out"],
-    blurb: "When 6-month recall ends and they still haven't booked, wait a month and try once more with a different angle. Shows how automations chain.",
+    id: "recall2", name: "Recall, second try", when: { event: "workflow_finished", workflow: "au_recall", ended: "finished" }, exits: ["booked", "opted_out"],
+    blurb: "When 6-month recall ends and they still haven't booked, wait a month and try once more with a different angle. Shows how workflows chain.",
     steps: () => [
       w(30, "days"),
       s("email", { subject: "Still thinking about that cleaning?", body: "Hi {{first_name}},\n\nNo pressure. When you're ready, Saturday mornings are the easiest to get: {{booking_link}}" }),
@@ -245,11 +245,11 @@ export const recipes: { id: string; name: string; blurb: string; when: When; onl
   },
 ];
 
-const fromRecipe = (id: string, stats: Automation["stats"], on = true): Automation => {
+const fromRecipe = (id: string, stats: Workflow["stats"], on = true): Workflow => {
   const r = recipes.find((x) => x.id === id)!;
   return { id: `au_${id}`, name: r.name, on, when: r.when, only: r.only ?? [], steps: r.steps(), exits: r.exits, stats, recipe: id };
 };
-export const seedAutomations = (): Automation[] => [
+export const seedWorkflows = (): Workflow[] => [
   fromRecipe("speed", { inNow: 9, started30: 64, booked30: 23 }),
   fromRecipe("missed", { inNow: 2, started30: 31, booked30: 9 }),
   fromRecipe("reminders", { inNow: 24, started30: 71, booked30: 0 }),

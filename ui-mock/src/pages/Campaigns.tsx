@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
-import { ArrowLeft, CalendarClock, ChevronLeft, ChevronRight, Copy, Inbox, Loader2, Mail, MessageSquareText, Send, Sparkles, Trash2, Workflow } from "lucide-react";
+import { ArrowLeft, CalendarClock, ChevronLeft, ChevronRight, Copy, Inbox, Loader2, Mail, MessageSquareText, Send, Sparkles, Trash2, Workflow as WorkflowIcon } from "lucide-react";
 import { Badge, Button, Card, PageHeader, Segmented, Stat, cn, fmt, useToast } from "../components/ui";
 import { FieldPicker, FlagList, insertAt } from "../components/Crm";
 import { fillFields, segments, type SegmentId } from "../data/contacts";
@@ -8,13 +8,14 @@ import { brandFacts } from "../data/brand";
 import type { Campaign, Send as SendCh } from "../data/messaging";
 import { audienceLabel, audienceOf, deleteCampaign, draftCampaign, duplicateCampaign, messageChecks, newCampaign, sendCampaign, smsParts, withExamples, updateCampaign, useCrm } from "../lib/crm";
 import { timeAgo } from "../lib/runs";
+import { isOn, useOn } from "../lib/features";
 
 const pct = (n: number | undefined, of: number) => (n === undefined ? "—" : of ? `${Math.round((n / of) * 100)}%` : "0%");
 const when = (c: Campaign) =>
   c.status === "sent" ? `Sent ${timeAgo(c.sentAt!)}` : c.status === "sending" ? "Sending…" : c.status === "scheduled" ? `Goes ${new Date(c.sendAt!).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}` : `Draft · ${timeAgo(c.createdAt)}`;
 
 /**
- * Campaigns: one email or one text to a list, sent once. Automations (the
+ * Campaigns: one email or one text to a list, sent once. Workflows (the
  * ones that run when something happens) are their own page; both write to the
  * same contact timelines and replies land in the same Inbox.
  */
@@ -27,14 +28,16 @@ function CampaignList() {
   const st = useCrm();
   const navigate = useNavigate();
   const start = (ch: SendCh) => navigate(`/campaigns/${newCampaign(ch)}`);
+  const smsOn = useOn("sms");
+  const emailOn = useOn("email");
   const sent = st.campaigns.filter((c) => c.stats);
   const total = (k: "sent" | "replied" | "booked") => sent.reduce((a, c) => a + (c.stats![k] ?? 0), 0);
   return (
     <>
       <PageHeader
         title="Campaigns"
-        sub={<>One email or text to a list, sent once. For messages that go out when something happens (a new lead, a visit), use <Link to="/automations" className="underline underline-offset-2">Automations</Link>.</>}
-        actions={<><Button icon={<MessageSquareText size={14} />} onClick={() => start("sms")}>New text</Button><Button variant="primary" icon={<Mail size={14} />} onClick={() => start("email")}>New email</Button></>}
+        sub={<>One email or text to a list, sent once. For messages that go out when something happens (a new lead, a visit), use <Link to="/workflows" className="underline underline-offset-2">Workflows</Link>.</>}
+        actions={<>{smsOn && <Button icon={<MessageSquareText size={14} />} onClick={() => start("sms")}>New text</Button>}{emailOn && <Button variant="primary" icon={<Mail size={14} />} onClick={() => start("email")}>New email</Button>}</>}
       />
       {sent.length > 0 && (
         <Card className="mb-5 grid grid-cols-3 gap-5">
@@ -136,7 +139,10 @@ function Editor({ id }: { id: string }) {
             <Card className="space-y-4">
               <div className="flex flex-wrap items-center gap-3">
                 <span className="w-20 text-[13px] font-medium">Send as</span>
-                <Segmented<SendCh> label="Channel" value={c.channel} onChange={(ch) => up({ channel: ch })} options={[{ id: "email", label: <span className="inline-flex items-center gap-1"><Mail size={12} />Email</span> }, { id: "sms", label: <span className="inline-flex items-center gap-1"><MessageSquareText size={12} />Text</span> }]} />
+                <Segmented<SendCh> label="Channel" value={c.channel} onChange={(ch) => up({ channel: ch })} options={[
+                  ...(isOn("email") || c.channel === "email" ? [{ id: "email" as SendCh, label: <span className="inline-flex items-center gap-1"><Mail size={12} />Email</span> }] : []),
+                  ...(isOn("sms") || c.channel === "sms" ? [{ id: "sms" as SendCh, label: <span className="inline-flex items-center gap-1"><MessageSquareText size={12} />Text</span> }] : []),
+                ]} />
               </div>
               <div className="flex flex-wrap items-start gap-3">
                 <span className="w-20 pt-2 text-[13px] font-medium">To</span>
@@ -185,7 +191,7 @@ function Editor({ id }: { id: string }) {
               </div>
             </Card>
           )}
-          {locked && <p className="flex items-center gap-1.5 text-[12.5px] text-muted"><Workflow size={13} />Want this to go out on its own every time someone becomes due? <Link to="/automations" className="underline underline-offset-2">Make it an automation</Link>.</p>}
+          {locked && <p className="flex items-center gap-1.5 text-[12.5px] text-muted"><WorkflowIcon size={13} />Want this to go out on its own every time someone becomes due? <Link to="/workflows" className="underline underline-offset-2">Make it a workflow</Link>.</p>}
         </div>
 
         {/* What one real recipient will see. */}

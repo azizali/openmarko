@@ -1,3 +1,4 @@
+import { useOn } from "../lib/features";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { Star, Phone, Navigation, MousePointerClick, Eye, Sparkles, Send, ImagePlus, Calendar, Check, Loader2 } from "lucide-react";
@@ -35,6 +36,7 @@ const unreplied = (id: string) => locationData[id].reviews.filter((r) => !r.repl
 export default function Profile() {
   // The tab lives in the URL so the sidebar can link straight to Reviews.
   const [params, setParams] = useSearchParams();
+  const reviewsOn = useOn("reviews");
   const t = params.get("tab");
   const tab: Tab = t === "reviews" ? t : "overview";
   const setTab = (v: Tab) => setParams(v === "overview" ? {} : { tab: v }, { replace: true });
@@ -52,7 +54,7 @@ export default function Profile() {
       <ScopeBar kind="location" />
       <Tabs value={tab} onChange={setTab} tabs={[
         { id: "overview", label: "Overview" },
-        { id: "reviews", label: "Reviews", count: location ? (connected ? unreplied(location.id) : undefined) : locations.filter((l) => hasGoogleProfile(l.id, setup)).reduce((a, l) => a + unreplied(l.id), 0) },
+        ...(!reviewsOn ? [] : [{ id: "reviews" as Tab, label: "Reviews", count: location ? (connected ? unreplied(location.id) : undefined) : locations.filter((l) => hasGoogleProfile(l.id, setup)).reduce((a, l) => a + unreplied(l.id), 0) }]),
       ]} />
       <div className="mt-6">
         {location ? (connected ? <ProfileBody key={location.id} locationId={location.id} tab={tab} /> : <Needs kind="googleProfile" locationId={location.id} note={tab === "reviews" ? "Reviews come from the Google profile." : "This page reads the Google profile."} />) : (

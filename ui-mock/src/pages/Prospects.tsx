@@ -7,6 +7,7 @@ import { ProspectMap } from "../components/ProspectMap";
 import { ContactCard, ContactIcons } from "../components/ProspectContact";
 import { NewAuditModal } from "../components/NewAudit";
 import { LeadBadge, SendToCampaignButton, SendToCampaignModal } from "../components/Outreach";
+import { isOn, useOn } from "../lib/features";
 import { leadFor, useOutreach, type LeadStatus } from "../lib/outreach";
 import { googleCategories, opportunity, prospectGrid, prospectSources, searchMarket, specFromParams, specToQuery, suggestedSearches, type Prospect, type Spec } from "../data/prospects";
 import { startRun, timeAgo } from "../lib/runs";
@@ -85,6 +86,7 @@ export default function Prospects() {
   const shares = useShares();
   const outreach = useOutreach();
   const [sending, setSending] = useState(false);
+  const outreachOn = useOn("outreach");
   const spec = specFromParams(params);
   const [draft, setDraft] = useState<Spec>(spec);
   const [mode, setMode] = useState<"one" | "bulk">("one");
@@ -163,7 +165,7 @@ export default function Prospects() {
       else if (e.key === "x" && r) toggle(r.p.id);
       else if (e.key === "Enter" && r && !t.closest("button, a")) setExpanded(expanded === r.p.id ? null : r.p.id);
       else if (e.key === "a" && r) navigate(pathOf(r.p));
-      else if (e.key === "s" && chosen.length) setSending(true);
+      else if (e.key === "s" && chosen.length && isOn("outreach")) setSending(true);
       else return;
       e.preventDefault();
     };
@@ -374,7 +376,7 @@ export default function Prospects() {
                   <span className="ml-auto flex flex-wrap gap-1.5">
                     <Button size="sm" icon={<Download size={12} />} onClick={() => exportCsv(chosen)}>Export</Button>
                     <Button size="sm" icon={<UserPlus size={12} />} onClick={() => { toast(`${chosen.length} added to pipeline`); setSel(new Set()); }}>Add to pipeline</Button>
-                    <Button size="sm" variant="primary" icon={<Send size={12} />} onClick={() => setSending(true)}>Send {chosen.length} to campaign</Button>
+                    {outreachOn && <Button size="sm" variant="primary" icon={<Send size={12} />} onClick={() => setSending(true)}>Send {chosen.length} to campaign</Button>}
                   </span>
                 </>
               ) : (

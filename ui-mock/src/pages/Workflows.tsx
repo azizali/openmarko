@@ -4,8 +4,9 @@ import { ArrowDown, ArrowLeft, ArrowUp, ChevronRight, Hourglass, Mail, MessageSq
 import { Badge, Button, Card, Checkbox, Modal, PageHeader, Stat, Toggle, cn, fmt, useToast } from "../components/ui";
 import { FieldPicker, FlagList } from "../components/Crm";
 import { segments, sources, stages, tagOptions, type SegmentId, type Source, type Stage } from "../data/contacts";
-import { condMeta, dateFields, eventGroups, eventMeta, exitMeta, recipes, stepMeta, type Automation, type Cond, type CondField, type DateField, type EventId, type Exit, type Step, type StepKind, type Wait, type When } from "../data/messaging";
-import { addAutomation, addStep, deleteAutomation, describeWhen, messageChecks, moveStep, removeStep, smsParts, withExamples, updateAutomation, updateStep, useCrm } from "../lib/crm";
+import { condMeta, dateFields, eventGroups, eventMeta, exitMeta, recipes, stepMeta, type Workflow, type Cond, type CondField, type DateField, type EventId, type Exit, type Step, type StepKind, type Wait, type When } from "../data/messaging";
+import { isOn } from "../lib/features";
+import { addWorkflow, addStep, deleteWorkflow, describeWhen, messageChecks, moveStep, removeStep, smsParts, withExamples, updateWorkflow, updateStep, useCrm } from "../lib/crm";
 
 const stepIcon: Record<StepKind, typeof Mail> = { sms: MessageSquareText, email: Mail, call: Phone, wait: Hourglass, stage: FlagIcon, tag: Tag, untag: TagsIcon, start: Play };
 const waitText = (w: Wait) => `${w.n} ${w.n === 1 ? w.unit.replace(/s$/, "") : w.unit}${w.before ? " before the appointment" : ""}`;
@@ -13,11 +14,11 @@ const short = (w: Wait) => `${w.n}${w.unit[0]}${w.before ? " before" : ""}`;
 const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : "0%");
 
 /**
- * Automations: sequences that run for each person when something happens.
+ * Workflows: sequences that run for each person when something happens.
  * Texts and emails send on their own; call steps make a task in the Inbox.
- * Everyone stops when they reply, book or opt out (per automation).
+ * Everyone stops when they reply, book or opt out (per workflow).
  */
-export default function Automations() {
+export default function Workflows() {
   const { id } = useParams();
   return id ? <Editor id={id} /> : <List />;
 }
@@ -27,41 +28,41 @@ function List() {
   const navigate = useNavigate();
   const { toast, node } = useToast();
   const [picking, setPicking] = useState(false);
-  const make = (r: string | null) => { setPicking(false); navigate(`/automations/${addAutomation(r)}`); };
+  const make = (r: string | null) => { setPicking(false); navigate(`/workflows/${addWorkflow(r)}`); };
   return (
     <>
       <PageHeader
-        title="Automations"
+        title="Workflows"
         sub={<>Texts, emails and call tasks that go out on their own when something happens. Each person stops when they reply, book or opt out. For a one-time send to a list, use <Link to="/campaigns" className="underline underline-offset-2">Campaigns</Link>.</>}
-        actions={<Button variant="primary" icon={<Plus size={14} />} onClick={() => setPicking(true)}>New automation</Button>}
+        actions={<Button variant="primary" icon={<Plus size={14} />} onClick={() => setPicking(true)}>New workflow</Button>}
       />
       <Card pad={false}>
         <div className="hidden grid-cols-[44px_minmax(0,1fr)_200px_80px_80px_80px_20px] gap-3 border-b border-line px-5 py-2.5 text-[12.5px] text-muted md:grid">
-          <span>On</span><span>Automation</span><span>Steps</span><span className="text-right">In it now</span><span className="text-right">Started, 30d</span><span className="text-right">Booked, 30d</span><span />
+          <span>On</span><span>Workflow</span><span>Steps</span><span className="text-right">In it now</span><span className="text-right">Started, 30d</span><span className="text-right">Booked, 30d</span><span />
         </div>
-        {st.automations.map((a) => (
+        {st.workflows.map((a) => (
           <div key={a.id} className="grid grid-cols-[44px_minmax(0,1fr)_20px] items-center gap-3 border-b border-line px-5 py-3 last:border-0 hover:bg-hover md:grid-cols-[44px_minmax(0,1fr)_200px_80px_80px_80px_20px]">
-            <Toggle label={`${a.name} on`} checked={a.on} onChange={(v) => { updateAutomation(a.id, { on: v }); toast(v ? `${a.name} is on` : `${a.name} is off. People already in it finish their current step`); }} />
-            <Link to={`/automations/${a.id}`} className="min-w-0">
+            <Toggle label={`${a.name} on`} checked={a.on} onChange={(v) => { updateWorkflow(a.id, { on: v }); toast(v ? `${a.name} is on` : `${a.name} is off. People already in it finish their current step`); }} />
+            <Link to={`/workflows/${a.id}`} className="min-w-0">
               <div className={cn("truncate text-[14px] font-medium", !a.on && "text-muted")}>{a.name}</div>
               <div className="truncate text-[12.5px] text-muted">When {describeWhen(st, a.when).replace(/^./, (c) => c.toLowerCase())}{a.only.length ? ` · only if ${a.only.length} condition${a.only.length > 1 ? "s" : ""}` : ""}</div>
               <div className="mt-1 flex gap-3 text-[12px] text-muted md:hidden"><Strip steps={a.steps} /><span>{a.stats.inNow} in it · {a.stats.booked30} booked</span></div>
             </Link>
-            <Link to={`/automations/${a.id}`} className="hidden md:block"><Strip steps={a.steps} /></Link>
+            <Link to={`/workflows/${a.id}`} className="hidden md:block"><Strip steps={a.steps} /></Link>
             <span className="num hidden text-right md:block">{fmt(a.stats.inNow)}</span>
             <span className="num hidden text-right text-muted md:block">{fmt(a.stats.started30)}</span>
             <span className="num hidden text-right font-medium md:block">{a.stats.booked30 || <span className="font-normal text-subtle">—</span>}</span>
-            <Link to={`/automations/${a.id}`} aria-label={`Open ${a.name}`}><ChevronRight size={15} className="text-subtle" /></Link>
+            <Link to={`/workflows/${a.id}`} aria-label={`Open ${a.name}`}><ChevronRight size={15} className="text-subtle" /></Link>
           </div>
         ))}
-        {!st.automations.length && <p className="px-5 py-12 text-center text-[13px] text-muted">No automations yet.</p>}
+        {!st.workflows.length && <p className="px-5 py-12 text-center text-[13px] text-muted">No workflows yet.</p>}
       </Card>
-      <p className="mt-3 text-[12.5px] text-subtle">Booked counts people who booked while in the automation. Reminders and review requests don't aim for bookings, so they show —.</p>
+      <p className="mt-3 text-[12.5px] text-subtle">Booked counts people who booked while in the workflow. Reminders and review requests don't aim for bookings, so they show —.</p>
 
-      <Modal open={picking} onClose={() => setPicking(false)} title="New automation" width={620}>
+      <Modal open={picking} onClose={() => setPicking(false)} title="New workflow" width={620}>
         <ul className="space-y-2">
           {recipes.map((r) => {
-            const used = st.automations.some((a) => a.recipe === r.id);
+            const used = st.workflows.some((a) => a.recipe === r.id);
             return (
               <li key={r.id}>
                 <button onClick={() => make(r.id)} className="flex w-full items-start gap-3 rounded-xl border border-line p-3.5 text-left hover:border-line-strong hover:bg-hover">
@@ -103,9 +104,9 @@ function Editor({ id }: { id: string }) {
   const st = useCrm();
   const navigate = useNavigate();
   const { toast, node } = useToast();
-  const a = st.automations.find((x) => x.id === id);
-  if (!a) return <Navigate replace to="/automations" />;
-  const up = (p: Partial<Automation>) => updateAutomation(a.id, p);
+  const a = st.workflows.find((x) => x.id === id);
+  if (!a) return <Navigate replace to="/workflows" />;
+  const up = (p: Partial<Workflow>) => updateWorkflow(a.id, p);
   const sends = a.steps.filter((s) => s.kind === "sms" || s.kind === "email");
   const problems = sends.flatMap((s) => messageChecks(s.kind as "sms" | "email", s.subject ?? "", s.body ?? "", st.channels.sms.optOutLine).filter((f) => f.level !== "info").map((f) => ({ ...f, text: `${s.kind === "sms" ? "Text" : "Email"} ${sends.indexOf(s) + 1}: ${f.text}` })));
   const canOn = a.steps.length > 0 && !problems.some((p) => p.level === "block");
@@ -113,12 +114,12 @@ function Editor({ id }: { id: string }) {
   return (
     <>
       <PageHeader
-        crumbs={<Link to="/automations" className="inline-flex items-center gap-1 hover:text-fg"><ArrowLeft size={13} /> Automations</Link>}
-        title={<input value={a.name} onChange={(e) => up({ name: e.target.value })} aria-label="Automation name" className="w-[min(560px,80vw)] bg-transparent outline-none" />}
+        crumbs={<Link to="/workflows" className="inline-flex items-center gap-1 hover:text-fg"><ArrowLeft size={13} /> Workflows</Link>}
+        title={<input value={a.name} onChange={(e) => up({ name: e.target.value })} aria-label="Workflow name" className="w-[min(560px,80vw)] bg-transparent outline-none" />}
         sub={a.on ? "On. Changes apply to the next step each person reaches." : "Off. Nobody new starts it."}
         actions={<>
           <span className="flex items-center gap-2 text-[13px]"><Toggle label="On" checked={a.on} onChange={(v) => { if (v && !canOn) return toast("Fix the red items first"); up({ on: v }); toast(v ? "It's on" : "It's off"); }} />{a.on ? "On" : "Off"}</span>
-          <Button variant="ghost" icon={<Trash2 size={14} />} onClick={() => { deleteAutomation(a.id); navigate("/automations"); }}>Delete</Button>
+          <Button variant="ghost" icon={<Trash2 size={14} />} onClick={() => { deleteWorkflow(a.id); navigate("/workflows"); }}>Delete</Button>
         </>}
       />
 
@@ -165,7 +166,7 @@ function Editor({ id }: { id: string }) {
   );
 }
 
-function AddHere({ at, a }: { at: number; a: Automation }) {
+function AddHere({ at, a }: { at: number; a: Workflow }) {
   const [open, setOpen] = useState(false);
   return (
     <li className="relative flex h-9 items-center justify-center">
@@ -175,7 +176,7 @@ function AddHere({ at, a }: { at: number; a: Automation }) {
         <>
           <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
           <div className="anim-fade absolute top-full z-30 mt-1 w-60 rounded-lg border border-line bg-surface p-1 shadow-float">
-            {(Object.keys(stepMeta) as StepKind[]).map((k) => {
+            {(Object.keys(stepMeta) as StepKind[]).filter((k) => (k !== "sms" && k !== "email") || isOn(k)).map((k) => {
               const I = stepIcon[k];
               return (
                 <button key={k} onClick={() => { addStep(a.id, at, k); setOpen(false); }} className="flex w-full items-start gap-2.5 rounded px-2 py-1.5 text-left hover:bg-hover">
@@ -190,8 +191,8 @@ function AddHere({ at, a }: { at: number; a: Automation }) {
   );
 }
 
-function StepCard({ a, s, i, optOut }: { a: Automation; s: Step; i: number; optOut: string }) {
-  const all = useCrm().automations;
+function StepCard({ a, s, i, optOut }: { a: Workflow; s: Step; i: number; optOut: string }) {
+  const all = useCrm().workflows;
   const I = stepIcon[s.kind];
   const set = (p: Partial<Step>) => updateStep(a.id, s.id, p);
   const tools = (
@@ -214,10 +215,12 @@ function StepCard({ a, s, i, optOut }: { a: Automation; s: Step; i: number; optO
   );
 
   const msg = s.kind === "sms" || s.kind === "email";
+  const chOff = msg && !isOn(s.kind as "sms" | "email");
   const flags = msg ? messageChecks(s.kind as "sms" | "email", s.subject ?? "", s.body ?? "", optOut).filter((f) => f.level !== "info") : [];
   const parts = s.kind === "sms" && s.body ? smsParts(`${withExamples(s.body)} ${optOut}`) : null;
   return (
-    <Card className="space-y-3">
+    <Card className={cn("space-y-3", chOff && "opacity-60")}>
+      {chOff && <p className="rounded-md bg-warn-soft px-3 py-2 text-[12.5px] text-warn">Skipped while {s.kind === "sms" ? "Texting" : "Email"} is turned off in Settings → Features. People move on to the next step.</p>}
       <div className="flex flex-wrap items-center gap-2">
         <span className={cn("grid size-8 place-items-center rounded-lg", s.kind === "call" ? "bg-warn-soft text-warn" : "bg-hover text-fg")}><I size={15} /></span>
         <span className="text-[13.5px] font-medium">{stepMeta[s.kind].label}</span>
@@ -242,7 +245,7 @@ function StepCard({ a, s, i, optOut }: { a: Automation; s: Step; i: number; optO
         </>
       )}
       {s.kind === "stage" && <select value={s.stage} onChange={(e) => set({ stage: e.target.value as Stage })} aria-label="Stage" className={input}>{stages.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</select>}
-      {s.kind === "start" && <select value={s.automation ?? ""} onChange={(e) => set({ automation: e.target.value })} aria-label="Automation" className={input}>{all.filter((x) => x.id !== a.id).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>}
+      {s.kind === "start" && <select value={s.workflow ?? ""} onChange={(e) => set({ workflow: e.target.value })} aria-label="Workflow" className={input}>{all.filter((x) => x.id !== a.id).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>}
       {(s.kind === "tag" || s.kind === "untag") && <select value={s.tag} onChange={(e) => set({ tag: e.target.value })} aria-label="Tag" className={input}>{[...new Set([...(s.tag ? [s.tag] : []), ...tagOptions])].map((t) => <option key={t}>{t}</option>)}</select>}
     </Card>
   );
@@ -252,17 +255,17 @@ function StepCard({ a, s, i, optOut }: { a: Automation; s: Step; i: number; optO
 const field = "h-9 rounded-lg border border-line bg-surface px-2.5 text-[13.5px] outline-none focus:border-line-strong";
 
 /** When something happens, and only if the contact matches. */
-function WhenCard({ a }: { a: Automation }) {
+function WhenCard({ a }: { a: Workflow }) {
   const st = useCrm();
   const w = a.when;
-  const set = (p: Partial<When>) => updateAutomation(a.id, { when: { ...w, ...p } });
+  const set = (p: Partial<When>) => updateWorkflow(a.id, { when: { ...w, ...p } });
   const pick = (event: EventId) => {
     const needs = eventMeta[event].needs;
-    updateAutomation(a.id, { when: { event, ...(needs === "tag" ? { tag: w.tag ?? "Invisalign" } : needs === "stage" ? { stage: w.stage ?? "booked" } : needs === "list" ? { list: w.list ?? "recall" } : needs === "date" ? { date: w.date ?? { field: "last_visit", days: 180, dir: "after" } } : needs === "automation" ? { automation: st.automations.find((x) => x.id !== a.id)?.id, ended: "any" } : needs === "campaign" ? { campaign: "any" } : {}) } });
+    updateWorkflow(a.id, { when: { event, ...(needs === "tag" ? { tag: w.tag ?? "Invisalign" } : needs === "stage" ? { stage: w.stage ?? "booked" } : needs === "list" ? { list: w.list ?? "recall" } : needs === "date" ? { date: w.date ?? { field: "last_visit", days: 180, dir: "after" } } : needs === "workflow" ? { workflow: st.workflows.find((x) => x.id !== a.id)?.id, ended: "any" } : needs === "campaign" ? { campaign: "any" } : {}) } });
   };
   const needs = eventMeta[w.event].needs;
   const only = a.only;
-  const setOnly = (next: Cond[]) => updateAutomation(a.id, { only: next });
+  const setOnly = (next: Cond[]) => updateWorkflow(a.id, { only: next });
   return (
     <Card className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -285,8 +288,8 @@ function WhenCard({ a }: { a: Automation }) {
             <span className="text-[13px]">their</span>
             <select value={w.date.field} onChange={(e) => set({ date: { ...w.date!, field: e.target.value as DateField } })} aria-label="Date" className={field}>{(Object.keys(dateFields) as DateField[]).map((f) => <option key={f} value={f}>{dateFields[f]}</option>)}</select>
           </>}
-          {needs === "automation" && <>
-            <select value={w.automation} onChange={(e) => set({ automation: e.target.value })} aria-label="Automation" className={field}>{st.automations.filter((x) => x.id !== a.id).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
+          {needs === "workflow" && <>
+            <select value={w.workflow} onChange={(e) => set({ workflow: e.target.value })} aria-label="Workflow" className={field}>{st.workflows.filter((x) => x.id !== a.id).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
             <select value={w.ended ?? "any"} onChange={(e) => set({ ended: e.target.value as When["ended"] })} aria-label="How it ended" className={field}><option value="any">ends either way</option><option value="finished">gets through every step</option><option value="stopped">stops early (replied, booked…)</option></select>
           </>}
           {needs === "campaign" && <select value={w.campaign} onChange={(e) => set({ campaign: e.target.value })} aria-label="Campaign" className={field}><option value="any">Any campaign</option>{st.campaigns.map((c) => <option key={c.id} value={c.id}>{c.name || "Untitled"}</option>)}</select>}
@@ -335,16 +338,16 @@ function CondRow({ k, first, onChange, onRemove }: { k: Cond; first: boolean; on
   );
 }
 
-/** Automations that hand people to this one, and the ones it hands on to. */
-function Linked({ a }: { a: Automation }) {
+/** Workflows that hand people to this one, and the ones it hands on to. */
+function Linked({ a }: { a: Workflow }) {
   const st = useCrm();
-  const hands = (from: Automation, to: Automation) =>
-    (to.when.event === "automation_finished" && to.when.automation === from.id) ||
-    from.steps.some((s) => (s.kind === "start" && s.automation === to.id) || (s.kind === "tag" && to.when.event === "tag_added" && to.when.tag === s.tag) || (s.kind === "untag" && to.when.event === "tag_removed" && to.when.tag === s.tag));
-  const before = st.automations.filter((b) => b.id !== a.id && hands(b, a));
-  const after = st.automations.filter((b) => b.id !== a.id && hands(a, b));
+  const hands = (from: Workflow, to: Workflow) =>
+    (to.when.event === "workflow_finished" && to.when.workflow === from.id) ||
+    from.steps.some((s) => (s.kind === "start" && s.workflow === to.id) || (s.kind === "tag" && to.when.event === "tag_added" && to.when.tag === s.tag) || (s.kind === "untag" && to.when.event === "tag_removed" && to.when.tag === s.tag));
+  const before = st.workflows.filter((b) => b.id !== a.id && hands(b, a));
+  const after = st.workflows.filter((b) => b.id !== a.id && hands(a, b));
   if (!after.length && !before.length) return null;
-  const row = (b: Automation) => <li key={b.id}><Link to={`/automations/${b.id}`} className="flex items-center gap-1.5 text-[13px] hover:underline"><Link2 size={12} className="text-muted" />{b.name}{!b.on && <Badge>Off</Badge>}</Link></li>;
+  const row = (b: Workflow) => <li key={b.id}><Link to={`/workflows/${b.id}`} className="flex items-center gap-1.5 text-[13px] hover:underline"><Link2 size={12} className="text-muted" />{b.name}{!b.on && <Badge>Off</Badge>}</Link></li>;
   return (
     <Card className="space-y-3">
       {before.length > 0 && <div><div className="mb-1 text-[12.5px] text-muted">Starts after</div><ul className="space-y-1">{before.map(row)}</ul></div>}

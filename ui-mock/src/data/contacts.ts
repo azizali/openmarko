@@ -69,7 +69,7 @@ export type Event = {
   dir?: "in" | "out";
   subject?: string;
   body: string;
-  by?: string; // "You", "Marko", or the campaign / automation that sent it
+  by?: string; // "You", "Marko", or the campaign / workflow that sent it
   call?: { result: CallResult; seconds: number };
   read?: boolean;
 };

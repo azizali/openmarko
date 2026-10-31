@@ -11,6 +11,7 @@ import {
   setRowStatus, undoChange, useAds, verdictOf, verdicts, type Cadence, type Goal, type Rec, type RecKind, type Verdict,
 } from "../lib/ads";
 import { saveRowToSwipe } from "../lib/creatives";
+import { useOn } from "../lib/features";
 import { timeAgo } from "../lib/runs";
 
 type Col = "name" | "verdict" | "budget" | "spend" | "results" | "cpa" | "ctr" | "frequency";
@@ -41,7 +42,9 @@ export default function Ads() {
   const tab = params.get("tab") === "changes" ? "changes" : "campaigns";
   const g = st.goal;
   const live = connectedPlatforms(st);
-  const recs = recommendations(st);
+  const studioOn = useOn("ad_studio");
+  // Without Creative studio there's nowhere to make fresh versions, so those recommendations are left out.
+  const recs = recommendations(st).filter((r) => studioOn || (r.kind !== "refresh" && r.kind !== "more"));
   const rows = st.rows.filter((r) => st.connected[r.platform]);
 
   // The goal, this week: every ad's results add up to the account's.
@@ -84,7 +87,7 @@ export default function Ads() {
         sub={`Every campaign against one goal: ${resultKinds[g.result].label.toLowerCase()} at ${money(g.target)} or less. Marko reviews ${cadences[g.cadence].label.toLowerCase()} and ${g.mode === "auto" ? "makes the safe changes itself" : "recommends changes for you to approve"}.`}
         actions={<>
           {live.map((p) => <Link key={p} to="/settings/ads" title={`${adPlatforms[p].name} · ${toolOf(p).account}`} className="inline-flex h-9 items-center gap-2 rounded-lg border border-line bg-surface px-2.5 text-[13px] shadow-card hover:bg-hover"><AdPlatformMark platform={p} size={20} /><Settings2 size={13} className="text-muted" /></Link>)}
-          <Link to="/ads/studio"><Button icon={<Wand2 size={14} />}>Make creatives</Button></Link>
+          {studioOn && <Link to="/ads/studio"><Button icon={<Wand2 size={14} />}>Make creatives</Button></Link>}
           {live.length > 0 && <Button variant="primary" disabled={st.reviewing} onClick={review} icon={st.reviewing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}>{st.reviewing ? "Reviewing…" : "Review now"}</Button>}
         </>}
       />
@@ -168,7 +171,7 @@ export default function Ads() {
                     <Button size="sm" icon={<Pause size={12} />} onClick={() => { setRowStatus(picked.map((r) => r.id), "paused"); setSel([]); toast(`Paused ${picked.length}`); }}>Pause</Button>
                     <Button size="sm" icon={<Play size={12} />} onClick={() => { setRowStatus(picked.map((r) => r.id), "active"); setSel([]); toast(`Turned on ${picked.length}`); }}>Turn on</Button>
                     {level === "ad" && <Button size="sm" icon={<Bookmark size={12} />} onClick={() => { picked.forEach((r) => saveRowToSwipe(r)); toast("Saved to the ad swipe file"); }}>Save to swipe file</Button>}
-                    {level === "ad" && <Button size="sm" variant="primary" icon={<Wand2 size={12} />} onClick={() => fresh(picked.map((r) => r.id))}>Make variations</Button>}
+                    {level === "ad" && studioOn && <Button size="sm" variant="primary" icon={<Wand2 size={12} />} onClick={() => fresh(picked.map((r) => r.id))}>Make variations</Button>}
                   </>
                 ) : (
                   <>
@@ -311,7 +314,7 @@ function GoalDrawer({ open, onClose, goal }: { open: boolean; onClose: () => voi
             <span><span className="block text-[13.5px]">Launch new ads without asking</span><span className="text-[12.5px] text-muted">Fresh versions of tired ads go live on their own. Off means they wait in Creative studio.</span></span>
             <Toggle label="Launch new ads without asking" checked={g.launch} onChange={(v) => setG({ ...g, launch: v })} />
           </label>
-          <p className="m-0 text-[12.5px] text-muted">Auto mode pauses, scales, cuts and blocks search terms; it never goes over the monthly cap, and every change can be undone from Changes.</p>
+          <p className="m-0 text-[12.5px] text-muted">Auto mode pauses, scales, cuts and blocks search terms; it never goes over the monthly cap, and every change can be undone from Changes. The same switches are in <Link to="/settings/autopilot" className="underline underline-offset-2">Settings → Autopilot</Link>, and the review cadence in <Link to="/settings/schedules" className="underline underline-offset-2">Schedules</Link>.</p>
         </section>
       </div>
     </Drawer>

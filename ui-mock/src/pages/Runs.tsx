@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { scheduleForRun } from "../lib/schedules";
 import { Radar, ScanSearch, Store, Users, Target, Check, X, Loader2, Sparkles, MapPinned, Link2 } from "lucide-react";
 import { Badge, Card, PageHeader, Progress, Tabs, cn } from "../components/ui";
 import { RunButton } from "../components/RunStatus";
@@ -35,7 +36,7 @@ export default function Runs() {
               ) : (
                 <div className="mt-2 text-[12.5px] text-muted">Last {last ? timeAgo(last.started + (last.durationSec ?? 0) * 1000) : "never"}</div>
               )}
-              <div className="mt-1 text-[12px] text-subtle">{runKinds[k].schedule}</div>
+              <div className="mt-1 text-[12px] text-subtle">{scheduleForRun(k)}</div>
             </Card>
           );
         })}

@@ -6,7 +6,7 @@
 // Mock: respond() matches intents against the mock data. Real build: send the
 // conversation and page context to a backend route that calls Claude with
 // tools mapped to the same executors (GBP API, WordPress, citation partners),
-// and stream these same blocks back. Changes Settings → Automation hasn't
+// and stream these same blocks back. Changes Settings → Autopilot hasn't
 // allowed stay as task rows that wait for a click.
 
 import { useSyncExternalStore } from "react";

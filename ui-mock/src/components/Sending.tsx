@@ -111,7 +111,7 @@ export function EmailSetup({ open, onClose, toast }: { open: boolean; onClose: (
       <Steps names={["Provider", "Connect", "Domain", "DNS", "Done"]} at={idx} />
       {step === "pick" && (
         <>
-          <p className="mb-3 text-[13.5px] text-muted">Campaigns, automations and Inbox replies go out through this. You can switch later without losing anything.</p>
+          <p className="mb-3 text-[13.5px] text-muted">Campaigns, workflows and Inbox replies go out through this. You can switch later without losing anything.</p>
           <Pick items={emailProviders} onPick={(id) => { setProvider(id); setKeys({}); setStep(emailProviders[id].fields.length ? "keys" : "domain"); }} />
         </>
       )}
@@ -306,7 +306,7 @@ export function PhoneSetup({ open, onClose, toast, startAt }: { open: boolean; o
             <li className="flex items-center gap-2 px-3 py-2.5"><span className="flex-1">Business registration</span><Badge tone={regTone(sms.brand)}>{sms.brand === "pending" && <Loader2 size={10} className="animate-spin" />}{regLabel(sms.brand)}</Badge></li>
             <li className="flex items-center gap-2 px-3 py-2.5"><span className="flex-1">Texting campaign</span><Badge tone={regTone(sms.campaign)}>{sms.campaign === "pending" && <Loader2 size={10} className="animate-spin" />}{regLabel(sms.campaign)}</Badge></li>
           </ul>
-          <p className="text-[12.5px] text-muted">{sms.campaign === "approved" ? "Texting is live. Missed calls get texted back and automations can send texts." : "Calls work now. Texts start once the carriers approve the campaign, usually 1–3 weeks. We'll email you."}</p>
+          <p className="text-[12.5px] text-muted">{sms.campaign === "approved" ? "Texting is live. Missed calls get texted back and workflows can send texts." : "Calls work now. Texts start once the carriers approve the campaign, usually 1–3 weeks. We'll email you."}</p>
           <div className="flex justify-end"><Button variant="primary" onClick={onClose}>Done</Button></div>
         </div>
       )}

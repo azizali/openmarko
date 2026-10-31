@@ -6,6 +6,7 @@ import { ChannelIcon, Composer, ContactDrawer, StageBadge, Timeline } from "../c
 import { fillFields, type Channel } from "../data/contacts";
 import { contactOf, conversations, eventsOf, markRead, openTasks, setStage, skipTask, startedText, useCrm, type Conversation } from "../lib/crm";
 import { timeAgo } from "../lib/runs";
+import { isOn } from "../lib/features";
 
 type Filter = "waiting" | "calls" | "all";
 type ChFilter = Channel | "any";
@@ -14,7 +15,7 @@ type ChFilter = Channel | "any";
  * Inbox: every text, email and call with every contact, newest first. One
  * thread per person whatever the channel, so a lead who texted, then emailed,
  * then called reads as one conversation. Calls to make are the call tasks
- * automations create, with the script to read.
+ * workflows create, with the script to read.
  */
 export default function Inbox() {
   const st = useCrm();
@@ -51,7 +52,7 @@ export default function Inbox() {
               options={[{ id: "waiting", label: `Needs reply${waitingN ? ` · ${waitingN}` : ""}` }, { id: "calls", label: <span className={cn(overdue > 0 && "text-bad")}>Calls to make{tasks.length ? ` · ${tasks.length}` : ""}</span> }, { id: "all", label: "All" }]} />
             {filter !== "calls" && (
               <div className="flex gap-1">
-                {(["any", "sms", "email", "call"] as ChFilter[]).map((x) => (
+                {(["any", "sms", "email", "call"] as ChFilter[]).filter((x) => (x !== "sms" && x !== "email") || isOn(x)).map((x) => (
                   <button key={x} onClick={() => go({ ch: x === "any" ? null : x })} aria-pressed={ch === x} className={cn("inline-flex h-7 items-center gap-1 rounded-full border px-2.5 text-[12px]", ch === x ? "border-ink bg-ink text-on-ink" : "border-line text-muted hover:text-fg")}>
                     {x !== "any" && <ChannelIcon ch={x} size={11} />}{x === "any" ? "Every channel" : x === "sms" ? "Texts" : x === "email" ? "Email" : "Calls"}
                   </button>
@@ -76,7 +77,7 @@ export default function Inbox() {
                   );
                 })}
               </ul>
-            ) : <p className="px-4 py-10 text-center text-[13px] text-muted">No calls to make. Automations add them here when a lead needs a call.</p>
+            ) : <p className="px-4 py-10 text-center text-[13px] text-muted">No calls to make. Workflows add them here when a lead needs a call.</p>
           ) : list.length ? (
             <ul className="max-h-[620px] overflow-y-auto">{list.map((c) => <Row key={c.contact.id} c={c} on={sel === c.contact.id} onClick={() => go({ c: c.contact.id })} />)}</ul>
           ) : <p className="px-4 py-10 text-center text-[13px] text-muted">{filter === "waiting" ? "You're all caught up." : "Nothing here yet."}</p>}

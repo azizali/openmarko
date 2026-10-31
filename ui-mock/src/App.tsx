@@ -29,7 +29,7 @@ import AdStudio from "./pages/AdStudio";
 import Contacts from "./pages/Contacts";
 import Inbox from "./pages/Inbox";
 import Campaigns from "./pages/Campaigns";
-import Automations from "./pages/Automations";
+import Workflows from "./pages/Workflows";
 
 // Rank pack now lives inside Rankings (Map pack view); keep old links working.
 function GridRedirect() {
@@ -42,6 +42,11 @@ function GridRedirect() {
 function ActionRedirect() {
   const { id } = useParams();
   return <Navigate replace to={id ? `/todo?task=${id}` : "/todo"} />;
+}
+
+function AutomationRedirect() {
+  const { id } = useParams();
+  return <Navigate replace to={`/workflows/${id}`} />;
 }
 
 // HashRouter keeps the mock deployable as static files anywhere.
@@ -89,8 +94,11 @@ export default function App() {
           <Route path="inbox" element={<Inbox />} />
           <Route path="campaigns" element={<Campaigns />} />
           <Route path="campaigns/:id" element={<Campaigns />} />
-          <Route path="automations" element={<Automations />} />
-          <Route path="automations/:id" element={<Automations />} />
+          <Route path="workflows" element={<Workflows />} />
+          <Route path="workflows/:id" element={<Workflows />} />
+          {/* Contact workflows were called Automations; keep old links working. */}
+          <Route path="automations" element={<Navigate replace to="/workflows" />} />
+          <Route path="automations/:id" element={<AutomationRedirect />} />
           <Route path="social/voice" element={<Navigate replace to="/settings/brand" />} />
           {/* Brand voice, Skills and Activity moved into Settings; keep old links working. */}
           <Route path="brand" element={<Navigate replace to="/settings/brand" />} />

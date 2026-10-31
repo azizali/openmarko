@@ -7,6 +7,7 @@ import { adPlatforms, angles, formats, library, researchStarters, watchedAdverti
 import { brandFacts } from "../data/brand";
 import { addSwipe, inSwipe, removeSwipe, saveToSwipe, setSwipeNote, useCreatives, type SwipeAd } from "../lib/creatives";
 import { timeAgo } from "../lib/runs";
+import { useOn } from "../lib/features";
 
 type Col = "advertiser" | "days" | "versions" | "angle" | "format";
 const LONG = 30;
@@ -41,6 +42,7 @@ export default function AdResearch() {
 function FindAds() {
   const cr = useCreatives();
   const navigate = useNavigate();
+  const studioOn = useOn("ad_studio");
   const { toast, node } = useToast();
   const [q, setQ] = useState("dentist austin");
   const [where, setWhere] = useState("Austin, TX");
@@ -141,7 +143,7 @@ function FindAds() {
                 <Button size="sm" variant="ghost" onClick={() => setSel([])}>Clear</Button>
                 <span className="flex-1" />
                 <Button size="sm" icon={<Bookmark size={12} />} onClick={() => { save(picked); setSel([]); }}>Save to swipe file</Button>
-                <Button size="sm" variant="primary" icon={<Wand2 size={12} />} onClick={() => variations(picked)}>Make my versions</Button>
+                {studioOn && <Button size="sm" variant="primary" icon={<Wand2 size={12} />} onClick={() => variations(picked)}>Make my versions</Button>}
               </>
             ) : (
               <>
@@ -190,7 +192,7 @@ function FindAds() {
                       <td className="px-3 py-2.5 text-muted">{a.offer ?? "—"}</td>
                       <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
                         <Button size="sm" variant="ghost" aria-label={inSwipe(cr, a.id) ? "Saved" : "Save to swipe file"} title={inSwipe(cr, a.id) ? "In your swipe file" : "Save to swipe file"} onClick={() => save([a])}>{inSwipe(cr, a.id) ? <BookmarkCheck size={14} className="text-accent" /> : <Bookmark size={14} />}</Button>
-                        <Button size="sm" variant="ghost" aria-label="Make my versions" title="Make my versions" onClick={() => variations([a])}><Wand2 size={14} /></Button>
+                        {studioOn && <Button size="sm" variant="ghost" aria-label="Make my versions" title="Make my versions" onClick={() => variations([a])}><Wand2 size={14} /></Button>}
                       </td>
                     </tr>
                     {open === a.id && (
@@ -232,6 +234,7 @@ const sources: { id: "all" | SwipeAd["source"]; label: string }[] = [{ id: "all"
 function SwipeList() {
   const cr = useCreatives();
   const navigate = useNavigate();
+  const studioOn = useOn("ad_studio");
   const [source, setSource] = useState<(typeof sources)[number]["id"]>("all");
   const [angle, setAngle] = useState<Angle | null>(null);
   const [sel, setSel] = useState<string[]>([]);
@@ -249,7 +252,7 @@ function SwipeList() {
             <Button size="sm" variant="ghost" onClick={() => setSel([])}>Clear</Button>
             <span className="flex-1" />
             <Button size="sm" icon={<Trash2 size={12} />} onClick={() => { removeSwipe(picked.map((s) => s.id)); setSel([]); }}>Remove</Button>
-            <Button size="sm" variant="primary" icon={<Wand2 size={12} />} onClick={() => navigate(`/ads/studio?refs=${picked.map((s) => s.id).join(",")}`)}>Make my versions</Button>
+            {studioOn && <Button size="sm" variant="primary" icon={<Wand2 size={12} />} onClick={() => navigate(`/ads/studio?refs=${picked.map((s) => s.id).join(",")}`)}>Make my versions</Button>}
           </>
         ) : (
           <>
@@ -279,7 +282,7 @@ function SwipeList() {
               {s.yours && <p className="mt-1 mb-0 text-[13.5px] leading-[1.55]"><span className="font-medium">Yours: </span>{s.yours}</p>}
               <input defaultValue={s.note} onBlur={(e) => setSwipeNote(s.id, e.target.value)} placeholder="Add a note" aria-label="Note" className="mt-2 h-8 w-full max-w-lg rounded-md border border-transparent bg-transparent px-2 text-[13px] outline-none hover:border-line focus:border-line-strong" />
             </div>
-            <div className="shrink-0"><Button size="sm" icon={<Wand2 size={12} />} onClick={() => navigate(`/ads/studio?refs=${s.id}`)}>Make my versions</Button></div>
+            {studioOn && <div className="shrink-0"><Button size="sm" icon={<Wand2 size={12} />} onClick={() => navigate(`/ads/studio?refs=${s.id}`)}>Make my versions</Button></div>}
           </article>
         ))}
         {!shown.length && <div className="px-5 py-10 text-center text-[13.5px] text-muted">Nothing saved here yet. Save ads from <b>Find ads</b>, or your own winners from Ads.</div>}

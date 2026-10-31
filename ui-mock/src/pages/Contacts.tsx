@@ -1,12 +1,13 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { ArrowDown, ArrowUp, ChevronDown, ChevronsUpDown, Download, Kanban, List, Mail, MessageSquareText, Search, Tag, Trash2, Upload, UserPlus, Workflow } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronsUpDown, Download, Kanban, List, Mail, MessageSquareText, Search, Tag, Trash2, Upload, UserPlus, Workflow as WorkflowIcon } from "lucide-react";
 import { Button, Card, Checkbox, Modal, PageHeader, Segmented, cn, fmt, useToast } from "../components/ui";
 import { AddContactModal, ChannelIcon, ContactDrawer, Reach, StageBadge } from "../components/Crm";
 import { segments, sources, stageOf, stages, tagOptions, type Contact, type SegmentId, type Source, type Stage } from "../data/contacts";
 import { addTag, enroll, importFromBooking, inSegment, lastTouch, needsReply, newCampaign, removeContacts, setStage, startedText, useCrm } from "../lib/crm";
 import { useAds } from "../lib/ads";
 import { timeAgo } from "../lib/runs";
+import { isOn, useFeatures } from "../lib/features";
 
 type View = "list" | "pipeline";
 type Col = "name" | "stage" | "source" | "last" | "value";
@@ -18,11 +19,12 @@ const shortDate = (ms: number) => new Date(ms).toLocaleDateString("en-US", { mon
  * Contacts is the CRM: everyone who has called, filled a form, booked or
  * visited. Lists on the left are saved filters (who's due for a cleaning, new
  * ad leads); the pipeline is the same people by stage. Select people to text
- * or email them, start an automation, or move them along.
+ * or email them, start a workflow, or move them along.
  */
 export default function Contacts() {
   const st = useCrm();
   const ads = useAds();
+  const flags = useFeatures();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const { toast, node } = useToast();
@@ -98,7 +100,7 @@ export default function Contacts() {
               </li>
             ))}
           </ul>
-          <p className="mt-3 hidden px-2.5 text-[12px] text-subtle lg:block">Lists update on their own. Use one as the audience for a <Link to="/campaigns" className="underline underline-offset-2">campaign</Link>.</p>
+          <p className="mt-3 hidden px-2.5 text-[12px] text-subtle lg:block">Lists update on their own. {isOn("campaigns", flags) ? <>Use one as the audience for a <Link to="/campaigns" className="underline underline-offset-2">campaign</Link>.</> : null}</p>
         </nav>
 
         <div className="min-w-0">
@@ -108,9 +110,9 @@ export default function Contacts() {
                 <span className="text-[13px] font-medium">{picked.length} selected</span>
                 <Button size="sm" variant="ghost" onClick={() => setSel([])}>Clear</Button>
                 <span className="flex-1" />
-                <Button size="sm" icon={<MessageSquareText size={12} />} onClick={() => message("sms")}>Text</Button>
-                <Button size="sm" icon={<Mail size={12} />} onClick={() => message("email")}>Email</Button>
-                <Menu label="Automation" icon={<Workflow size={12} />} items={st.automations.filter((a) => a.on).map((a) => ({ label: a.name, onPick: () => { const n = enroll(picked.map((c) => c.id), a.id); toast(`${n} started ${a.name}${n < picked.length ? `; ${picked.length - n} can't get its first message` : ""}`); setSel([]); } }))} />
+                {isOn("campaigns", flags) && isOn("sms", flags) && <Button size="sm" icon={<MessageSquareText size={12} />} onClick={() => message("sms")}>Text</Button>}
+                {isOn("campaigns", flags) && isOn("email", flags) && <Button size="sm" icon={<Mail size={12} />} onClick={() => message("email")}>Email</Button>}
+                {isOn("workflows", flags) && <Menu label="Workflow" icon={<WorkflowIcon size={12} />} items={st.workflows.filter((a) => a.on).map((a) => ({ label: a.name, onPick: () => { const n = enroll(picked.map((c) => c.id), a.id); toast(`${n} started ${a.name}${n < picked.length ? `; ${picked.length - n} can't get its first message` : ""}`); setSel([]); } }))} />}
                 <Menu label="Move to" items={stages.map((s) => ({ label: s.label, onPick: () => { const st2 = setStage(picked.map((c) => c.id), s.id); toast(`Moved ${picked.length} to ${s.label}.${startedText(st2)}`); setSel([]); } }))} />
                 <Menu label="Tag" icon={<Tag size={12} />} items={tagOptions.map((t) => ({ label: t, onPick: () => { const st2 = addTag(picked.map((c) => c.id), t); toast(`Tagged ${picked.length} “${t}”.${startedText(st2)}`); } }))} />
                 <Button size="sm" variant="ghost" icon={<Download size={12} />} onClick={() => toast(`Exported ${picked.length} as CSV`)}>Export</Button>

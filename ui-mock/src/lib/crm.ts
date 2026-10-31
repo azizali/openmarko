@@ -1,22 +1,23 @@
 // One store for contacts and everything sent to them: the timeline of every
-// email, text and call, call tasks, campaigns, automations and the sending
+// email, text and call, call tasks, campaigns, workflows and the sending
 // setup. The Inbox is the timeline's channel events grouped by person.
 // Every change to a contact is also an event (tag added, stage changed, joined
-// a list, replied…) that starts the automations listening for it.
+// a list, replied…) that starts the workflows listening for it.
 // Mock: localStorage, with timers standing in for replies and webhooks.
 
 import { useSyncExternalStore } from "react";
 import { fillFields, mergeFields, segments, seedContacts, type CallResult, type CallTask, type Channel, type Contact, type Event, type SegmentId, type Stage } from "../data/contacts";
-import { dateFields, eventMeta, recipes, seedAutomations, seedCampaigns, seedChannels, type Audience, type Automation, type Campaign, type Channels, type Cond, type EventId, type PhoneNumber, type Send, type Step, type StepKind, type When } from "../data/messaging";
+import { dateFields, eventMeta, recipes, seedWorkflows, seedCampaigns, seedChannels, type Audience, type Workflow, type Campaign, type Channels, type Cond, type EventId, type PhoneNumber, type Send, type Step, type StepKind, type When } from "../data/messaging";
 import { dnsRecords, type EmailProviderId, type PhoneProviderId } from "../data/providers";
 import { brandFacts } from "../data/brand";
+import { isOn } from "./features";
 
-type State = { v: number; contacts: Contact[]; events: Event[]; tasks: CallTask[]; campaigns: Campaign[]; automations: Automation[]; channels: Channels };
-const V = 2; // bump when the saved shape changes
+type State = { v: number; contacts: Contact[]; events: Event[]; tasks: CallTask[]; campaigns: Campaign[]; workflows: Workflow[]; channels: Channels };
+const V = 3; // bump when the saved shape changes
 
 const KEY = "gw-crm";
 const day = 86_400_000;
-const fresh = (): State => ({ v: V, ...seedContacts(), campaigns: seedCampaigns(), automations: seedAutomations(), channels: seedChannels() });
+const fresh = (): State => ({ v: V, ...seedContacts(), campaigns: seedCampaigns(), workflows: seedWorkflows(), channels: seedChannels() });
 const load = (): State => { try { const s = JSON.parse(localStorage.getItem(KEY) ?? "null"); return s?.v === V ? s : fresh(); } catch { return fresh(); } };
 let state: State = load();
 const listeners = new Set<() => void>();
@@ -59,6 +60,7 @@ export const openTasks = (s: State) => s.tasks.filter((t) => !t.done).sort((a, b
 
 /** Why nothing can go out on a channel yet (setup), or null when it can. */
 export function notReady(s: State, ch: Channel): string | null {
+  if ((ch === "email" || ch === "sms") && !isOn(ch)) return ch === "email" ? "Email is turned off in Settings → Features" : "Texting is turned off in Settings → Features";
   if (ch === "email") return !s.channels.email.provider ? "Email sending isn't set up yet" : !s.channels.email.verified ? "Your sending domain isn't verified yet" : null;
   if (ch === "sms") return !s.channels.sms.provider ? "Texting isn't set up yet" : s.channels.sms.campaign !== "approved" ? "Texting starts once carrier registration is approved" : !s.channels.sms.numbers.some((n) => n.status === "active") ? "No number is active yet" : null;
   return null;
@@ -119,7 +121,7 @@ export function addContact(x: NewContact) {
 
 // ---------- Triggers ----------
 
-export type Happened = { event: EventId; tag?: string; stage?: Stage; list?: SegmentId; keyword?: string; automation?: string; ended?: "finished" | "stopped"; campaign?: string };
+export type Happened = { event: EventId; tag?: string; stage?: Stage; list?: SegmentId; keyword?: string; workflow?: string; ended?: "finished" | "stopped"; campaign?: string };
 
 const condOk = (c: Contact, k: Cond) => {
   const has = k.field === "tag" ? k.values.some((v) => c.tags.includes(v)) : k.field === "stage" ? k.values.includes(c.stage) : k.field === "source" ? k.values.includes(c.source)
@@ -129,13 +131,13 @@ const condOk = (c: Contact, k: Cond) => {
 const word = (w: string) => new RegExp(`(^|\\W)${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(\\W|$)`, "i");
 export const whenMatches = (w: When, h: Happened) =>
   w.event === h.event && (!w.tag || w.tag === h.tag) && (!w.stage || w.stage === h.stage) && (!w.list || w.list === h.list) &&
-  (!w.keyword || word(w.keyword).test(h.keyword ?? "")) && (!w.automation || w.automation === h.automation) &&
+  (!w.keyword || word(w.keyword).test(h.keyword ?? "")) && (!w.workflow || w.workflow === h.workflow) &&
   (!w.ended || w.ended === "any" || w.ended === h.ended) && (!w.campaign || w.campaign === "any" || w.campaign === h.campaign);
 
-/** Something happened to these contacts: start every automation that's on and listening for it. */
+/** Something happened to these contacts: start every workflow that's on and listening for it. */
 export function fire(h: Happened, ids: string[], depth = 0): Started[] {
-  if (!ids.length || depth > 3) return []; // depth stops automations that start each other from looping
-  return state.automations.flatMap((a) => {
+  if (!ids.length || depth > 3 || !isOn("workflows")) return []; // depth stops workflows that start each other from looping
+  return state.workflows.flatMap((a) => {
     if (!a.on || !whenMatches(a.when, h)) return [];
     const who = state.contacts.filter((c) => ids.includes(c.id) && a.only.every((k) => condOk(c, k)));
     if (!who.length) return [];
@@ -156,11 +158,11 @@ function tracked(ids: string[], change: () => Started[]): Started[] {
   return out;
 }
 
-/** Put people into an automation: log it, and run the first step now if it's due within a few minutes. */
-function start(a: Automation, who: Contact[], depth: number) {
+/** Put people into a workflow: log it, and run the first step now if it's due within a few minutes. */
+function start(a: Workflow, who: Contact[], depth: number) {
   set({
     ...state,
-    automations: state.automations.map((x) => (x.id === a.id ? { ...x, stats: { ...x.stats, inNow: x.stats.inNow + who.length, started30: x.stats.started30 + who.length } } : x)),
+    workflows: state.workflows.map((x) => (x.id === a.id ? { ...x, stats: { ...x.stats, inNow: x.stats.inNow + who.length, started30: x.stats.started30 + who.length } } : x)),
     events: addEvents(state, who.map((c) => ({ contactId: c.id, at: Date.now(), kind: "note" as const, by: a.name, body: `Started ${a.name}` }))),
   });
   let waited = 0;
@@ -175,13 +177,13 @@ function start(a: Automation, who: Contact[], depth: number) {
     else if (first.kind === "tag" && first.tag) addTag(ids, first.tag, depth + 1);
     else if (first.kind === "untag" && first.tag) removeTag(ids, first.tag, depth + 1);
     else if (first.kind === "stage" && first.stage) setStage(ids, first.stage);
-    else if (first.kind === "start") { const b = state.automations.find((x) => x.id === first.automation); if (b && depth < 3) start(b, state.contacts.filter((c) => ids.includes(c.id)), depth + 1); }
+    else if (first.kind === "start") { const b = state.workflows.find((x) => x.id === first.workflow); if (b && depth < 3) start(b, state.contacts.filter((c) => ids.includes(c.id)), depth + 1); }
   }, 1500);
 }
 
 /** "When tag “Invisalign” is added", for lists and the editor. */
 export function describeWhen(s: State, w: When) {
-  const auto = (id?: string) => s.automations.find((a) => a.id === id)?.name ?? "another automation";
+  const auto = (id?: string) => s.workflows.find((a) => a.id === id)?.name ?? "another workflow";
   const camp = (id?: string) => (!id || id === "any" ? "any campaign" : `“${s.campaigns.find((c) => c.id === id)?.name ?? "a campaign"}”`);
   const list = (id?: SegmentId) => `“${segments.find((g) => g.id === id)?.label ?? "a list"}”`;
   switch (w.event) {
@@ -192,7 +194,7 @@ export function describeWhen(s: State, w: When) {
     case "list_left": return `They leave ${list(w.list)}`;
     case "reply_received": return w.keyword ? `They reply “${w.keyword}”` : "They reply";
     case "date": return w.date ? (w.date.days ? `${w.date.days} days ${w.date.dir} their ${dateFields[w.date.field]}` : `On their ${dateFields[w.date.field]}`) : "A date comes around";
-    case "automation_finished": return `${auto(w.automation)} ${w.ended === "finished" ? "finishes every step" : w.ended === "stopped" ? "stops early" : "ends"} for them`;
+    case "workflow_finished": return `${auto(w.workflow)} ${w.ended === "finished" ? "finishes every step" : w.ended === "stopped" ? "stops early" : "ends"} for them`;
     case "campaign_received": return `They get ${camp(w.campaign)}`;
     case "campaign_clicked": return `They click ${camp(w.campaign)}`;
     case "campaign_replied": return `They reply to ${camp(w.campaign)}`;
@@ -351,21 +353,21 @@ export function draftCampaign(ch: Send, seg: SegmentId | null): { name: string; 
   return { name: "Benefits reset Dec 31", subject: "Your dental benefits reset on Dec 31", body: ch === "sms" ? "Hi {{first_name}}, your dental benefits reset Dec 31. We have openings at {{location}}, Saturdays too: {{booking_link}}" : "Hi {{first_name}},\n\nMost dental plans cover two cleanings a year, and whatever you don't use by December 31 is gone.\n\nWe still have openings in November and December at {{location}}, including Saturdays: {{booking_link}}\n\nSee you soon,\nThe {{business}} team" };
 }
 
-// ---------- Automations ----------
+// ---------- Workflows ----------
 
-export function addAutomation(recipeId: string | null) {
+export function addWorkflow(recipeId: string | null) {
   const r = recipes.find((x) => x.id === recipeId);
-  const a: Automation = r
+  const a: Workflow = r
     ? { id: uid("au_"), name: r.name, on: false, when: { ...r.when }, only: r.only ?? [], steps: r.steps().map((s) => ({ ...s, id: uid("st"), stats: undefined })), exits: r.exits, stats: { inNow: 0, started30: 0, booked30: 0 }, recipe: r.id }
-    : { id: uid("au_"), name: "New automation", on: false, when: { event: "tag_added", tag: "VIP" }, only: [], steps: [], exits: ["replied", "booked", "opted_out"], stats: { inNow: 0, started30: 0, booked30: 0 } };
-  set({ ...state, automations: [...state.automations, a] });
+    : { id: uid("au_"), name: "New workflow", on: false, when: { event: "tag_added", tag: "VIP" }, only: [], steps: [], exits: ["replied", "booked", "opted_out"], stats: { inNow: 0, started30: 0, booked30: 0 } };
+  set({ ...state, workflows: [...state.workflows, a] });
   return a.id;
 }
-export const updateAutomation = (id: string, p: Partial<Automation>) => set({ ...state, automations: state.automations.map((a) => (a.id === id ? { ...a, ...p } : a)) });
-export const deleteAutomation = (id: string) => set({ ...state, automations: state.automations.filter((a) => a.id !== id) });
-const steps = (id: string, fn: (s: Step[]) => Step[]) => { const a = state.automations.find((x) => x.id === id); if (a) updateAutomation(id, { steps: fn(a.steps) }); };
+export const updateWorkflow = (id: string, p: Partial<Workflow>) => set({ ...state, workflows: state.workflows.map((a) => (a.id === id ? { ...a, ...p } : a)) });
+export const deleteWorkflow = (id: string) => set({ ...state, workflows: state.workflows.filter((a) => a.id !== id) });
+const steps = (id: string, fn: (s: Step[]) => Step[]) => { const a = state.workflows.find((x) => x.id === id); if (a) updateWorkflow(id, { steps: fn(a.steps) }); };
 export function addStep(id: string, at: number, kind: StepKind) {
-  const blank: Step = { id: uid("st"), kind, ...(kind === "wait" ? { wait: { n: 1, unit: "days" as const } } : kind === "stage" ? { stage: "contacted" as Stage } : kind === "tag" || kind === "untag" ? { tag: "VIP" } : kind === "start" ? { automation: state.automations.find((a) => a.id !== id)?.id } : { body: "", subject: kind === "email" ? "" : undefined, onlyIf: at > 0 ? ("no_reply" as const) : undefined }) };
+  const blank: Step = { id: uid("st"), kind, ...(kind === "wait" ? { wait: { n: 1, unit: "days" as const } } : kind === "stage" ? { stage: "contacted" as Stage } : kind === "tag" || kind === "untag" ? { tag: "VIP" } : kind === "start" ? { workflow: state.workflows.find((a) => a.id !== id)?.id } : { body: "", subject: kind === "email" ? "" : undefined, onlyIf: at > 0 ? ("no_reply" as const) : undefined }) };
   steps(id, (s) => [...s.slice(0, at), blank, ...s.slice(at)]);
   return blank.id;
 }
@@ -373,9 +375,9 @@ export const updateStep = (id: string, stepId: string, p: Partial<Step>) => step
 export const removeStep = (id: string, stepId: string) => steps(id, (s) => s.filter((x) => x.id !== stepId));
 export const moveStep = (id: string, stepId: string, by: -1 | 1) => steps(id, (s) => { const i = s.findIndex((x) => x.id === stepId); const j = i + by; if (j < 0 || j >= s.length) return s; const c = [...s]; [c[i], c[j]] = [c[j], c[i]]; return c; });
 
-/** Put people into an automation by hand (from Contacts). Returns how many could start. */
-export function enroll(ids: string[], automationId: string) {
-  const a = state.automations.find((x) => x.id === automationId);
+/** Put people into a workflow by hand (from Contacts). Returns how many could start. */
+export function enroll(ids: string[], workflowId: string) {
+  const a = state.workflows.find((x) => x.id === workflowId);
   if (!a) return 0;
   const first = a.steps.find((s) => s.kind === "sms" || s.kind === "email");
   const ok = state.contacts.filter((c) => ids.includes(c.id) && (!first || !blockedOn(c, first.kind as Channel)));
