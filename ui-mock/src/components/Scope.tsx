@@ -4,6 +4,7 @@ import { Button, Card, cn } from "./ui";
 import { locations } from "../data/mock";
 import { shortLocation, websites, websiteFor, type Website } from "../data/org";
 import { setScope, useScope } from "../lib/scope";
+import { useSetup } from "../lib/setup";
 
 /** A domain as a link that opens the site in a new tab. */
 export function ExternalUrl({ domain, path = "", className }: { domain: string; path?: string; className?: string }) {
@@ -21,6 +22,7 @@ export function ExternalUrl({ domain, path = "", className }: { domain: string; 
  */
 export function ScopeBar({ kind }: { kind: "location" | "website" }) {
   const { locationId } = useScope();
+  const st = useSetup();
   if (kind === "location" ? locations.length < 2 : websites.length < 2 && locations.length < 2) return null;
   const pill = (active: boolean) => cn("inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[12.5px] transition-colors", active ? "border-ink bg-ink text-on-ink" : "border-line bg-surface text-muted hover:bg-hover");
   const current = locationId ? websiteFor(locationId) : null;
@@ -30,7 +32,7 @@ export function ScopeBar({ kind }: { kind: "location" | "website" }) {
       <button onClick={() => setScope({ locationId: null })} className={pill(!locationId)}>{kind === "location" ? "All locations" : "All websites"}</button>
       {kind === "location"
         ? locations.map((l) => <button key={l.id} onClick={() => setScope({ locationId: l.id })} className={pill(locationId === l.id)}>{shortLocation(l.id)}</button>)
-        : websites.map((w) => <button key={w.id} onClick={() => setScope({ locationId: w.locationIds[0] })} className={pill(current?.id === w.id)}>{w.domain}</button>)}
+        : websites.filter((w) => st.website[w.id]).map((w) => <button key={w.id} onClick={() => setScope({ locationId: w.locationIds[0] })} className={pill(current?.id === w.id)}>{w.domain}</button>)}
     </div>
   );
 }
@@ -48,11 +50,12 @@ export function LocationOverview({ columns, row, note }: { columns: string[]; ro
 
 /** "All websites": one row per Website. */
 export function WebsiteOverview({ columns, row }: { columns: string[]; row: (w: Website) => ReactNode[] }) {
+  const st = useSetup();
   return (
     <Overview
       note="Pick a website to see and act on its details."
       columns={columns}
-      rows={websites.map((w) => ({ key: w.id, name: <ExternalUrl domain={w.domain} className="font-medium text-fg" />, sub: `Serves ${w.locationIds.map(shortLocation).join(", ")}`, cells: row(w), open: () => setScope({ locationId: w.locationIds[0] }) }))}
+      rows={websites.filter((w) => st.website[w.id]).map((w) => ({ key: w.id, name: <ExternalUrl domain={w.domain} className="font-medium text-fg" />, sub: `Serves ${w.locationIds.map(shortLocation).join(", ")}`, cells: row(w), open: () => setScope({ locationId: w.locationIds[0] }) }))}
     />
   );
 }

@@ -4,6 +4,7 @@ import { locations } from "../data/mock";
 import { citationsFor, linkData } from "../data/scoped";
 import { ExternalUrl, LocationOverview, ScopeBar, WebsiteOverview } from "../components/Scope";
 import { useScopedLocation, useScopedWebsite } from "../lib/scope";
+import { Needs } from "../components/Needs";
 import { Sparkles, Wrench, Plus, Loader2, Mail, Check, MapPin, ArrowUp, ArrowDown, Copy } from "lucide-react";
 import { Badge, Button, Card, CardHeader, Checkbox, Drawer, LineChart, Modal, PageHeader, ScoreRing, Segmented, Tabs, cn, useToast } from "../components/ui";
 import { business } from "../data/mock";
@@ -16,7 +17,7 @@ export default function Citations() {
   const [params, setParams] = useSearchParams();
   const tab: Tab = params.get("tab") === "links" ? "links" : "citations";
   const { location } = useScopedLocation();
-  const { website } = useScopedWebsite();
+  const { website, missing } = useScopedWebsite();
   return (
     <>
       <PageHeader
@@ -37,7 +38,7 @@ export default function Citations() {
               return [`${citationScore(list)}`, list.filter((c) => c.status === "wrong" || c.status === "duplicate").length, list.filter((c) => c.status === "missing").length];
             }} />
           )
-          : website ? <LinksTab key={website.id} websiteId={website.id} /> : (
+          : website ? <LinksTab key={website.id} websiteId={website.id} /> : missing ? <Needs kind="website" locationId={location?.id} note="Backlinks point at a website." /> : (
             <WebsiteOverview columns={["Referring domains", "Local sites", "New, 30 days"]} row={(w) => { const y = linkData[w.id].you; return [y.refDomains, y.localDomains, `+${y.new30}`]; }} />
           )}
       </div>

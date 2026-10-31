@@ -5,6 +5,8 @@ import { Badge, Button, Card, PageHeader, Tabs, cn, fmt } from "../components/ui
 import { AccountBadge, PostDrawer, dayLabel } from "../components/Social";
 import { accountLabel, accounts, type AccountId } from "../data/social";
 import { dateOf, reactions, totals, useSocialPosts, type PostStatus, type SocialPost } from "../lib/social";
+import { accountConnected, useSetup } from "../lib/setup";
+import { Needs } from "../components/Needs";
 
 const statusTone: Record<PostStatus, "warn" | "info" | "good"> = { draft: "warn", scheduled: "info", published: "good" };
 
@@ -23,13 +25,15 @@ export default function SocialPosts() {
     published.forEach((p) => Object.entries(p.stats!).forEach(([a, st]) => { if (st) out[a] = (out[a] ?? 0) + pick(st); }));
     return Object.entries(out).map(([c, n]) => ({ c, n })).sort((a, b) => b.n - a.n);
   };
-  const live = accounts.filter((c) => c.connected && c.followers);
+  const setup = useSetup();
+  const live = accounts.filter((c) => accountConnected(c.id, setup) && c.followers);
   const stats = [
     { label: "Followers", total: live.reduce((a, c) => a + c.followers, 0), note: `+${fmt(live.reduce((a, c) => a + c.followers - c.followersPrev, 0))} this month`, rows: live.map((c) => ({ c: c.id, n: c.followers })) },
     { label: "Views, last 7 days", total: published.reduce((a, p) => a + totals(p).views, 0), rows: byAccount((s) => s.views) },
     { label: "Likes, comments, shares, last 7 days", total: published.reduce((a, p) => a + reactions(totals(p)), 0), rows: byAccount(reactions) },
   ];
-  const notConnected = accounts.filter((c) => !c.connected);
+  const notConnected = accounts.filter((c) => !accountConnected(c.id, setup));
+  const anyConnected = accounts.some((c) => accountConnected(c.id, setup));
 
   return (
     <>
@@ -38,6 +42,7 @@ export default function SocialPosts() {
         sub="Everything going out on your social accounts and Google profile, and how it did."
         actions={<Button variant="primary" icon={<Plus size={14} />} onClick={() => setOpen(blank())}>New post</Button>}
       />
+      {!anyConnected ? <Needs kind="account" note="Posts go out through your social accounts and Google profiles." /> : <>
 
       <Card pad={false} className="mb-6">
         <div className="grid divide-line sm:grid-cols-3 sm:divide-x max-sm:divide-y">
@@ -110,6 +115,7 @@ export default function SocialPosts() {
         )}
       </Card>
 
+      </>}
       <PostDrawer post={open} onClose={() => setOpen(null)} />
     </>
   );

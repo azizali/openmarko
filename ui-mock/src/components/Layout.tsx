@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import {
   LayoutGrid, ListChecks, TrendingUp, MessageSquareText, MapPinned, ScanSearch, FileText, Settings, Search, ChevronsUpDown, ChevronDown, ArrowLeft,
-  Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Sparkles, Radar, Bookmark, CalendarDays,
+  Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Sparkles, Radar, Bookmark, CalendarDays, Plus,
 } from "lucide-react";
 import { cn } from "./ui";
 import { Logo } from "./Logo";
@@ -113,6 +113,7 @@ function pageContext(pathname: string, search: string): PageContext {
  */
 function OrgSwitcher() {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
   const { orgId, locationId } = useScope();
   const org = memberships.find((m) => m.id === orgId) ?? memberships[0];
   const sub = locationId ? shortLocation(locationId) : locations.length > 1 ? `All ${locations.length} locations` : locations[0]?.city;
@@ -138,24 +139,29 @@ function OrgSwitcher() {
                   {id === locationId && <Check size={14} />}
                 </button>
               ))}
-              <NavLink to="/onboarding" className="block rounded px-2 py-1.5 text-[13px] text-muted hover:bg-hover">+ Add location</NavLink>
+              <NavLink to="/settings/locations" onClick={() => setOpen(false)} className="block rounded px-2 py-1.5 text-[13px] text-muted hover:bg-hover">+ Add location</NavLink>
             </>
           )}
-          {memberships.length > 1 && (
-            <>
-              <div className="my-1 border-t border-line" />
-              <div className="px-2 pt-1 pb-0.5 text-[11px] font-medium tracking-[0.06em] text-subtle uppercase">Organizations</div>
+          {/* Always listed, so even a single Organization has its settings button here. */}
+          <>
+              {locations.length > 1 && <div className="my-1 border-t border-line" />}
+              <div className="px-2 pt-1 pb-0.5 text-[11px] font-medium tracking-[0.06em] text-subtle uppercase">{memberships.length > 1 ? "Organizations" : "Organization"}</div>
               {memberships.map((m) => (
-                <button key={m.id} onClick={() => { setScope({ orgId: m.id, locationId: null }); setOpen(false); }} className={row}>
-                  <span className="grid size-5 shrink-0 place-items-center rounded bg-hover text-[11px] font-semibold">{m.initial}</span>
-                  <span className="min-w-0 flex-1 truncate">{m.name}</span>
-                  {m.id === orgId && <Check size={14} />}
-                </button>
+                <div key={m.id} className="group flex items-center gap-0.5">
+                  <button onClick={() => { setScope({ orgId: m.id, locationId: null }); setOpen(false); }} className={cn(row, "min-w-0 flex-1")}>
+                    <span className="grid size-5 shrink-0 place-items-center rounded bg-hover text-[11px] font-semibold">{m.initial}</span>
+                    <span className="min-w-0 flex-1 truncate">{m.name}</span>
+                    {m.id === orgId && <Check size={14} />}
+                  </button>
+                  {/* Straight to this Organization's settings, switching to it first. */}
+                  <button onClick={() => { setScope({ orgId: m.id, locationId: null }); setOpen(false); navigate("/settings/brand"); }} aria-label={`${m.name} settings`} title={`${m.name} settings`} className="grid size-7 shrink-0 place-items-center rounded text-subtle hover:bg-hover hover:text-fg">
+                    <Settings size={13} strokeWidth={1.75} />
+                  </button>
+                </div>
               ))}
-            </>
-          )}
+          </>
           <div className="my-1 border-t border-line" />
-          <NavLink to="/settings/locations" onClick={() => setOpen(false)} className="block rounded px-2 py-1.5 text-[13px] text-muted hover:bg-hover">Locations, websites & accounts</NavLink>
+          <NavLink to="/onboarding" onClick={() => setOpen(false)} className="flex items-center gap-1.5 rounded px-2 py-1.5 text-[13px] text-muted hover:bg-hover"><Plus size={13} /> Add organization</NavLink>
         </div>
       )}
     </div>
@@ -173,7 +179,7 @@ function CommandPalette({ open, onClose, ctx }: { open: boolean; onClose: () => 
     ];
     const extra = [
       ...(member.plan === "agency" ? [{ label: "Audit a business", hint: "Prospecting", to: "/prospects?new=audit" }] : []),
-      { label: "Run setup again", hint: "Onboarding", to: "/onboarding" },
+      { label: "Add organization", hint: "Setup", to: "/onboarding" },
     ];
     const kws = keywords.map((k) => ({ label: k.term, hint: "Keyword", to: `/rankings/${k.id}` }));
     const found = [...pages, ...extra, ...kws].filter((i) => i.label.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
@@ -271,7 +277,7 @@ export default function Layout() {
           </div>
         ))}
       </nav>
-      <NavLink to="/onboarding" className="mb-1 rounded-lg border border-line bg-surface px-2.5 py-2 shadow-card transition-colors hover:border-line-strong">
+      <NavLink to="/settings/websites" className="mb-1 rounded-lg border border-line bg-surface px-2.5 py-2 shadow-card transition-colors hover:border-line-strong">
         <div className="flex items-center gap-2 text-[12.5px] font-medium"><Rocket size={13} /> Setup 4 of 5<span className="ml-auto truncate text-[11.5px] font-normal text-muted">Connect GA4</span></div>
         <div className="mt-1.5 h-1 rounded-full bg-hover"><div className="h-full w-4/5 rounded-full bg-accent" /></div>
       </NavLink>

@@ -5,14 +5,16 @@ import { Badge, Card, CardHeader, Delta, PageHeader, ScoreRing, Tabs, cn } from 
 import { type Severity } from "../data/mock";
 import { websiteData } from "../data/scoped";
 import { ExternalUrl, ScopeBar, WebsiteOverview } from "../components/Scope";
-import { useScopedWebsite } from "../lib/scope";
+import { useScopedLocation, useScopedWebsite } from "../lib/scope";
+import { Needs } from "../components/Needs";
 
 const sevTone = { critical: "bad", warning: "warn", notice: "info" } as const;
 const cats = ["All", "Technical", "On-page", "Local", "Performance", "Content"] as const;
 
 // Site health belongs to a Website. "All websites" compares them.
 export default function Audit() {
-  const { website } = useScopedWebsite();
+  const { website, missing } = useScopedWebsite();
+  const { location } = useScopedLocation();
   return (
     <>
       <PageHeader
@@ -22,7 +24,7 @@ export default function Audit() {
           : "Every website the organization owns, checked weekly."}
       />
       <ScopeBar kind="website" />
-      {website ? <AuditBody key={website.id} websiteId={website.id} /> : (
+      {website ? <AuditBody key={website.id} websiteId={website.id} /> : missing ? <Needs kind="website" locationId={location?.id} note="Site health is checked on a website." /> : (
         <WebsiteOverview
           columns={["Site health", "Critical", "Warnings", "Pages"]}
           row={(w) => {

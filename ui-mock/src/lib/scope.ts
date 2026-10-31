@@ -2,7 +2,8 @@
 // Locations or one. Module store so the switcher and pages agree.
 
 import { useSyncExternalStore } from "react";
-import { organization, websiteFor, websites } from "../data/org";
+import { organization, websites } from "../data/org";
+import { useSetup, websiteOf } from "./setup";
 import { locations } from "../data/mock";
 
 type Scope = { orgId: string; locationId: string | null }; // null = all Locations
@@ -21,9 +22,14 @@ export function useScopedLocation() {
   return { location, multi: locations.length > 1 };
 }
 
-/** The Website a Website page should show: the one serving the scoped Location, or null for "all". */
+/**
+ * The Website a Website page should show: the one serving the scoped Location,
+ * or null for "all". `missing` is true when the scoped Location has no Website yet.
+ */
 export function useScopedWebsite() {
   const { location, multi } = useScopedLocation();
-  const website = location ? websiteFor(location.id) : websites.length === 1 ? websites[0] : null;
-  return { website, multi: websites.length > 1 || multi };
+  const st = useSetup();
+  const added = websites.filter((w) => st.website[w.id]);
+  const website = location ? websiteOf(location.id, st) : added.length === 1 ? added[0] : null;
+  return { website, missing: (location && !website) || added.length === 0, multi: added.length > 1 || multi };
 }

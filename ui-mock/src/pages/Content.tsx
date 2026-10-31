@@ -5,7 +5,8 @@ import { Badge, Button, Card, PageHeader, Stat, cn, fmt, useToast } from "../com
 import { keywords, type ContentStatus } from "../data/mock";
 import { advanceContent, onWebsite, removeContent, suggestIdeas, useContent, type PlanItem } from "../lib/content";
 import { ExternalUrl, ScopeBar, WebsiteOverview } from "../components/Scope";
-import { useScopedWebsite } from "../lib/scope";
+import { useScopedLocation, useScopedWebsite } from "../lib/scope";
+import { Needs } from "../components/Needs";
 
 const columns: { id: ContentStatus; label: string; sub: string }[] = [
   { id: "idea", label: "Ideas", sub: "Suggested from your keywords" },
@@ -18,9 +19,11 @@ const action: Partial<Record<ContentStatus, string>> = { idea: "Write draft", dr
 
 // Articles live on a Website. "All websites" compares them.
 export default function Content() {
-  const { website } = useScopedWebsite();
+  const { website, missing } = useScopedWebsite();
+  const { location } = useScopedLocation();
   const all = useContent();
   if (website) return <ContentBody key={website.id} websiteId={website.id} domain={website.domain} />;
+  if (missing) return <><PageHeader title="Articles" sub="Articles live on a website." /><ScopeBar kind="website" /><Needs kind="website" locationId={location?.id} note="Articles are published to a website." /></>;
   return (
     <>
       <PageHeader title="Articles" sub="Articles on each of the organization's websites, from idea to published." />

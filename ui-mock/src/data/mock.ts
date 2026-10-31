@@ -37,7 +37,7 @@ export type Location = {
 };
 export const locations: Location[] = [
   { id: "loc_1", name: "Maple & Main — South Congress", city: "Austin, TX", address: "1204 S Congress Ave, Austin, TX 78704", googleProfile: "connected", keywords: 16 },
-  { id: "loc_2", name: "Maple & Main — Mueller", city: "Austin, TX", address: "1900 Aldrich St, Austin, TX 78723", googleProfile: "connected", keywords: 9 },
+  { id: "loc_2", name: "Maple & Main — Mueller", city: "Austin, TX", address: "1900 Aldrich St, Austin, TX 78723", googleProfile: "none", keywords: 9 },
 ];
 
 // ---------- Rankings ----------

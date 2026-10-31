@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { Clapperboard, Send, Trash2 } from "lucide-react";
 import { Button, Drawer, cn, useToast } from "./ui";
 import { PostPreview } from "./PostPreview";
+import { accountConnected, useSetup } from "../lib/setup";
 import { accountLabel, accounts, bestTime, draftFor, mainAccount, platformMeta, platformOf, type AccountId, type SocialPlatform, type ToneTweak, type Trend } from "../data/social";
 import { dateOf, publishNow, reactions, remixTrend, removePost, savePost, schedulePost, unschedulePost, type SocialPost } from "../lib/social";
 
@@ -36,6 +37,7 @@ const tweakLabels: { id: ToneTweak; label: string }[] = [
  */
 export function PostDrawer({ trend, post, onClose }: { trend?: Trend | null; post?: SocialPost | null; onClose: () => void }) {
   const { toast, node } = useToast();
+  const setup = useSetup();
   const [chs, setChs] = useState<AccountId[]>([]);
   const [tab, setTab] = useState<AccountId>("instagram");
   const [tweaks, setTweaks] = useState<ToneTweak[]>([]);
@@ -47,7 +49,7 @@ export function PostDrawer({ trend, post, onClose }: { trend?: Trend | null; pos
     if (post) { setChs(post.accounts); setTab(post.accounts[0]); setTexts(post.texts); setEdited(new Set(post.accounts)); }
     else if (trend) {
       // Start with the Organization-wide Account on each Platform the trend suits.
-      const first = trend.bestFor.map((p) => mainAccount(p)).filter((a) => a?.connected).map((a) => a!.id);
+      const first = trend.bestFor.map((p) => mainAccount(p)).filter((a) => a && accountConnected(a.id, setup)).map((a) => a!.id);
       setChs(first); setTab(first[0]); setTweaks([]); setEdited(new Set()); setTexts({});
     }
   }, [trend?.id, post?.id]);
@@ -104,7 +106,7 @@ export function PostDrawer({ trend, post, onClose }: { trend?: Trend | null; pos
         <div className="mb-5 flex flex-wrap gap-1.5">
           {accounts.map((a) => {
             const on = chs.includes(a.id);
-            return a.connected ? (
+            return accountConnected(a.id, setup) ? (
               <button key={a.id} onClick={() => toggleCh(a.id)} aria-pressed={on} title={a.handle} className={cn("inline-flex h-8 items-center gap-2 rounded-full border pr-3 pl-1.5 text-[13px] transition-colors", on ? "border-ink bg-active" : "border-line text-muted hover:bg-hover")}>
                 <PlatformMark platform={a.platform} size={20} /> {accountLabel(a.id)}
               </button>

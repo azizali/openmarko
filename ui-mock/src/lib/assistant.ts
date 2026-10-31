@@ -19,6 +19,7 @@ import { getRunState, openTasksFor, runTasks, tasks } from "./tasks";
 import { mainAccount, draftFor, trends, type SocialPlatform, type ToneTweak, type Trend, platformMeta, platformOf as accountPlatform } from "../data/social";
 import { dateOf, getSocialPost, remixTrend, savePost, schedulePost } from "./social";
 import { skillName, skillOn } from "./skills";
+import { accountConnected } from "./setup";
 import { platformOf } from "../data/scanner";
 import { openOpportunities } from "./scanner";
 import { saveTrend, savedTrend } from "./swipes";
@@ -209,9 +210,10 @@ function socialReply(q: string): Message | null {
     const t = trendIn(q);
     // Post from the Organization-wide Account on each Platform asked for.
     const wanted = named.length ? named : t.bestFor;
-    const notConnected = wanted.filter((p) => !mainAccount(p)?.connected);
-    const chs = wanted.filter((p) => mainAccount(p)?.connected).map((p) => mainAccount(p)!.id);
-    if (!chs.length) return reply([{ type: "text", text: `${notConnected.map((p) => platformMeta[p].name).join(" and ")} isn't connected yet.` }, { type: "links", items: [{ label: "Connect it in Settings", to: "/settings/integrations" }] }]);
+    const on = (p: SocialPlatform) => { const a = mainAccount(p); return !!a && accountConnected(a.id); };
+    const notConnected = wanted.filter((p) => !on(p));
+    const chs = wanted.filter(on).map((p) => mainAccount(p)!.id);
+    if (!chs.length) return reply([{ type: "text", text: `${notConnected.map((p) => platformMeta[p].name).join(" and ")} isn't connected yet.` }, { type: "links", items: [{ label: "Connect it in Settings", to: "/settings/accounts" }] }]);
     const gate = off("social-viral") ?? off("trend-remix");
     if (gate) return gate;
     const post = remixTrend(t.id, chs);

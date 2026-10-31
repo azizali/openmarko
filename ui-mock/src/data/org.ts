@@ -23,6 +23,13 @@ export const memberships: (Organization & { locations: number; role: string })[]
     : []),
 ];
 
+/** Adds a new Client's Organization to the switcher (mock: it has no data of its own yet). */
+export function addMembership(name: string, category: string) {
+  const id = `org_${Date.now().toString(36)}`;
+  memberships.push({ id, name, category, initial: name.charAt(0).toUpperCase(), locations: 1, role: "Owner" });
+  return id;
+}
+
 export type WebsiteTool = { name: "Search Console" | "Google Analytics 4" | "WordPress"; connected: boolean; detail: string };
 export type Website = { id: string; domain: string; locationIds: string[]; tools: WebsiteTool[] };
 

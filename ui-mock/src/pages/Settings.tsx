@@ -9,7 +9,9 @@ import { locations } from "../data/mock";
 import { brandFacts } from "../data/brand";
 import { accounts, platformMeta, type SocialPlatform } from "../data/social";
 import { PlatformMark } from "../components/Social";
-import { organization, shortLocation, websites } from "../data/org";
+import { memberships, organization, shortLocation, websites } from "../data/org";
+import { useScope } from "../lib/scope";
+import { accountConnected, setAccount, setGoogleProfile, setWebsite, useSetup } from "../lib/setup";
 import { setThemeMode, useThemeMode, type ThemeMode } from "../lib/theme";
 import Brand from "./Brand";
 import Skills from "./Skills";
@@ -41,6 +43,8 @@ export const accountSections: Section[] = [
 ];
 
 function SubNav() {
+  const { orgId } = useScope();
+  const current = memberships.find((m) => m.id === orgId) ?? organization;
   const ref = useRef<HTMLElement>(null);
   const { section } = useParams();
   // On narrow screens the sections are a scrolling strip; keep the current one in view.
@@ -61,7 +65,7 @@ function SubNav() {
   );
   return (
     <nav ref={ref} aria-label="Settings" className="-mx-4 flex gap-4 overflow-x-auto border-b border-line px-4 pb-2 lg:sticky lg:top-6 lg:mx-0 lg:flex-col lg:gap-6 lg:self-start lg:overflow-visible lg:border-0 lg:p-0">
-      {group("Organization", `Shared by everyone on ${organization.name}`, businessSections)}
+      {group(current.name, `Organization settings, shared by everyone on ${current.name}`, businessSections)}
       <span aria-hidden className="w-px shrink-0 self-stretch bg-line lg:hidden" />
       {group("You", "Just for you, in every organization", accountSections)}
     </nav>
@@ -84,12 +88,14 @@ export default function Settings() {
 // ---------- Organization structure ----------
 
 function Locations() {
+  const st = useSetup();
   return (
     <>
-      <PageHeader title="Locations" sub={`Places customers visit. Each has its own Google profile, keywords and map rankings, and shares ${organization.name}'s brand voice.`} actions={<NavLink to="/onboarding"><Button size="sm" icon={<Plus size={13} />}>Add location</Button></NavLink>} />
+      <PageHeader title="Locations" sub={`Places customers visit. Rankings, competitors and citations work from the address alone; connecting the Google profile adds reviews, calls and posting. Every location shares ${organization.name}'s brand voice.`} actions={<Button size="sm" icon={<Plus size={13} />}>Add location</Button>} />
       <Card pad={false} className="max-w-3xl">
         {locations.map((l) => {
-          const site = websites.find((w) => w.locationIds.includes(l.id));
+          const site = websites.find((w) => w.locationIds.includes(l.id) && st.website[w.id]);
+          const gp = st.googleProfile[l.id];
           const tagged = accounts.filter((a) => a.locationId === l.id && a.platform !== "google");
           return (
             <div key={l.id} className="flex flex-wrap items-start gap-4 border-b border-line px-5 py-4 last:border-0">
@@ -98,13 +104,13 @@ function Locations() {
                 <div className="text-[14px] font-medium">{shortLocation(l.id)}</div>
                 <div className="text-[12.5px] text-muted">{l.address}</div>
                 <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px]">
-                  <Badge tone={l.googleProfile === "connected" ? "good" : "warn"}><Store size={11} /> Google profile {l.googleProfile === "connected" ? "connected" : l.googleProfile === "verifying" ? "verifying" : "not connected"}</Badge>
+                  <Badge tone={gp ? "good" : "warn"}><Store size={11} /> Google profile {gp ? "connected" : "not connected"}</Badge>
                   <Badge>{l.keywords} keywords</Badge>
                   {site && <Badge><Globe size={11} /> <ExternalUrl domain={site.domain} /></Badge>}
                   {tagged.map((a) => <Badge key={a.id}><PlatformMark platform={a.platform} size={12} /> {a.handle}</Badge>)}
                 </div>
               </div>
-              <Button size="sm" variant="ghost">Edit</Button>
+              <Button size="sm" variant={gp ? "ghost" : "primary"} onClick={() => setGoogleProfile(l.id, !gp)}>{gp ? "Disconnect Google profile" : "Connect Google profile"}</Button>
             </div>
           );
         })}
@@ -114,21 +120,22 @@ function Locations() {
 }
 
 function Websites() {
+  const st = useSetup();
   return (
     <>
       <PageHeader title="Websites" sub="Sites the organization owns. One website can serve several locations; site health, articles and search data are per website." actions={<Button size="sm" icon={<Plus size={13} />}>Add website</Button>} />
       <div className="max-w-3xl space-y-4">
         {websites.map((w) => (
-          <Card key={w.id} pad={false}>
+          <Card key={w.id} pad={false} className={cn(!st.website[w.id] && "opacity-70")}>
             <div className="flex flex-wrap items-center gap-3 border-b border-line px-5 py-4">
               <span className="grid size-9 place-items-center rounded-lg bg-hover"><Globe size={16} /></span>
               <div className="min-w-0 flex-1">
                 <div className="text-[14px] font-medium"><ExternalUrl domain={w.domain} /></div>
                 <div className="text-[12.5px] text-muted">Serves {w.locationIds.length === locations.length ? "every location" : w.locationIds.map(shortLocation).join(", ")}</div>
               </div>
-              <Button size="sm" variant="ghost">Edit</Button>
+              <Button size="sm" variant={st.website[w.id] ? "ghost" : "primary"} onClick={() => setWebsite(w.id, !st.website[w.id])}>{st.website[w.id] ? "Remove" : "Add website"}</Button>
             </div>
-            {w.tools.map((t) => (
+            {st.website[w.id] && w.tools.map((t) => (
               <div key={t.name} className="flex items-center gap-4 border-b border-line px-5 py-3.5 last:border-0">
                 <span className="grid size-8 place-items-center rounded-lg bg-hover">{t.name === "Search Console" ? <SearchCheck size={15} /> : t.name === "WordPress" ? <Globe size={15} /> : <BarChart3 size={15} />}</span>
                 <div className="min-w-0 flex-1">
@@ -147,6 +154,7 @@ function Websites() {
 
 /** The organization's own profiles to post from, grouped by platform. Each speaks for every location unless it's tagged to one. */
 function Accounts() {
+  const st = useSetup();
   const [list, setList] = useState(accounts);
   const [adding, setAdding] = useState(false);
   const social = (Object.keys(platformMeta) as SocialPlatform[]).filter((p) => p !== "google");
@@ -167,8 +175,8 @@ function Accounts() {
               <div key={a.id} className="flex flex-wrap items-center gap-4 border-b border-line px-5 py-3.5 last:border-0">
                 <PlatformMark platform={a.platform} size={32} />
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 text-[14px] font-medium">{a.handle}{a.connected && <Badge tone="good"><Check size={10} /> Connected</Badge>}</div>
-                  <div className="text-[12.5px] text-muted">{a.connected ? `${a.followers.toLocaleString()} followers` : "Not connected yet"}</div>
+                  <div className="flex items-center gap-2 text-[14px] font-medium">{a.handle}{accountConnected(a.id, st) && <Badge tone="good"><Check size={10} /> Connected</Badge>}</div>
+                  <div className="text-[12.5px] text-muted">{accountConnected(a.id, st) ? `${a.followers.toLocaleString()} followers` : "Not connected yet"}</div>
                 </div>
                 {locations.length > 1 && (
                   <label className="flex items-center gap-2 text-[12.5px] text-muted">Speaks for
@@ -178,7 +186,7 @@ function Accounts() {
                     </select>
                   </label>
                 )}
-                <Button size="sm" variant={a.connected ? "ghost" : "primary"} onClick={() => !a.connected && setList(list.map((x) => (x.id === a.id ? { ...x, connected: true } : x)))}>{a.connected ? "Manage" : "Connect"}</Button>
+                <Button size="sm" variant={accountConnected(a.id, st) ? "ghost" : "primary"} onClick={() => setAccount(a.id, !accountConnected(a.id, st))}>{accountConnected(a.id, st) ? "Disconnect" : "Connect"}</Button>
               </div>
             ))}
           </Card>
