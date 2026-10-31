@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
 import { Bookmark, BookmarkCheck, Check, ChevronDown, Copy, ExternalLink, Flame, Loader2, Plus, Radar, Settings2, Trash2, Undo2, Wand2, X } from "lucide-react";
-import { Badge, Button, Card, Drawer, PageHeader, Segmented, Tabs, Toggle, cn, useToast } from "../components/ui";
+import { Badge, Button, Card, Drawer, PageHeader, Segmented, Tabs, Toggle, cn, fmt, useToast } from "../components/ui";
 import { PlatformMark, PostDrawer } from "../components/Social";
 import { WordList } from "./Brand";
 import { trendSources, type Trend } from "../data/social";
@@ -13,15 +13,20 @@ import {
 import { useSocialPosts } from "../lib/social";
 import { timeAgo } from "../lib/runs";
 import { saveTrend, savedTrend, unsaveTrend, useSwipes } from "../lib/swipes";
+import { useWatched } from "../lib/watch";
+import { WatchEditor } from "../components/Watch";
+import { postAsTrend, profileUrl, standoutPosts, type StandoutPost, type WatchKind, type WatchedProfile } from "../data/watch";
 
-type Tab = "reply" | "trending";
+type Tab = "reply" | "trending" | "watching";
 
 // One place to find what to do on social: conversations to join (Reply) and
 // what's catching on to make your own (Trending). Settings decide what's scanned.
 export default function SocialScanner() {
   const [params, setParams] = useSearchParams();
   // ?tab=remix is the old name for Trending.
-  const tab: Tab = params.get("tab") === "trending" || params.get("tab") === "remix" ? "trending" : "reply";
+  const p = params.get("tab");
+  const tab: Tab = p === "trending" || p === "remix" ? "trending" : p === "watching" ? "watching" : "reply";
+  const watched = useWatched();
   const [settings, setSettings] = useState(false);
   const { scannedAt, scanning, config } = useScanner();
   const on = activeSources(config);
@@ -45,6 +50,8 @@ export default function SocialScanner() {
             <span>Scanned {on.map((p) => platformOf(p).name).join(", ") || "nothing"} {timeAgo(scannedAt)}, {frequencyLabels[config.frequency]}</span>
             <span className="text-subtle">· Listening for {Object.values(config.terms).flat().length} terms · Change</span>
           </>
+        ) : tab === "watching" ? (
+          <span>Watching {watched.filter((w) => w.kind === "Competitor").length} competitors and {watched.filter((w) => w.kind === "Inspiration").length} profiles you like, checked {frequencyLabels[config.frequency]}</span>
         ) : (
           <>
             <span>Trends from {trendOn.map((s) => s.name).join(", ") || "nothing"}, checked {frequencyLabels[config.trending.frequency]}</span>
@@ -53,11 +60,12 @@ export default function SocialScanner() {
         )}
       </button>
 
-      <Tabs value={tab} onChange={(t) => setParams(t === "trending" ? { tab: "trending" } : {}, { replace: true })} tabs={[
+      <Tabs value={tab} onChange={(t) => setParams(t === "reply" ? {} : { tab: t }, { replace: true })} tabs={[
         { id: "reply", label: "Reply", count: openOpportunities().length },
         { id: "trending", label: "Trending", count: visibleTrends(config).length },
+        { id: "watching", label: "Watching", count: standoutPosts.filter((sp) => watched.some((w) => w.id === sp.profileId)).length },
       ]} />
-      <div className="mt-5">{tab === "reply" ? <ReplyList /> : <TrendingList />}</div>
+      <div className="mt-5">{tab === "reply" ? <ReplyList /> : tab === "trending" ? <TrendingList /> : <WatchingList />}</div>
 
       <ScanSettings open={settings} initial={tab} onClose={() => setSettings(false)} />
     </>
@@ -229,6 +237,64 @@ function TrendingList() {
   );
 }
 
+// ---------- Watching ----------
+
+function WatchingList() {
+  const watched = useWatched();
+  useSwipes();
+  const [kind, setKind] = useState<"all" | WatchKind>("all");
+  const [open, setOpen] = useState<Trend | null>(null);
+  const posts = standoutPosts
+    .map((p) => ({ p, w: watched.find((x) => x.id === p.profileId) }))
+    .filter((x): x is { p: StandoutPost; w: WatchedProfile } => !!x.w && (kind === "all" || x.w.kind === kind))
+    .sort((a, b) => b.p.multiple - a.p.multiple);
+
+  return (
+    <>
+      <p className="mt-0 mb-4 text-[13.5px] text-muted">Posts from competitors and profiles you like that did much better than their usual. Keep the idea, make it yours.</p>
+      <div className="mb-4 flex flex-wrap gap-1.5">
+        {(["all", "Competitor", "Inspiration"] as const).map((k) => (
+          <button key={k} onClick={() => setKind(k)} className={cn("h-7 rounded-full border px-2.5 text-[12.5px] transition-colors", kind === k ? "border-ink bg-ink text-on-ink" : "border-line text-muted hover:bg-hover")}>{k === "all" ? "All" : k === "Competitor" ? "Competitors" : "Inspiration"}</button>
+        ))}
+      </div>
+      <Card pad={false}>
+        {posts.map(({ p, w }) => {
+          const t = postAsTrend(p, w);
+          const saved = savedTrend(t.id);
+          return (
+            <article key={p.id} className="flex flex-col gap-3 border-b border-line px-5 py-4 last:border-0 md:flex-row md:items-start md:gap-6">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted">
+                  <PlatformMark platform={w.platform} size={16} />
+                  <a href={profileUrl(w)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-fg hover:underline">{w.handle} <ExternalLink size={11} /></a>
+                  <Badge tone={w.kind === "Competitor" ? "warn" : "accent"}>{w.kind}</Badge>
+                  <span className="text-subtle">· {p.format} · {p.posted}</span>
+                </div>
+                <h2 className="mt-1.5 mb-0 text-[15.5px] leading-snug font-medium">{p.caption}</h2>
+                <div className="num mt-1 inline-flex items-center gap-1 text-[12.5px] font-medium text-accent"><Flame size={12} /> {fmt(p.views)} views · {p.multiple}× their usual</div>
+                <p className="mt-1.5 mb-0 text-[13.5px] leading-[1.55] text-muted">{p.why}</p>
+                <p className="mt-1.5 mb-0 text-[13.5px] leading-[1.55]"><span className="font-medium">Your version: </span>{p.angle}</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2 md:flex-col md:items-end">
+                <Button size="sm" variant="primary" icon={<Wand2 size={12} />} onClick={() => setOpen(t)}>Remix in my voice</Button>
+                <button onClick={() => (saved ? unsaveTrend(t.id) : saveTrend(t))} aria-pressed={saved} className={cn("inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-[12.5px] transition-colors hover:bg-hover", saved ? "text-accent" : "text-muted hover:text-fg")}>
+                  {saved ? <BookmarkCheck size={14} /> : <Bookmark size={14} />} {saved ? "In swipe file" : "Save to swipe file"}
+                </button>
+              </div>
+            </article>
+          );
+        })}
+        {!posts.length && <div className="px-5 py-10 text-center text-[13.5px] text-muted">No standout posts from these profiles this week. Add more below.</div>}
+      </Card>
+
+      <h2 className="mt-8 mb-1 text-[15px] font-medium">Who you're watching</h2>
+      <p className="mt-0 mb-3 text-[13px] text-muted">Competitors, and anyone whose posts you'd like to learn from, in any line of business.</p>
+      <Card pad={false}><WatchEditor /></Card>
+      <PostDrawer trend={open} onClose={() => setOpen(null)} />
+    </>
+  );
+}
+
 // ---------- Settings ----------
 
 const freqOptions = (["hourly", "6h", "daily", "weekly"] as Frequency[]).map((f) => ({ id: f, label: { hourly: "Hourly", "6h": "Every 6 h", daily: "Daily", weekly: "Weekly" }[f] }));
@@ -256,9 +322,13 @@ function ScanSettings({ open, initial, onClose }: { open: boolean; initial: Tab;
 
   return (
     <Drawer open onClose={onClose} width={620} title="Scanner settings" footer={<Button variant="primary" onClick={() => { onClose(); scanNow(); }}>Done, scan now</Button>}>
-      <div className="mb-5"><Segmented label="Settings for" value={tab} onChange={setTab} options={[{ id: "reply", label: "Reply" }, { id: "trending", label: "Trending" }]} /></div>
+      <div className="mb-5"><Segmented label="Settings for" value={tab} onChange={setTab} options={[{ id: "reply", label: "Reply" }, { id: "trending", label: "Trending" }, { id: "watching", label: "Watching" }]} /></div>
 
-      {tab === "reply" ? (
+      {tab === "watching" ? (
+        <Section title="Profiles to watch" sub="Competitors, and anyone whose posts you'd like to learn from. Their posts that beat their usual show up under Watching.">
+          <div className="overflow-hidden rounded-lg border border-line"><WatchEditor compact /></div>
+        </Section>
+      ) : tab === "reply" ? (
         <div className="flex flex-col gap-6">
           <Section title="Where to look" sub="Each source and the places on it to watch." right={notAdded.length > 0 && <Button size="sm" icon={<Plus size={13} />} onClick={() => setAdding(!adding)}>Add source</Button>}>
             {adding && (

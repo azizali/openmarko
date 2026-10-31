@@ -7,6 +7,7 @@ import { ExternalUrl } from "../components/Scope";
 import { PlatformMark } from "../components/Social";
 import { PlatformBadge } from "./SocialScanner";
 import { WordList } from "./Brand";
+import { WatchEditor } from "../components/Watch";
 import { business, locations } from "../data/mock";
 import { addMembership, shortLocation, websites } from "../data/org";
 import { accounts, platformMeta, type SocialPlatform } from "../data/social";
@@ -73,6 +74,17 @@ export default function Onboarding() {
   const [places, setPlaces] = useState<Record<string, string[]>>(Object.fromEntries(config.sources.map((s) => [s.platform, s.places])));
   const [terms, setTerms] = useState(Object.values(config.terms).flat());
   const [topics, setTopics] = useState(config.trending.topics);
+  // The user's own additions, per Location. Their ids go in kwSel / compSel like the suggestions'.
+  const [myKw, setMyKw] = useState<Record<string, string[]>>({});
+  const [myComp, setMyComp] = useState<Record<string, string[]>>({});
+  const addMine = (which: "kw" | "comp", locId: string, text: string) => {
+    const v = text.trim();
+    if (!v) return;
+    const [mine, setMine, sel, setSel] = which === "kw" ? [myKw, setMyKw, kwSel, setKwSel] as const : [myComp, setMyComp, compSel, setCompSel] as const;
+    if ((mine[locId] ?? []).includes(v)) return;
+    setMine({ ...mine, [locId]: [...(mine[locId] ?? []), v] });
+    setSel({ ...sel, [locId]: new Set([...sel[locId], `mine:${v}`]) });
+  };
 
   useEffect(() => {
     if (read < 0 || read >= reading.length) return;
@@ -280,6 +292,14 @@ export default function Onboarding() {
                           <span className="num text-[12.5px] text-muted">{fmt(k.volume)}/mo</span>
                         </label>
                       ))}
+                      {(myKw[l.id] ?? []).map((t) => (
+                        <label key={t} className="flex cursor-pointer items-center gap-3 border-b border-line px-4 py-2.5 hover:bg-hover/50">
+                          <Checkbox checked={kwSel[l.id].has(`mine:${t}`)} onChange={() => setKwSel({ ...kwSel, [l.id]: toggle(kwSel[l.id], `mine:${t}`) })} label={`Track ${t}`} />
+                          <span className="flex-1 text-[14px]">{t}</span>
+                          <Badge>Added by you</Badge>
+                        </label>
+                      ))}
+                      <AddRow placeholder="Add a keyword, e.g. sedation dentist austin" onAdd={(v) => addMine("kw", l.id, v)} />
                     </Section>
                   );
                 })}
@@ -292,6 +312,13 @@ export default function Onboarding() {
                         <Toggle label={`Track ${c.name}`} checked={compSel[l.id].has(c.id)} onChange={() => setCompSel({ ...compSel, [l.id]: toggle(compSel[l.id], c.id) })} />
                       </div>
                     ))}
+                    {(myComp[l.id] ?? []).map((n) => (
+                      <div key={n} className="flex items-center gap-3 border-b border-line px-4 py-2.5">
+                        <span className="min-w-0 flex-1"><span className="block text-[14px]">{n}</span><span className="block text-[12.5px] text-muted">Added by you · we'll find its Google profile</span></span>
+                        <Toggle label={`Track ${n}`} checked={compSel[l.id].has(`mine:${n}`)} onChange={() => setCompSel({ ...compSel, [l.id]: toggle(compSel[l.id], `mine:${n}`) })} />
+                      </div>
+                    ))}
+                    <AddRow placeholder="Add a competitor by name or Google Maps link" onAdd={(v) => addMine("comp", l.id, v)} />
                   </Section>
                 ))}
 
@@ -310,7 +337,11 @@ export default function Onboarding() {
                       <div className="min-w-0 flex-1"><WordList label={`${scanPlatform(s.platform).name} · ${scanPlatform(s.platform).places}`} words={places[s.platform] ?? []} onChange={(w) => setPlaces({ ...places, [s.platform]: w })} /></div>
                     </div>
                   ))}
-                  <div className="px-4 py-3"><WordList label="Listening for" words={terms} onChange={setTerms} /></div>
+                  <div className="px-4 py-3"><WordList label="Keywords to scan for" words={terms} onChange={setTerms} /></div>
+                </Section>
+
+                <Section title="Profiles to watch" sub="Competitors' social profiles we found on their websites, plus anyone whose posts you'd like to learn from. Their best posts show up as ideas to remix.">
+                  <WatchEditor />
                 </Section>
 
                 <Section title="Trending" sub="Trends are scored for fit against these topics and the brand voice.">
@@ -338,6 +369,17 @@ export default function Onboarding() {
         )}
       </div>
     </div>
+  );
+}
+
+/** A one-line "add your own" row at the bottom of a list. */
+function AddRow({ placeholder, onAdd }: { placeholder: string; onAdd: (v: string) => void }) {
+  const [v, setV] = useState("");
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); onAdd(v); setV(""); }} className="flex items-center gap-2 bg-hover/40 px-4 py-2.5">
+      <input value={v} onChange={(e) => setV(e.target.value)} placeholder={placeholder} aria-label={placeholder} className="h-8 min-w-0 flex-1 rounded-md border border-line bg-surface px-2.5 text-[13px] outline-none focus:border-line-strong" />
+      <Button size="sm" type="submit" icon={<Plus size={13} />} disabled={!v.trim()}>Add</Button>
+    </form>
   );
 }
 

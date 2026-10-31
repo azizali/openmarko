@@ -68,6 +68,10 @@ _Avoid_: content, update
 A post by someone else, on a Platform the Organization doesn't control, that it should reply to.
 _Avoid_: opportunity, thread, lead
 
+**Watched profile**:
+Someone else's profile on a Platform that the Organization keeps an eye on, either a competitor or someone it admires. Their standout posts become ideas to remix.
+_Avoid_: spy list, following, competitor account
+
 **Trend**:
 A format or topic catching on elsewhere that the Organization could make its own.
 _Avoid_: viral idea, remix
