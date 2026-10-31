@@ -233,12 +233,13 @@ export function SendToCampaignModal({ open, onClose, items, market, qsKey, onSen
  * One prospect, one click: sends straight to the default campaign once you've
  * turned off review; otherwise opens the send dialog. Shows the lead's status once sent.
  */
-export function SendToCampaignButton({ p, o, market, qsKey, onSent, className }: { p: Prospect; o: Opportunity; market: Market; qsKey: string; onSent: (msg: string) => void; className?: string }) {
+export function SendToCampaignButton({ p, o, market, qsKey, onSent, className, compact }: { p: Prospect; o: Opportunity; market: Market; qsKey: string; onSent: (msg: string) => void; className?: string; compact?: boolean }) {
   const st = useOutreach();
   const [open, setOpen] = useState(false);
   const path = `/prospects/${p.id}${qsKey}`;
   const lead = leadFor(st, path);
-  if (lead) return <span className={className}><LeadBadge lead={lead} /></span>;
+  // Compact buttons sit in table rows, where a status column already shows the lead.
+  if (lead) return compact ? null : <span className={className}><LeadBadge lead={lead} /></span>;
   const camp = campaignOf(st, st.rules.defaultCampaign);
   const quick = st.connection && camp && !st.rules.review;
   const click = () => {
@@ -248,9 +249,13 @@ export function SendToCampaignButton({ p, o, market, qsKey, onSent, className }:
   };
   return (
     <>
-      <Button className={className} variant="primary" icon={<Send size={13} />} disabled={!p.contact.email} title={p.contact.email ? undefined : "No email found for this business"} onClick={click}>
-        {quick ? `Send to ${camp.name}` : "Send to campaign"}
-      </Button>
+      {compact ? (
+        <Button className={className} size="sm" variant="ghost" icon={<Send size={13} />} disabled={!p.contact.email} aria-label={`Send ${p.name} to a campaign`} title={p.contact.email ? (quick ? `Send to ${camp.name}` : "Send to campaign") : "No email found"} onClick={(e) => { e.stopPropagation(); click(); }} />
+      ) : (
+        <Button className={className} variant="primary" icon={<Send size={13} />} disabled={!p.contact.email} title={p.contact.email ? undefined : "No email found for this business"} onClick={click}>
+          {quick ? `Send to ${camp.name}` : "Send to campaign"}
+        </Button>
+      )}
       <SendToCampaignModal open={open} onClose={() => setOpen(false)} items={[{ p, o }]} market={market} qsKey={qsKey} onSent={onSent} />
     </>
   );

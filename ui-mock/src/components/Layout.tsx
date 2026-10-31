@@ -310,7 +310,8 @@ export default function Layout() {
           <Logo size={20} />
           <button onClick={() => setDark(!dark)} aria-label={dark ? "Light mode" : "Dark mode"} className="ml-auto rounded p-1.5 hover:bg-hover">{dark ? <Sun size={18} /> : <Moon size={18} />}</button>
         </div>
-        <main className="relative mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-8 lg:px-12 lg:py-10">
+        {/* Long working lists (Prospecting, Outreach) get the full width; reading pages stay narrow. */}
+        <main className={cn("relative mx-auto w-full px-4 py-8 sm:px-8 lg:px-12 lg:py-10", /^\/(prospects|outreach)$/.test(loc.pathname) ? "max-w-[1680px]" : "max-w-[1180px]")}>
           <div className="mb-5 flex min-h-9 flex-wrap items-center justify-between gap-3 print:hidden">
             {/* Detail pages one level down (an audit issue, a competitor) get a way back. */}
             {loc.pathname.split("/").length > 2 && !/^\/(prospects|social|settings)\//.test(loc.pathname) ? (
