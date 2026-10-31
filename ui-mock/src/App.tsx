@@ -23,6 +23,9 @@ import Content from "./pages/Content";
 import SocialScanner from "./pages/SocialScanner";
 import SwipeFile from "./pages/SwipeFile";
 import SocialPosts from "./pages/SocialPosts";
+import Ads from "./pages/Ads";
+import AdResearch from "./pages/AdResearch";
+import AdStudio from "./pages/AdStudio";
 
 // Rank pack now lives inside Rankings (Map pack view); keep old links working.
 function GridRedirect() {
@@ -75,6 +78,9 @@ export default function App() {
           <Route path="social/trends" element={<Navigate replace to="/social/scanner?tab=trending" />} />
           <Route path="social/swipe" element={<SwipeFile />} />
           <Route path="social/posts" element={<SocialPosts />} />
+          <Route path="ads" element={<Ads />} />
+          <Route path="ads/research" element={<AdResearch />} />
+          <Route path="ads/studio" element={<AdStudio />} />
           <Route path="social/voice" element={<Navigate replace to="/settings/brand" />} />
           {/* Brand voice, Skills and Activity moved into Settings; keep old links working. */}
           <Route path="brand" element={<Navigate replace to="/settings/brand" />} />

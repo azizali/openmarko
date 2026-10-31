@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, NavLink, useParams } from "react-router";
 import {
   Store, SearchCheck, BarChart3, Globe, Hash, Check, AudioLines, Puzzle, MapPin, Plug, Zap, Users, History,
-  UserRound, Palette, Bell, CreditCard, Sun, Moon, Monitor, Plus, AtSign, Send, Copy, Webhook, AlertTriangle,
+  UserRound, Palette, Bell, CreditCard, Sun, Moon, Monitor, Plus, AtSign, Send, Copy, Webhook, AlertTriangle, Megaphone,
 } from "lucide-react";
 import { Badge, Button, Card, CardHeader, PageHeader, Progress, Toggle, cn } from "../components/ui";
 import { locations, member } from "../data/mock";
@@ -21,6 +21,9 @@ import { ConnectFlow, ProviderMark } from "../components/Outreach";
 import { leadVariables, providers } from "../data/sequencers";
 import { createStarterCampaign, disconnect, setRules, useOutreach } from "../lib/outreach";
 import { timeAgo } from "../lib/runs";
+import { ConnectToolModal, ToolMark } from "../components/Ads";
+import { tools, type Tool, type ToolGroup } from "../data/ads";
+import { disconnectTool, useAds } from "../lib/ads";
 
 // Two scopes, one rule: Organization settings are shared by everyone who works on
 // the Organization and travel with it (voice, skills, Locations, Websites,
@@ -34,6 +37,7 @@ export const businessSections: Section[] = [
   { id: "locations", label: "Locations", icon: MapPin, page: Locations },
   { id: "websites", label: "Websites", icon: Globe, page: Websites },
   { id: "accounts", label: "Accounts", icon: AtSign, page: Accounts },
+  { id: "ads", label: "Ad accounts", icon: Megaphone, page: AdAccounts },
   { id: "integrations", label: "Integrations", icon: Plug, page: Integrations },
   { id: "automation", label: "Automation", icon: Zap, page: Automation },
   { id: "team", label: "Team", icon: Users, page: Team },
@@ -214,6 +218,45 @@ function Integrations() {
           <Button size="sm" variant="primary">Connect</Button>
         </div>
       </Card>
+    </>
+  );
+}
+
+const toolGroups: { id: ToolGroup; hint: string }[] = [
+  { id: "Ad accounts", hint: "Where ads run. Marko reads results here and publishes what you approve." },
+  { id: "Counting results", hint: "Without these, platforms optimize for clicks. With them, for booked patients." },
+  { id: "Making creatives", hint: "Renders every size from one design and turns scripts into video." },
+  { id: "Research", hint: "Ad libraries are built in. Bring in boards you've saved elsewhere." },
+];
+
+function AdAccounts() {
+  const st = useAds();
+  const [connect, setConnect] = useState<Tool | null>(null);
+  return (
+    <>
+      <PageHeader title="Ad accounts" sub="Where ads run, how results are counted, and the tools that make creatives. Shared by everyone on this organization." />
+      <div className="max-w-3xl space-y-4">
+        {toolGroups.map((g) => (
+          <Card key={g.id} pad={false}>
+            <div className="border-b border-line px-5 py-3"><div className="text-[14px] font-medium">{g.id}</div><div className="text-[12.5px] text-muted">{g.hint}</div></div>
+            {tools.filter((t) => t.group === g.id).map((t) => {
+              const on = st.connected[t.id];
+              const blocked = t.needs && !st.connected[t.needs];
+              return (
+                <div key={t.id} className="flex flex-wrap items-center gap-4 border-b border-line px-5 py-3.5 last:border-0">
+                  <ToolMark tool={t} size={34} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2 text-[14px] font-medium">{t.name}{on && <Badge tone="good"><Check size={10} /> Connected</Badge>}</div>
+                    <div className="text-[12.5px] text-muted">{on ? `${t.account} · connected ${timeAgo(on)}` : blocked ? `Connect ${tools.find((x) => x.id === t.needs)?.name} first` : t.what}</div>
+                  </div>
+                  {on ? <Button size="sm" variant="danger" onClick={() => disconnectTool(t.id)}>Disconnect</Button> : <Button size="sm" variant="primary" disabled={!!blocked} onClick={() => setConnect(t)}>Connect</Button>}
+                </div>
+              );
+            })}
+          </Card>
+        ))}
+      </div>
+      <ConnectToolModal tool={connect} onClose={() => setConnect(null)} />
     </>
   );
 }

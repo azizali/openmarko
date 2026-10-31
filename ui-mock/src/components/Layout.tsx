@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import {
   LayoutGrid, ListChecks, TrendingUp, MessageSquareText, MapPinned, ScanSearch, FileText, Settings, Search, ChevronsUpDown, ChevronDown, ArrowLeft,
-  Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Sparkles, Radar, Bookmark, CalendarDays, Plus,
+  Moon, Sun, Menu, Check, Rocket, CornerDownLeft, Target, Sparkles, Radar, Bookmark, CalendarDays, Plus, Megaphone,
 } from "lucide-react";
 import { cn } from "./ui";
 import { Logo } from "./Logo";
@@ -21,7 +21,7 @@ type Leaf = { to: string; label: string };
 type Nav = Leaf & { icon: typeof LayoutGrid; children?: Leaf[]; section?: string };
 
 // Every page is one click from the sidebar, under a section per kind of marketing
-// (SEO, Social, Sales). Groups list their pages as sub-items; the group holding
+// (SEO, Social, Ads, Sales). Groups list their pages as sub-items; the group holding
 // the current page is open, the rest open with their chevron. Marko's setup
 // (Brand voice, Skills) and Activity live in Settings.
 const nav: Nav[] = [
@@ -48,6 +48,12 @@ const nav: Nav[] = [
   { to: "/social/scanner", label: "Social scanner", icon: Radar, section: "Social" },
   { to: "/social/swipe", label: "Swipe file", icon: Bookmark },
   { to: "/social/posts", label: "Posts & calendar", icon: CalendarDays },
+  { to: "/ads", label: "Ads", icon: Megaphone, section: "Ads", children: [
+    { to: "/ads", label: "Campaigns" },
+    { to: "/ads/research", label: "Ad research" },
+    { to: "/ads/research?tab=swipe", label: "Ad swipe file" },
+    { to: "/ads/studio", label: "Creative studio" },
+  ] },
   ...(member.plan === "agency" ? [{ to: "/prospects", label: "Prospecting", icon: Target, section: "Sales", children: [
     { to: "/prospects", label: "Find businesses" },
     { to: "/outreach", label: "Outreach" },
@@ -65,7 +71,8 @@ function activeLeaf(leaves: Leaf[], pathname: string, search: string): Leaf | un
   const fits = leaves
     .map((l) => ({ l, ...split(l.to) }))
     .filter(({ path, params }) => onPath(pathname, path) && [...params].every(([k, v]) => cur.get(k) === v));
-  return fits.sort((a, b) => [...b.params].length - [...a.params].length)[0]?.l;
+  // Most agreeing params first, then the deepest path (/ads/studio over /ads).
+  return fits.sort((a, b) => [...b.params].length - [...a.params].length || b.path.length - a.path.length)[0]?.l;
 }
 const inGroup = (n: Nav, pathname: string) => (n.children ?? [n]).some((l) => onPath(pathname, split(l.to).path));
 
@@ -311,7 +318,7 @@ export default function Layout() {
           <button onClick={() => setDark(!dark)} aria-label={dark ? "Light mode" : "Dark mode"} className="ml-auto rounded p-1.5 hover:bg-hover">{dark ? <Sun size={18} /> : <Moon size={18} />}</button>
         </div>
         {/* Long working lists (Prospecting, Outreach) get the full width; reading pages stay narrow. */}
-        <main className={cn("relative mx-auto w-full px-4 py-8 sm:px-8 lg:px-12 lg:py-10", /^\/(prospects|outreach)$/.test(loc.pathname) ? "max-w-[1680px]" : "max-w-[1180px]")}>
+        <main className={cn("relative mx-auto w-full px-4 py-8 sm:px-8 lg:px-12 lg:py-10", /^\/(prospects|outreach|ads(\/\w+)?)$/.test(loc.pathname) ? "max-w-[1680px]" : "max-w-[1180px]")}>
           <div className="mb-5 flex min-h-9 flex-wrap items-center justify-between gap-3 print:hidden">
             {/* Detail pages one level down (an audit issue, a competitor) get a way back. */}
             {loc.pathname.split("/").length > 2 && !/^\/(prospects|social|settings)\//.test(loc.pathname) ? (
