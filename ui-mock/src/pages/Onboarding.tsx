@@ -17,6 +17,7 @@ import { platformOf as scanPlatform, type PlatformId } from "../data/scanner";
 import { useScanner } from "../lib/scanner";
 import { estimateGridCost } from "../lib/api";
 import { setScope } from "../lib/scope";
+import { product } from "../lib/whitelabel";
 
 // Adding an Organization. Start from its website (or name); OpenMarko reads the
 // site and Google to find its Locations, Websites and social Accounts, drafts
@@ -109,7 +110,7 @@ export default function Onboarding() {
   return (
     <div className="flex min-h-full bg-bg">
       <aside className="hidden w-72 shrink-0 border-r border-line bg-sidebar px-6 py-8 md:block">
-        <Link to="/" aria-label="OpenMarko home"><Logo size={22} /></Link>
+        <Link to="/" aria-label={`${product()} home`}><Logo size={22} /></Link>
         <p className="mt-1 text-[13px] text-muted">Add an organization in about 5 minutes. We read your website and suggest the rest.</p>
         <ol className="mt-10 space-y-1">
           {steps.map((s, i) => (
@@ -164,7 +165,7 @@ export default function Onboarding() {
             {step === 1 && (
               <>
                 <h1 className="font-serif text-[34px] leading-tight">Here's what we found</h1>
-                <p className="mt-2 text-muted">Untick anything that isn't {name}'s, or that you don't want to use yet. OpenMarko works with any of these on its own: just a location, just a website, or just social accounts. You can add the rest later in Settings.</p>
+                <p className="mt-2 text-muted">Untick anything that isn't {name}'s, or that you don't want to use yet. {product()} works with any of these on its own: just a location, just a website, or just social accounts. You can add the rest later in Settings.</p>
 
                 <Section title="Locations" sub="Places customers visit. Each has its own Google profile, keywords and map rankings.">
                   {locations.map((l) => (
@@ -220,7 +221,7 @@ export default function Onboarding() {
             {step === 2 && (
               <>
                 <h1 className="font-serif text-[34px] leading-tight">Connect the accounts</h1>
-                <p className="mt-2 text-muted">All optional. Connect what you want to use now; pages that need something you skip will say so and connect it in one click. Read-only by default: OpenMarko only posts or changes something after you approve it.</p>
+                <p className="mt-2 text-muted">All optional. Connect what you want to use now; pages that need something you skip will say so and connect it in one click. Read-only by default: {product()} only posts or changes something after you approve it.</p>
                 <div className="mt-8 mb-2 text-[12.5px] font-medium text-muted">Google</div>
                 <div className="space-y-3">
                   {googleTools.map((it) => (
@@ -418,7 +419,7 @@ function OAuthModal({ tool, onClose, onDone }: { tool: (typeof googleTools)[numb
     >
       {phase === "consent" && (
         <div className="space-y-3 text-[13.5px]">
-          <p className="text-muted">You'll be redirected to Google to grant access. OpenMarko will request:</p>
+          <p className="text-muted">You'll be redirected to Google to grant access. {product()} will request:</p>
           <div className="rounded-lg border border-line p-3 font-mono text-[12px] text-muted">https://www.googleapis.com/auth/{tool.scope}</div>
           <p className="text-[12.5px] text-subtle">Mock flow: no data leaves this browser.</p>
         </div>

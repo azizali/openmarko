@@ -8,6 +8,7 @@ import type { Market, Opportunity, Prospect } from "../data/prospects";
 import {
   campaignOf, connect, createStarterCampaign, leadFor, leadFrom, providerName, pushLeads, render, setRules, statusMeta, useOutreach, type Lead,
 } from "../lib/outreach";
+import { assistant, product } from "../lib/whitelabel";
 
 export function ProviderMark({ id, size = 28 }: { id: ProviderId; size?: number }) {
   const p = providers[id];
@@ -59,7 +60,7 @@ export function ConnectFlow({ onConnect, onDone }: { onConnect?: () => void; onD
 
   if (step === "pick") return (
     <div className="space-y-3">
-      <p className="text-[13.5px] text-muted">Your sequencer sends the emails, warms up your inboxes and keeps them out of spam. OpenMarko hands it prospects with their audit link and shows you the replies.</p>
+      <p className="text-[13.5px] text-muted">Your sequencer sends the emails, warms up your inboxes and keeps them out of spam. {product()} hands it prospects with their audit link and shows you the replies.</p>
       {(Object.keys(providers) as ProviderId[]).map((id) => {
         const p = providers[id];
         return (
@@ -222,7 +223,7 @@ export function SendToCampaignModal({ open, onClose, items, market, qsKey, onSen
                 <span className="text-subtle">Subject</span><span className="font-medium">{render(step.subject, preview.vars)}</span>
               </div>
               <pre className="max-h-56 overflow-y-auto rounded-lg bg-bg p-3 font-sans text-[13px] whitespace-pre-wrap">{render(step.body, preview.vars)}</pre>
-              <p className="mt-2 text-[12px] text-subtle">Each prospect gets their own audit link. Edit the wording in {name}; these are its templates filled with OpenMarko's numbers.</p>
+              <p className="mt-2 text-[12px] text-subtle">Each prospect gets their own audit link. Edit the wording in {name}; these are its templates filled with {product()}'s numbers.</p>
             </div>
           </section>
         )}
@@ -268,5 +269,5 @@ export function SendToCampaignButton({ p, o, market, qsKey, onSent, className, c
 }
 
 export function SuggestedTag() {
-  return <span className="inline-flex items-center gap-1 text-[12px] text-accent"><Sparkles size={12} /> Drafted by Marko in your voice</span>;
+  return <span className="inline-flex items-center gap-1 text-[12px] text-accent"><Sparkles size={12} /> Drafted by {assistant()} in your voice</span>;
 }

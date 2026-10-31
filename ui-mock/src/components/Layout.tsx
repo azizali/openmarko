@@ -19,6 +19,7 @@ import { Freshness, RunButton, kindForPath } from "./RunStatus";
 import { AssistantPanel, MarkoLauncher } from "./Assistant";
 import { ask, toggleAssistant, type PageContext } from "../lib/assistant";
 import { accountSections, businessSections } from "../pages/Settings";
+import { assistant, product } from "../lib/whitelabel";
 
 type Leaf = { to: string; label: string };
 type Nav = Leaf & { icon: typeof LayoutGrid; children?: Leaf[]; section?: string };
@@ -217,7 +218,7 @@ function CommandPalette({ open, onClose, ctx }: { open: boolean; onClose: () => 
     const found = [...pages, ...extra, ...kws].filter((i) => i.label.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
     // Anything typed can go to Marko. It leads when nothing matches or it reads like a sentence.
     if (q.trim().length < 2 || !isOn("marko", flags)) return found;
-    const askRow = { label: `Ask Marko: “${q.trim()}”`, hint: "Ask", to: "", ask: true };
+    const askRow = { label: `Ask ${assistant()}: “${q.trim()}”`, hint: "Ask", to: "", ask: true };
     return !found.length || q.trim().split(/\s+/).length >= 3 ? [askRow, ...found] : [...found, askRow];
   }, [q, flags]);
   useEffect(() => { setIdx(0); }, [q]);
@@ -240,7 +241,7 @@ function CommandPalette({ open, onClose, ctx }: { open: boolean; onClose: () => 
               if (e.key === "Enter" && items[idx]) go(items[idx]);
               if (e.key === "Escape") onClose();
             }}
-            placeholder="Search, or tell Marko what to do…"
+            placeholder={`Search, or tell ${assistant()} what to do…`}
             aria-label="Search"
             className="h-12 flex-1 bg-transparent text-[14.5px] outline-none placeholder:text-subtle"
           />
@@ -303,9 +304,9 @@ export default function Layout() {
     <div className="flex h-full flex-col gap-1 px-2.5 py-2.5">
       {/* Logo, Search and Ask Marko share one row; the shortcuts are in the tooltips. */}
       <div className="flex h-8 items-center gap-0.5">
-        <NavLink to="/" aria-label="OpenMarko home" className="mr-auto flex h-7 items-center rounded-md px-2 hover:bg-hover"><Logo size={17} /></NavLink>
+        <NavLink to="/" aria-label={`${product()} home`} className="mr-auto flex h-7 items-center rounded-md px-2 hover:bg-hover"><Logo size={17} /></NavLink>
         <button onClick={() => setCmd(true)} aria-label="Search" title="Search (⌘K)" className={iconBtn}><Search size={15} strokeWidth={1.75} /></button>
-        {marko && <button onClick={toggleAssistant} aria-label="Ask Marko" title="Ask Marko (⌘J)" className={iconBtn}><Sparkles size={15} strokeWidth={1.75} /></button>}
+        {marko && <button onClick={toggleAssistant} aria-label={`Ask ${assistant()}`} title={`Ask ${assistant()} (⌘J)`} className={iconBtn}><Sparkles size={15} strokeWidth={1.75} /></button>}
       </div>
       <OrgSwitcher />
       <nav className="mt-1 flex flex-1 flex-col gap-px overflow-y-auto" aria-label="Main">

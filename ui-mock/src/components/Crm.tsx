@@ -10,6 +10,7 @@ import {
 } from "../lib/crm";
 import { timeAgo } from "../lib/runs";
 import { isOn } from "../lib/features";
+import { assistant } from "../lib/whitelabel";
 
 export const channelIcon: Record<Channel, typeof Mail> = { email: Mail, sms: MessageSquareText, call: Phone };
 export function ChannelIcon({ ch, size = 13, className }: { ch: Channel; size?: number; className?: string }) {
@@ -157,7 +158,7 @@ export function Composer({ c, events, onDone, compact, call: callFirst }: { c: C
             ...(isOn("email") ? [{ id: "email" as Mode, label: <span className="inline-flex items-center gap-1"><Mail size={12} />Email</span> }] : []),
             { id: "call", label: <span className="inline-flex items-center gap-1"><Phone size={12} />Call</span> }, { id: "note", label: <span className="inline-flex items-center gap-1"><NotebookPen size={12} />Note</span> }]} />
         <span className="flex-1" />
-        {(mode === "sms" || mode === "email") && !blocked && (drafted ? <span className="inline-flex items-center gap-1 text-[12px] text-accent"><Sparkles size={12} />Marko's draft</span> : <button onClick={() => { setBody(suggestReply(c, last)); setDrafted(true); }} className="text-[12.5px] text-muted underline decoration-line-strong underline-offset-2 hover:text-fg">Draft a reply</button>)}
+        {(mode === "sms" || mode === "email") && !blocked && (drafted ? <span className="inline-flex items-center gap-1 text-[12px] text-accent"><Sparkles size={12} />{assistant()}'s draft</span> : <button onClick={() => { setBody(suggestReply(c, last)); setDrafted(true); }} className="text-[12.5px] text-muted underline decoration-line-strong underline-offset-2 hover:text-fg">Draft a reply</button>)}
       </div>
       {blocked ? (
         <p className="flex items-start gap-2 rounded-lg bg-hover px-3 py-2.5 text-[13px] text-muted"><Ban size={14} className="mt-0.5 shrink-0" /><span>{blocked}.{(mode === "sms" || mode === "email") && notReady(st, mode) ? <> <Link to="/settings/messaging" className="underline underline-offset-2">Set it up</Link></> : mode === "sms" && c.phone && c.mobile ? " Turn texts on in their details if they've said yes." : ""}</span></p>

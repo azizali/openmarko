@@ -10,6 +10,7 @@ import { useAds } from "../lib/ads";
 import { useCrm } from "../lib/crm";
 import { useOutreach } from "../lib/outreach";
 import { chosen, knockOn, setFeature, statusOf, useFeatures } from "../lib/features";
+import { product } from "../lib/whitelabel";
 
 /** Whether each kind of account a feature relies on is connected, and where to fix it. */
 function useConnections(): Record<Connection, { ok: boolean; text: string; to: string }> {
@@ -71,7 +72,7 @@ export default function Features() {
 
   return (
     <>
-      <PageHeader title="Features" sub="Turn parts of OpenMarko on or off for this organization. Turning something off hides it everywhere it appears, including inside other features. Nothing is deleted." />
+      <PageHeader title="Features" sub={`Turn parts of ${product()} on or off for this organization. Turning something off hides it everywhere it appears, including inside other features. Nothing is deleted.`} />
       <div className="max-w-3xl space-y-4">
         {shown.map((m) => (
           <Card key={m.id} pad={false} className="scroll-mt-6">

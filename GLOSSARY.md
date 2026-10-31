@@ -9,12 +9,20 @@ The business or brand OpenMarko markets, and the top of everything else. Most ha
 _Avoid_: business, workspace, company, tenant
 
 **Member**:
-A person with access to an Organization, with a role in it. One person can be a Member of many Organizations.
+A person with access to an Organization, with a role in it. One person can be a Member of many Organizations, and of a Partner.
 _Avoid_: user, seat
 
+**Partner**:
+An agency, consultant or reseller that manages Organizations for others and puts its own brand on the app for them. The only level above Organization. Each Organization belongs to at most one Partner and can transfer out, keeping its data.
+_Avoid_: agency (in code and data), reseller, workspace, parent org
+
 **Client**:
-What an agency's Members call an Organization they manage for someone else. It is an Organization, not a separate thing.
+What a Partner's Members call an Organization they manage for someone else. It is an Organization, not a separate thing.
 _Avoid_: customer, sub-account
+
+**Whitelabel**:
+A Partner's name, logo, colour, domain and email sender in place of ours, on everything its Clients see. Set once per Partner, never per Organization. With it on, nothing says OpenMarko or Marko; the assistant is called "AI Assistant" unless the Partner renames it.
+_Avoid_: white-label, branding, custom branding, reseller mode
 
 **Location**:
 A physical place customers visit, with its own address, hours, keywords and map rankings.

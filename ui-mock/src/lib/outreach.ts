@@ -12,6 +12,7 @@ import { providers, starterCampaign, workspaceFor, type Campaign, type Inbox, ty
 import { defaultSpec, leadersOf, opportunity, searchMarket, specToQuery, type Market, type Opportunity, type Prospect } from "../data/prospects";
 import { ensureShare, recordView, shareUrl } from "./shares";
 import { fmt } from "../components/ui";
+import { appHost } from "./whitelabel";
 
 export type LeadStatus = "queued" | "sent" | "replied" | "interested" | "booked" | "not_interested" | "bounced";
 export type Msg = { from: "us" | "them"; at: number; inbox: string; subject: string; body: string; step?: number };
@@ -111,7 +112,7 @@ export function leadFrom(p: Prospect, o: Opportunity, m: Market, auditPath: stri
       missed_revenue: `$${fmt(o.missedRevenue)}`,
       quick_win: o.wins[0]?.title.replace(/^./, (c) => c.toLowerCase()) ?? "a few profile fixes",
       // Previews show a placeholder so opening the send dialog doesn't create links.
-      audit_url: withLink ? shareUrl(ensureShare(auditPath, p.name).token) : "openmarko.com/a/…",
+      audit_url: withLink ? shareUrl(ensureShare(auditPath, p.name).token) : `${appHost()}/a/…`,
     },
   };
 }

@@ -8,6 +8,7 @@ import { locations } from "../data/mock";
 import { shortLocation } from "../data/org";
 import { cadences, connectTool, connectedPlatforms, dailyBudget, money, publishAds, useAds, verdicts, type PublishAd, type Verdict } from "../lib/ads";
 import { setCreativeStatus, type Style } from "../lib/creatives";
+import { assistant, product } from "../lib/whitelabel";
 
 export function AdPlatformMark({ platform, size = 20 }: { platform: AdPlatform; size?: number }) {
   const m = adPlatforms[platform];
@@ -115,7 +116,7 @@ export function ConnectToolModal({ tool, onClose }: { tool: Tool | null; onClose
       </div>
       {step !== "pick" ? (
         <div className="mt-4 rounded-lg border border-line p-3">
-          <div className="mb-1.5 flex items-center gap-1.5 text-[12.5px] font-medium"><ShieldCheck size={13} className="text-good" />OpenMarko will be able to</div>
+          <div className="mb-1.5 flex items-center gap-1.5 text-[12.5px] font-medium"><ShieldCheck size={13} className="text-good" />{product()} will be able to</div>
           <ul className="m-0 list-none space-y-1 pl-0 text-[13px]">{perms.map((p) => <li key={p} className="flex gap-2"><Check size={13} className="mt-0.5 shrink-0 text-muted" />{p}</li>)}</ul>
           {tool.group === "Ad accounts" && <p className="mt-2 mb-0 text-[12.5px] text-muted">New ads never go live without your approval unless you allow it in the goal's guardrails.</p>}
         </div>
@@ -221,8 +222,8 @@ export function PublishModal({ open, onClose, ads, batchId, batchName, onDone }:
         </div>
         <label className="flex items-center gap-2 text-[13.5px]"><Checkbox checked={paused} onChange={setPaused} />Create paused, so I can check it in {adPlatforms[platform].name} first</label>
         <div className="rounded-lg bg-hover px-3.5 py-3 text-[13px] leading-[1.55]">
-          {into === "new" ? "Creates 1 campaign with " : "Adds "}<b>{groups} ad set{groups === 1 ? "" : "s"}</b> and <b>{ok.length} ads</b>, <b className="num">{money(budget * groups)}</b> a day. Marko reviews {cadences[g.cadence].label.toLowerCase()} and judges each ad after it spends <span className="num">{money(g.minSpend * g.target)}</span>; ads above <span className="num">{money(g.target * 1.5)}</span> a {g.result === "booking" ? "booking" : "result"} get paused, winners get more.
-          {after > g.monthly / 30 && <div className="mt-1.5 text-warn">Daily budgets go to {money(after)}, over your {money(g.monthly / 30)} cap. Marko won't scale anything until you cut elsewhere or raise the cap.</div>}
+          {into === "new" ? "Creates 1 campaign with " : "Adds "}<b>{groups} ad set{groups === 1 ? "" : "s"}</b> and <b>{ok.length} ads</b>, <b className="num">{money(budget * groups)}</b> a day. {assistant()} reviews {cadences[g.cadence].label.toLowerCase()} and judges each ad after it spends <span className="num">{money(g.minSpend * g.target)}</span>; ads above <span className="num">{money(g.target * 1.5)}</span> a {g.result === "booking" ? "booking" : "result"} get paused, winners get more.
+          {after > g.monthly / 30 && <div className="mt-1.5 text-warn">Daily budgets go to {money(after)}, over your {money(g.monthly / 30)} cap. {assistant()} won't scale anything until you cut elsewhere or raise the cap.</div>}
         </div>
       </div>
     </Modal>

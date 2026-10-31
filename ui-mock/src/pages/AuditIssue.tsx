@@ -6,6 +6,7 @@ import { ExternalUrl } from "../components/Scope";
 import { useScopedWebsite } from "../lib/scope";
 import { websites } from "../data/org";
 import { auditIssues } from "../data/mock";
+import { product } from "../lib/whitelabel";
 
 const sevTone = { critical: "bad", warning: "warn", notice: "info" } as const;
 const execSteps = ["Connecting to WordPress (REST API)", "Applying change", "Purging page cache", "Re-crawling affected pages", "Requesting indexing in Search Console"];
@@ -75,7 +76,7 @@ export default function AuditIssue() {
             {issue.autoFix ? (
               <>
                 <div className="flex items-center gap-2 text-[14px] font-medium"><Wand2 size={15} className="text-accent" /> Apply automatically</div>
-                <p className="mt-1.5 text-[13px] text-muted">OpenMarko will apply this through your connected {issue.autoFix.executor} site. A revision is saved so you can roll back.</p>
+                <p className="mt-1.5 text-[13px] text-muted">{product()} will apply this through your connected {issue.autoFix.executor} site. A revision is saved so you can roll back.</p>
                 {phase === "idle" && (
                   <Button variant="primary" className="mt-5 w-full" disabled={!selected.size} onClick={() => setPhase("running")}>
                     Apply to {selected.size} page{selected.size === 1 ? "" : "s"}

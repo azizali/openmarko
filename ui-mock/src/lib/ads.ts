@@ -10,6 +10,7 @@
 
 import { useSyncExternalStore } from "react";
 import { adPlatforms, angles, resultKinds, seedRows, tools, type AdPlatform, type Angle, type Format, type ResultKind, type Row, type ToolId } from "../data/ads";
+import { assistant } from "./whitelabel";
 
 export type Cadence = "daily" | "3d" | "weekly";
 export const cadences: Record<Cadence, { label: string; days: number }> = {
@@ -253,7 +254,7 @@ function outcomeFor(c: Change) {
   if (c.kind === "scale") return "Spent the extra budget and stayed under target.";
   if (c.kind === "cut") return "Spending less on it; cost per result is unchanged so far.";
   if (c.kind === "negatives") return "Those searches no longer trigger the ad.";
-  if (c.kind === "publish") return "In learning. Marko judges each ad once it has spent enough.";
+  if (c.kind === "publish") return `In learning. ${assistant()} judges each ad once it has spent enough.`;
   return "Done.";
 }
 

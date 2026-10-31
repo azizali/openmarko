@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, NavLink, useParams } from "react-router";
 import {
   Store, SearchCheck, BarChart3, Globe, Hash, Check, AudioLines, Puzzle, MapPin, Plug, Zap, Users, History,
-  UserRound, Palette, Bell, CreditCard, Sun, Moon, Monitor, Plus, AtSign, Send, Copy, Webhook, AlertTriangle, Megaphone, ToggleRight, CalendarClock, Mail, MessageSquareText, Phone, ShieldCheck,
+  UserRound, Palette, Bell, Building2, Paintbrush, CreditCard, Sun, Moon, Monitor, Plus, AtSign, Send, Copy, Webhook, AlertTriangle, Megaphone, ToggleRight, CalendarClock, Mail, MessageSquareText, Phone, ShieldCheck,
 } from "lucide-react";
 import { Badge, Button, Card, CardHeader, PageHeader, Progress, Toggle, cn, useToast } from "../components/ui";
 import { locations, member } from "../data/mock";
@@ -18,6 +18,8 @@ import Skills from "./Skills";
 import { ExternalUrl } from "../components/Scope";
 import Runs from "./Runs";
 import Features from "./Features";
+import Whitelabel, { Clients } from "./Whitelabel";
+import { partner } from "../data/partner";
 import { Autopilot, Schedules } from "./Autopilot";
 import { isOn, settingsOwner, useFeatures } from "../lib/features";
 import { featureOf } from "../data/features";
@@ -31,17 +33,19 @@ import { disconnectTool, useAds } from "../lib/ads";
 import { checkDns, disconnectEmail, disconnectPhone, setChannels, useCrm } from "../lib/crm";
 import { DnsTable, EmailSetup, PhoneSetup, ProviderMark as SendMark, regLabel, regTone } from "../components/Sending";
 import { emailProviders, phoneProviders } from "../data/providers";
+import { assistant, product } from "../lib/whitelabel";
 
 // Two scopes, one rule: Organization settings are shared by everyone who works on
 // the Organization and travel with it (voice, skills, Locations, Websites,
 // Accounts, who has access). "You" settings belong to the signed-in Member and
 // follow them to every Organization they open (sign-in, theme, notifications, plan).
+// Partner settings sit above both: one whitelabel for every Client, for its admins only.
 type Section = { id: string; label: string; icon: typeof Store; page: () => React.JSX.Element };
 
 export const businessSections: Section[] = [
   { id: "features", label: "Features", icon: ToggleRight, page: Features },
   { id: "brand", label: "Brand voice", icon: AudioLines, page: Brand },
-  { id: "skills", label: "Marko skills", icon: Puzzle, page: Skills },
+  { id: "skills", label: `${assistant()} skills`, icon: Puzzle, page: Skills },
   { id: "locations", label: "Locations", icon: MapPin, page: Locations },
   { id: "websites", label: "Websites", icon: Globe, page: Websites },
   { id: "accounts", label: "Accounts", icon: AtSign, page: Accounts },
@@ -53,6 +57,10 @@ export const businessSections: Section[] = [
   { id: "team", label: "Team", icon: Users, page: Team },
   { id: "activity", label: "Activity", icon: History, page: Runs },
 ];
+export const partnerSections: Section[] = partner?.role === "Admin" ? [
+  { id: "whitelabel", label: "Whitelabel", icon: Paintbrush, page: Whitelabel },
+  { id: "clients", label: "Clients", icon: Building2, page: Clients },
+] : [];
 export const accountSections: Section[] = [
   { id: "profile", label: "Profile", icon: UserRound, page: AccountProfile },
   { id: "appearance", label: "Appearance", icon: Palette, page: Appearance },
@@ -90,6 +98,13 @@ function SubNav() {
     <nav ref={ref} aria-label="Settings" className="-mx-4 flex gap-4 overflow-x-auto border-b border-line px-4 pb-2 lg:sticky lg:top-6 lg:mx-0 lg:flex-col lg:gap-6 lg:self-start lg:overflow-visible lg:border-0 lg:p-0">
       {group(current.name, `Organization settings, shared by everyone on ${current.name}`, visible(businessSections))}
       <span aria-hidden className="w-px shrink-0 self-stretch bg-line lg:hidden" />
+      {partner && partnerSections.length > 0 && (
+        <>
+          <span aria-hidden className="w-px shrink-0 self-stretch bg-line lg:hidden" />
+          {group(partner.name, "Partner settings, for every client", partnerSections)}
+        </>
+      )}
+      <span aria-hidden className="w-px shrink-0 self-stretch bg-line lg:hidden" />
       {group("You", "Just for you, in every organization", visible(accountSections))}
     </nav>
   );
@@ -97,7 +112,7 @@ function SubNav() {
 
 export default function Settings() {
   const { section } = useParams();
-  const found = [...businessSections, ...accountSections].find((s) => s.id === section);
+  const found = [...businessSections, ...partnerSections, ...accountSections].find((s) => s.id === section);
   useFeatures();
   // Settings → Automation became Autopilot.
   if (section === "automation") return <Navigate replace to="/settings/autopilot" />;
@@ -253,7 +268,7 @@ function Messaging() {
       <PageHeader title="Email & texting" sub="Who sends your campaigns, workflows and Inbox replies. Shared by everyone on this organization." />
       <div className="max-w-3xl space-y-4">
         <Card>
-          {!ep ? empty(<Mail size={18} />, "Set up email sending", "Use OpenMarko's sending, or connect Amazon SES, Resend, Mailgun, Postmark or SendGrid. About 5 minutes plus DNS.", "Set up email", () => setSetup("email")) : (
+          {!ep ? empty(<Mail size={18} />, "Set up email sending", `Use ${product()}'s sending, or connect Amazon SES, Resend, Mailgun, Postmark or SendGrid. About 5 minutes plus DNS.`, "Set up email", () => setSetup("email")) : (
             <>
               <div className="mb-4 flex flex-wrap items-center gap-3">
                 <SendMark mark={ep.mark} color={ep.color} size={34} />
@@ -297,7 +312,7 @@ function Messaging() {
             {row("Voicemail to text", <Toggle label="Voicemail to text" checked={call.voicemailToText} onChange={(v) => setChannels("call", { voicemailToText: v })} />, "Voicemails are written out in the Inbox")}
             {row("Record calls", <Toggle label="Record calls" checked={call.recordCalls} onChange={(v) => setChannels("call", { recordCalls: v })} />, "Callers hear “this call may be recorded” first")}
             {row("Missed calls", <NavLink to="/workflows" className="text-[13px] underline underline-offset-2">{st.workflows.some((a) => a.when.event === "missed_call" && a.on) ? "Texted back by the Missed call text-back workflow" : "Turn on Missed call text-back in Workflows"}</NavLink>)}
-            <p className="mt-1 text-[12px] text-subtle">OpenMarko never dials automatically. Call steps in workflows make a task with a script for the front desk.</p>
+            <p className="mt-1 text-[12px] text-subtle">{product()} never dials automatically. Call steps in workflows make a task with a script for the front desk.</p>
           </Card>
         )}
 
@@ -333,7 +348,7 @@ function Integrations() {
 }
 
 const toolGroups: { id: ToolGroup; hint: string }[] = [
-  { id: "Ad accounts", hint: "Where ads run. Marko reads results here and publishes what you approve." },
+  { id: "Ad accounts", hint: `Where ads run. ${assistant()} reads results here and publishes what you approve.` },
   { id: "Counting results", hint: "Without these, platforms optimize for clicks. With them, for booked patients." },
   { id: "Making creatives", hint: "Renders every size from one design and turns scripts into video." },
   { id: "Research", hint: "Ad libraries are built in. Bring in boards you've saved elsewhere." },
@@ -438,10 +453,10 @@ function Notifications() {
   const [on, setOn] = useState({ digest: true, drops: true, reviews: true, approvals: true, product: false });
   return (
     <>
-      <PageHeader title="Notifications" sub="What OpenMarko emails you about, for every business you're on." />
+      <PageHeader title="Notifications" sub={`What ${product()} emails you about, for every business you're on.`} />
       <Card className="max-w-3xl">
         {([
-          ["digest", "Weekly digest", "Rankings, reviews and what Marko did, every Monday"],
+          ["digest", "Weekly digest", `Rankings, reviews and what ${assistant()} did, every Monday`],
           ["drops", "Ranking drops", "When a tracked keyword falls out of the top 3"],
           ["reviews", "New reviews", "Within the hour, with a suggested reply"],
           ["approvals", "Waiting for you", "When something in To-do needs your approval"],
@@ -473,7 +488,7 @@ function Outreach() {
   const row = "flex flex-wrap items-center gap-4 border-b border-line px-5 py-3.5 last:border-0";
   return (
     <>
-      <PageHeader title="Outreach" sub={`${name} sends, warms up and rotates your inboxes. OpenMarko hands it prospects and reads back replies, labels and bounces.`} />
+      <PageHeader title="Outreach" sub={`${name} sends, warms up and rotates your inboxes. ${product()} hands it prospects and reads back replies, labels and bounces.`} />
       <div className="max-w-3xl space-y-4">
         <Card pad={false}>
           <div className={row}>
@@ -495,7 +510,7 @@ function Outreach() {
           {c.campaigns.map((x) => (
             <div key={x.id} className={row}>
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2 text-[13.5px] font-medium">{x.name}{st.rules.defaultCampaign === x.id && <Badge tone="accent">Default</Badge>}{x.fromOpenMarko && <Badge>Made by OpenMarko</Badge>}</div>
+                <div className="flex flex-wrap items-center gap-2 text-[13.5px] font-medium">{x.name}{st.rules.defaultCampaign === x.id && <Badge tone="accent">Default</Badge>}{x.fromOpenMarko && <Badge>Made by {product()}</Badge>}</div>
                 <div className="text-[12.5px] text-muted">{x.steps.length} steps over {x.steps[x.steps.length - 1].day} days · {x.leads} leads · {x.replyRate}% reply rate · {x.status}</div>
                 {!x.usesAuditUrl && <div className="mt-1 flex items-center gap-1.5 text-[12px] text-warn"><AlertTriangle size={12} />Doesn't use {"{{audit_url}}"}. Add it to the first email in {name}.</div>}
               </div>

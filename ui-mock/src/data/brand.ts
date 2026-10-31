@@ -8,6 +8,7 @@
 // (data/skills.ts) is applied on top of it.
 
 import { business, locations } from "./mock";
+import { assistant } from "../lib/whitelabel";
 
 export const brandFacts = {
   name: business.name,
@@ -42,7 +43,7 @@ export const voice = {
 };
 
 /** Everywhere the brand profile is used. */
-export const usedBy = ["Review replies", "Google profile posts", "Social posts", "Website articles", "Emails & reports", "Marko's answers"];
+export const usedBy = ["Review replies", "Google profile posts", "Social posts", "Website articles", "Emails & reports", `${assistant()}'s answers`];
 
 /** Mock "say it in my voice": swaps the words the voice avoids and adds the sign-off. */
 export function inVoice(text: string) {

@@ -8,6 +8,7 @@ import { dayLabel } from "../components/Social";
 import { GridLegend, GridMap, GridThumb } from "../components/GridMap";
 import { periodScanFor } from "../components/KeywordTable";
 import { Logo, LogoMark } from "../components/Logo";
+import { maker, whitelabeled } from "../lib/whitelabel";
 
 const sections = ["Executive summary", "Keyword progress & map pack", "Rankings & changes", "Competitor movement", "Content published & planned", "Business Profile insights", "Site audit", "Actions completed", "Search Console & GA4 traffic"];
 
@@ -55,7 +56,7 @@ export default function Reports() {
           <KeywordProgress />
           <ContentSummary />
           <div className="mt-8 flex items-center justify-center gap-1.5 border-t border-line pt-5 text-[12px] text-subtle">
-            <LogoMark size={14} /> Prepared with OpenMarko
+            <LogoMark size={14} /> Prepared {whitelabeled() ? "by" : "with"} {maker()}
           </div>
         </div>
       </Card>

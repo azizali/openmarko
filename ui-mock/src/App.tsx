@@ -30,6 +30,7 @@ import Contacts from "./pages/Contacts";
 import Inbox from "./pages/Inbox";
 import Campaigns from "./pages/Campaigns";
 import Workflows from "./pages/Workflows";
+import { useWhitelabel } from "./lib/whitelabel";
 
 // Rank pack now lives inside Rankings (Map pack view); keep old links working.
 function GridRedirect() {
@@ -51,6 +52,8 @@ function AutomationRedirect() {
 
 // HashRouter keeps the mock deployable as static files anywhere.
 export default function App() {
+  // Names like the product and the assistant are read wherever they're shown; re-render on a whitelabel change.
+  useWhitelabel();
   return (
     <HashRouter>
       <Routes>

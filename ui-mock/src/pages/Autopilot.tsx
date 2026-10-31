@@ -6,6 +6,7 @@ import { describeEvery, everyMeta, jobs, setEvery, useSchedules, type Every, typ
 import { isOn, useFeatures } from "../lib/features";
 import { useAds } from "../lib/ads";
 import { lastDone, runningOf, startRun, timeAgo, useRuns } from "../lib/runs";
+import { assistant } from "../lib/whitelabel";
 
 const riskTone = { low: "good", medium: "warn", high: "bad" } as const;
 const bySection = <T extends { section: string }>(items: T[]) => [...new Set(items.map((i) => i.section))].map((s) => ({ section: s, items: items.filter((i) => i.section === s) }));
@@ -24,7 +25,7 @@ export function Autopilot() {
   const preset: Preset | "custom" = (["careful", "balanced", "handsoff"] as const).find((p) => shown.every((a) => lv[a.id] === presetLevel(a, p))) ?? "custom";
   return (
     <>
-      <PageHeader title="Autopilot" sub="What Marko does on its own when it finds something to change. Ask first puts it in To-do for you. On its own does it and logs it in Activity, with Undo." />
+      <PageHeader title="Autopilot" sub={`What ${assistant()} does on its own when it finds something to change. Ask first puts it in To-do for you. On its own does it and logs it in Activity, with Undo.`} />
       <div className="max-w-3xl space-y-4">
         <Card className="flex flex-wrap items-center gap-3">
           <div className="min-w-0 flex-1"><div className="text-[13.5px] font-medium">Start from</div><div className="text-[12.5px] text-muted">Then change any row below.</div></div>
@@ -99,7 +100,7 @@ export function Schedules() {
             {items.map(row)}
           </Card>
         ))}
-        <p className="text-[12.5px] text-subtle">What Marko may change with what a run finds is <Link to="/settings/autopilot" className="underline underline-offset-2">Autopilot</Link>. Report emails are scheduled in <Link to="/reports" className="underline underline-offset-2">Reports</Link>. Everything that ran is in <Link to="/settings/activity" className="underline underline-offset-2">Activity</Link>.</p>
+        <p className="text-[12.5px] text-subtle">What {assistant()} may change with what a run finds is <Link to="/settings/autopilot" className="underline underline-offset-2">Autopilot</Link>. Report emails are scheduled in <Link to="/reports" className="underline underline-offset-2">Reports</Link>. Everything that ran is in <Link to="/settings/activity" className="underline underline-offset-2">Activity</Link>.</p>
       </div>
       {node}
     </>

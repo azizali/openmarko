@@ -5,6 +5,7 @@ import { Badge, Button, Card, CardHeader, PageHeader, useToast } from "../compon
 import { ExternalUrl } from "../components/Scope";
 import { websites } from "../data/org";
 import { brandFacts, inVoice, usedBy, voice } from "../data/brand";
+import { assistant } from "../lib/whitelabel";
 
 // Who the business is and how it sounds. Belongs to the business, not a
 // location or a channel, and is background information for every skill.
@@ -24,7 +25,7 @@ export default function Brand() {
     <>
       <PageHeader
         title="Brand voice"
-        sub={<>Who {brandFacts.name} is and how it sounds. Shared by {brandFacts.locations.length === 1 ? "your location" : `both locations (${brandFacts.locations.join(" and ")})`} and used in everything Marko writes.</>}
+        sub={<>Who {brandFacts.name} is and how it sounds. Shared by {brandFacts.locations.length === 1 ? "your location" : `both locations (${brandFacts.locations.join(" and ")})`} and used in everything {assistant()} writes.</>}
         actions={<Button icon={<RefreshCw size={14} />} onClick={() => toast("Re-learning from your latest posts, replies and website")}>Re-learn</Button>}
       />
 
@@ -54,7 +55,7 @@ export default function Brand() {
           </Card>
 
           <Card>
-            <CardHeader title="Words" sub="Marko uses the first list where it fits and never the second." />
+            <CardHeader title="Words" sub={`${assistant()} uses the first list where it fits and never the second.`} />
             <WordList label="Say" words={use} onChange={setUse} />
             <div className="mt-4"><WordList label="Never say" words={avoid} onChange={setAvoid} /></div>
           </Card>
@@ -69,7 +70,7 @@ export default function Brand() {
 
         <div className="flex flex-col gap-6">
           <Card>
-            <CardHeader title="Business facts" sub="What Marko can say about you. It won't make up anything that isn't here." />
+            <CardHeader title="Business facts" sub={`What ${assistant()} can say about you. It won't make up anything that isn't here.`} />
             <dl className="m-0 grid grid-cols-[110px_1fr] gap-x-4 gap-y-2.5 text-[13.5px]">
               <dt className="text-muted">Business</dt><dd className="m-0">{brandFacts.name} · {brandFacts.category}</dd>
               <dt className="text-muted">Locations</dt><dd className="m-0">{brandFacts.locations.join(", ")}</dd>
@@ -81,7 +82,7 @@ export default function Brand() {
               <WordList label="Services" words={services} onChange={setServices} />
               <WordList label="What makes you different" words={diffs} onChange={setDiffs} />
               <WordList label="Current offers" words={offers} onChange={setOffers} />
-              <WordList label="Rules Marko always follows" words={rules} onChange={setRules} />
+              <WordList label={`Rules ${assistant()} always follows`} words={rules} onChange={setRules} />
             </div>
           </Card>
 

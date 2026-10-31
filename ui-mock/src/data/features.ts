@@ -1,3 +1,4 @@
+import { assistant } from "../lib/whitelabel";
 // What an Organization uses. Each feature belongs to a module (a sidebar
 // section) and may depend on others. A feature works only when:
 //   it's on  AND  its module is on  AND  what it needs is on (any one of needsAny).
@@ -39,7 +40,7 @@ export const features: Feature[] = [
   { id: "rankings", module: "seo", label: "Rankings & competitors", blurb: "Keyword and map pack tracking, competitors, ranking factors, keyword ideas.", links: ["/rankings", "/competitors", "/factors", "/keywords"] },
   { id: "ai_answers", module: "seo", label: "AI answers", blurb: "Whether ChatGPT, Gemini and others recommend you.", links: ["/ai"] },
   { id: "reviews", module: "seo", label: "Reviews", blurb: "Read and reply to Google reviews.", links: ["/profile?tab=reviews"], off: "The Reviews tab leaves Business Profile." },
-  { id: "content", module: "seo", label: "Articles", blurb: "Marko drafts articles for your site.", links: ["/content"] },
+  { id: "content", module: "seo", label: "Articles", blurb: `${assistant()} drafts articles for your site.`, links: ["/content"] },
   { id: "citations", module: "seo", label: "Citations & backlinks", blurb: "Directory listings and links to your site.", links: ["/citations"] },
   { id: "site_health", module: "seo", label: "Site health", blurb: "Technical issues on your website.", links: ["/audit"] },
 
@@ -62,7 +63,7 @@ export const features: Feature[] = [
   { id: "sales", label: "Prospecting", blurb: "Find and audit businesses to sell to.", links: ["/prospects"], agencyOnly: true },
   { id: "outreach", module: "sales", label: "Outreach", blurb: "Send prospects to your cold email sequencer and answer replies.", links: ["/outreach"], settings: ["outreach"], connection: "sequencer", agencyOnly: true, off: "Prospecting stays; “Send to campaign” and sequence badges leave prospects and audits." },
 
-  { id: "marko", label: "Marko assistant", blurb: "Ask questions and give instructions in chat.", off: "The chat panel, ⌘J, “Ask Marko” in search and the reply box on Home are hidden." },
+  { id: "marko", label: assistant() === "Marko" ? "Marko assistant" : assistant(), blurb: "Ask questions and give instructions in chat.", off: `The chat panel, ⌘J, “Ask ${assistant()}” in search and the reply box on Home are hidden.` },
 ];
 
 export const featureOf = (id: FeatureId) => features.find((f) => f.id === id)!;

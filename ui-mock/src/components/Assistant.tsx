@@ -15,6 +15,7 @@ import { accountLabel } from "../data/social";
 import { schedulePost, useSocialPosts } from "../lib/social";
 import { skillName } from "../lib/skills";
 import { ask, closeAssistant, deleteChat, newChat, openChat, setWide, showHistory, suggestionsFor, toggleAssistant, useAssistant, type Block, type PageContext } from "../lib/assistant";
+import { DEFAULT_ASSISTANT, assistant } from "../lib/whitelabel";
 
 export function MarkoAvatar({ size = 28 }: { size?: number }) {
   return (
@@ -125,7 +126,7 @@ function PostBlock({ postId }: { postId: string }) {
 
 // ---------- Composer ----------
 
-export function Composer({ ctx, chips, placeholder = "Ask anything, or tell Marko what to do…", big = false }: { ctx: PageContext; chips?: string[]; placeholder?: string; big?: boolean }) {
+export function Composer({ ctx, chips, placeholder = `Ask anything, or tell ${assistant()} what to do…`, big = false }: { ctx: PageContext; chips?: string[]; placeholder?: string; big?: boolean }) {
   const [text, setText] = useState("");
   const { thinking } = useAssistant();
   const send = (t: string) => { ask(t, ctx); setText(""); };
@@ -139,7 +140,7 @@ export function Composer({ ctx, chips, placeholder = "Ask anything, or tell Mark
         </div>
       )}
       <form onSubmit={(e) => { e.preventDefault(); send(text); }} className={cn("flex items-center gap-2 rounded-xl border border-line-strong bg-surface pr-1.5 pl-4 shadow-card focus-within:border-ink", big ? "min-h-[54px]" : "min-h-[46px]")}>
-        <input value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} aria-label="Message Marko" className="min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-subtle" />
+        <input value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} aria-label={`Message ${assistant()}`} className="min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-subtle" />
         <button type="submit" aria-label="Send" disabled={!text.trim() || thinking} className={cn("grid shrink-0 place-items-center rounded-lg bg-accent text-white transition-opacity disabled:opacity-40", big ? "size-[38px]" : "size-[34px]")}><ArrowUp size={16} /></button>
       </form>
     </div>
@@ -158,10 +159,10 @@ export function AssistantPanel({ ctx }: { ctx: PageContext }) {
   const chips = last?.followUps ?? (messages.length ? [] : suggestionsFor(ctx));
 
   return (
-    <aside aria-label="Marko assistant" className={cn("anim-fade fixed inset-0 z-40 flex flex-col bg-surface lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:shrink-0 lg:border-l lg:border-line print:hidden", wide ? "lg:w-[600px]" : "lg:w-[400px]")}>
+    <aside aria-label={assistant()} className={cn("anim-fade fixed inset-0 z-40 flex flex-col bg-surface lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:shrink-0 lg:border-l lg:border-line print:hidden", wide ? "lg:w-[600px]" : "lg:w-[400px]")}>
       <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-line px-4">
         <MarkoAvatar size={26} />
-        <span className="text-[14px] font-semibold">Marko</span>
+        <span className="text-[14px] font-semibold">{assistant()}</span>
         <kbd className="rounded border border-line px-1 font-sans text-[11px] text-subtle">⌘J</kbd>
         <div className="ml-auto flex items-center gap-0.5">
           <button onClick={() => showHistory(view !== "history")} aria-label="Chats" aria-pressed={view === "history"} title="Chats" className={cn("grid size-8 place-items-center rounded-md text-muted hover:bg-hover hover:text-fg", view === "history" && "bg-active text-fg")}><History size={15} /></button>
@@ -180,7 +181,7 @@ export function AssistantPanel({ ctx }: { ctx: PageContext }) {
           <div className="flex gap-3">
             <MarkoAvatar />
             <div className="text-[13.5px] leading-[1.55]">
-              <p className="m-0">Hi, I'm Marko. I can look into your rankings, reply to reviews, fix listings, write posts and send reports.</p>
+              <p className="m-0">Hi, I'm {assistant() === DEFAULT_ASSISTANT ? "your AI assistant" : assistant()}. I can look into your rankings, reply to reviews, fix listings, write posts and send reports.</p>
               <p className="mt-2 mb-0 text-muted">I ask before changing anything, unless you've allowed it in <Link to="/settings/autopilot" className="underline decoration-line-strong underline-offset-2 hover:text-fg">Settings → Autopilot</Link>. Every change can be undone.</p>
             </div>
           </div>
@@ -200,14 +201,14 @@ export function AssistantPanel({ ctx }: { ctx: PageContext }) {
             ),
           )}
           {thinking && (
-            <div className="flex items-center gap-3"><MarkoAvatar /><span className="flex gap-1" aria-label="Marko is thinking">{[0, 1, 2].map((i) => <span key={i} className="size-1.5 animate-pulse rounded-full bg-subtle" style={{ animationDelay: `${i * 150}ms` }} />)}</span></div>
+            <div className="flex items-center gap-3"><MarkoAvatar /><span className="flex gap-1" aria-label={`${assistant()} is thinking`}>{[0, 1, 2].map((i) => <span key={i} className="size-1.5 animate-pulse rounded-full bg-subtle" style={{ animationDelay: `${i * 150}ms` }} />)}</span></div>
           )}
         </div>
         <div ref={end} />
       </div>
 
       <div className="border-t border-line px-4 pt-3 pb-4">
-        <Composer ctx={ctx} chips={thinking ? [] : chips} placeholder={`Ask about ${ctx.label.toLowerCase()}, or tell Marko what to do…`} />
+        <Composer ctx={ctx} chips={thinking ? [] : chips} placeholder={`Ask about ${ctx.label.toLowerCase()}, or tell ${assistant()} what to do…`} />
       </div>
       </>}
     </aside>
@@ -222,7 +223,7 @@ function ChatList({ chats, current }: { chats: ReturnType<typeof useAssistant>["
       <button onClick={newChat} className="mb-1 flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[13.5px] font-medium hover:bg-hover">
         <SquarePen size={15} /> New chat
       </button>
-      {!chats.length && <p className="px-3 py-8 text-center text-[13px] text-muted">No chats yet. Ask Marko anything to start one.</p>}
+      {!chats.length && <p className="px-3 py-8 text-center text-[13px] text-muted">No chats yet. Ask {assistant()} anything to start one.</p>}
       <ul>
         {chats.map((c) => {
           const last = [...c.messages].reverse().find((m) => m.role === "marko")?.blocks.find((b) => b.type === "text" || b.type === "done");
@@ -294,8 +295,8 @@ export function MarkoLauncher() {
       onPointerUp={up}
       onPointerCancel={() => { drag.current = null; }}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleAssistant(); } }}
-      aria-label="Ask Marko (⌘J). Drag to move."
-      title="Ask Marko · ⌘J · drag to move"
+      aria-label={`Ask ${assistant()} (⌘J). Drag to move.`}
+      title={`Ask ${assistant()} · ⌘J · drag to move`}
       className="anim-fade fixed z-40 grid touch-none place-items-center rounded-full border border-line bg-surface shadow-float transition-transform select-none hover:scale-105 active:scale-95 print:hidden"
       style={{ left: pos.x, top: pos.y, width: SIZE, height: SIZE }}
     >

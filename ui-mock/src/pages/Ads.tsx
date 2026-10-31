@@ -13,6 +13,7 @@ import {
 import { saveRowToSwipe } from "../lib/creatives";
 import { useOn } from "../lib/features";
 import { timeAgo } from "../lib/runs";
+import { assistant, product } from "../lib/whitelabel";
 
 type Col = "name" | "verdict" | "budget" | "spend" | "results" | "cpa" | "ctr" | "frequency";
 const recIcon: Record<RecKind, typeof Pause> = { pause: Pause, scale: TrendingUp, cut: Scissors, negatives: ShieldBan, refresh: RefreshCw, more: Wand2 };
@@ -76,7 +77,7 @@ export default function Ads() {
       </button>
     </th>
   );
-  const review = () => runReview((applied, open) => toast(applied ? `Review done: Marko applied ${applied} change${applied === 1 ? "" : "s"}, ${open} to look at` : `Review done: ${open} recommendation${open === 1 ? "" : "s"}`));
+  const review = () => runReview((applied, open) => toast(applied ? `Review done: ${assistant()} applied ${applied} change${applied === 1 ? "" : "s"}, ${open} to look at` : `Review done: ${open} recommendation${open === 1 ? "" : "s"}`));
   const fresh = (ids: string[]) => navigate(`/ads/studio?from=${ids.join(",")}`);
   const doRec = (r: Rec) => (r.kind === "refresh" || r.kind === "more" ? fresh([r.rowId]) : (applyRec(r), toast("Done. It's in Changes, with Undo")));
 
@@ -84,7 +85,7 @@ export default function Ads() {
     <>
       <PageHeader
         title="Ads"
-        sub={`Every campaign against one goal: ${resultKinds[g.result].label.toLowerCase()} at ${money(g.target)} or less. Marko reviews ${cadences[g.cadence].label.toLowerCase()} and ${g.mode === "auto" ? "makes the safe changes itself" : "recommends changes for you to approve"}.`}
+        sub={`Every campaign against one goal: ${resultKinds[g.result].label.toLowerCase()} at ${money(g.target)} or less. ${assistant()} reviews ${cadences[g.cadence].label.toLowerCase()} and ${g.mode === "auto" ? "makes the safe changes itself" : "recommends changes for you to approve"}.`}
         actions={<>
           {live.map((p) => <Link key={p} to="/settings/ads" title={`${adPlatforms[p].name} · ${toolOf(p).account}`} className="inline-flex h-9 items-center gap-2 rounded-lg border border-line bg-surface px-2.5 text-[13px] shadow-card hover:bg-hover"><AdPlatformMark platform={p} size={20} /><Settings2 size={13} className="text-muted" /></Link>)}
           {studioOn && <Link to="/ads/studio"><Button icon={<Wand2 size={14} />}>Make creatives</Button></Link>}
@@ -97,7 +98,7 @@ export default function Ads() {
           <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent"><Plug size={20} /></span>
           <div className="flex-1">
             <div className="text-[15px] font-medium">Connect an ad account</div>
-            <p className="mt-1 mb-3 text-[13.5px] text-muted">OpenMarko reads results, publishes the creatives you approve, and pauses or scales ads toward your goal.</p>
+            <p className="mt-1 mb-3 text-[13.5px] text-muted">{product()} reads results, publishes the creatives you approve, and pauses or scales ads toward your goal.</p>
             <div className="flex flex-wrap gap-2">{(Object.keys(adPlatforms) as AdPlatform[]).map((p) => <Button key={p} icon={<AdPlatformMark platform={p} size={18} />} onClick={() => setConnect(p)}>{adPlatforms[p].name}</Button>)}</div>
           </div>
         </Card>
@@ -135,7 +136,7 @@ export default function Ads() {
           {recs.length > 0 && (
             <Card pad={false} className="mb-6">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
-                <div className="flex items-center gap-2 text-[14px] font-medium"><Sparkles size={14} className="text-accent" />Marko recommends <span className="num rounded-full bg-hover px-1.5 text-[11.5px] text-muted">{recs.length}</span></div>
+                <div className="flex items-center gap-2 text-[14px] font-medium"><Sparkles size={14} className="text-accent" />{assistant()} recommends <span className="num rounded-full bg-hover px-1.5 text-[11.5px] text-muted">{recs.length}</span></div>
                 {recs.filter((r) => r.safe).length > 1 && <Button size="sm" variant="primary" onClick={() => { applyAll(recs); toast("Applied. Each one is in Changes, with Undo"); }}>Apply {recs.filter((r) => r.safe).length} budget & pause changes</Button>}
               </div>
               {recs.map((r) => {
@@ -249,7 +250,7 @@ export default function Ads() {
             <Card pad={false} className="mt-4">
               {st.log.map((c) => (
                 <div key={c.id} className="flex flex-col gap-2 border-b border-line px-5 py-3.5 last:border-0 md:flex-row md:items-start md:gap-5">
-                  <div className="w-28 shrink-0 text-[12.5px] text-muted">{timeAgo(c.at)}<div><Badge tone={c.by === "marko" ? "accent" : "neutral"}>{c.by === "marko" ? "Marko" : "You"}</Badge></div></div>
+                  <div className="w-28 shrink-0 text-[12.5px] text-muted">{timeAgo(c.at)}<div><Badge tone={c.by === "marko" ? "accent" : "neutral"}>{c.by === "marko" ? assistant() : "You"}</Badge></div></div>
                   <div className={cn("min-w-0 flex-1", c.undone && "line-through opacity-60")}>
                     <div className="text-[14px]">{c.title}</div>
                     <div className="mt-0.5 text-[13px] text-muted">{c.outcome ?? "Measuring. The next review says what changed."}</div>
@@ -292,19 +293,19 @@ function GoalDrawer({ open, onClose, goal }: { open: boolean; onClose: () => voi
           <select value={g.result} onChange={(e) => setG({ ...g, result: e.target.value as ResultKind })} className={field}>
             {(Object.keys(resultKinds) as ResultKind[]).map((k) => <option key={k} value={k}>{resultKinds[k].label}</option>)}
           </select>
-          <p className="m-0 text-[12.5px] text-muted">Bookings come from your booking system, calls from CallRail. Connect them under <Link to="/settings/ads" className="underline">Ad accounts</Link> so Marko optimizes for patients, not clicks.</p>
+          <p className="m-0 text-[12.5px] text-muted">Bookings come from your booking system, calls from CallRail. Connect them under <Link to="/settings/ads" className="underline">Ad accounts</Link> so {assistant()} optimizes for patients, not clicks.</p>
           <div className="grid grid-cols-2 gap-3">
             <label><span className={label}>Target cost per {resultKinds[g.result].one}</span><input type="number" value={g.target} onChange={(e) => setG({ ...g, target: +e.target.value })} className={cn(field, "num")} /></label>
             <label><span className={label}>Never spend more than, a month</span><input type="number" value={g.monthly} onChange={(e) => setG({ ...g, monthly: +e.target.value })} className={cn(field, "num")} /></label>
           </div>
         </section>
         <section className="space-y-3">
-          <h3 className="text-[14px] font-medium">How often Marko reviews</h3>
+          <h3 className="text-[14px] font-medium">How often {assistant()} reviews</h3>
           <Segmented label="Review cadence" value={g.cadence} onChange={(c: Cadence) => setG({ ...g, cadence: c })} options={(Object.keys(cadences) as Cadence[]).map((c) => ({ id: c, label: cadences[c].label }))} />
           <p className="m-0 text-[12.5px] text-muted">Daily suits budgets over $50 a day. Smaller accounts get clearer answers checking less often.</p>
         </section>
         <section className="space-y-3">
-          <h3 className="text-[14px] font-medium">What Marko may do</h3>
+          <h3 className="text-[14px] font-medium">What {assistant()} may do</h3>
           <Segmented label="Mode" value={g.mode} onChange={(m) => setG({ ...g, mode: m })} options={[{ id: "recommend", label: "Recommend, I approve" }, { id: "auto", label: "Auto within guardrails" }]} />
           <div className="grid grid-cols-2 gap-3">
             <label><span className={label}>Biggest budget change at once</span><div className="relative"><input type="number" value={g.step} onChange={(e) => setG({ ...g, step: +e.target.value })} className={cn(field, "num pr-8")} /><span className="absolute top-1/2 right-3 -translate-y-1/2 text-muted">%</span></div></label>

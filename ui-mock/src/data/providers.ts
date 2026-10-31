@@ -1,3 +1,4 @@
+import { brandAccent, dnsZone, product, productMark, whitelabeled } from "../lib/whitelabel";
 // Who actually sends. The business brings its own email provider (or uses
 // OpenMarko's) and its own phone provider (or ours). OpenMarko talks to each
 // through its API: sending, delivery and bounce webhooks, inbound replies.
@@ -25,8 +26,8 @@ export type DnsRecord = { type: "TXT" | "CNAME" | "MX"; host: string; value: str
 
 export const emailProviders: Record<EmailProviderId, { name: string; mark: string; color: string; blurb: string; good: string[]; fields: Field[]; where: string; privacy: string }> = {
   managed: {
-    name: "OpenMarko sending", mark: "OM", color: "#111111", blurb: "Nothing to sign up for. We send from your domain on our infrastructure.", good: ["Easiest", "Replies handled"], fields: [], where: "",
-    privacy: "Covered by OpenMarko's BAA.",
+    name: `${product()} sending`, mark: productMark(), color: whitelabeled() ? brandAccent() : "#111111", blurb: "Nothing to sign up for. We send from your domain on our infrastructure.", good: ["Easiest", "Replies handled"], fields: [], where: "",
+    privacy: "Covered by our BAA.",
   },
   ses: {
     name: "Amazon SES", mark: "SES", color: "#ff9900", blurb: "Cheapest at volume. Best if you already use AWS.", good: ["~$0.10 per 1,000", "HIPAA-eligible"],
@@ -55,13 +56,14 @@ export const emailProviders: Record<EmailProviderId, { name: string; mark: strin
 /** The records to add at the DNS host for this provider and sending domain. */
 export function dnsRecords(p: EmailProviderId, domain: string, region = "us-east-1"): DnsRecord[] {
   const root = domain.split(".").slice(-2).join(".");
+  const sel = whitelabeled() ? "s" : "om"; // DKIM selector; whitelabeled, it mustn't hint at us
   const sub = domain === root ? "" : `.${domain.slice(0, -root.length - 1)}`;
   const dmarc: DnsRecord = { type: "TXT", host: `_dmarc.${root}`, value: `v=DMARC1; p=none; rua=mailto:dmarc@${root}`, purpose: "Tells inboxes what to do with fakes. Gmail and Yahoo require it", ok: false };
   const by: Record<EmailProviderId, DnsRecord[]> = {
     managed: [
-      { type: "CNAME", host: `om1._domainkey${sub}.${root}`, value: "om1.dkim.openmarko.email", purpose: "Signs your email (DKIM)", ok: false },
-      { type: "CNAME", host: `om2._domainkey${sub}.${root}`, value: "om2.dkim.openmarko.email", purpose: "Signs your email (DKIM)", ok: false },
-      { type: "CNAME", host: `bounce${sub}.${root}`, value: "bounce.openmarko.email", purpose: "Bounces come back to us (SPF)", ok: false },
+      { type: "CNAME", host: `${sel}1._domainkey${sub}.${root}`, value: `${sel}1.dkim.${dnsZone()}`, purpose: "Signs your email (DKIM)", ok: false },
+      { type: "CNAME", host: `${sel}2._domainkey${sub}.${root}`, value: `${sel}2.dkim.${dnsZone()}`, purpose: "Signs your email (DKIM)", ok: false },
+      { type: "CNAME", host: `bounce${sub}.${root}`, value: `bounce.${dnsZone()}`, purpose: "Bounces come back to us (SPF)", ok: false },
     ],
     ses: [
       ...["k7f2", "q9ma", "x3vd"].map((k) => ({ type: "CNAME" as const, host: `${k}tz4h._domainkey.${domain}`, value: `${k}tz4h.dkim.amazonses.com`, purpose: "Signs your email (Easy DKIM)", ok: false })),
@@ -93,7 +95,7 @@ export function dnsRecords(p: EmailProviderId, domain: string, region = "us-east
 }
 
 export const phoneProviders: Record<PhoneProviderId, { name: string; mark: string; color: string; blurb: string; good: string[]; fields: Field[]; where: string }> = {
-  managed: { name: "OpenMarko numbers", mark: "OM", color: "#111111", blurb: "We get the numbers and file the carrier registration for you. Billed with your plan.", good: ["Easiest", "Registration filed for you"], fields: [], where: "" },
+  managed: { name: `${product()} numbers`, mark: productMark(), color: whitelabeled() ? brandAccent() : "#111111", blurb: "We get the numbers and file the carrier registration for you. Billed with your plan.", good: ["Easiest", "Registration filed for you"], fields: [], where: "" },
   twilio: {
     name: "Twilio", mark: "Tw", color: "#f22f46", blurb: "Use your own Twilio account. You see every message and call in Twilio too.", good: ["Your account", "BAA available"],
     fields: [{ key: "sid", label: "Account SID", placeholder: "AC…" }, { key: "token", label: "Auth token", secret: true }], where: "Twilio console → Account info, on the home page.",

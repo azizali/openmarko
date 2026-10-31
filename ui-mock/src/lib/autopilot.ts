@@ -16,10 +16,11 @@ import { useSyncExternalStore } from "react";
 import type { FeatureId } from "../data/features";
 import { setGoal, useAds } from "./ads";
 import { setRules, useOutreach } from "./outreach";
+import { assistant } from "./whitelabel";
 
 export type Level = "off" | "ask" | "auto";
 export const levelMeta: Record<Level, { label: string; hint: string }> = {
-  off: { label: "Off", hint: "Marko doesn't suggest it" },
+  off: { label: "Off", hint: `${assistant()} doesn't suggest it` },
   ask: { label: "Ask first", hint: "Suggested in To-do for you to approve" },
   auto: { label: "On its own", hint: "Done, then logged in Activity with Undo" },
 };
@@ -33,7 +34,7 @@ export type ActionId =
 export type Action = { id: ActionId; feature: FeatureId; section: string; label: string; hint: string; risk: "low" | "medium" | "high"; levels: Level[]; start: Level };
 
 export const actions: Action[] = [
-  { id: "gbp_posts", feature: "seo", section: "Local SEO", label: "Publish Business Profile posts Marko wrote", hint: "Weekly updates and offers on Google", risk: "low", levels: ["off", "ask", "auto"], start: "auto" },
+  { id: "gbp_posts", feature: "seo", section: "Local SEO", label: `Publish Business Profile posts ${assistant()} wrote`, hint: "Weekly updates and offers on Google", risk: "low", levels: ["off", "ask", "auto"], start: "auto" },
   { id: "review_replies_good", feature: "reviews", section: "Local SEO", label: "Reply to 4–5★ reviews", hint: "Thank-you replies in your voice, never confirming they're a patient", risk: "medium", levels: ["off", "ask", "auto"], start: "ask" },
   { id: "review_replies_bad", feature: "reviews", section: "Local SEO", label: "Reply to 1–3★ reviews", hint: "Always seen by a person first", risk: "high", levels: ["off", "ask"], start: "ask" },
   { id: "gbp_details", feature: "seo", section: "Local SEO", label: "Change Business Profile categories or description", hint: "Can make Google re-verify the profile", risk: "high", levels: ["off", "ask", "auto"], start: "ask" },
@@ -41,7 +42,7 @@ export const actions: Action[] = [
   { id: "schema", feature: "site_health", section: "Local SEO", label: "Add or update structured data", hint: "Business details search engines read", risk: "medium", levels: ["off", "ask", "auto"], start: "ask" },
   { id: "citations_fix", feature: "citations", section: "Local SEO", label: "Correct directory listings", hint: "Fix a wrong name, address, phone or hours", risk: "medium", levels: ["off", "ask", "auto"], start: "ask" },
   { id: "articles", feature: "content", section: "Local SEO", label: "Publish articles to your site", hint: "", risk: "medium", levels: ["off", "ask", "auto"], start: "ask" },
-  { id: "social_publish", feature: "social_posts", section: "Social media", label: "Fill empty calendar slots and publish", hint: "Posts Marko writes from your swipe file and trends", risk: "medium", levels: ["off", "ask", "auto"], start: "ask" },
+  { id: "social_publish", feature: "social_posts", section: "Social media", label: "Fill empty calendar slots and publish", hint: `Posts ${assistant()} writes from your swipe file and trends`, risk: "medium", levels: ["off", "ask", "auto"], start: "ask" },
   { id: "ads_safe", feature: "ads", section: "Ads", label: "Apply safe changes after each ads review", hint: "Pause losing ads, cut over-target budgets, block wasted searches; within your monthly cap", risk: "medium", levels: ["ask", "auto"], start: "ask" },
   { id: "ads_launch", feature: "ad_studio", section: "Ads", label: "Launch new ads from approved creatives", hint: "Starts them on a small test budget", risk: "high", levels: ["ask", "auto"], start: "ask" },
   { id: "inbox_simple", feature: "inbox", section: "Contacts & messaging", label: "Answer simple questions in the Inbox", hint: "Hours, insurance, directions, the booking link. Anything else waits for you", risk: "medium", levels: ["off", "ask", "auto"], start: "ask" },

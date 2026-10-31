@@ -18,6 +18,7 @@ import { platformOf as scanPlatform } from "../data/scanner";
 import { accounts } from "../data/social";
 import { accountConnected, useSetup } from "../lib/setup";
 import { isOn, useFeatures } from "../lib/features";
+import { assistant } from "../lib/whitelabel";
 
 // Home is Marko's weekly brief: how search and social did, what's happening on
 // social this week, what Marko already did, the three things that need you, and
@@ -55,7 +56,7 @@ export default function CommandCenter() {
           )}
           <ThisWeek onOpen={setOpen} heading={<p className="m-0 text-[14px] leading-[1.55]">Three things need you this week:</p>} />
           {isOn("marko", flags) && <div className="mt-5">
-            <Composer big ctx={ctx} placeholder="Reply, ask a question or tell Marko what to do…" chips={["Do all three", "Who should I reply to today?", "What's trending this week?", "Which keywords dropped?"]} />
+            <Composer big ctx={ctx} placeholder={`Reply, ask a question or tell ${assistant()} what to do…`} chips={["Do all three", "Who should I reply to today?", "What's trending this week?", "Which keywords dropped?"]} />
           </div>}
         </div>
       </div>

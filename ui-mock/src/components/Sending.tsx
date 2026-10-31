@@ -7,6 +7,7 @@ import { emailProviders, phoneProviders, searchNumbers, type DnsRecord, type Ema
 import type { PhoneNumber, Reg } from "../data/messaging";
 import { recipes } from "../data/messaging";
 import { addNumbers, checkDns, connectEmail, connectPhone, registerTexting, useCrm, withExamples } from "../lib/crm";
+import { product } from "../lib/whitelabel";
 
 const input = "h-9 w-full rounded-lg border border-line bg-surface px-3 text-[13.5px] outline-none focus:border-line-strong";
 
@@ -162,7 +163,7 @@ export function EmailSetup({ open, onClose, toast }: { open: boolean; onClose: (
         <div className="space-y-3">
           <div className="flex items-center gap-2 rounded-lg bg-good-soft px-3 py-2.5 text-[13.5px] font-medium text-good"><Check size={16} />Sending from {e.fromAddress} through {emailProviders[e.provider ?? "managed"].name}</div>
           <ul className="space-y-1.5 text-[13px]">
-            <li className="flex items-start gap-2"><Webhook size={14} className="mt-0.5 shrink-0 text-muted" />Delivery, bounce, spam complaint, open and click events come back to OpenMarko</li>
+            <li className="flex items-start gap-2"><Webhook size={14} className="mt-0.5 shrink-0 text-muted" />Delivery, bounce, spam complaint, open and click events come back to {product()}</li>
             <li className="flex items-start gap-2"><PhoneForwarded size={14} className="mt-0.5 shrink-0 text-muted" />Replies to {e.fromAddress} land in the Inbox and are forwarded to {e.replyTo}</li>
             <li className="flex items-start gap-2"><ShieldCheck size={14} className="mt-0.5 shrink-0 text-muted" />Hard bounces and complaints are unsubscribed on their own, to protect your domain</li>
           </ul>
@@ -178,7 +179,7 @@ export function EmailSetup({ open, onClose, toast }: { open: boolean; onClose: (
 type How = PhoneNumber["how"];
 const howMeta: Record<How, { label: string; hint: string }> = {
   new: { label: "Get a new local number", hint: "Live in a minute. Put it on your ads and website for texting and tracking." },
-  hosted: { label: "Text-enable my current number", hint: "Keep your number and phone company for calls; texts come through OpenMarko. Needs a signed letter of authorization, about 3–5 days." },
+  hosted: { label: "Text-enable my current number", hint: `Keep your number and phone company for calls; texts come through ${product()}. Needs a signed letter of authorization, about 3–5 days.` },
   port: { label: "Move my number here", hint: "Calls and texts both move. Needs your latest bill and account PIN, 1–2 weeks. Calls keep working during the move." },
 };
 

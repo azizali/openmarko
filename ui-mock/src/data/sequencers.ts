@@ -1,3 +1,4 @@
+import { appHost, product } from "../lib/whitelabel";
 // Cold email sequencers OpenMarko can hand prospects to. The sequencer owns
 // sending, warmup, inbox rotation and the unibox; OpenMarko pushes leads with
 // their audit link as custom variables and listens to its webhooks for replies,
@@ -54,7 +55,7 @@ export const leadVariables: { key: string; label: string; example: string }[] = 
   { key: "top_competitor", label: "Who's #1", example: "Capitol Rooter" },
   { key: "missed_revenue", label: "Missed revenue / mo", example: "$4,200" },
   { key: "quick_win", label: "Their quickest fix", example: "Add 6 photos of recent jobs" },
-  { key: "audit_url", label: "Their shared audit link", example: "openmarko.com/a/…" },
+  { key: "audit_url", label: "Their shared audit link", example: `${appHost()}/a/…` },
 ];
 
 export type Step = { day: number; subject: string; body: string };
@@ -91,7 +92,7 @@ Worth a 10-minute walkthrough this week?`,
 ];
 
 export const starterCampaign = (): Campaign => ({
-  id: "c_openmarko", name: "OpenMarko · Local audit", status: "active", leads: 0, replyRate: 0, steps: starterSteps, usesAuditUrl: true, fromOpenMarko: true,
+  id: "c_openmarko", name: `${product()} · Local audit`, status: "active", leads: 0, replyRate: 0, steps: starterSteps, usesAuditUrl: true, fromOpenMarko: true,
 });
 
 /** What a workspace looks like once the API key checks out (mock). */
@@ -103,7 +104,7 @@ export function workspaceFor(provider: ProviderId) {
     { email: `team@${domain}`, warmup: 95, dailyLimit: 30, sentToday: 14, status: "ready" },
     { email: "alex@markolocal.co", warmup: 92, dailyLimit: 25, sentToday: 6, status: "ready" },
     { email: "hello@markolocal.co", warmup: 71, dailyLimit: 10, sentToday: 0, status: "warming" },
-    { email: "alex@openmarko.com", warmup: 88, dailyLimit: 0, sentToday: 0, status: "paused" },
+    { email: "alex@brightlinelocal.com", warmup: 88, dailyLimit: 0, sentToday: 0, status: "paused" },
   ];
   const campaigns: Campaign[] = [
     { id: "c_hvac", name: "HVAC owners · Texas", status: "active", leads: 412, replyRate: 4.1, usesAuditUrl: false, steps: [
@@ -112,5 +113,5 @@ export function workspaceFor(provider: ProviderId) {
     ] },
     { id: "c_dent", name: "Dentists · Austin metro", status: "paused", leads: 96, replyRate: 6.3, usesAuditUrl: true, steps: starterSteps },
   ];
-  return { workspace: provider === "plusvibe" ? "Marko Growth" : "Marko Agency", inboxes, campaigns };
+  return { workspace: provider === "plusvibe" ? "Brightline Growth" : "Brightline Local", inboxes, campaigns };
 }

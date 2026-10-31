@@ -9,6 +9,7 @@ import type { Campaign, Send as SendCh } from "../data/messaging";
 import { audienceLabel, audienceOf, deleteCampaign, draftCampaign, duplicateCampaign, messageChecks, newCampaign, sendCampaign, smsParts, withExamples, updateCampaign, useCrm } from "../lib/crm";
 import { timeAgo } from "../lib/runs";
 import { isOn, useOn } from "../lib/features";
+import { assistant } from "../lib/whitelabel";
 
 const pct = (n: number | undefined, of: number) => (n === undefined ? "—" : of ? `${Math.round((n / of) * 100)}%` : "0%");
 const when = (c: Campaign) =>
@@ -160,7 +161,7 @@ function Editor({ id }: { id: string }) {
           <Card className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-[14px] font-medium">Message</h2>
-              {!locked && <Button size="sm" variant="ghost" icon={<Sparkles size={12} />} onClick={write}>{c.body ? "Rewrite with Marko" : "Write with Marko"}</Button>}
+              {!locked && <Button size="sm" variant="ghost" icon={<Sparkles size={12} />} onClick={write}>{c.body ? `Rewrite with ${assistant()}` : `Write with ${assistant()}`}</Button>}
             </div>
             {c.channel === "email" && <input value={c.subject} disabled={locked} onChange={(e) => up({ subject: e.target.value })} placeholder="Subject" aria-label="Subject" className={input} />}
             <textarea ref={ta} value={c.body} disabled={locked} onChange={(e) => up({ body: e.target.value })} rows={c.channel === "email" ? 10 : 4} aria-label="Message"

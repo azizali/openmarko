@@ -10,8 +10,8 @@ export type Organization = { id: string; name: string; category: string; initial
 export const organization: Organization = { id: "org_maple", name: business.name, category: "Dentist", initial: "M" };
 
 /**
- * Every Organization the signed-in Member belongs to. An agency Member belongs
- * to each Client's Organization; there's no level above it.
+ * Every Organization the signed-in Member belongs to. A Partner's Members belong
+ * to each Client's Organization; the Partner (data/partner.ts) is the one level above.
  */
 export const memberships: (Organization & { locations: number; role: string })[] = [
   { ...organization, locations: locations.length, role: "Owner" },
