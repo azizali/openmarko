@@ -10,7 +10,7 @@ Home and Reports are complete visually with mock numbers (`a89a285`, `b53040a`, 
 |---|---|
 | All numbers and the Presence score | Mock data. |
 | Scheduled reports | Nothing schedules or sends. |
-| PDF | Print stylesheet. |
+| PDF | Toast only; no file is produced. (The sales audit uses the browser print dialog instead.) |
 | "While you were away" | Static copy. |
 
 ## To build

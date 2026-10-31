@@ -33,6 +33,8 @@ kind: feature               # feature | module | platform
 module: seo                 # parent module, features only
 status: mock                # see Status below
 depends_on: [seo]           # must be on for this to work (module + needsAny)
+connection: social_accounts # optional: `connection` from features.ts
+agency_only: true           # optional: Agency plan only
 capabilities: [reviews.read, reviews.reply]   # data/integrations.ts CapabilityIds it uses
 permissions: reviews        # Resource in data/access.ts
 code:                       # files an agent should read first

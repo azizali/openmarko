@@ -31,7 +31,7 @@ last_verified: 105911e
 
 - Scheduled reports (e.g. "Monthly client report") with recipients and cadence; **New report**.
 - Preview "What your client sees": executive summary, keyword progress & map pack (position bands over time, positions at four dates with change and 90-day trend, Google search / map pack switch), rankings & changes, competitor movement, content published & planned, Business Profile insights, site audit, actions completed, Search Console & GA4 traffic, share of local voice.
-- Generate PDF.
+- PDF button per report.
 - Whitelabelled ("Prepared by" the Partner).
 
 | Capability | State |
@@ -39,4 +39,4 @@ last_verified: 105911e
 | Home brief and Presence score | `mock` (mock numbers) |
 | Report preview | `mock` |
 | Scheduled report emails | **stub**: nothing sends |
-| PDF | **stub**: "Generating PDF…" then browser print |
+| PDF | **stub**: the button only shows a "Generating PDF…" toast |
