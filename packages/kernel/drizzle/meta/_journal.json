@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1793501793353,
+      "tag": "0000_amused_tomas",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793502380387,
+      "tag": "0001_whitelabel_and_partner_requests",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793502472076,
+      "tag": "0002_seo_grid_requests_backlinks",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793507880558,
+      "tag": "0003_cms_contract",
+      "breakpoints": true
+    }
+  ]
+}

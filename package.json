@@ -1,0 +1,56 @@
+{
+  "name": "openmarko-backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:api": "bun --watch apps/api/src/index.ts",
+    "dev:worker": "bun --watch apps/worker/src/index.ts",
+    "db:generate": "drizzle-kit generate --config drizzle.config.ts",
+    "db:migrate": "bun scripts/migrate.ts",
+    "test": "bun test",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start:api": "bun apps/api/src/index.ts",
+    "start:worker": "bun apps/worker/src/index.ts",
+    "lint": "oxlint -c .oxlintrc.json apps packages modules scripts",
+    "format": "oxfmt --write apps packages modules scripts",
+    "format:check": "oxfmt --check apps packages modules scripts",
+    "check": "bun run lint && bun run format:check && bun run typecheck && bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.11",
+    "oxfmt": "^0.75.0",
+    "oxlint": "^1.90.0",
+    "typescript": "^7.0.2"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "modules/*"
+  ],
+  "dependencies": {
+    "@elysiajs/eden": "^1.4.9",
+    "@elysiajs/openapi": "^1.4.16",
+    "@openmarko/access": "workspace:*",
+    "@openmarko/automation": "workspace:*",
+    "@openmarko/billing": "workspace:*",
+    "@openmarko/features": "workspace:*",
+    "@openmarko/identity": "workspace:*",
+    "@openmarko/integrations": "workspace:*",
+    "@openmarko/kernel": "workspace:*",
+    "@openmarko/organizations": "workspace:*",
+    "@openmarko/platform": "workspace:*",
+    "@openmarko/seo": "workspace:*",
+    "@openmarko/settings": "workspace:*",
+    "@openmarko/shared": "workspace:*",
+    "@openmarko/testkit": "workspace:*",
+    "better-auth": "^1.7.14",
+    "drizzle-orm": "^0.45.4",
+    "elysia": "^1.4.30",
+    "pg": "^8.23.1",
+    "pg-boss": "^12.38.0",
+    "zod": "^4.6.7"
+  },
+  "packageManager": "pnpm@11.20.0+sha512.9a6f330a95b66446ea088faf1521405a8a01f07fde7124cc9958dfed52d4bb436737e65b08f85f37b46fcba375092558ac51262b816844b22f63406ed166bfee"
+}

@@ -1,6 +1,6 @@
 # Baseline schema
 
-Status: **reviewed 2026-10-31**, changes applied. Nothing below exists in the database yet. Terms follow [GLOSSARY.md](../../../GLOSSARY.md).
+Status: **reviewed 2026-10-31; built** in `modules/*/src/schema.ts` and `packages/kernel/src/schema.ts`, migration `packages/kernel/drizzle/0000_*.sql`. Where the build differs from this draft (text ids for Better Auth references, Better Auth's camelCase columns, the partitioned tables), [technical.md § Data](technical.md#data) and [ADR 0015](../../decisions/0015-build-decisions-for-the-backend.md) say what was done. Terms follow [GLOSSARY.md](../../../GLOSSARY.md).
 
 This is the baseline every module builds on: identity, Organizations and Partners, access, feature switches, settings, billing, integrations and automation. The SEO module's tables come in a later piece, in `seo` ([roadmap](roadmap.md)).
 
@@ -311,6 +311,7 @@ integrations.connections
   status            text          -- 'ok' | 'action' | 'pending' | 'revoked'
   status_note       text null     -- "Reconnect: Google access expired"
   capabilities      text[]        -- capabilities this connection serves (a subset of the provider's)
+  settings          jsonb         -- non-secret values from the provider's fields (site address, SEO plugin); secrets go to credentials
   mode              text          -- 'live' | 'stub'
   created_by        uuid, created_at, updated_at, revoked_at
   index (organization_id, target_type, target_id) where revoked_at is null

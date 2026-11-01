@@ -20,6 +20,8 @@ The first six were written on 2026-10-31 to record decisions already made in the
 | [0012](0012-billing-module-and-plans-as-data.md) | Billing is our own module; Plans and Entitlements are data | Accepted |
 | [0013](0013-stub-or-live-providers.md) | Every provider adapter has a stub, chosen by config | Accepted |
 | [0014](0014-llms-are-integrations-with-a-platform-default.md) | LLMs are an integration; the platform provides a default | Accepted |
+| [0015](0015-build-decisions-for-the-backend.md) | Build decisions made while implementing the backend | Accepted |
+| [0016](0016-websites-connect-through-a-cms-contract.md) | Websites connect through a CMS contract, not a CMS | Accepted |
 
 ## Template
 

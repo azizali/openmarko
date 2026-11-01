@@ -1,0 +1,9 @@
+{
+  "name": "@openmarko/access",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts"
+  }
+}

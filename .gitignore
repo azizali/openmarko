@@ -1,0 +1,7 @@
+node_modules/
+.env
+dist/
+coverage/
+
+# Local Claude Code state (loops, local settings)
+.claude/*.local.*

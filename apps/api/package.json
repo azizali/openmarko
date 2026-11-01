@@ -1,0 +1,5 @@
+{
+  "name": "@openmarko/api",
+  "private": true,
+  "type": "module"
+}

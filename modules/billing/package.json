@@ -1,0 +1,9 @@
+{
+  "name": "@openmarko/billing",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts"
+  }
+}

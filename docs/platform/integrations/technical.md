@@ -78,3 +78,37 @@ Email: managed, Amazon SES, Resend, Mailgun, Postmark, SendGrid. Texting & calls
 - Webhooks normalized into capability `events`; features subscribe to `email.bounced` without knowing the provider.
 - Provider notes from data/providers.ts and data/sequencers.ts: SES (IAM key, Easy DKIM, SNS, receipt rules), Resend (/domains, webhooks, receiving), Mailgun (region, Routes), Postmark (inbound stream), SendGrid (Event Webhook, Inbound Parse), Twilio/Telnyx (number search/buy, hosted SMS, port-in, A2P 10DLC), PlusVibe (`/lead/add`, `POST /api/v1/hook/add`).
 - **BAA**: patient data (dental/health customers) may only go through providers that sign one.
+
+## Websites: the CMS contract (built)
+
+Websites connect through a CMS contract, not a CMS ([ADR 0016](../../decisions/0016-websites-connect-through-a-cms-contract.md)). Code: `modules/integrations/src/site/`.
+
+| CMS | Provider id | Live | Notes |
+|---|---|---|---|
+| WordPress | `wordpress` | publish, read page, title, meta description | Meta description only with `seoPlugin` = `yoast` or `rankmath` |
+| Webflow | `webflow` | stub only | |
+| Shopify | `shopify` | stub only | |
+| Ghost | `ghost` | stub only | |
+| Custom site | `custom_site` | all four | Signed POST to the customer's endpoint (`x-openmarko-signature: t=<unix>,v1=<hmac>`) |
+
+Connecting: `POST /api/v1/organizations/:orgId/connections` with `values` for the provider's catalog fields. Secret fields are encrypted; the rest become the Connection's `settings` and are returned by the list.
+
+## DataForSEO: several APIs, one client (built)
+
+Code: `modules/integrations/src/adapters/dataforseo/`. `client.ts` is the only place that talks HTTP; `apis.ts` has one section per DataForSEO API; `index.ts` maps capabilities to them.
+
+| Capability | DataForSEO API | Endpoint | Live |
+|---|---|---|---|
+| `serp.read` (organic) | SERP | `serp/google/organic/live/advanced` | written |
+| `serp.read` (maps) | SERP | `serp/google/maps/live/advanced` | written |
+| `keywords.research` | DataForSEO Labs | `dataforseo_labs/google/keyword_ideas/live` | written |
+| `backlinks.read` | Backlinks | `backlinks/referring_domains/live` | written |
+| `ai.visibility` | AI Optimization | `ai_optimization/{chat_gpt,gemini}/llm_scraper/live/advanced` | written |
+| `site.crawl` | On-Page | `on_page/task_post` + postback | not built: crawls are asynchronous and need the postback job (501 live) |
+
+- **Auth:** HTTP Basic with the **API login and API password** from the DataForSEO dashboard (not the account sign-in). Both are secret fields, encrypted per Connection.
+- **Errors:** the envelope status and each task's status are both checked (`20000` = OK). A task error inside an OK response is an error.
+- **Cost:** live calls meter the `cost` DataForSEO returns, converted to micros. Stubs use rough published prices.
+- **Shapes:** every API maps its response to the capability's output type (`modules/integrations/src/seo-data.ts`). Stubs return the same types, so live data matches what features read.
+- **REST, not the SDK:** every DataForSEO API is the same request and envelope, so one ~60-line client covers them. The official `dataforseo-client` SDK is about 42 MB of generated code. Swapping it in later only changes `client.ts`.
+- **Adding an API:** a function in `apis.ts` that returns a type from `seo-data.ts`, and a capability case in `index.ts`.

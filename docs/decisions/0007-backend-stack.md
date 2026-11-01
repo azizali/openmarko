@@ -13,7 +13,7 @@ The mock ([ADR 0001](0001-mock-first.md)) is ready to be backed by a real servic
 | Layer | Choice |
 |---|---|
 | Runtime | Bun, TypeScript everywhere |
-| Repo | pnpm workspaces + Turborepo |
+| Repo | Bun workspaces (amended from pnpm + Turborepo, see [0015](0015-build-decisions-for-the-backend.md)) |
 | API | Elysia. Route schemas use Elysia's `t` (TypeBox); OpenAPI from `@elysiajs/openapi`; typed client with Eden Treaty |
 | Database | Postgres 17 on Neon (project `openmarko`), one branch per environment |
 | ORM / migrations | Drizzle + drizzle-kit |
@@ -22,7 +22,7 @@ The mock ([ADR 0001](0001-mock-first.md)) is ready to be backed by a real servic
 | Jobs, schedules | pg-boss (queue tables live in Postgres, schema `pgboss`) |
 | Events between modules | Typed in-process bus plus an outbox table ([0009](0009-events-through-an-outbox.md)) |
 | Secrets | Envelope-encrypted credentials table ([0010](0010-envelope-encrypted-credentials.md)) |
-| Tests | `bun test` against a Neon branch or local Postgres |
+| Tests | `bun test` against a throwaway database per test file (`packages/testkit`) |
 | Deploy | One Docker image (`oven/bun`) with two processes: `api` and `worker` |
 
 Three services: the frontend on Vercel, the backend on Fly.io or a VPS, and the database on Neon. Vercel forwards `/api/*` to the backend, so the browser always calls its own domain. This keeps login cookies working on whitelabel domains ([0004](0004-whitelabel-per-partner.md)). The backend reads the original host to pick the Partner.
@@ -30,5 +30,5 @@ Three services: the frontend on Vercel, the backend on Fly.io or a VPS, and the 
 ## Consequences
 
 - No Redis or message broker to run. Postgres holds data, queue and outbox.
-- pg-boss runs on Bun through the `pg` driver. This must be confirmed in the first code piece; if it fails, this ADR is revisited.
+- pg-boss runs on Bun through the `pg` driver. Confirmed while building (pg-boss 12 on Bun 1.4): jobs, cron schedules and graceful stop all work.
 - Hono was considered and dropped in favour of Elysia (owner's preference, Bun-native).

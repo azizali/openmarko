@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "typescript",
+    "unicorn",
+    "import",
+    "oxc"
+  ],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn"
+  },
+  "rules": {
+    "no-await-in-loop": "off"
+  },
+  "ignorePatterns": [
+    "node_modules",
+    "ui-mock",
+    "site",
+    "docs",
+    "**/drizzle/**"
+  ]
+}
