@@ -10,7 +10,7 @@
 //               the Organization, a Location or a Website (lib/integrations.ts).
 //
 // How many connections a capability takes is the capability's call: one email
-// sender per Organization, one Google profile per Location, any number of ad
+// sender per Organization, one Google Business Profile per Location, any number of ad
 // accounts. Connecting a second provider for a "one" capability replaces the first.
 //
 // Who may connect follows what it powers: a provider needs the `permission`

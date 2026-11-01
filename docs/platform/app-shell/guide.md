@@ -10,7 +10,7 @@ The switcher at the top of the sidebar picks the business and, with several loca
 
 ## When a page says Connect
 
-Some pages need something set up first: a Google profile, a website, or a social account. The page says what's missing and links to it. Everything else keeps working without it.
+Some pages need something set up first: a Google Business Profile, a website, or a social account. The page says what's missing and links to it. Everything else keeps working without it.
 
 ## Refresh data
 

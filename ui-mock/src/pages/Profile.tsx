@@ -8,7 +8,7 @@ import { locationData } from "../data/scoped";
 import { shortLocation } from "../data/org";
 import { LocationOverview, ScopeBar } from "../components/Scope";
 import { useScopedLocation } from "../lib/scope";
-import { hasGoogleProfile, useSetup } from "../lib/setup";
+import { hasGoogleBusinessProfile, useSetup } from "../lib/setup";
 import { Needs } from "../components/Needs";
 import { Can } from "../components/Can";
 
@@ -32,7 +32,7 @@ const draftReply = (name: string, rating: number, place: string) =>
 
 const unreplied = (id: string) => locationData[id].reviews.filter((r) => !r.replied).length;
 
-// A Google profile belongs to one Location, so this page shows one Location at a
+// A Google Business Profile belongs to one Location, so this page shows one Location at a
 // time; "All locations" compares them.
 export default function Profile() {
   // The tab lives in the URL so the sidebar can link straight to Reviews.
@@ -43,27 +43,27 @@ export default function Profile() {
   const setTab = (v: Tab) => setParams(v === "overview" ? {} : { tab: v }, { replace: true });
   const { location } = useScopedLocation();
   const setup = useSetup();
-  const connected = location ? hasGoogleProfile(location.id, setup) : true;
+  const connected = location ? hasGoogleBusinessProfile(location.id, setup) : true;
 
   return (
     <>
       <PageHeader
         title={tab === "reviews" ? "Reviews" : "Business Profile"}
-        sub={location ? <span>{business.name} · {location.address}</span> : `${business.name} · ${locations.length} Google profiles`}
+        sub={location ? <span>{business.name} · {location.address}</span> : `${business.name} · ${locations.length} Google Business Profiles`}
         actions={location && connected && <Badge tone="good"><Check size={11} /> Verified · synced 4 min ago</Badge>}
       />
       <ScopeBar kind="location" />
       <Tabs value={tab} onChange={setTab} tabs={[
         { id: "overview", label: "Overview" },
-        ...(!reviewsOn ? [] : [{ id: "reviews" as Tab, label: "Reviews", count: location ? (connected ? unreplied(location.id) : undefined) : locations.filter((l) => hasGoogleProfile(l.id, setup)).reduce((a, l) => a + unreplied(l.id), 0) }]),
+        ...(!reviewsOn ? [] : [{ id: "reviews" as Tab, label: "Reviews", count: location ? (connected ? unreplied(location.id) : undefined) : locations.filter((l) => hasGoogleBusinessProfile(l.id, setup)).reduce((a, l) => a + unreplied(l.id), 0) }]),
       ]} />
       <div className="mt-6">
-        {location ? (connected ? <ProfileBody key={location.id} locationId={location.id} tab={tab} /> : <Needs kind="googleProfile" locationId={location.id} note={tab === "reviews" ? "Reviews come from the Google profile." : "This page reads the Google profile."} />) : (
+        {location ? (connected ? <ProfileBody key={location.id} locationId={location.id} tab={tab} /> : <Needs kind="googleBusinessProfile" locationId={location.id} note={tab === "reviews" ? "Reviews come from the Google Business Profile." : "This page reads the Google Business Profile."} />) : (
           <LocationOverview
             columns={tab === "reviews" ? ["Rating", "Reviews", "Need a reply"] : ["Rating", "Calls, 28 days", "Directions", "Profile complete"]}
             row={(id) => {
               const d = locationData[id];
-              if (!hasGoogleProfile(id, setup)) return [<span className="text-muted">Google profile not connected</span>, ...Array<string>(tab === "reviews" ? 2 : 3).fill("")];
+              if (!hasGoogleBusinessProfile(id, setup)) return [<span className="text-muted">Google Business Profile not connected</span>, ...Array<string>(tab === "reviews" ? 2 : 3).fill("")];
               return tab === "reviews"
                 ? [`${d.rating}★`, d.reviewCount, unreplied(id) ? <Badge tone="warn">{unreplied(id)}</Badge> : "0"]
                 : [`${d.rating}★`, <>{fmt(d.insights.calls)} <Delta cur={d.insights.calls} prev={d.insights.callsPrev} /></>, fmt(d.insights.directions), `${d.completeness}%`];

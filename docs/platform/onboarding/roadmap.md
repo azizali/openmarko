@@ -15,7 +15,7 @@ Full wizard clickable (`a89a285`, rebuilt in `4d6367f` for Organizations, Locati
 
 ## To build
 
-1. Discovery pipeline (website, Google profiles, socials, reviews, keyword suggestions).
+1. Discovery pipeline (website, Google Business Profiles, socials, reviews, keyword suggestions).
 2. OAuth connections in-flow.
 3. Create all records and kick off first runs.
 4. Billing check (plan limits on Locations and keywords) before Launch.

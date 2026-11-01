@@ -8,7 +8,7 @@
 | [data/partner.ts](../../../ui-mock/src/data/partner.ts) | `Partner` (`id, name, slug, role`), `fallbackHost` → `{slug}.openmarko.com` |
 | [data/mock.ts](../../../ui-mock/src/data/mock.ts) | `member` (`plan: "local" \| "agency"`), `business`, `locations` |
 | [data/scoped.ts](../../../ui-mock/src/data/scoped.ts) | Per-Location / per-Website mock data (Mueller `loc_2` / `web_2` has its own) |
-| [lib/setup.ts](../../../ui-mock/src/lib/setup.ts) | What's added and connected: Google profile per Location, Website on/off, Account on/off; add/update/remove Location and Website |
+| [lib/setup.ts](../../../ui-mock/src/lib/setup.ts) | What's added and connected: Google Business Profile per Location, Website on/off, Account on/off; add/update/remove Location and Website |
 | [lib/scope.ts](../../../ui-mock/src/lib/scope.ts) | `{ orgId, locationId \| null }`, `useScopedLocation`, `useScopedWebsite` |
 | [pages/Settings.tsx](../../../ui-mock/src/pages/Settings.tsx) | Locations, Websites sections; section groups (Organization / Partner / You) |
 | [pages/Whitelabel.tsx](../../../ui-mock/src/pages/Whitelabel.tsx) | `Clients` (transfer out) |
@@ -40,6 +40,8 @@ All in memory (lib/setup.ts, lib/scope.ts, `memberships` array). Reload resets a
 
 ## Real build
 
-- `organizations`, `locations`, `websites` tables; Websites ↔ Locations many-to-many. Everything feature-specific stored per Location or per Website.
-- `partners` table; `organizations.partner_id` nullable. Transfer out clears it and removes Partner staff member rows.
+Planned in [backend/schema.md](../backend/schema.md) and [ADR 0011](../../decisions/0011-partner-is-an-organization-row.md):
+- Websites are independent of Locations (no link table); the mock's `Website.locationIds` goes away. A Location keeps its Google Business Profile's website link as text only.
+- A Location holds its Google Business Profile ID (unique); the Google sign-in is one Connection for the Organization. A Location can exist without one only while the profile is pending connection, and does nothing until then (pages show Connect, jobs skip it).
+- A Partner is an Organization that Clients point at with `partner_id`; no `partners` table. Agency staff get access through ordinary member rows. Transfer out shows a warning listing agency members with a keep/revoke choice per person, then clears `partner_id` and removes the revoked members in one step (ADR 0011). The mock's transfer in `Clients` doesn't offer this yet.
 - Rename `business` to Organization in code (data/mock.ts).

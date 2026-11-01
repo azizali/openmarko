@@ -18,7 +18,7 @@ last_verified: 105911e
 
 # Posts & calendar
 
-The one place for posts, Google profile posts included. Page: `/social/posts`.
+The one place for posts, Google Business Profile posts included. Page: `/social/posts`.
 
 **Status: `mock`.**
 
@@ -31,12 +31,12 @@ The one place for posts, Google profile posts included. Page: `/social/posts`.
 | Scheduled / Drafts / Published lists (published with views and reactions) | `mock` |
 | Any post opens the post drawer: edit, schedule, unschedule, post now, delete | `mock` |
 | **New post** | `mock` |
-| Post to Instagram, Facebook, TikTok, X, LinkedIn, Google profile | **stub** |
+| Post to Instagram, Facebook, TikTok, X, LinkedIn, Google Business Profile | **stub** |
 | Autopilot: "Fill empty calendar slots and publish" (default Ask first); Business Profile posts (default On its own) | `mock` |
 
 ## How it connects
 
-- **Needs:** at least one connected Account (a Google profile counts).
+- **Needs:** at least one connected Account (a Google Business Profile counts).
 - **Fed by:** Social scanner, Swipe file, the assistant.
 - **Feeds:** Home (next post, how often posts were seen), Presence score.
 - **Turned off:** `/social/posts` hides.

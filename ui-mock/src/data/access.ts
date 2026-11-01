@@ -40,7 +40,7 @@ const view = (label: string) => act("view", label, "view");
 
 // `satisfies` makes a FeatureId without actions a type error.
 const featureActions = {
-  seo: [view("See Business Profile and the SEO overview"), act("edit", "Edit Business Profile details", "edit"), act("publish", "Publish profile changes and Google posts", "publish"), act("connect", "Connect Google profiles", "manage")],
+  seo: [view("See Business Profile and the SEO overview"), act("edit", "Edit Business Profile details", "edit"), act("publish", "Publish profile changes and Google posts", "publish"), act("connect", "Connect Google Business Profiles", "manage")],
   rankings: [view("See rankings, competitors and keywords"), act("edit", "Add keywords and competitors", "edit"), act("scan", "Run grid scans", "edit")],
   ai_answers: [view("See AI answers"), act("edit", "Track questions", "edit")],
   reviews: [view("Read reviews"), act("reply", "Draft replies", "edit"), act("post", "Post replies", "publish"), act("request", "Send review requests", "publish")],

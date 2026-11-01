@@ -28,7 +28,7 @@ The CRM, and email, texts and calls with customers. The module's page is **Conta
 | Sortable table or **Pipeline** board (New lead → Contacted → Booked, Lost; drag to move) | `mock` |
 | Selection bar: text or email them (starts a campaign), start a workflow, move stage, tag, export | `mock` |
 | Contact drawer: details, consent per channel, tags, full timeline, reply box, "Open in Inbox" | `mock` |
-| Sources: Meta ad, Google ad, website form, phone call, Google profile, referral, booking system | `mock` |
+| Sources: Meta ad, Google ad, website form, phone call, Google Business Profile, referral, booking system | `mock` |
 | People arriving from ads, forms, calls and the booking system | **stub**: seed contacts only |
 
 ## Features in this module

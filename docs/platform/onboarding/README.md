@@ -21,8 +21,8 @@ A guided setup that turns a website or business name into a ready Organization. 
 ## Steps
 
 1. **Enter** a website or business name.
-2. **Reading**: the app reads the website, Google profiles, social links, reviews and nearby searches.
-3. **What we found**: name and category, Locations (each with a Google profile), Websites and which Location each serves, social Accounts linked from them, each with "Speaks for".
+2. **Reading**: the app reads the website, Google Business Profiles, social links, reviews and nearby searches.
+3. **What we found**: name and category, Locations (each with a Google Business Profile), Websites and which Location each serves, social Accounts linked from them, each with "Speaks for".
 4. **Connect**: Google (Business Profile, Search Console, Analytics; pick every property) and social sign-ins (Meta covers Instagram and Facebook). Every connection can be skipped.
 5. **Brand voice** drafted from the sites and review replies.
 6. **What to track**, all pre-ticked, each list with an add row: keywords and competitors per Location, profiles to watch (competitors' accounts found on their sites, plus any), map-scan grid and frequency, where the social scanner looks and what it listens for, Trending topics.

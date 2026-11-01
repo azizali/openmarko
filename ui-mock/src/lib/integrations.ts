@@ -3,7 +3,7 @@
 // Settings → Integrations shows and manages all of them.
 //
 // Mock: the stores that already hold connection state (crm for email and
-// texting, ads, outreach, setup for Google profiles and social accounts) stay
+// texting, ads, outreach, setup for Google Business Profiles and social accounts) stay
 // the source, and this reads them into one shape and routes connect and
 // disconnect back to them. Website tools, Slack and extra social accounts live
 // in a small store here. Real build: one connections table
@@ -20,7 +20,7 @@ import { toolOf, type ToolId } from "../data/ads";
 import { disconnectTool, useAds } from "./ads";
 import { disconnectEmail, disconnectPhone, useCrm } from "./crm";
 import { disconnect as disconnectSequencer, useOutreach } from "./outreach";
-import { accountConnected, setAccount, setGoogleProfile, useSetup } from "./setup";
+import { accountConnected, setAccount, setGoogleBusinessProfile, useSetup } from "./setup";
 import { can } from "./access";
 import { product } from "./whitelabel";
 
@@ -70,7 +70,7 @@ export function useConnections(): Connection[] {
     const c = outreach.connection;
     if (c) out.push({ id: "sequencer", provider: c.provider, target: partnerTarget(), account: c.workspace, status: "ok", since: c.connectedAt });
     for (const [id, at] of Object.entries(ads.connected)) if (at) out.push({ id: `ads:${id}`, provider: adProvider[id as ToolId] ?? (id as ProviderId), target: org, account: toolOf(id as ToolId).account, status: "ok", since: at as number });
-    for (const l of locations) if (setup.googleProfile[l.id]) out.push({ id: `gbp:${l.id}`, provider: "gbp", target: locationTarget(l.id), account: l.address, status: "ok" });
+    for (const l of locations) if (setup.googleBusinessProfile[l.id]) out.push({ id: `gbp:${l.id}`, provider: "gbp", target: locationTarget(l.id), account: l.address, status: "ok" });
     for (const a of accounts) if (a.platform !== "google" && accountConnected(a.id, setup)) out.push({ id: `social:${a.id}`, provider: a.platform as ProviderId, target: org, account: a.handle, status: "ok", note: a.locationId ? `Speaks for ${shortLocation(a.locationId)}` : undefined });
     for (const x of own) if (x.target.kind !== "website" || setup.website[x.target.id]) out.push({ status: "ok", ...x });
     return out;
@@ -111,9 +111,9 @@ export const flowOf = (p: Provider): Flow =>
   p.category === "Email" ? "email" : p.category === "Texting & calls" ? "phone" : p.category === "Cold outreach" ? "sequencer" : adProviders.has(p.id) ? "ad_tool" : "generic";
 export const adToolOf = (p: ProviderId) => toolOf(toolFor(p));
 
-/** The generic flow's last step. Social and Google profiles go to the stores features read. */
+/** The generic flow's last step. Social and Google Business Profiles go to the stores features read. */
 export function connectGeneric(p: Provider, target: Target, account: string) {
-  if (p.id === "gbp") return setGoogleProfile(target.id, true);
+  if (p.id === "gbp") return setGoogleBusinessProfile(target.id, true);
   const existing = accounts.find((a) => a.platform === (p.id as SocialPlatform) && !a.connected);
   if (existing && p.category === "Social") return setAccount(existing.id, true);
   setExtras([...extras.filter((x) => !(x.provider === p.id && x.target.id === target.id && p.capabilities.every((c) => capabilityOf(c).max === "one"))), { id: `${p.id}:${target.id}:${Date.now().toString(36)}`, provider: p.id, target, account, since: Date.now() }]);
@@ -124,7 +124,7 @@ export function disconnectConnection(c: Connection) {
   if (c.id === "phone") return disconnectPhone();
   if (c.id === "sequencer") return disconnectSequencer();
   if (c.id.startsWith("ads:")) return disconnectTool(c.id.slice(4) as ToolId);
-  if (c.id.startsWith("gbp:")) return setGoogleProfile(c.target.id, false);
+  if (c.id.startsWith("gbp:")) return setGoogleBusinessProfile(c.target.id, false);
   if (c.id.startsWith("social:")) return setAccount(c.id.slice(7), false);
   setExtras(extras.filter((x) => x.id !== c.id));
 }

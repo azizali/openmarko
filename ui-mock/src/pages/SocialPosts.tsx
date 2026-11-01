@@ -39,10 +39,10 @@ export default function SocialPosts() {
     <>
       <PageHeader
         title="Posts & calendar"
-        sub="Everything going out on your social accounts and Google profile, and how it did."
+        sub="Everything going out on your social accounts and Google Business Profile, and how it did."
         actions={<Button variant="primary" icon={<Plus size={14} />} onClick={() => setOpen(blank())}>New post</Button>}
       />
-      {!anyConnected ? <Needs kind="account" note="Posts go out through your social accounts and Google profiles." /> : <>
+      {!anyConnected ? <Needs kind="account" note="Posts go out through your social accounts and Google Business Profiles." /> : <>
 
       <Card pad={false} className="mb-6">
         <div className="grid divide-line sm:grid-cols-3 sm:divide-x max-sm:divide-y">

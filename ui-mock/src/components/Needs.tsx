@@ -2,18 +2,18 @@ import { Link } from "react-router";
 import { AtSign, Globe, Store } from "lucide-react";
 import { Button, Card } from "./ui";
 import { shortLocation, websites } from "../data/org";
-import { setAccount, setGoogleProfile, setWebsite } from "../lib/setup";
+import { setAccount, setGoogleBusinessProfile, setWebsite } from "../lib/setup";
 import { accounts } from "../data/social";
 
-type Kind = "googleProfile" | "website" | "account";
+type Kind = "googleBusinessProfile" | "website" | "account";
 
 const copy: Record<Kind, { icon: typeof Store; title: (place: string) => string; unlocks: string[]; settings: string; action: string }> = {
-  googleProfile: {
+  googleBusinessProfile: {
     icon: Store,
-    title: (p) => `Connect ${p ? `${p}'s` : "your"} Google profile`,
+    title: (p) => `Connect ${p ? `${p}'s` : "your"} Google Business Profile`,
     unlocks: ["Reviews, with replies written in your voice", "Calls, directions and website clicks from Google", "Google posts and profile fixes"],
     settings: "/settings/locations",
-    action: "Connect Google profile",
+    action: "Connect Google Business Profile",
   },
   website: {
     icon: Globe,
@@ -25,7 +25,7 @@ const copy: Record<Kind, { icon: typeof Store; title: (place: string) => string;
   account: {
     icon: AtSign,
     title: () => "Connect a social account",
-    unlocks: ["Schedule and post to Instagram, Facebook, TikTok, X and your Google profile", "See followers, views and reactions in one place"],
+    unlocks: ["Schedule and post to Instagram, Facebook, TikTok, X and your Google Business Profile", "See followers, views and reactions in one place"],
     settings: "/settings/integrations?cat=Social",
     action: "Connect an account",
   },
@@ -39,7 +39,7 @@ export function Needs({ kind, locationId, note }: { kind: Kind; locationId?: str
   const c = copy[kind];
   const place = locationId ? shortLocation(locationId) : "";
   const connect = () => {
-    if (kind === "googleProfile" && locationId) setGoogleProfile(locationId, true);
+    if (kind === "googleBusinessProfile" && locationId) setGoogleBusinessProfile(locationId, true);
     if (kind === "website") { const w = websites.find((x) => !locationId || x.locationIds.includes(locationId)); if (w) setWebsite(w.id, true); }
     if (kind === "account") setAccount(accounts.find((a) => a.platform === "instagram")!.id, true);
   };

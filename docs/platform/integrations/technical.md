@@ -24,7 +24,8 @@ type Capability = {
   ops: string[];                       // adapter interface
   events: string[];                    // normalized webhook events
 };
-type Provider = { id; name; vendor?; category; auth: "managed" | "oauth" | "api_key"; attach; capabilities: CapabilityId[]; extras?; requires?; fields? };
+type Provider = { id; name; vendor?; category; auth: "managed" | "oauth" | "api_key"; attach; capabilities: CapabilityId[]; extras?; requires?; fields?; metered: { meter: string; unit: string } | null };
+// metered: null for free integrations (Google Search Console, GA4, Google sign-in). Paid per-use providers name their meter, e.g. { meter: "dataforseo.maps", unit: "request" }. See ADR 0012.
 type Connection = { id; provider; target: { kind: Attach; id; label }; account; status: "ok" | "action" | "pending"; note?; since? };
 ```
 
@@ -67,7 +68,7 @@ Email: managed, Amazon SES, Resend, Mailgun, Postmark, SendGrid. Texting & calls
 | Email, texting | `gw-crm` (lib/crm.ts) |
 | Ad accounts, ad tools | `gw-ads` (lib/ads.ts) |
 | Sequencer | `gw-outreach` (lib/outreach.ts) |
-| Google profiles, social Accounts | lib/setup.ts (in memory) |
+| Google Business Profiles, social Accounts | lib/setup.ts (in memory) |
 | Website tools, Slack, extra social accounts | `gw-integrations` (own store) |
 
 ## Real build

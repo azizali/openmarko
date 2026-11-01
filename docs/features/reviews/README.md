@@ -33,6 +33,6 @@ Read and reply to Google reviews for each Location, with replies drafted in the 
 
 ## How it connects
 
-- **Needs:** the Location's Google profile.
+- **Needs:** the Location's Google Business Profile.
 - **Feeds:** To-do (review reply tasks), Home, Reports, Ranking factors (reviews group).
 - **Turned off:** the Reviews tab leaves Business Profile.

@@ -15,7 +15,7 @@ last_verified: 105911e
 
 # Articles
 
-Website articles from idea to published, drafted by the assistant with the `blog-article` skill. Page: `/content`. Google profile posts and social posts are in [social-posts](../social-posts/), not here.
+Website articles from idea to published, drafted by the assistant with the `blog-article` skill. Page: `/content`. Google Business Profile posts and social posts are in [social-posts](../social-posts/), not here.
 
 **Status: `mock`.**
 

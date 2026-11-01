@@ -159,7 +159,7 @@ function CitationsTab({ seed }: { seed: Citation[] }) {
           </tbody>
         </table>
       </Card>
-      <p className="mt-3 max-w-3xl text-[12px] text-subtle">We find each listing by searching the site for your name and phone, then compare name, address, phone, hours and website with your Google profile. Google, Apple and Bing are updated through their own APIs; aggregators feed hundreds of smaller sites; the rest are submitted through a citation partner. Sites you must claim yourself come with step-by-step instructions.</p>
+      <p className="mt-3 max-w-3xl text-[12px] text-subtle">We find each listing by searching the site for your name and phone, then compare name, address, phone, hours and website with your Google Business Profile. Google, Apple and Bing are updated through their own APIs; aggregators feed hundreds of smaller sites; the rest are submitted through a citation partner. Sites you must claim yourself come with step-by-step instructions.</p>
 
       <Modal open={confirm} onClose={() => setConfirm(false)} title={`Fix & build ${chosen.length} citations`} footer={<>
         <Button variant="ghost" onClick={() => setConfirm(false)}>Cancel</Button>

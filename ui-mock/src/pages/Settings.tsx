@@ -162,7 +162,7 @@ function Locations() {
   };
   return (
     <>
-      <PageHeader title="Locations" sub={`Places customers visit. Rankings, competitors and citations work from the address alone; connecting the Google profile adds reviews, calls and posting. Every location shares ${organization.name}'s brand voice.`} actions={<Button size="sm" icon={<Plus size={13} />} onClick={() => setEditing("new")}>Add location</Button>} />
+      <PageHeader title="Locations" sub={`Places customers visit. Rankings, competitors and citations work from the address alone; connecting the Google Business Profile adds reviews, calls and posting. Every location shares ${organization.name}'s brand voice.`} actions={<Button size="sm" icon={<Plus size={13} />} onClick={() => setEditing("new")}>Add location</Button>} />
       {editing && <LocationForm location={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSaved={(msg) => { setEditing(null); toast(msg); }} />}
       {deleting && <DeleteLocation location={deleting} onClose={() => setDeleting(null)} onDelete={() => del(deleting)} />}
       {node}
@@ -240,7 +240,7 @@ function DeleteLocation({ location, onClose, onDelete }: { location: Location; o
       <p className="mt-0 text-[13.5px] text-muted">{location.address}</p>
       <ul className="mb-0 space-y-1.5 pl-4 text-[13.5px]">
         <li>Its {location.keywords ? `${location.keywords} tracked keywords, ` : ""}rank history, map scans, competitors and citations are deleted.</li>
-        {google && <li>Its Google profile is disconnected. The profile itself stays on Google.</li>}
+        {google && <li>Its Google Business Profile is disconnected. The profile itself stays on Google.</li>}
         {sites.length > 0 && <li>{sites.map((w) => w.domain).join(" and ")} will stop serving it.</li>}
         {tagged.length > 0 && <li>{tagged.map((a) => a.handle).join(", ")} will speak for the whole organization instead.</li>}
       </ul>
@@ -260,7 +260,7 @@ function LocationForm({ location, onClose, onSaved }: { location: Location | nul
   const save = () => {
     if (!ok) return;
     if (location) { updateLocation(location.id, name, address.trim(), site || null); onSaved(`${name} saved`); }
-    else { addLocation(name, address.trim(), site || null); onSaved(`${name} added. Connect its Google profile below.`); }
+    else { addLocation(name, address.trim(), site || null); onSaved(`${name} added. Connect its Google Business Profile below.`); }
   };
   return (
     <Modal open onClose={onClose} title={location ? `Edit ${shortLocation(location.id)}` : "Add a location"} footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" disabled={!ok} onClick={save}>{location ? "Save" : "Add location"}</Button></>}>

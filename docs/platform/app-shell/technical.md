@@ -11,7 +11,7 @@
 | [components/RunStatus.tsx](../../../ui-mock/src/components/RunStatus.tsx) | "Updated X ago", live run chip, run button |
 | [components/ui.tsx](../../../ui-mock/src/components/ui.tsx) | Buttons, cards, badges, deltas, tabs, drawer, modal, toast, SVG charts |
 | [lib/scope.ts](../../../ui-mock/src/lib/scope.ts) | `{ orgId, locationId }`; `useScopedLocation`, `useScopedWebsite` |
-| [lib/setup.ts](../../../ui-mock/src/lib/setup.ts) | What's connected; `hasGoogleProfile`, `websiteOf`, `accountConnected` |
+| [lib/setup.ts](../../../ui-mock/src/lib/setup.ts) | What's connected; `hasGoogleBusinessProfile`, `websiteOf`, `accountConnected` |
 | [lib/theme.ts](../../../ui-mock/src/lib/theme.ts) | Dark mode (`gw-theme`), applied before first render |
 | [pages/Settings.tsx](../../../ui-mock/src/pages/Settings.tsx) | Section registry (`businessSections`, `partnerSections`, `accountSections`) with `needs` / `edits`; You pages |
 

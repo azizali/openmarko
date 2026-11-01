@@ -3,7 +3,7 @@
 // <Needs> (components/Needs.tsx) instead of their tools.
 //
 //   Location (name + address)  → Rankings, Competitors, Citations, AI answers (public data)
-//   Google profile, per Location → Business Profile, Reviews, Google posts, calls & directions
+//   Google Business Profile, per Location → Business Profile, Reviews, Google posts, calls & directions
 //   Website, per Location        → Site health, Articles, Backlinks
 //   A social Account             → Posts & calendar
 //   nothing                      → Social scanner, Trending, Swipe file
@@ -15,13 +15,13 @@ import { linkData, locationData, websiteData } from "../data/scoped";
 import { accountOf, accounts } from "../data/social";
 
 type Setup = {
-  googleProfile: Record<string, boolean>; // by Location
+  googleBusinessProfile: Record<string, boolean>; // by Location
   website: Record<string, boolean>; // by Website: added to the Organization
   account: Record<string, boolean>; // by Account: connected
 };
 
 let setup: Setup = {
-  googleProfile: Object.fromEntries(locations.map((l) => [l.id, l.googleProfile === "connected"])),
+  googleBusinessProfile: Object.fromEntries(locations.map((l) => [l.id, l.googleBusinessProfile === "connected"])),
   website: Object.fromEntries(websites.map((w) => [w.id, true])),
   account: Object.fromEntries(accounts.map((a) => [a.id, a.connected])),
 };
@@ -30,7 +30,7 @@ const set = (next: Setup) => { setup = next; listeners.forEach((l) => l()); };
 export const useSetup = () => useSyncExternalStore((l) => { listeners.add(l); return () => { listeners.delete(l); }; }, () => setup, () => setup);
 export const getSetup = () => setup;
 
-export const setGoogleProfile = (locationId: string, on: boolean) => set({ ...setup, googleProfile: { ...setup.googleProfile, [locationId]: on } });
+export const setGoogleBusinessProfile = (locationId: string, on: boolean) => set({ ...setup, googleBusinessProfile: { ...setup.googleBusinessProfile, [locationId]: on } });
 export const setWebsite = (websiteId: string, on: boolean) => set({ ...setup, website: { ...setup.website, [websiteId]: on } });
 export const setAccount = (accountId: string, on: boolean) => set({ ...setup, account: { ...setup.account, [accountId]: on } });
 
@@ -43,11 +43,11 @@ const cityOf = (address: string) => address.split(",").slice(-2).join(",").repla
  */
 export function addLocation(label: string, address: string, websiteId: string | null) {
   const id = `loc_${Date.now().toString(36)}`;
-  locations.push({ id, name: `${organization.name} — ${label}`, city: cityOf(address), address, googleProfile: "none", keywords: 0 });
+  locations.push({ id, name: `${organization.name} — ${label}`, city: cityOf(address), address, googleBusinessProfile: "none", keywords: 0 });
   locationData[id] = locationData.loc_2;
   const w = websites.find((x) => x.id === websiteId);
   if (w) w.locationIds.push(id);
-  set({ ...setup, googleProfile: { ...setup.googleProfile, [id]: false } });
+  set({ ...setup, googleBusinessProfile: { ...setup.googleBusinessProfile, [id]: false } });
   return id;
 }
 
@@ -64,7 +64,7 @@ export function updateLocation(id: string, label: string, address: string, websi
 }
 
 /**
- * Deletes a Location: its Google profile account goes with it, Websites stop
+ * Deletes a Location: its Google Business Profile account goes with it, Websites stop
  * serving it, and social accounts tagged to it speak for the whole Organization
  * again. The last Location can't be deleted.
  */
@@ -78,8 +78,8 @@ export function removeLocation(id: string) {
     if (accounts[j].platform === "google") accounts.splice(j, 1);
     else delete accounts[j].locationId;
   }
-  const { [id]: _, ...googleProfile } = setup.googleProfile;
-  set({ ...setup, googleProfile });
+  const { [id]: _, ...googleBusinessProfile } = setup.googleBusinessProfile;
+  set({ ...setup, googleBusinessProfile });
 }
 
 /** Changes a Website's address or the Locations it serves. */
@@ -108,11 +108,11 @@ export function addWebsite(domain: string, locationIds: string[]) {
   return id;
 }
 
-export const hasGoogleProfile =(locationId: string, s = setup) => !!s.googleProfile[locationId];
+export const hasGoogleBusinessProfile =(locationId: string, s = setup) => !!s.googleBusinessProfile[locationId];
 /** The Website serving a Location, if the Organization has one. */
 export const websiteOf = (locationId: string, s = setup) => websites.find((w) => w.locationIds.includes(locationId) && s.website[w.id]) ?? null;
-/** A Google profile Account is connected when its Location's Google profile is. */
+/** A Google Business Profile Account is connected when its Location's Google Business Profile is. */
 export const accountConnected = (accountId: string, s = setup) => {
   const a = accountOf(accountId);
-  return a?.platform === "google" ? !!(a.locationId && s.googleProfile[a.locationId]) : !!s.account[accountId];
+  return a?.platform === "google" ? !!(a.locationId && s.googleBusinessProfile[a.locationId]) : !!s.account[accountId];
 };

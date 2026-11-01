@@ -48,6 +48,6 @@ Business owners and marketers who want more calls and direction requests from Go
 
 ## How it connects
 
-- **Needs:** a Location for public-data pages; that Location's Google profile for Business Profile, Reviews, Google posts and insights ([app-shell](../../platform/app-shell/) § Needs).
+- **Needs:** a Location for public-data pages; that Location's Google Business Profile for Business Profile, Reviews, Google posts and insights ([app-shell](../../platform/app-shell/) § Needs).
 - **Feeds:** Home's search numbers and Presence score, Reports, the sales audit's methodology, the assistant's SEO answers.
 - **Turned off:** every SEO page hides; Home leaves out search numbers.

@@ -597,7 +597,7 @@ function FilterPanel({ f, F, fresh, setFresh }: { f: Filters; F: (p: Partial<Fil
   return (
     <Card className="anim-fade mb-4">
       <div className="grid gap-x-8 gap-y-6 md:grid-cols-2 xl:grid-cols-4">
-        <Group title="Google profile">
+        <Group title="Google Business Profile">
           {T({ label: "Website", k: "website", yes: "Has one", no: "Missing" })}
           {T({ label: "Claimed", k: "claimed" })}
           {T({ label: "Posted in 30 days", k: "posts" })}

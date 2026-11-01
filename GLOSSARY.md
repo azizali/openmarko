@@ -32,16 +32,24 @@ _Avoid_: customer, sub-account
 A Partner's name, logo, colour, domain and email sender in place of ours, on everything its Clients see. Set once per Partner, never per Organization. With it on, nothing says OpenMarko or Marko; the assistant is called "AI Assistant" unless the Partner renames it.
 _Avoid_: white-label, branding, custom branding, reseller mode
 
+**Plan**:
+What an Organization or Partner pays for. Each Plan sets its own Entitlements; nothing in the app depends on a Plan's name. A Partner's Plan covers its Clients.
+_Avoid_: tier, package, subscription (the subscription is the paying arrangement; the Plan is what it buys)
+
+**Entitlement**:
+One thing a Plan allows, as a number: a feature (on or off) or a limit (how many Locations, keywords, grid points). Separate from feature switches, which are the Organization's choice, and from Roles.
+_Avoid_: quota, allowance, feature flag
+
 **Location**:
 A physical place customers visit, with its own address, hours, keywords and map rankings.
 _Avoid_: branch, store, site, listing
 
 **Google Business Profile**:
-The listing for one Location on Google Search and Maps. Each Location has at most one. Shortened to "Google profile" in the app.
-_Avoid_: GBP, GMB, listing, Google page
+The listing for one Location on Google Search and Maps. Each Location has at most one. Always written in full in the app and docs. It is reached through a Google account connected as an Integration, which need not be the Google account a Member signs in with.
+_Avoid_: Google profile, GBP (in what people read; fine in code), GMB, listing, Google page
 
 **Website**:
-A site the Organization owns, known by its domain. One Website can serve several Locations.
+A site the Organization owns, known by its domain. Independent of Locations: an Organization can have Websites and no Locations. Audits work on the whole domain, never one page.
 _Avoid_: site, domain, property
 
 **Platform**:
@@ -57,7 +65,7 @@ An outside service connected to the Partner, the Organization, a Location or a W
 _Avoid_: tool, app, plugin, connection (in what people read)
 
 **Capability**:
-Something the app needs done that an Integration can provide, such as sending email, publishing ads or replying to reviews. Features depend on Capabilities, never on one Integration. Each says how many it takes: one per Organization (the email sender), one per Location (the Google profile), or any number (ad accounts).
+Something the app needs done that an Integration can provide, such as sending email, publishing ads or replying to reviews. Features depend on Capabilities, never on one Integration. Each says how many it takes: one per Organization (the email sender), one per Location (the Google Business Profile), or any number (ad accounts).
 _Avoid_: feature, permission, scope, ability
 
 **Scope**:

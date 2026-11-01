@@ -158,7 +158,7 @@ name: gbp-post
 description: Writing posts for the Google Business Profile that help local ranking and get calls.
 background: [voice, facts, rankings]
 ---
-# Google profile posts
+# Google Business Profile posts
 
 Writes one post with a button (Call, Book, Learn more) and a photo suggestion.
 

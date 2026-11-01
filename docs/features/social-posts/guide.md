@@ -16,4 +16,4 @@ Open **Posts & calendar**. The next 7 days show what's scheduled; drafts appear 
 
 Published posts show views and reactions. The totals at the top break down by platform and say which accounts aren't connected yet.
 
-You need at least one connected account (Settings → Integrations → Social, or a Google profile).
+You need at least one connected account (Settings → Integrations → Social, or a Google Business Profile).

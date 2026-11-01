@@ -19,7 +19,7 @@ last_verified: 105911e
 
 # Organizations & Partners
 
-The structure everything hangs off. An **Organization** is the business being marketed; it has **Locations** (each with at most one Google profile), **Websites** (each serving one or more Locations) and **Accounts** on social Platforms. A **Partner** (agency, consultant, reseller) manages many Organizations as **Clients** and puts its brand on the app. See [GLOSSARY.md](../../../GLOSSARY.md).
+The structure everything hangs off. An **Organization** is the business being marketed; it has **Locations** (each with at most one Google Business Profile), **Websites** (each serving one or more Locations) and **Accounts** on social Platforms. A **Partner** (agency, consultant, reseller) manages many Organizations as **Clients** and puts its brand on the app. See [GLOSSARY.md](../../../GLOSSARY.md).
 
 **Status: `mock`.** The structure is modelled and the settings pages work in memory. There's one real dataset (Maple & Main Dental); other Organizations reuse it.
 
@@ -29,7 +29,7 @@ The structure everything hangs off. An **Organization** is the business being ma
 |---|---|
 | Organization switcher with every Organization the Member belongs to | `mock` (list is hardcoded by plan) |
 | Add organization (from switcher or ⌘K) → onboarding | `mock`: adds to the switcher, shows Maple & Main's data |
-| Settings → Locations: add, edit, delete; pick which Website serves it; connect its Google profile | `mock`, in memory |
+| Settings → Locations: add, edit, delete; pick which Website serves it; connect its Google Business Profile | `mock`, in memory |
 | Settings → Websites: add by address, pick Locations served; Search Console, GA4, WordPress | `mock`, in memory |
 | Accounts per Platform, optionally tagged to one Location | `mock` (managed in Integrations) |
 | Partner settings (Partner Admins only): Whitelabel, Clients, Partner team | `mock` |

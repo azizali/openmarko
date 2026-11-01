@@ -23,7 +23,7 @@ export const platformMeta: Record<SocialPlatform, { name: string; short: string;
   tiktok: { name: "TikTok", short: "TT", color: "#111111" },
   x: { name: "X", short: "X", color: "#000000" },
   linkedin: { name: "LinkedIn", short: "in", color: "#0a66c2" },
-  google: { name: "Google profile", short: "G", color: "#5f6368" },
+  google: { name: "Google Business Profile", short: "G", color: "#5f6368" },
 };
 
 export type AccountId = string;
@@ -55,7 +55,7 @@ const locationName = (id?: string) => locations.find((l) => l.id === id)?.name.s
 export const accountLabel = (id: AccountId) => {
   const a = accountOf(id);
   const loc = locationName(a.locationId);
-  return a.platform === "google" ? `Google profile · ${loc}` : loc ? `${platformMeta[a.platform].name} · ${loc}` : platformMeta[a.platform].name;
+  return a.platform === "google" ? `Google Business Profile · ${loc}` : loc ? `${platformMeta[a.platform].name} · ${loc}` : platformMeta[a.platform].name;
 };
 /** The Organization-wide Account on a Platform (for Google, the first Location's profile). */
 export const mainAccount = (p: SocialPlatform) => accounts.find((a) => a.platform === p && (!a.locationId || p === "google"));

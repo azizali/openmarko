@@ -242,7 +242,7 @@ function KeywordProgress() {
 // ---------- Content ----------
 
 function ContentSummary() {
-  // Website articles plus Google profile and social posts, in one list.
+  // Website articles plus Google Business Profile and social posts, in one list.
   const posts = useSocialPosts().map((p) => ({ id: p.id, type: "post" as const, title: p.title, status: p.status, keywordId: "", date: dayLabel(p.day), metric: p.stats ? `${totals(p).views.toLocaleString()} views` : undefined }));
   const items = [...useContent(), ...posts];
   const published = items.filter((i) => i.status === "published");

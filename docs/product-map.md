@@ -12,10 +12,10 @@ Source of truth: [ui-mock/src/data/features.ts](../ui-mock/src/data/features.ts)
 
 | Module | Feature | Doc | Needs | Connection | Status |
 |---|---|---|---|---|---|
-| **Local SEO** `seo` | Business Profile (module page) | [features/seo](features/seo/) | | Google profile per Location | mock |
+| **Local SEO** `seo` | Business Profile (module page) | [features/seo](features/seo/) | | Google Business Profile per Location | mock |
 | | Rankings & competitors | [features/rankings](features/rankings/) | seo | | mock |
 | | AI answers | [features/ai-answers](features/ai-answers/) | seo | | mock |
-| | Reviews | [features/reviews](features/reviews/) | seo | Google profile | mock |
+| | Reviews | [features/reviews](features/reviews/) | seo | Google Business Profile | mock |
 | | Articles | [features/content](features/content/) | seo | Website (+ WordPress to publish) | mock |
 | | Citations & backlinks | [features/citations](features/citations/) | seo | | mock |
 | | Site health | [features/site-health](features/site-health/) | seo | Website (+ WordPress to fix) | mock |
@@ -52,6 +52,7 @@ Shared infrastructure. Not switchable in Settings → Features.
 | Brand voice & skills | [platform/brand-skills](platform/brand-skills/) | Brand voice, Business facts, Skills (SKILL.md) | mock |
 | Onboarding | [platform/onboarding](platform/onboarding/) | Add an organization wizard | mock |
 | Home & reports | [platform/home-reports](platform/home-reports/) | Home brief, Presence score, scheduled reports | mock |
+| Backend | [platform/backend](platform/backend/) | API, worker, modules, database schema; replaces the mock's stores | idea (schema reviewed) |
 | Marketing site | [platform/marketing-site](platform/marketing-site/) | `site/`: public website, pricing, compare pages | mock (static site, sample content) |
 
 ## How they depend on each other
@@ -110,7 +111,7 @@ flowchart LR
 - **Everything the assistant writes** goes through the Brand voice plus one Skill ([platform/brand-skills](platform/brand-skills/)).
 - **Everything the assistant changes** is a Task (To-do) and obeys Autopilot; everything that runs on a clock is a Schedule and logs a Run in Activity ([platform/automation](platform/automation/)).
 - **Scope** (whole Organization, one Location or Website) decides what Location and Website pages show ([platform/app-shell](platform/app-shell/)).
-- **Plan**: `member.plan` (`local` | `agency`) in [data/mock.ts](../ui-mock/src/data/mock.ts) gates Prospecting, Outreach, multiple Organizations and Partner settings. Agency-only features are marked `agencyOnly` in features.ts.
+- **Plan**: `member.plan` (`local` | `agency`) in [data/mock.ts](../ui-mock/src/data/mock.ts) gates Prospecting, Outreach, multiple Organizations and Partner settings. Agency-only features are marked `agencyOnly` in features.ts. The real build replaces both with Plan Entitlements ([ADR 0012](decisions/0012-billing-module-and-plans-as-data.md)).
 
 ## Cross-feature flows
 
@@ -122,4 +123,4 @@ flowchart LR
 | Tired ad refresh | ads review flags fatigue → "Make fresh versions" → ad-studio |
 | Lead to booking | ads/website/booking system → customers (Contact) → workflows (speed to lead) → inbox → booked → reported back to ads as a conversion |
 | Prospect to client | sales search → audit → share link → outreach sequencer → reply in unibox → booked → onboarding adds an Organization |
-| Assistant fix | marko answer with task rows → automation (To-do) → executor (Google profile, WordPress, citations) → Activity |
+| Assistant fix | marko answer with task rows → automation (To-do) → executor (Google Business Profile, WordPress, citations) → Activity |

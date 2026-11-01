@@ -45,7 +45,7 @@ const socialLogins: { id: string; name: string; platforms: SocialPlatform[] }[] 
   { id: "x", name: "X", platforms: ["x"] },
 ];
 
-const reading = ["Reading the website", "Finding Google profiles for each location", "Following links to social profiles", "Reading 276 reviews to learn how you sound", "Looking up what people search for nearby"];
+const reading = ["Reading the website", "Finding Google Business Profiles for each location", "Following links to social profiles", "Reading 276 reviews to learn how you sound", "Looking up what people search for nearby"];
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -133,7 +133,7 @@ export default function Onboarding() {
             {step === 0 && (
               <>
                 <h1 className="font-serif text-[34px] leading-tight">Add an organization</h1>
-                <p className="mt-2 text-muted">Start with the website, or the business name if there isn't one. We'll find the locations, Google profiles and social accounts, and learn how the business sounds.</p>
+                <p className="mt-2 text-muted">Start with the website, or the business name if there isn't one. We'll find the locations, Google Business Profiles and social accounts, and learn how the business sounds.</p>
                 <form onSubmit={(e) => { e.preventDefault(); if (query.trim()) setRead(0); }} className="mt-8 flex gap-2">
                   <SearchInput size="lg" className="h-11 flex-1" aria-label="Website or business name" value={query} onChange={(e) => { setQuery(e.target.value); setRead(-1); }} placeholder="yourbusiness.com, or a business name" />
                   <Button type="submit" variant="primary" className="h-11" disabled={!query.trim() || (read >= 0 && !doneReading)}>{read < 0 ? "Read it" : doneReading ? "Read again" : "Reading…"}</Button>
@@ -163,14 +163,14 @@ export default function Onboarding() {
                 <h1 className="font-serif text-[34px] leading-tight">Here's what we found</h1>
                 <p className="mt-2 text-muted">Untick anything that isn't {name}'s, or that you don't want to use yet. {product()} works with any of these on its own: just a location, just a website, or just social accounts. You can add the rest later in Settings.</p>
 
-                <Section title="Locations" sub="Places customers visit. Each has its own Google profile, keywords and map rankings.">
+                <Section title="Locations" sub="Places customers visit. Each has its own Google Business Profile, keywords and map rankings.">
                   {locations.map((l) => (
                     <label key={l.id} className="flex cursor-pointer items-start gap-3 border-b border-line px-4 py-3 last:border-0 hover:bg-hover/50">
                       <Checkbox checked={locSel.has(l.id)} onChange={() => setLocSel(toggle(locSel, l.id))} label={`Include ${shortLocation(l.id)}`} />
                       <MapPin size={16} className="mt-0.5 shrink-0 text-accent" />
                       <span className="min-w-0 flex-1">
                         <span className="block text-[14px] font-medium">{shortLocation(l.id)}</span>
-                        <span className="block text-[12.5px] text-muted">{l.address} · Google profile, {locationData[l.id].rating}★ from {locationData[l.id].reviewCount} reviews</span>
+                        <span className="block text-[12.5px] text-muted">{l.address} · Google Business Profile, {locationData[l.id].rating}★ from {locationData[l.id].reviewCount} reviews</span>
                       </span>
                     </label>
                   ))}
@@ -192,7 +192,7 @@ export default function Onboarding() {
                   ))}
                 </Section>
 
-                <Section title="Social accounts" sub="Linked from the websites and Google profiles. Each speaks for every location unless you pick one.">
+                <Section title="Social accounts" sub="Linked from the websites and Google Business Profiles. Each speaks for every location unless you pick one.">
                   {found.map((a) => (
                     <div key={a.id} className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-3 last:border-0">
                       <Checkbox checked={acctSel.has(a.id)} onChange={() => setAcctSel(toggle(acctSel, a.id))} label={`Include ${a.handle}`} />
@@ -311,7 +311,7 @@ export default function Onboarding() {
                     ))}
                     {(myComp[l.id] ?? []).map((n) => (
                       <div key={n} className="flex items-center gap-3 border-b border-line px-4 py-2.5">
-                        <span className="min-w-0 flex-1"><span className="block text-[14px]">{n}</span><span className="block text-[12.5px] text-muted">Added by you · we'll find its Google profile</span></span>
+                        <span className="min-w-0 flex-1"><span className="block text-[14px]">{n}</span><span className="block text-[12.5px] text-muted">Added by you · we'll find its Google Business Profile</span></span>
                         <Toggle label={`Track ${n}`} checked={compSel[l.id].has(`mine:${n}`)} onChange={() => setCompSel({ ...compSel, [l.id]: toggle(compSel[l.id], `mine:${n}`) })} />
                       </div>
                     ))}
@@ -436,7 +436,7 @@ function OAuthModal({ tool, onClose, onDone }: { tool: (typeof googleTools)[numb
 
 function Launch({ name, locs, kw, comp, accounts: acc, onDone }: { name: string; locs: number; kw: number; comp: number; accounts: number; onDone: () => void }) {
   const tasks = [
-    `Importing ${locs} Google profile${locs === 1 ? "" : "s"} and their reviews`,
+    `Importing ${locs} Google Business Profile${locs === 1 ? "" : "s"} and their reviews`,
     `Reading ${websites.length} website${websites.length === 1 ? "" : "s"}`,
     `Connecting ${acc} social account${acc === 1 ? "" : "s"}`,
     `Running map scans for ${kw} keywords`,

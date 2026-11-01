@@ -37,7 +37,7 @@ The frame every page sits in: sidebar navigation, the Organization and Scope swi
 | ⌘K command palette: every page, Settings sections, actions like "Audit a business"; anything typed can go to the assistant | `mock` |
 | Pages and Settings sections filtered by feature switches and role | `mock` |
 | Per-page toolbar: "Updated X ago", live chip for a run in progress, the page's run button | `mock` |
-| **Nothing is required**: a page missing a Location, Google profile, Website or Account shows **Connect** instead of its tools; everything else keeps working | `mock` |
+| **Nothing is required**: a page missing a Location, Google Business Profile, Website or Account shows **Connect** instead of its tools; everything else keeps working | `mock` |
 | Website addresses open in a new tab (`ExternalUrl`) | `mock` |
 | Old routes redirect (`/grid`, `/actions/:id`, `/automations`, `/brand`, `/skills`, `/runs`, `/social/voice`…) | `mock` |
 | Dark mode (sidebar toggle and Settings → Appearance) | `mock`, saved in browser |
@@ -49,7 +49,7 @@ The frame every page sits in: sidebar navigation, the Organization and Scope swi
 | Needs | Pages |
 |---|---|
 | A Location (name + address) | Rankings, Competitors, Citations, AI answers |
-| That Location's Google profile | Business Profile, Reviews, Google posts, calls & directions |
+| That Location's Google Business Profile | Business Profile, Reviews, Google posts, calls & directions |
 | A Website for that Location | Site health, Articles, Backlinks |
 | At least one connected Account | Posts & calendar |
 | Nothing | Social scanner, Trending, Swipe file |

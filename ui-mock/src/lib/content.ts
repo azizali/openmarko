@@ -1,4 +1,4 @@
-// Website articles, from idea to published. Posts (Google profile and social)
+// Website articles, from idea to published. Posts (Google Business Profile and social)
 // live in lib/social.ts. Module store so the Articles page and the report preview see the same list.
 
 import { useSyncExternalStore } from "react";

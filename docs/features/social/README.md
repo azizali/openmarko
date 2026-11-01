@@ -31,8 +31,8 @@ Find what's working, save ideas, write posts in the brand voice, and plan and pu
 ## Shared pieces
 
 - **Post drawer** (`components/Social.tsx`): one drawer to remix a trend, write from a swipe, or edit any post. Pick channels, adjust (Shorter, More playful, More expert), edit each channel's text, see the shot list and best time per channel, then Save draft, Post now or Schedule.
-- **Live preview** (`components/PostPreview.tsx`): how the post looks on Instagram, TikTok, X, LinkedIn, Facebook or the Google profile: where the text folds into "… more", hashtags, media crop, X's 280-character limit, the Google button.
-- **Accounts** (GLOSSARY): the Organization's profiles on each Platform; speaks for the whole Organization unless tagged to one Location. A Google profile counts as an Account.
+- **Live preview** (`components/PostPreview.tsx`): how the post looks on Instagram, TikTok, X, LinkedIn, Facebook or the Google Business Profile: where the text folds into "… more", hashtags, media crop, X's 280-character limit, the Google button.
+- **Accounts** (GLOSSARY): the Organization's profiles on each Platform; speaks for the whole Organization unless tagged to one Location. A Google Business Profile counts as an Account.
 
 ## How it connects
 

@@ -2,7 +2,7 @@
 
 The shared entities, as they exist in the mock today and what the real build plans for each. Feature-specific shapes live in each feature's `technical.md`. Terms follow [GLOSSARY.md](../GLOSSARY.md).
 
-There is **no database yet**. Today every entity is a TypeScript type with seed data in `ui-mock/src/data/*`, plus a module store in `ui-mock/src/lib/*` that keeps changes in `localStorage` or in memory. The "Real build" column comes from the comments in those files.
+There is **no database yet**. The planned tables are in [platform/backend/schema.md](platform/backend/schema.md); where they differ from the "Real build" column below, the schema doc wins. Today every entity is a TypeScript type with seed data in `ui-mock/src/data/*`, plus a module store in `ui-mock/src/lib/*` that keeps changes in `localStorage` or in memory. The "Real build" column comes from the comments in those files.
 
 ## Hierarchy
 
@@ -10,14 +10,11 @@ There is **no database yet**. Today every entity is a TypeScript type with seed 
 erDiagram
   PARTNER ||--o{ ORGANIZATION : "manages (Clients)"
   PARTNER ||--o| WHITELABEL : has
-  PARTNER ||--o{ STAFF : employs
   ORGANIZATION ||--o{ MEMBER : has
   ORGANIZATION ||--o{ ROLE : "custom roles"
   MEMBER }o--|| ROLE : has
-  STAFF }o--o{ ORGANIZATION : "assigned (role per Client)"
   ORGANIZATION ||--o{ LOCATION : has
   ORGANIZATION ||--o{ WEBSITE : owns
-  WEBSITE }o--o{ LOCATION : serves
   LOCATION ||--o| GOOGLE_PROFILE : has
   ORGANIZATION ||--o{ ACCOUNT : "posts from"
   ACCOUNT }o--o| LOCATION : "tagged to"
@@ -79,7 +76,7 @@ The literal persistence layer of the mock. Clearing site data resets all of it.
 | `gw-marko-pos` | components/Assistant.tsx | floating button position |
 | `gw-theme` | lib/theme.ts | dark mode |
 
-**In memory only** (reset on reload): Scope, setup (Locations, Websites, Google profiles, Accounts), tasks and their run state, runs, skills, social posts, swipe file, watched profiles, scanner state, articles.
+**In memory only** (reset on reload): Scope, setup (Locations, Websites, Google Business Profiles, Accounts), tasks and their run state, runs, skills, social posts, swipe file, watched profiles, scanner state, articles.
 
 ## Known gaps in the model
 

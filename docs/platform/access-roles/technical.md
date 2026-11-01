@@ -102,5 +102,5 @@ auth.api.hasPermission({ headers, body: { permissions: { reviews: ["post"] } } }
 ```
 
 - Tables (Better Auth organization plugin): `member`, `invitation`, `organizationRole` per Organization, with the `RoleSpec` stored beside each custom role so the editor can reopen it and roles **recompile when features are added**.
-- Partner staff: Better Auth member rows on each Client, kept in step by organization hooks (a new Client adds the Partner's Admins; assigning or unassigning a Member adds or removes the row).
+- Partner staff: no separate table. Each one is an ordinary member row on each Client they work on, with its own Role ([ADR 0011](../../decisions/0011-partner-is-an-organization-row.md)). The mock's `Staff` store goes away.
 - Every API route and background job checks `hasPermission`; the client checks stay for UI only.

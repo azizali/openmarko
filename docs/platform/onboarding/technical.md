@@ -15,7 +15,7 @@ Wizard state is component state. Launch writes to the in-memory `memberships` ar
 
 ## Real build
 
-- Discovery: crawl the website (On-Page API), find Google profiles (DataForSEO business info / Maps), find social links, read reviews, pull nearby searches for keyword suggestions.
+- Discovery: crawl the website (On-Page API), find Google Business Profiles (DataForSEO business info / Maps), find social links, read reviews, pull nearby searches for keyword suggestions.
 - OAuth to Google and Meta during step 4 creates Connections ([integrations](../integrations/)).
 - Brand voice draft from Claude ([brand-skills](../brand-skills/)).
 - Launch creates the Organization, Locations, Websites, Accounts, tracked keywords, competitors, watched profiles, scanner config and schedules, then starts the first runs.

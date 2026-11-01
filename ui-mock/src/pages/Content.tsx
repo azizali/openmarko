@@ -69,7 +69,7 @@ function ContentBody({ websiteId, domain }: { websiteId: string; domain: string 
     <>
       <PageHeader
         title="Articles"
-        sub={<>Every article on <ExternalUrl domain={domain} />, from idea to published, each aimed at a keyword you track. Google profile and social posts are in Posts & calendar.</>}
+        sub={<>Every article on <ExternalUrl domain={domain} />, from idea to published, each aimed at a keyword you track. Google Business Profile and social posts are in Posts & calendar.</>}
         actions={<Button variant="primary" icon={suggesting ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} disabled={suggesting} onClick={suggest}>Suggest ideas</Button>}
       />
       <ScopeBar kind="website" />
@@ -119,7 +119,7 @@ function ContentBody({ websiteId, domain }: { websiteId: string; domain: string 
           );
         })}
       </div>
-      <Link to="/social/posts" className="mt-4 inline-flex text-[12.5px] text-muted hover:text-fg">Google profile and social posts are in Posts & calendar →</Link>
+      <Link to="/social/posts" className="mt-4 inline-flex text-[12.5px] text-muted hover:text-fg">Google Business Profile and social posts are in Posts & calendar →</Link>
       {node}
     </>
   );

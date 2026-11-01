@@ -18,7 +18,7 @@ All four surfaces are complete in the mock. The task model unifies the old Actio
 
 1. Job scheduler and worker queue per Organization.
 2. Runs table and DataForSEO postbacks.
-3. Executors with revert payloads (Google profile, reviews, WordPress, citations, ads).
+3. Executors with revert payloads (Google Business Profile, reviews, WordPress, citations, ads).
 4. Autopilot check in front of every executor; activity log rows.
 5. Persist tasks per Organization; regenerate from new data after each run.
 6. Role checks on Apply (each task's feature action).
