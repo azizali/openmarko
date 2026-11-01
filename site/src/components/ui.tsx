@@ -15,7 +15,7 @@ export function Container({ children, className, rails = false }: { children: Re
 export function Section({ children, className, id, rails = true }: { children: ReactNode; className?: string; id?: string; rails?: boolean }) {
   return (
     <section id={id} className={cn("relative", className)}>
-      <Container rails={rails} className="py-20 sm:py-24">{children}</Container>
+      <Container rails={rails} className="py-16 sm:py-20">{children}</Container>
     </section>
   );
 }
@@ -34,24 +34,24 @@ export function Tag({ icon, children, tone = "ink" }: { icon?: ReactNode; childr
 /** Origami-style heading: an ink line and a muted second line. */
 export function Heading({ tag, title, muted, sub, center = false, as: H = "h2", size = "lg" }: { tag?: ReactNode; title: ReactNode; muted?: ReactNode; sub?: ReactNode; center?: boolean; as?: "h1" | "h2"; size?: "xl" | "lg" | "md" }) {
   return (
-    <div className={cn("flex flex-col gap-4", center && "items-center text-center")}>
+    <div className={cn("flex flex-col gap-3", center && "items-center text-center")}>
       {tag}
-      <H className={cn("font-serif font-normal leading-[1.05]",
-        size === "xl" ? "text-[44px] sm:text-[64px] lg:text-[76px]" : size === "lg" ? "text-[36px] sm:text-[48px]" : "text-[28px] sm:text-[36px]")}>
+      <H className={cn("font-display leading-[0.95]",
+        size === "xl" ? "text-[40px] sm:text-[52px] lg:text-[60px]" : size === "lg" ? "text-[32px] sm:text-[42px]" : "text-[26px] sm:text-[32px]")}>
         {title}
         {muted && <><br /><span className="text-muted">{muted}</span></>}
       </H>
-      {sub && <p className={cn("max-w-[60ch] text-[17px] text-muted", center && "mx-auto")}>{sub}</p>}
+      {sub && <p className={cn("mt-1 max-w-[58ch] text-[17px] leading-[1.6] text-fg/70 text-pretty", center && "mx-auto")}>{sub}</p>}
     </div>
   );
 }
 
-type BtnProps = { to?: string; href?: string; onClick?: () => void; children: ReactNode; variant?: "primary" | "secondary" | "ghost"; size?: "md" | "lg"; arrow?: boolean; className?: string; type?: "button" | "submit" };
+type BtnProps = { to?: string; href?: string; onClick?: () => void; children: ReactNode; variant?: "primary" | "secondary" | "ghost"; size?: "sm" | "md" | "lg"; arrow?: boolean; className?: string; type?: "button" | "submit" };
 
 export function Button({ to, href, onClick, children, variant = "primary", size = "md", arrow, className, type = "button" }: BtnProps) {
   const cls = cn(
     "group inline-flex items-center justify-center gap-2 rounded-lg font-medium whitespace-nowrap transition-colors duration-150",
-    size === "lg" ? "h-12 px-5 text-[16px]" : "h-10 px-4 text-[15px]",
+    size === "lg" ? "h-12 px-5 text-[16px]" : size === "sm" ? "h-8 px-3 text-[14px]" : "h-10 px-4 text-[15px]",
     variant === "primary" && "bg-ink text-on-ink shadow-card hover:opacity-85",
     variant === "secondary" && "border border-line bg-surface text-fg shadow-card hover:border-line-strong",
     variant === "ghost" && "text-fg hover:bg-hover",
@@ -76,7 +76,7 @@ export function CheckList({ items, className }: { items: string[]; className?: s
 /** Marks illustrative customer content while SAMPLE_CONTENT is on. */
 export function SampleBadge({ className }: { className?: string }) {
   if (!SAMPLE_CONTENT) return null;
-  return <span className={cn("inline-flex items-center rounded-full border border-dashed border-line-strong px-2 py-0.5 text-[11.5px] font-medium text-muted", className)} title="Illustrative example, not a real customer">Sample story</span>;
+  return <span className={cn("inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-dashed border-line-strong px-2 py-0.5 text-[11.5px] font-medium text-muted", className)} title="Illustrative example, not a real customer">Sample story</span>;
 }
 
 export function PixelBand({ className }: { className?: string }) {
@@ -89,7 +89,7 @@ export function StatStrip({ items }: { items: { value: string; label: ReactNode 
     <div className="grid border-y border-line sm:grid-cols-2 lg:grid-cols-4">
       {items.map((s, i) => (
         <div key={i} className={cn("flex flex-col gap-2 px-6 py-8", i > 0 && "border-t border-line sm:border-t-0", i % 2 === 1 && "sm:border-l", i >= 2 && "sm:border-t lg:border-t-0", i > 0 && "lg:border-l")}>
-          <span className="num font-serif text-[44px] leading-none">{s.value}</span>
+          <span className="num font-display text-[44px] leading-none">{s.value}</span>
           <span className="text-[15px] text-muted">{s.label}</span>
         </div>
       ))}

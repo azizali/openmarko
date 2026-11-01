@@ -2,6 +2,7 @@ import { useId, useState, type ReactNode } from "react";
 import { BarChart3, Check, Eye, ListChecks, MapPin, MessageSquare, RotateCcw, Sparkles, Star, Wrench, Globe, Phone, Mail, Flame } from "lucide-react";
 import { cn } from "./ui";
 import { LogoMark } from "./Logo";
+import { usePersona } from "./persona";
 
 // ---------- Geo-grid ----------
 
@@ -44,7 +45,7 @@ export function GeoGrid({ strength, size = 7, seed = 1, className, label }: { st
       <div className="absolute inset-[6%] grid" style={{ gridTemplateColumns: `repeat(${size}, 1fr)` }}>
         {ranks.map((r, i) => (
           <div key={i} className="grid place-items-center">
-            <span className="rise num grid aspect-square w-[78%] max-w-9 place-items-center rounded-full text-[clamp(8px,1.6vw,12px)] font-semibold text-white shadow-sm ring-2 ring-white/70 dark:ring-black/40"
+            <span className="rise num grid aspect-square w-[78%] max-w-9 place-items-center rounded-full text-[clamp(8px,1.6vw,12px)] font-semibold text-white shadow-sm transition-[background-color] duration-700 ring-2 ring-white/70 dark:ring-black/40"
               style={{ background: rankColor(r), animationDelay: `${(i % size + Math.floor(i / size)) * 35}ms` }}>
               {r > 20 ? "20+" : r}
             </span>
@@ -95,14 +96,14 @@ export function Sticker({ label, value, icon, className, tone = "accent" }: { la
 
 // ---------- Panels (shared by hero tabs, service pages and steps) ----------
 
-const competitors = [
-  { name: "Lone Star Plumbing", avg: 2.1 },
-  { name: "Capitol Drain Co.", avg: 3.4 },
-  { name: "Carter Plumbing & Drain", avg: 3.7, you: true },
-  { name: "Eastside Rooter", avg: 7.9 },
-];
-
 export function MapPanel({ strength = 0.7 }: { strength?: number }) {
+  const me = usePersona().p;
+  const competitors = [
+    { name: me.rivals[0].name, avg: 2.1 },
+    { name: me.rivals[1].name, avg: 3.4 },
+    { name: me.name, avg: 3.7, you: true },
+    { name: me.rivals[2].name, avg: 7.9 },
+  ];
   const ranks = rankGrid(strength);
   const before = rankGrid(0.25);
   const top3 = ranks.filter((r) => r <= 3).length;
@@ -112,7 +113,7 @@ export function MapPanel({ strength = 0.7 }: { strength?: number }) {
     <div className="grid gap-5 p-5 md:grid-cols-[1.1fr_1fr]">
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2 text-[12.5px]">
-          <span className="rounded-full border border-line px-2.5 py-0.5 font-medium">plumber</span>
+          <span className="rounded-full border border-line px-2.5 py-0.5 font-medium">{me.trade.search}</span>
           <span className="text-muted">7×7 grid · 3 mi · scanned today</span>
         </div>
         <GeoGrid strength={strength} />
@@ -225,6 +226,7 @@ export function FixPanel() {
 }
 
 export function ReviewsPanel() {
+  const { review } = usePersona().p.trade;
   const [sent, setSent] = useState(false);
   return (
     <div className="flex flex-col gap-3 p-5">
@@ -236,11 +238,11 @@ export function ReviewsPanel() {
             <div className="flex items-center gap-0.5 text-warn" aria-label="5 stars">{Array.from({ length: 5 }, (_, i) => <Star key={i} size={12} fill="currentColor" />)}<span className="ml-1.5 text-[12px] text-muted">12 minutes ago</span></div>
           </div>
         </div>
-        <p className="mt-3 text-[14px]">Luis showed up within the hour on a Sunday and had our water heater working again by lunch. Fair price, cleaned up after himself.</p>
+        <p className="mt-3 text-[14px]">{review.text}</p>
       </div>
       <div className="ml-6 rounded-xl border border-accent/30 bg-accent-soft/40 p-4">
         <div className="mb-2 flex items-center gap-1.5 text-[12.5px] font-medium text-accent"><Sparkles size={13} /> Draft reply, in your voice</div>
-        <p className="text-[14px]">Thanks Jordan! A Sunday water-heater emergency is no fun, so we're glad Luis got you sorted before lunch. We'll pass your kind words on to him.</p>
+        <p className="text-[14px]">{review.reply}</p>
         <div className="mt-3 flex gap-2">
           <button onClick={() => setSent(true)} className={cn("h-8 rounded-md px-3 text-[13px] font-medium", sent ? "bg-good-soft text-good" : "bg-ink text-on-ink hover:opacity-85")}>{sent ? "Posted to Google" : "Approve & post"}</button>
           {!sent && <button className="h-8 rounded-md border border-line px-3 text-[13px] text-muted hover:bg-hover">Edit</button>}
@@ -308,9 +310,10 @@ const engines = [
 ];
 
 export function AiPanel() {
+  const me = usePersona().p;
   return (
     <div className="flex flex-col gap-3 p-5">
-      <div className="rounded-xl border border-line bg-sunken px-4 py-3 text-[14px]"><span className="text-muted">Asked:</span> “Who's the best emergency plumber near Hyde Park, Austin?”</div>
+      <div className="rounded-xl border border-line bg-sunken px-4 py-3 text-[14px]"><span className="text-muted">Asked:</span> “{me.trade.aiAsk} {me.near}?”</div>
       <ul className="divide-y divide-line rounded-xl border border-line">
         {engines.map((e) => (
           <li key={e.name} className="flex items-center gap-3 px-4 py-2.5 text-[13.5px]">
@@ -320,7 +323,7 @@ export function AiPanel() {
           </li>
         ))}
       </ul>
-      <div className="text-[12.5px] text-muted">Gemini cited instead: <span className="rounded border border-line px-1.5">yelp.com</span> <span className="rounded border border-line px-1.5">angi.com</span> <span className="rounded border border-line px-1.5">lonestarplumbing.com</span></div>
+      <div className="text-[12.5px] text-muted">Gemini cited instead: <span className="rounded border border-line px-1.5">yelp.com</span> <span className="rounded border border-line px-1.5">angi.com</span> <span className="rounded border border-line px-1.5">{me.rivals[0].domain}</span></div>
     </div>
   );
 }

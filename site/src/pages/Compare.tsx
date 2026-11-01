@@ -21,7 +21,7 @@ export function CompareIndex() {
           {competitors.map((c) => (
             <Link key={c.slug} to={`/compare/${c.slug}`} className="group flex flex-col gap-3 rounded-2xl border border-line bg-surface p-6 transition-shadow hover:shadow-float">
               <span className="font-mono text-[12px] tracking-wider text-muted uppercase">{c.kind}</span>
-              <span className="font-serif text-[28px] leading-tight">OpenMarko vs {c.name}</span>
+              <span className="font-display text-[28px] leading-tight">OpenMarko vs {c.name}</span>
               <span className="text-[15px] text-muted">{c.oneLine}</span>
               <span className="mt-auto inline-flex items-center gap-1 pt-3 text-[14px] font-medium">Read comparison <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" /></span>
             </Link>

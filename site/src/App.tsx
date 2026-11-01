@@ -13,7 +13,7 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Home />} />
-          <Route path="services" element={<Navigate to="/#how" replace />} />
+          <Route path="services" element={<Navigate to="/" replace />} />
           <Route path="services/:slug" element={<Service />} />
           <Route path="compare" element={<CompareIndex />} />
           <Route path="compare/:slug" element={<CompareDetail />} />

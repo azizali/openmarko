@@ -8,15 +8,19 @@ import { caseStudies, testimonials, type CaseStudy } from "../data/stories";
 import { capabilities, competitors, openmarko, AS_OF, type Cell } from "../data/competitors";
 import { services } from "../data/services";
 import { serviceIcons } from "./Layout";
+import { usePersona } from "./persona";
 
 // ---------- Free audit form (the lead magnet) ----------
 
 /** Two-step capture: business first, then where to send it. There's no backend yet, so it confirms locally. */
 export function AuditForm({ dark = false }: { dark?: boolean }) {
-  const [biz, setBiz] = useState("");
+  const { input } = usePersona();
+  const [biz, setBiz] = useState(input.name);
   const [email, setEmail] = useState("");
   const [step, setStep] = useState<"biz" | "email" | "done">("biz");
   const id = useId();
+  // A business entered to personalise the page carries straight into the audit.
+  useEffect(() => { if (input.name.trim()) setBiz(input.name.trim()); }, [input.name]);
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (step === "biz" && biz.trim()) setStep("email");
@@ -49,9 +53,6 @@ export function AuditForm({ dark = false }: { dark?: boolean }) {
         <button type="submit" className={cn("group inline-flex h-11 shrink-0 items-center gap-1.5 rounded-lg px-4 text-[15px] font-medium", dark ? "bg-white text-black" : "bg-ink text-on-ink", "hover:opacity-85")}>
           {step === "biz" ? <><span className="hidden sm:inline">Get my free audit</span><span className="sm:hidden">Audit me</span></> : "Send it"}<ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
         </button>
-      </div>
-      <div className={cn("mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1 text-[14px]", dark ? "text-white/70" : "text-muted")}>
-        {["Free, no card", "Month-to-month", "We do your first 5 fixes"].map((t) => <span key={t} className="inline-flex items-center gap-1.5"><Check size={14} />{t}</span>)}
       </div>
     </form>
   );
@@ -135,7 +136,7 @@ export function FeatureTrio() {
         <Link key={c.label} to={c.to} className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-surface transition-shadow hover:shadow-float">
           <div className="flex items-center justify-between border-b border-line px-5 py-3 font-mono text-[12px] tracking-wider uppercase">{c.label}<ArrowRight size={14} className="text-muted transition-transform group-hover:translate-x-0.5" /></div>
           <div className="grid-fine pointer-events-none max-h-[300px] overflow-hidden bg-sunken [mask-image:linear-gradient(black_75%,transparent)]" aria-hidden>{c.visual}</div>
-          <div className="flex flex-col gap-2 p-6"><h3 className="font-serif text-[24px] leading-tight">{c.title}</h3><p className="text-[15px] text-muted">{c.body}</p></div>
+          <div className="flex flex-col gap-2 p-6"><h3 className="font-display text-[24px] leading-tight">{c.title}</h3><p className="text-[15px] text-muted">{c.body}</p></div>
         </Link>
       ))}
     </div>
@@ -173,7 +174,7 @@ const money = (n: number) => n.toLocaleString("en-US", { style: "currency", curr
 function Slider({ id, label, value, min, max, step, onChange, format }: { id: string; label: string; value: number; min: number; max: number; step: number; onChange: (n: number) => void; format: (n: number) => string }) {
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-baseline justify-between gap-3"><label htmlFor={id} className="text-[15px]">{label}</label><span className="num font-serif text-[22px]">{format(value)}</span></div>
+      <div className="flex items-baseline justify-between gap-3"><label htmlFor={id} className="text-[15px]">{label}</label><span className="num font-display text-[22px]">{format(value)}</span></div>
       <input id={id} type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-[var(--accent)]" />
     </div>
   );
@@ -203,7 +204,7 @@ export function RoiCalculator() {
       <div className="grid-fine flex flex-col justify-center gap-6 border-t border-line bg-sunken p-6 sm:p-8 lg:border-t-0 lg:border-l">
         <div>
           <div className="text-[14px] text-muted">Extra revenue a year from reaching #3</div>
-          <div className="num font-serif text-[56px] leading-none sm:text-[72px]">{money(r.revenue)}</div>
+          <div className="num font-display text-[56px] leading-none sm:text-[72px]">{money(r.revenue)}</div>
         </div>
         <div className="grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-line bg-line">
           {[["Extra calls / yr", Math.round(r.leads).toLocaleString()], ["Extra jobs / yr", Math.round(r.jobs).toLocaleString()], ["Return on $99/mo", r.multiple >= 1 ? `${r.multiple.toFixed(r.multiple >= 10 ? 0 : 1)}×` : "<1×"]].map(([l, v]) => (
@@ -227,9 +228,9 @@ export function CaseStudyCard({ s }: { s: CaseStudy }) {
       </div>
       <div className="flex flex-1 flex-col gap-3 p-6">
         <div className="flex flex-wrap items-center gap-2 text-[13px] text-muted"><span className="font-medium text-fg">{s.business}</span>· {s.niche} · {s.city}<SampleBadge /></div>
-        <h3 className="font-serif text-[24px] leading-tight">{s.headline}</h3>
+        <h3 className="font-display text-[24px] leading-tight">{s.headline}</h3>
         <div className="mt-auto flex items-end justify-between gap-3 pt-3">
-          <div><div className="num font-serif text-[30px] leading-none">{s.metrics[0].value}</div><div className="text-[13px] text-muted">{s.metrics[0].label}</div></div>
+          <div><div className="num font-display text-[30px] leading-none">{s.metrics[0].value}</div><div className="text-[13px] text-muted">{s.metrics[0].label}</div></div>
           <span className="inline-flex items-center gap-1 text-[14px] font-medium">Read story <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" /></span>
         </div>
       </div>
@@ -244,10 +245,10 @@ export function CaseStudyGrid({ limit, exclude }: { limit?: number; exclude?: st
 
 // ---------- Testimonials ----------
 
-export function TestimonialWall() {
+export function TestimonialWall({ items = testimonials }: { items?: typeof testimonials }) {
   return (
     <div className="columns-1 gap-5 sm:columns-2 lg:columns-3">
-      {testimonials.map((t, i) => {
+      {items.map((t, i) => {
         const body = (
           <figure className={cn("mb-5 flex break-inside-avoid flex-col gap-4 rounded-2xl border p-6", i === 1 ? "border-ink bg-ink text-on-ink" : "border-line bg-surface")}>
             <Quote size={20} className={i === 1 ? "text-ring" : "text-accent"} />
@@ -255,6 +256,7 @@ export function TestimonialWall() {
             <figcaption className="flex items-center gap-3">
               <span className={cn("grid size-9 place-items-center rounded-full text-[13px] font-semibold", i === 1 ? "bg-white/10" : "bg-accent-soft text-accent")}>{t.name.split(" ").map((p) => p[0]).slice(-2).join("")}</span>
               <span className="text-[14px]"><span className="block font-medium">{t.name}</span><span className={i === 1 ? "opacity-70" : "text-muted"}>{t.role}, {t.business}</span></span>
+              <SampleBadge className="ml-auto" />
             </figcaption>
           </figure>
         );
@@ -316,7 +318,7 @@ export function OfferBlock() {
       <div className="relative grid gap-10 p-6 sm:p-10 lg:grid-cols-[1fr_1.1fr] lg:p-14">
         <div className="flex flex-col gap-5">
           <span className="tag inline-flex w-fit items-center gap-1.5 bg-[var(--ring)] py-1 pl-2.5 text-[13px] font-medium text-black"><ShieldCheck size={14} />{offer.name}</span>
-          <h2 className="font-serif text-[36px] leading-[1.05] sm:text-[48px]">{offer.headline}</h2>
+          <h2 className="font-display text-[36px] leading-[1.05] sm:text-[48px]">{offer.headline}</h2>
           <p className="max-w-[44ch] text-[17px] opacity-75">{offer.sub}</p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <Link to="/#audit" className="group inline-flex h-12 items-center gap-2 rounded-lg bg-white px-5 text-[16px] font-medium text-black hover:opacity-90">Claim my free audit <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" /></Link>
@@ -348,7 +350,7 @@ export function PricingCards() {
         <div key={p.id} className={cn("relative flex flex-col gap-5 rounded-2xl border bg-surface p-7", p.featured ? "border-ink shadow-float" : "border-line")}>
           {p.featured && <span className="absolute -top-3 left-7 rounded-full bg-ink px-3 py-1 text-[12px] font-medium text-on-ink">Most popular</span>}
           <div><div className="text-[18px] font-medium">{p.name}</div><div className="mt-1 text-[14.5px] text-muted">{p.for}</div></div>
-          <div className="flex items-baseline gap-1"><span className="num font-serif text-[52px] leading-none">${p.price}</span><span className="text-muted">{p.cadence}</span></div>
+          <div className="flex items-baseline gap-1"><span className="num font-display text-[52px] leading-none">${p.price}</span><span className="text-muted">{p.cadence}</span></div>
           <Button to={p.id === "agency-max" ? "/pricing#contact" : "/#audit"} variant={p.featured ? "primary" : "secondary"} arrow>{p.cta}</Button>
           <ul className="flex flex-col gap-2.5 border-t border-line pt-5">
             {p.features.map((f) => <li key={f} className="flex gap-2.5 text-[14.5px]"><Check size={17} className="mt-0.5 shrink-0 text-good" />{f}</li>)}

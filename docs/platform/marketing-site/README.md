@@ -11,9 +11,13 @@ code:
   - site/src/data/services.ts
   - site/src/data/competitors.ts
   - site/src/data/stories.ts
+  - site/src/data/antiAgency.ts
+  - site/src/data/persona.ts
+  - site/src/components/persona.tsx
+  - site/src/data/geo.ts
   - site/src/pages
 related: [home-reports]
-last_verified: 105911e
+last_verified: 533aaca
 ---
 
 # Marketing site
@@ -26,7 +30,7 @@ The public website in [site/](../../../site/): home, services, comparison pages,
 
 | Route | Page |
 |---|---|
-| `/` | Home (with `#how` services section) |
+| `/` | Home: the anti-agency pitch ("Fire your agency. Marko does the work."), owners only. A Google results mock for one keyword shows the sample business in the AI answer, the map pack and the organic results; in the story it sticks beside nine jobs (competitors, reviews, profile, site audit, local service pages, backlinks, AI, citations, calls) and fills in as each scrolls past. Proof section: before/after map packs, video and text testimonials (samples) |
 | `/services/:slug` | One service |
 | `/compare`, `/compare/:slug` | OpenMarko vs competitors |
 | `/customers`, `/customers/:slug` | Case studies |

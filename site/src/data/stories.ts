@@ -16,6 +16,8 @@ export type CaseStudy = {
   /** Map-pack rank for the main keyword, before and after. */
   rankBefore: number;
   rankAfter: number;
+  /** The three businesses in the map pack before. Fictional, for the before/after visual. */
+  rivals?: [string, string, string];
   /** Seeds for the before/after geo-grid visual (0 = weak, 1 = strong). */
   strengthBefore: number;
   strengthAfter: number;
@@ -39,6 +41,7 @@ export const caseStudies: CaseStudy[] = [
     keyword: "plumber",
     rankBefore: 9,
     rankAfter: 3,
+    rivals: ["Lone Star Plumbing", "Capitol Drain Co.", "Eastside Rooter"],
     strengthBefore: 0.25,
     strengthAfter: 0.72,
     metrics: [
@@ -67,6 +70,7 @@ export const caseStudies: CaseStudy[] = [
     keyword: "invisalign austin",
     rankBefore: 7,
     rankAfter: 2,
+    rivals: ["Bright Smiles Austin", "Lakeline Dental Group", "Congress Ave Dentistry"],
     strengthBefore: 0.35,
     strengthAfter: 0.8,
     metrics: [
@@ -95,6 +99,7 @@ export const caseStudies: CaseStudy[] = [
     keyword: "ac repair round rock",
     rankBefore: 6,
     rankAfter: 2,
+    rivals: ["Polar Air Round Rock", "Texan Comfort HVAC", "Hill Country Heating"],
     strengthBefore: 0.3,
     strengthAfter: 0.7,
     metrics: [
@@ -153,4 +158,16 @@ export const testimonials: Testimonial[] = [
   { text: "The alert told us exactly who'd passed us and why. We'd have found out in August, from the phone not ringing.", name: "Marcus Webb", role: "General manager", business: "Round Rock Air & Heat", story: "round-rock-air" },
   { text: "Every other tool gave me a score. This one gave me a list, and then did most of the list.", name: "Tom Alvarez", role: "Owner", business: "Alvarez Roofing" },
   { text: "Seeing what each scan actually cost was the moment I trusted it. No mystery credits.", name: "Sam Whitfield", role: "Freelance SEO", business: "Whitfield Local" },
+];
+
+/** SAMPLE CONTENT. Video testimonials are placeholders until real, consented videos exist. */
+export type VideoTestimonial = { name: string; role: string; business: string; story?: string; length: string; quote: string; transcript: string };
+
+export const videoTestimonials: VideoTestimonial[] = [
+  { name: "Dana Carter", role: "Owner", business: "Carter Plumbing & Drain", story: "carter-plumbing", length: "1:42", quote: "We paid an agency for two years and never saw a list of what they did.",
+    transcript: "We paid an agency for two years and never saw a list of what they did. With Marko I get a text, I tap approve, and I can see the map turn green. We're in the top three for plumber now." },
+  { name: "Dr. Priya Raman", role: "Practice owner", business: "Maple & Main Dental", story: "maple-main-dental", length: "2:05", quote: "Our reviews get answered the same day now, in our voice.",
+    transcript: "Our reviews get answered the same day now, in our voice. My office manager approves a few from her phone. And when I asked ChatGPT for an Invisalign dentist, it named us." },
+  { name: "Marcus Webb", role: "General manager", business: "Round Rock Air & Heat", story: "round-rock-air", length: "1:18", quote: "It told us who passed us and why, before the phone went quiet.",
+    transcript: "It told us exactly who passed us and why, before the phone went quiet. Marko drafted the pages and categories they had. Two weeks later we were back in the map pack." },
 ];

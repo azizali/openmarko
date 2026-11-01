@@ -34,10 +34,10 @@ export function Customers() {
           </div>
           <div className="flex flex-col gap-4 p-8">
             <div className="flex flex-wrap items-center gap-2 text-[14px] text-muted"><span className="font-medium text-fg">{first.business}</span>· {first.city}<SampleBadge /></div>
-            <h2 className="font-serif text-[36px] leading-tight">{first.headline}</h2>
+            <h2 className="font-display text-[36px] leading-tight">{first.headline}</h2>
             <p className="text-[16px] text-muted">{first.summary}</p>
             <div className="mt-auto grid grid-cols-3 gap-4 border-t border-line pt-5">
-              {first.metrics.map((m) => <div key={m.label}><div className="num font-serif text-[26px] leading-none">{m.value}</div><div className="mt-1 text-[12.5px] text-muted">{m.label}</div></div>)}
+              {first.metrics.map((m) => <div key={m.label}><div className="num font-display text-[26px] leading-none">{m.value}</div><div className="mt-1 text-[12.5px] text-muted">{m.label}</div></div>)}
             </div>
             <span className="inline-flex items-center gap-1 text-[15px] font-medium">Read the story <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" /></span>
           </div>
@@ -67,11 +67,11 @@ export function CaseStudyPage() {
         <Container rails className="relative flex flex-col gap-8 pt-16 pb-16 lg:pt-24">
           <Link to="/customers" className="text-[14px] text-muted hover:text-fg">← All stories</Link>
           <div className="flex flex-wrap items-center gap-2 text-[15px] text-muted"><span className="font-medium text-fg">{s.business}</span>· {s.niche} · {s.city}<SampleBadge /></div>
-          <h1 className="max-w-[20ch] font-serif text-[40px] leading-[1.05] font-normal sm:text-[60px]">{s.headline}</h1>
+          <h1 className="max-w-[20ch] font-display text-[40px] leading-[1.05] sm:text-[60px]">{s.headline}</h1>
           <div className="grid border-y border-line sm:grid-cols-3">
             {s.metrics.map((m, i) => (
               <div key={m.label} className={`px-6 py-7 ${i > 0 ? "border-t border-line sm:border-t-0 sm:border-l" : ""}`}>
-                <div className="num font-serif text-[44px] leading-none">{m.value}</div>
+                <div className="num font-display text-[44px] leading-none">{m.value}</div>
                 <div className="mt-2 text-[15px] text-muted">{m.label}</div>
               </div>
             ))}

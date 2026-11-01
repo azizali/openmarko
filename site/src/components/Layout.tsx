@@ -25,7 +25,7 @@ function Dropdown({ label, children, width = 560 }: { label: string; children: (
   return (
     <div ref={ref} className="relative" onMouseLeave={() => setOpen(false)}>
       <button onClick={() => setOpen((v) => !v)} onMouseEnter={() => setOpen(true)} aria-expanded={open}
-        className="inline-flex h-9 items-center gap-1 rounded-md px-3 text-[15px] text-muted hover:text-fg">
+        className="inline-flex h-8 items-center gap-1 rounded-md px-2.5 text-[14px] text-muted hover:text-fg">
         {label}<ChevronDown size={14} className={cn("transition-transform", open && "rotate-180")} />
       </button>
       {open && (
@@ -51,8 +51,8 @@ function ThemeSwitch() {
   const [dark, setDark] = useTheme();
   return (
     <button onClick={() => setDark(!dark)} aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} title={dark ? "Light mode" : "Dark mode"}
-      className="grid size-10 place-items-center rounded-md text-muted hover:bg-hover hover:text-fg">
-      {dark ? <Sun size={18} /> : <Moon size={18} />}
+      className="grid size-8 place-items-center rounded-md text-muted hover:bg-hover hover:text-fg">
+      {dark ? <Sun size={16} /> : <Moon size={16} />}
     </button>
   );
 }
@@ -61,11 +61,11 @@ function Header() {
   const [mobile, setMobile] = useState(false);
   const loc = useLocation();
   useEffect(() => setMobile(false), [loc.pathname]);
-  const navCls = ({ isActive }: { isActive: boolean }) => cn("inline-flex h-9 items-center rounded-md px-3 text-[15px]", isActive ? "text-fg" : "text-muted hover:text-fg");
+  const navCls = ({ isActive }: { isActive: boolean }) => cn("inline-flex h-8 items-center rounded-md px-2.5 text-[14px]", isActive ? "text-fg" : "text-muted hover:text-fg");
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-bg/85 backdrop-blur">
-      <Container className="flex h-16 items-center gap-2">
-        <Link to="/" aria-label="OpenMarko home" className="mr-4"><Logo size={24} /></Link>
+      <Container className="flex h-14 items-center gap-2">
+        <Link to="/" aria-label="OpenMarko home" className="mr-4 flex items-center"><Logo size={21} /></Link>
         <nav className="hidden items-center lg:flex" aria-label="Main">
           <Dropdown label="Product">
             {() => (
@@ -97,15 +97,15 @@ function Header() {
         </nav>
         <div className="ml-auto flex items-center gap-2">
           <ThemeSwitch />
-          <a href={APP_URL} className="hidden h-9 items-center px-3 text-[15px] text-muted hover:text-fg sm:inline-flex">Sign in</a>
-          <Button to="/#audit" className="hidden sm:inline-flex">Free audit</Button>
-          <button onClick={() => setMobile((v) => !v)} aria-expanded={mobile} aria-label={mobile ? "Close menu" : "Open menu"} className="grid size-10 place-items-center rounded-md hover:bg-hover lg:hidden">
-            {mobile ? <X size={20} /> : <Menu size={20} />}
+          <a href={APP_URL} className="hidden h-8 items-center px-2.5 text-[14px] text-muted hover:text-fg sm:inline-flex">Sign in</a>
+          <Button to="/#audit" size="sm" className="hidden sm:inline-flex">Free audit</Button>
+          <button onClick={() => setMobile((v) => !v)} aria-expanded={mobile} aria-label={mobile ? "Close menu" : "Open menu"} className="grid size-8 place-items-center rounded-md hover:bg-hover lg:hidden">
+            {mobile ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
       </Container>
       {mobile && (
-        <div className="rise max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-line bg-bg lg:hidden">
+        <div className="rise max-h-[calc(100dvh-3.5rem)] overflow-y-auto border-t border-line bg-bg lg:hidden">
           <Container className="flex flex-col gap-6 py-6">
             <div><div className="mb-2 font-mono text-[11px] tracking-wider text-subtle uppercase">Product</div>
               {services.map((s) => <Link key={s.slug} to={`/services/${s.slug}`} className="block py-2 text-[16px]">{s.name}</Link>)}</div>
@@ -124,14 +124,14 @@ function Footer() {
   const cols = [
     { title: "Product", links: services.map((s) => ({ to: `/services/${s.slug}`, label: s.name })) },
     { title: "Compare", links: competitors.map((c) => ({ to: `/compare/${c.slug}`, label: `vs ${c.name}` })) },
-    { title: "Company", links: [{ to: "/customers", label: "Customers" }, { to: "/pricing", label: "Pricing" }, { to: "/#audit", label: "Free audit" }] },
+    { title: "Company", links: [{ to: "/customers", label: "Customers" }, { to: "/pricing", label: "Pricing" }, { to: "/#audit", label: "Free audit" }, { to: "/services/agency-prospecting", label: "For agencies" }] },
   ];
   return (
     <footer className="border-t border-line">
       <Container rails className="grid gap-10 py-14 md:grid-cols-[1.4fr_repeat(3,1fr)]">
         <div className="flex flex-col gap-3">
           <Logo size={24} />
-          <p className="max-w-[32ch] text-[14px] text-muted">The local SEO platform that wins the client, then does the work.</p>
+          <p className="max-w-[32ch] text-[14px] text-muted">The anti-agency. Marko does your marketing, you approve it.</p>
         </div>
         {cols.map((c) => (
           <div key={c.title}>

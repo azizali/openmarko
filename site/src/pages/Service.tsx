@@ -39,7 +39,7 @@ export default function Service() {
           {s.benefits.map((b, i) => (
             <div key={b.title} className="flex flex-col gap-3 bg-surface p-7">
               <span className="num font-mono text-[13px] text-accent">{String(i + 1).padStart(2, "0")}</span>
-              <h2 className="font-serif text-[26px] leading-tight">{b.title}</h2>
+              <h2 className="font-display text-[26px] leading-tight">{b.title}</h2>
               <p className="text-[15.5px] text-muted">{b.body}</p>
             </div>
           ))}

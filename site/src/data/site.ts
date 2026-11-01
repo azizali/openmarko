@@ -108,3 +108,28 @@ export const faqs = [
   { q: "How fast will I see results?", a: "Profile fixes can move rankings within weeks, but it depends on your market. That's why the Map Pack Promise gives you 60 days: if your main keyword hasn't moved up, you get both months back." },
   { q: "Is there a contract?", a: "No. Every plan is month-to-month, and you can cancel any time from settings." },
 ];
+
+/**
+ * Traction shown under the hero. PLACEHOLDERS: OpenMarko has no customers yet, so these
+ * numbers are invented for the mock and the strip is labelled "Sample" while
+ * SAMPLE_CONTENT is true. Replace with live counts (or remove) before launch.
+ */
+export const traction = {
+  businesses: 1240,
+  joinedThisWeek: 38,
+  /** Free audits run in the last seven days. Placeholder until the audit runs on a backend. */
+  auditsLastWeek: 214,
+  /** Who's using it, by trade and town only. Sample businesses from the mock. */
+  recentJoins: [
+    { who: "A plumber in Austin, TX", ago: "4 min ago" },
+    { who: "A dental practice in Round Rock, TX", ago: "11 min ago" },
+    { who: "A roofer in San Marcos, TX", ago: "26 min ago" },
+    { who: "An HVAC company in Pflugerville, TX", ago: "38 min ago" },
+    { who: "A med spa in Cedar Park, TX", ago: "52 min ago" },
+  ],
+  /** Wordmarks for the "used by" row: sample businesses from the mock. */
+  usedBy: ["Carter Plumbing & Drain", "Maple & Main Dental", "Round Rock Air & Heat", "Alvarez Roofing", "Hill Country Vet", "Lakeline Med Spa"],
+};
+
+/** Latest product news for the freshness line under the hero. A real feature in the mock, not a claim. */
+export const latestNews = { label: "AI search checks now cover ChatGPT, Gemini, Perplexity and Google AI", to: "/services/ai-visibility", date: "Oct 2026" };
