@@ -22,6 +22,8 @@ The first six were written on 2026-10-31 to record decisions already made in the
 | [0014](0014-llms-are-integrations-with-a-platform-default.md) | LLMs are an integration; the platform provides a default | Accepted |
 | [0015](0015-build-decisions-for-the-backend.md) | Build decisions made while implementing the backend | Accepted |
 | [0016](0016-websites-connect-through-a-cms-contract.md) | Websites connect through a CMS contract, not a CMS | Accepted |
+| [0017](0017-one-backend-many-projects.md) | One backend serves many Projects in shared tables; users are not shared | Accepted |
+| [0018](0018-isolation-by-process-groups-and-cells.md) | Isolation comes from process groups, cells and bulkheads, not microservices | Accepted |
 
 ## Template
 

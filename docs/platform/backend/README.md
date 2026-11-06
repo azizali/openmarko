@@ -28,6 +28,7 @@ The API and worker that replace the mock's stores. API-first and headless: the a
 |---|---|
 | [technical.md](technical.md) | Stack, repo layout, module anatomy, config, how a request is checked |
 | [schema.md](schema.md) | Every baseline table, conventions, how it scales |
+| [projects-plan.md](projects-plan.md) | Plan for serving many Projects from one backend (planning, not built) |
 | [roadmap.md](roadmap.md) | Pieces, in order, and their state |
 
 ## Decisions

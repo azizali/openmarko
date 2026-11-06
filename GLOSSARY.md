@@ -4,6 +4,14 @@ OpenMarko is where a local business does all its marketing: search (local, AI an
 
 ## Structure
 
+**Project**:
+One application built on mkitup, the backend platform, such as OpenMarko. It decides which modules answer and holds its own sign-in, payment and email settings. Users are never shared between Projects. Platform-level; an Organization's Members never see it. Its servers call the platform with secret keys that Operators issue.
+_Avoid_: app, application, tenant
+
+**Operator**:
+A person who manages Projects in the mkitup console: their keys, modules, sign-in, Connections, limits and users. Not a Member of any Organization because of it. Platform-level; a Project's users never see Operators.
+_Avoid_: admin, developer, superuser
+
 **Organization**:
 The business or brand OpenMarko markets, and the top of everything else. Most have one Location, one Website and one Account per Platform; any of those can be many.
 _Avoid_: business, workspace, company, tenant
@@ -13,7 +21,7 @@ A person with access to an Organization, with a role in it. One person can be a 
 _Avoid_: user, seat
 
 **Partner**:
-An agency, consultant or reseller that manages Organizations for others and puts its own brand on the app for them. The only level above Organization. Each Organization belongs to at most one Partner and can transfer out, keeping its data.
+An agency, consultant or reseller that manages Organizations for others and puts its own brand on the app for them. The only level above Organization within a Project. Each Organization belongs to at most one Partner and can transfer out, keeping its data.
 _Avoid_: agency (in code and data), reseller, workspace, parent org
 
 **Role**:

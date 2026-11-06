@@ -40,7 +40,20 @@ Each piece ends with a review, and with this file, the module's docs and any ADR
 
 ### Phase 3: Assistant platform
 
-Not started. Pieces 18–23 as planned: assistant conversations, Skills, knowledge bases (retrieval, never training), tools that map to Actions, MCP servers, Autopilot and Undo across modules.
+Folded into phase 4, stage F (AI).
+
+### Phase 4: Many Projects
+
+Planning, not started. Decided in [0017](../../decisions/0017-one-backend-many-projects.md) and [0018](../../decisions/0018-isolation-by-process-groups-and-cells.md). The full plan, grouped by capability, with thirteen items still **to confirm**: [projects-plan.md](projects-plan.md).
+
+| Milestone | Pieces (capability.piece) | State |
+|---|---|---|
+| M0. Prove the auth approach | 3.1 Project-scoped Better Auth adapter, 3.4 signed session tokens (to confirm, not tested) | planned |
+| M1. OpenMarko runs as a Project | 11.1 layout · 1.1–1.4 module foundation · 2.1–2.3 Projects, keys, domains · 4.1 Project Connections · 3.2–3.4 users, Roles, tokens · 5.1–5.2 Plans and Stripe · 6.1 messaging · 2.7 templates · 8.1–8.2 console | planned |
+| M2. AI platform | 7.1–7.3 AI, knowledge, widget · 9.1 limits · 10.1–10.2 key per Project, export and import | planned |
+| M3. OpenChat launches | 11.3 public packages and starter · 2.4 webhooks · 2.5 Project settings API · 8.3 generated screens · 4.2 provider APIs · the OpenChat Project (`projects/openchat/`) | planned |
+| M4. Safe to grow | 9.2–9.3 process groups, tagging · 5.3 profit and loss · 10.4 sale readiness | planned |
+| M5. Packaged | 11.2 OpenMarko's SEO backend · 2.6 API docs · 9.4 row-level security · 10.3 cells when needed | planned |
 
 ## Scope decision (2026-11-01)
 
@@ -55,11 +68,24 @@ The owner accepted the stub-first scope: **Stripe completion is skipped, and eve
 
 ## Open questions
 
-- Plan limits and features: a Location limit with no Plan is unlimited, while a feature with no Plan is off. Keep, or make no-Plan match everywhere?
-- Whether Undo for review replies should delete the reply on Google. Today an empty reply stands in for "delete" and the live adapter doesn't implement delete.
+- Decided 2026-11-06: no "no Plan"; every Project has a default Plan (projects-plan.md, 5.1).
+- Decided 2026-11-06: Undo of a review reply deletes it on Google (OpenMarko; not built yet).
 
 ## Changelog
 
+- 2026-11-06: the second Project is named OpenChat (`openchat`).
+- 2026-11-06: grilling round 4: Plans per Project (console data from platform and Project Entitlement keys, seeded from `project.json`), Project limits cap Plans, widget build and abuse protection, explicit and custom model names, chat admin screens in `@platform/react`. ADR 0015 and 0010 amended for 0017.
+- 2026-11-06: grilling round 3: the `chat` Project defined (assistants, skills, prompts, tools, documents, identified visitors, inbox, Plans); build order now M0 auth, M1 OpenMarko, M2 AI platform, M3 `chat`, M4 safe to grow, M5 packaged.
+- 2026-11-06: grilling round 2: Kamal 2 replaces haloy; backups, Sentry, pg-boss workflow engine, workflows as JSON, `project.json` versus console ownership, Operator two-step sign-in. Second Project chosen: an embeddable AI chat widget product.
+- 2026-11-06: grilling round 1 decisions recorded in projects-plan.md (stacks, jobs, automation scope, tools, Partners module, feature catalogs, default Plan, versioning, Standard Webhooks, scopes, environments, CI, R2, observability, user deletion, limits). Both open backend questions answered.
+- 2026-11-06: hosting decided (VPS with haloy). Module ownership decided: Partners and whitelabel platform, Locations and Websites OpenMarko, automation generic, feature catalogs per Project.
+- 2026-11-06: repository layout planned: `platform/` and `projects/<slug>/`, each with `apps/` (`api`, `worker`, `web`, `site`) and `packages/`; the console is `platform/apps/web`. Projects are separate services with their own Docker image and database, using only four public platform packages.
+- 2026-11-06: phase 4 plan reviewed and regrouped by capability, built in milestones M0–M5. Added for launch speed, selling apps and no rework: `project_id` on every Project-owned table, module manifests, Project templates and domains, outgoing webhooks, a key per Project, tested export and import, profit and loss and sale readiness per Project. A secret key never acts as a user.
+- 2026-11-06: platform code is unbranded (`@platform/*`); one repository; provider connections are platform capabilities and a Project's own logic is a Project module (`projects/<slug>/`) or its own backend; Operators issue scoped secret keys per Project (A1).
+- 2026-11-06: the backend platform is named mkitup; OpenMarko is one Project on it. Operator added to the glossary. Console holds platform and Project settings (Plans screen added); a Project can change its own Stripe and sign-in keys (A5).
+- 2026-11-06: phase 4 planned in stages (Project foundation, users and auth, console, running safely, shared services, AI, packaging) in [projects-plan.md](projects-plan.md). The Better Auth adapter approach is marked to confirm. Phase 3 folded into phase 4.
+- 2026-11-05: decided the backend serves many Projects, with users per Project and isolation by process groups and cells (ADR 0017, 0018). Phase 4 planned. Glossary: Project added.
+- 2026-11-06: ADR 0017 changed from a schema per Project to shared tables keyed by `project_id`, with Better Auth scoped through its database adapter (Better Auth has no native multi-tenancy; issue #1248 closed as not planned).
 - 2026-11-01: every API operation has a title (82 of 82) in the docs, and the test suite fails if one is missing or a title repeats within its group.
 - 2026-11-01: API docs (/openapi) grouped: every route sits under a module tag (System, Identity, Organizations, Access, Features, Billing, Integrations, Automation, SEO) with a description. Better Auth routes are left out of the spec. Tested.
 - 2026-11-01: DataForSEO split into one client and a module per API (SERP, Labs, Backlinks, AI Optimization, On-Page), with typed outputs shared with the stubs and real per-call cost. Fixed: live organic results and keyword ideas leaked DataForSEO's shapes (rankings would have read nothing); task-level errors were missed. Credentials labelled API login and API password.

@@ -30,3 +30,7 @@ Writing the baseline and the SEO module against the real libraries showed detail
 - Typed client: each module exports its route factory. `packages/platform` `apiShape` lists them all, type-only, so Eden sees every route whatever `ENABLED_MODULES` says at runtime.
 - Custom Role permissions are recompiled from their saved spec on every check, so a new feature reaches existing roles.
 - The Partner-facing "agency member" model works as described in [0011](0011-partner-is-an-organization-row.md), with the transfer-out preview and per-person revoke.
+
+## Amendments
+
+- 2026-11-06, by [0017](0017-one-backend-many-projects.md): point 4 changes. Better Auth still creates its tables, but our migrations now add `project_id` to them and replace Better Auth's global unique constraints (email, sign-in account) with per-Project ones.

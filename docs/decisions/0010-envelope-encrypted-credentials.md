@@ -20,3 +20,7 @@ Connections hold secrets that act for customers: Google OAuth refresh tokens, pr
 - Rotating the master key re-wraps the small data keys, not every secret.
 - Moving to KMS changes how the master key is fetched, not the schema.
 - Connections can be listed and shown freely; credentials can't.
+
+## Amendments
+
+- 2026-11-06, by [0017](0017-one-backend-many-projects.md): one more layer. Each Project has its own key, wrapped by the master key, and its credentials' data keys are wrapped by the Project key. Moving or selling a Project hands over its key re-wrapped for the new owner, never the master key. Planned, not built (projects-plan.md, 10.1).
