@@ -8,5 +8,5 @@
 set -e
 docker run --rm --pull always \
   -e DATABASE_URL -e BETTER_AUTH_SECRET -e MASTER_KEY_V1 -e BETTER_AUTH_URL -e APP_URL \
-  "ghcr.io/your-github-user/your-app:${KAMAL_VERSION}" \
+  "ghcr.io/azizali/openmarko:${KAMAL_VERSION}" \
   sh -c "bun scripts/migrate.ts && bun scripts/bootstrap.ts"

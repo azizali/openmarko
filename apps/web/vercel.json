@@ -2,8 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "bun install --frozen-lockfile",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://api.example.com/api/:path*" },
-    { "source": "/widget/:path*", "destination": "https://api.example.com/widget/:path*" },
+    { "source": "/api/:path*", "destination": "https://api.openmarko.com/api/:path*" },
+    { "source": "/widget/:path*", "destination": "https://api.openmarko.com/widget/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

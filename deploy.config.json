@@ -1,0 +1,9 @@
+{
+  "repo": "azizali/openmarko",
+  "server": "2.24.69.111",
+  "sshUser": "root",
+  "apiDomain": "api.openmarko.com",
+  "appDomain": "app.openmarko.com",
+  "siteDomain": "www.openmarko.com",
+  "adminEmail": "aziz@openmarko.com"
+}

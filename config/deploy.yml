@@ -3,14 +3,14 @@
 # run before the new containers start (.kamal/hooks/pre-deploy).
 #
 # `bun run deploy:setup` fills in the values that differ per app, from deploy.config.json.
-service: app
-image: your-github-user/your-app
+service: openmarko
+image: azizali/openmarko
 
 servers:
   web:
-    hosts: [203.0.113.10]
+    hosts: [2.24.69.111]
   worker:
-    hosts: [203.0.113.10]
+    hosts: [2.24.69.111]
     cmd: bun apps/worker/src/index.ts
     options:
       # The image's healthcheck asks the API on :3000; the worker serves no HTTP, so Docker would call it unhealthy.
@@ -19,7 +19,7 @@ servers:
 # kamal-proxy takes ports 80 and 443 and gets a Let's Encrypt certificate for the host.
 proxy:
   ssl: true
-  host: api.example.com
+  host: api.openmarko.com
   app_port: 3000
   # Chat answers stream: the proxy passes bytes on as they come, and waits long enough for a model that's slow to
   # start. Requests stay buffered (uploads arrive whole).
@@ -36,7 +36,7 @@ proxy:
 
 registry:
   server: ghcr.io
-  username: your-github-user
+  username: azizali
   password:
     - KAMAL_REGISTRY_PASSWORD
 
@@ -47,11 +47,11 @@ builder:
 env:
   clear:
     NODE_ENV: production
-    BETTER_AUTH_URL: https://api.example.com
-    APP_URL: https://app.example.com
-    SITE_URL: https://www.example.com
+    BETTER_AUTH_URL: https://api.openmarko.com
+    APP_URL: https://app.openmarko.com
+    SITE_URL: https://www.openmarko.com
     PORT: "3000"
-    ADMIN_EMAILS: you@example.com
+    ADMIN_EMAILS: aziz@openmarko.com
   secret:
     - DATABASE_URL
     - BETTER_AUTH_SECRET
