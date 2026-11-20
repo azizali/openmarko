@@ -1,6 +1,8 @@
 # Author Todo
 - [x] Project setup locally
   - cXutjoKxbE0iJHpIuvW3l_Ws
+  - aziz@openmarko.com
+    z9n6P1IXQYRpn-Zky9l1QGYn
 - [x] logo import 
 - [x] design import from other repo
 - [ ] Deploy to cloud

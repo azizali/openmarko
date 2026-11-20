@@ -41,7 +41,7 @@ The rest of this page is what that command does, for doing a part by hand.
 
 From a laptop instead: export the same variables and run `kamal setup` (first time) or `kamal deploy`.
 
-The image's default command is the API; the `worker` role runs `bun apps/worker/src/index.ts`. Logs: `kamal app logs -r web` and `-r worker`.
+The image's default command is the API; the `worker` role runs `bun apps/worker/src/index.ts`. Logs: `kamal app logs -r api` and `-r worker`.
 
 ## Web app (Vercel)
 

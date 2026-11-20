@@ -7,7 +7,7 @@ service: openmarko
 image: azizali/openmarko
 
 servers:
-  web:
+  api:
     hosts: [2.24.69.111]
   worker:
     hosts: [2.24.69.111]
