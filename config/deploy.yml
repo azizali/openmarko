@@ -6,6 +6,9 @@
 service: openmarko
 image: azizali/openmarko
 
+# The role that gets the proxy and boots first; Kamal assumes it's called web.
+primary_role: api
+
 servers:
   api:
     hosts: [2.24.69.111]
