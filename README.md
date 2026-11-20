@@ -1,8 +1,8 @@
-# Todo
+# Author Todo
 - [x] Project setup locally
   - cXutjoKxbE0iJHpIuvW3l_Ws
 - [x] logo import 
-- [ ] design import from other repo
+- [x] design import from other repo
 - [ ] Deploy to cloud
 
 - [ ] Features

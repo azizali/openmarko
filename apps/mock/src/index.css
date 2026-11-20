@@ -1,0 +1,164 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --sidebar: #fcfcfc;
+  --hover: #f4f4f5;
+  --active: #ebebee;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --text: #09090b;
+  --muted: #71717a;
+  --subtle: #9a9aa3;
+  --ink: #09090b;
+  --on-ink: #fafafa;
+  --accent: #db2777;
+  --accent-soft: #fde3f1;
+  --ring: #fe7bcd;
+  --good: #15803d;
+  --good-soft: #ecfdf3;
+  --bad: #dc2626;
+  --bad-soft: #fef2f2;
+  --warn: #b45309;
+  --warn-soft: #fef6e4;
+  --info: #1d4ed8;
+  --info-soft: #eff4ff;
+  --grid-line: rgba(0, 0, 0, 0.045);
+  --glow: rgba(254, 123, 205, 0.1);
+  --sheen-a: #d23f92;
+  --sheen-b: #fe7bcd;
+  --sheen-c: #c7b4f3;
+  /* Sidebar tokens default to the page's. */
+  --sb-text: var(--text);
+  --sb-muted: var(--muted);
+  --sb-subtle: var(--subtle);
+  --sb-surface: var(--surface);
+  --sb-hover: var(--hover);
+  --sb-active: var(--active);
+  --sb-border: var(--border);
+  --sb-ink: var(--ink);
+  --sb-on-ink: var(--on-ink);
+  --map-land: #f1f1f3;
+  --map-road: #ffffff;
+  --map-water: #dde6ee;
+  --map-park: #e3ece0;
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #09090b;
+  --surface: #111113;
+  --sidebar: #0c0c0e;
+  --hover: #1c1c1f;
+  --active: #27272a;
+  --border: #232326;
+  --border-strong: #3f3f46;
+  --text: #fafafa;
+  --muted: #a1a1aa;
+  --subtle: #71717a;
+  --ink: #fafafa;
+  --on-ink: #09090b;
+  --accent: #fe7bcd;
+  --accent-soft: #3a1a2c;
+  --ring: #fe7bcd;
+  --good: #4ade80;
+  --good-soft: #13261a;
+  --bad: #f87171;
+  --bad-soft: #2c1517;
+  --warn: #fbbf24;
+  --warn-soft: #2a2112;
+  --info: #93b4fb;
+  --info-soft: #161f33;
+  --grid-line: rgba(255, 255, 255, 0.04);
+  --glow: rgba(254, 123, 205, 0.08);
+  --map-land: #18181b;
+  --map-road: #27272a;
+  --map-water: #172029;
+  --map-park: #18241b;
+  color-scheme: dark;
+}
+
+/* Re-points the page tokens at the sidebar palette for everything inside. */
+.sidebar-scope {
+  --text: var(--sb-text); --muted: var(--sb-muted); --subtle: var(--sb-subtle);
+  --surface: var(--sb-surface); --hover: var(--sb-hover); --active: var(--sb-active);
+  --border: var(--sb-border); --ink: var(--sb-ink); --on-ink: var(--sb-on-ink);
+  color: var(--text);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-sidebar: var(--sidebar);
+  --color-hover: var(--hover);
+  --color-active: var(--active);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-fg: var(--text);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-ink: var(--ink);
+  --color-on-ink: var(--on-ink);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --font-sans: "Roboto Flex", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Frank Ruhl Libre", ui-serif, Georgia, serif;
+  --shadow-float: 0 24px 64px -16px rgb(0 0 0 / 0.14), 0 4px 12px rgb(0 0 0 / 0.04);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.03);
+}
+
+html, body, #root { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, .font-serif { font-optical-sizing: auto; }
+.font-serif { letter-spacing: -0.015em; }
+.num { font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 4px; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+
+/* Faint 80px graph-paper grid over a soft brand glow, fading out down the page. */
+.grid-backdrop {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 0),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 0),
+    radial-gradient(ellipse 70% 90% at 30% 0%, var(--glow), transparent 70%);
+  background-size: 80px 80px, 80px 80px, 100% 100%;
+  mask-image: linear-gradient(black, transparent 520px);
+}
+/* Ink-to-brand sweep used to highlight a single word in a headline. */
+.ink-sheen {
+  background: linear-gradient(100deg, var(--text) 0%, var(--text) 60%, var(--sheen-a) 74%, var(--sheen-b) 86%, var(--sheen-c) 100%);
+  background-size: 200% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: sheen 1.6s cubic-bezier(.32,.72,0,1) 300ms both;
+}
+@keyframes sheen { from { background-position: 0% 0; } to { background-position: 100% 0; } }
+
+@keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes slide-in { from { transform: translateX(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+.anim-fade { animation: fade-in 220ms ease-out both; }
+.anim-slide { animation: slide-in 220ms cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+}

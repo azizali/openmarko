@@ -11,6 +11,7 @@ const all: Proc[] = [
   { name: "worker", cmd: ["bun", "--watch", "apps/worker/src/index.ts"] },
   { name: "web", cmd: ["bun", "run", "dev"], cwd: join(root, "apps/web") },
   { name: "site", cmd: ["bun", "run", "dev"], cwd: join(root, "apps/site") },
+  { name: "mock", cmd: ["bun", "run", "dev"], cwd: join(root, "apps/mock") },
 ];
 const wanted = process.argv.slice(2);
 const procs = wanted.length ? all.filter((p) => wanted.includes(p.name)) : all;
