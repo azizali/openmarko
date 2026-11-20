@@ -1,0 +1,15 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": ["src/index.css"],
+        "createdAt": "2026-11-08T18:31:03.743Z",
+        "reason": "existing ignore in root .impeccable/config.json (earlier user request to keep the ink-sheen headline sweep) doesn't match when the app is the project root; sanctioned in apps/web/DESIGN.md"
+      }
+    ]
+  }
+}

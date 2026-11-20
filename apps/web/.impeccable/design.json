@@ -1,0 +1,438 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-08T18:38:15.452Z",
+  "title": "Design System: App",
+  "extensions": {
+    "colorMeta": {
+      "drafting-ink": {
+        "role": "neutral",
+        "displayName": "Drafting Ink",
+        "canonical": "#09090b",
+        "tonalRamp": ["#0b0b0c", "#252527", "#424244", "#616164", "#828285", "#a5a5a8", "#c9c9cb", "#eeeeef"]
+      },
+      "on-ink": {
+        "role": "neutral",
+        "displayName": "On Ink",
+        "canonical": "#fafafa",
+        "tonalRamp": ["#0b0b0b", "#252525", "#424242", "#616161", "#828282", "#a5a5a5", "#c9c9c9", "#eeeeee"]
+      },
+      "highlighter-pink": {
+        "role": "primary",
+        "displayName": "Highlighter Pink",
+        "canonical": "#db2777",
+        "tonalRamp": ["#2d0008", "#660020", "#8f003c", "#b7005b", "#e12e7c", "#ff5a9e", "#ffa0c4", "#ffe3ed"]
+      },
+      "highlighter-tint": {
+        "role": "primary",
+        "displayName": "Highlighter Tint",
+        "canonical": "#fde3f1",
+        "tonalRamp": ["#11080d", "#311e29", "#4f3b46", "#705a66", "#927b87", "#b59daa", "#d4c4cd", "#f2edef"]
+      },
+      "focus-pink": {
+        "role": "primary",
+        "displayName": "Focus Pink",
+        "canonical": "#fe7bcd",
+        "tonalRamp": ["#240016", "#56003a", "#7c0059", "#a2237a", "#c94b9d", "#f16fc1", "#ffa9dd", "#ffe5f5"]
+      },
+      "graph-paper": {
+        "role": "neutral",
+        "displayName": "Graph Paper",
+        "canonical": "#fafafa",
+        "tonalRamp": ["#0b0b0b", "#252525", "#424242", "#616161", "#828282", "#a5a5a5", "#c9c9c9", "#eeeeee"]
+      },
+      "clean-sheet": {
+        "role": "neutral",
+        "displayName": "Clean Sheet",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#0b0b0b", "#252525", "#424242", "#616161", "#828282", "#a5a5a5", "#c9c9c9", "#eeeeee"]
+      },
+      "sidebar-sheet": {
+        "role": "neutral",
+        "displayName": "Sidebar Sheet",
+        "canonical": "#fcfcfc",
+        "tonalRamp": ["#0b0b0b", "#252525", "#424242", "#616161", "#828282", "#a5a5a5", "#c9c9c9", "#eeeeee"]
+      },
+      "hover-wash": {
+        "role": "neutral",
+        "displayName": "Hover Wash",
+        "canonical": "#f4f4f5",
+        "tonalRamp": ["#0b0b0b", "#252526", "#424243", "#616162", "#828283", "#a5a5a6", "#c9c9ca", "#eeeeee"]
+      },
+      "selected-wash": {
+        "role": "neutral",
+        "displayName": "Selected Wash",
+        "canonical": "#ebebee",
+        "tonalRamp": ["#0b0b0c", "#252527", "#424244", "#616163", "#828285", "#a4a5a7", "#c9c9cb", "#eeeeef"]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#e4e4e7",
+        "tonalRamp": ["#0b0b0c", "#252527", "#424244", "#616163", "#828285", "#a4a5a7", "#c9c9cb", "#eeeeef"]
+      },
+      "firm-line": {
+        "role": "neutral",
+        "displayName": "Firm Line",
+        "canonical": "#d4d4d8",
+        "tonalRamp": ["#0b0b0c", "#252528", "#414245", "#616164", "#828285", "#a4a5a8", "#c9c9cb", "#eeeeef"]
+      },
+      "pencil-gray": {
+        "role": "neutral",
+        "displayName": "Pencil Gray",
+        "canonical": "#5c5c66",
+        "tonalRamp": ["#0b0b0f", "#24242d", "#41414a", "#60606a", "#81818c", "#a4a4af", "#c8c8d0", "#eeeef0"]
+      },
+      "faint-pencil": {
+        "role": "neutral",
+        "displayName": "Faint Pencil",
+        "canonical": "#6d6d78",
+        "tonalRamp": ["#0b0b0f", "#24242d", "#41414b", "#60606b", "#81818c", "#a4a4b0", "#c8c8d0", "#eeeef1"]
+      },
+      "good": {
+        "role": "semantic",
+        "displayName": "Good",
+        "canonical": "#15803d",
+        "tonalRamp": ["#001300", "#003400", "#005411", "#007633", "#379954", "#5ebd76", "#9fdaaa", "#e2f4e5"]
+      },
+      "good-tint": {
+        "role": "semantic",
+        "displayName": "Good Tint",
+        "canonical": "#ecfdf3",
+        "tonalRamp": ["#070d09", "#1c2921", "#38463e", "#57655d", "#77877e", "#9aaaa0", "#c1ccc6", "#ecefed"]
+      },
+      "bad": {
+        "role": "semantic",
+        "displayName": "Bad",
+        "canonical": "#dc2626",
+        "tonalRamp": ["#2f0000", "#6b0000", "#940000", "#bd0000", "#e73430", "#ff5f54", "#ffa396", "#ffe4df"]
+      },
+      "bad-tint": {
+        "role": "semantic",
+        "displayName": "Bad Tint",
+        "canonical": "#fef2f2",
+        "tonalRamp": ["#0e0a0a", "#2b2323", "#493f3f", "#685e5e", "#8a7f7f", "#ada2a2", "#cfc7c7", "#f0eeee"]
+      },
+      "warn": {
+        "role": "semantic",
+        "displayName": "Warn",
+        "canonical": "#b45309",
+        "tonalRamp": ["#240000", "#550000", "#7a1b00", "#9f4000", "#c56323", "#ed864b", "#fdb792", "#ffe9de"]
+      },
+      "warn-tint": {
+        "role": "semantic",
+        "displayName": "Warn Tint",
+        "canonical": "#fef6e4",
+        "tonalRamp": ["#0e0b05", "#2a2417", "#484133", "#676151", "#898272", "#aca494", "#cec9bd", "#f0eeeb"]
+      },
+      "info": {
+        "role": "semantic",
+        "displayName": "Info",
+        "canonical": "#1d4ed8",
+        "tonalRamp": ["#020041", "#06008c", "#0326b2", "#1e50da", "#3d75ff", "#5e9bff", "#9ac7ff", "#e0efff"]
+      },
+      "info-tint": {
+        "role": "semantic",
+        "displayName": "Info Tint",
+        "canonical": "#eff4ff",
+        "tonalRamp": ["#090b0f", "#21252d", "#3e424b", "#5d616a", "#7e828c", "#a0a5af", "#c6c9d0", "#edeef1"]
+      },
+      "night-paper": {
+        "role": "neutral",
+        "displayName": "Night Paper",
+        "canonical": "#09090b",
+        "tonalRamp": ["#0b0b0c", "#252527", "#424244", "#616164", "#828285", "#a5a5a8", "#c9c9cb", "#eeeeef"]
+      },
+      "night-sheet": {
+        "role": "neutral",
+        "displayName": "Night Sheet",
+        "canonical": "#111113",
+        "tonalRamp": ["#0b0b0c", "#252527", "#424244", "#616163", "#828285", "#a5a5a7", "#c9c9cb", "#eeeeef"]
+      },
+      "night-sidebar": {
+        "role": "neutral",
+        "displayName": "Night Sidebar",
+        "canonical": "#0c0c0e",
+        "tonalRamp": ["#0b0b0c", "#252527", "#424244", "#616164", "#828285", "#a5a5a8", "#c9c9cb", "#eeeeef"]
+      },
+      "night-hover": {
+        "role": "neutral",
+        "displayName": "Night Hover",
+        "canonical": "#1c1c1f",
+        "tonalRamp": ["#0b0b0d", "#252528", "#424245", "#616164", "#828286", "#a4a4a8", "#c9c9cb", "#eeeeef"]
+      },
+      "night-selected": {
+        "role": "neutral",
+        "displayName": "Night Selected",
+        "canonical": "#27272a",
+        "tonalRamp": ["#0b0b0c", "#252528", "#424245", "#616164", "#828285", "#a4a5a8", "#c9c9cb", "#eeeeef"]
+      },
+      "night-hairline": {
+        "role": "neutral",
+        "displayName": "Night Hairline",
+        "canonical": "#232326",
+        "tonalRamp": ["#0b0b0d", "#252528", "#424245", "#616164", "#828286", "#a4a4a8", "#c9c9cb", "#eeeeef"]
+      },
+      "night-firm-line": {
+        "role": "neutral",
+        "displayName": "Night Firm Line",
+        "canonical": "#3f3f46",
+        "tonalRamp": ["#0b0b0e", "#24242b", "#414148", "#606068", "#818189", "#a4a4ac", "#c8c8ce", "#eeeef0"]
+      },
+      "night-ink": {
+        "role": "neutral",
+        "displayName": "Night Ink",
+        "canonical": "#fafafa",
+        "tonalRamp": ["#0b0b0b", "#252525", "#424242", "#616161", "#828282", "#a5a5a5", "#c9c9c9", "#eeeeee"]
+      },
+      "night-pencil": {
+        "role": "neutral",
+        "displayName": "Night Pencil",
+        "canonical": "#a1a1aa",
+        "tonalRamp": ["#0b0b0e", "#24242b", "#414149", "#606068", "#81818a", "#a4a4ad", "#c8c8cf", "#eeeef0"]
+      },
+      "night-faint-pencil": {
+        "role": "neutral",
+        "displayName": "Night Faint Pencil",
+        "canonical": "#8b8b95",
+        "tonalRamp": ["#0b0b0f", "#24242c", "#41414a", "#60606a", "#81818b", "#a4a4ae", "#c8c8cf", "#eeeef0"]
+      },
+      "night-highlighter": {
+        "role": "primary",
+        "displayName": "Night Highlighter",
+        "canonical": "#fe7bcd",
+        "tonalRamp": ["#240016", "#56003a", "#7c0059", "#a2237a", "#c94b9d", "#f16fc1", "#ffa9dd", "#ffe5f5"]
+      },
+      "night-highlighter-tint": {
+        "role": "primary",
+        "displayName": "Night Highlighter Tint",
+        "canonical": "#3a1a2c",
+        "tonalRamp": ["#15050e", "#38192a", "#583548", "#795468", "#9c7589", "#c197ac", "#dcc0ce", "#f5ecf0"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page titles only, one per page."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Panel titles and account screens."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Headline numbers in Stat tiles and plan prices."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card and list-section headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default text."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Buttons, fields and tables."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels and table headers."
+      },
+      "section-label": {
+        "displayName": "Section Label",
+        "purpose": "Groups in the Settings rail and menus, uppercase."
+      }
+    },
+    "shadows": [
+      {
+        "name": "sheet",
+        "value": "0 10px 28px -6px rgb(0 0 0 / 0.08), 0 2px 6px rgb(0 0 0 / 0.05)",
+        "purpose": "Cards and tables at rest."
+      },
+      {
+        "name": "sheet-dark",
+        "value": "0 0 0 1px var(--border), 0 10px 28px -6px rgb(0 0 0 / 0.45)",
+        "purpose": "The same surfaces in dark mode, with a ring for the edge."
+      },
+      {
+        "name": "float",
+        "value": "0 24px 64px -16px rgb(0 0 0 / 0.14), 0 4px 12px rgb(0 0 0 / 0.04)",
+        "purpose": "Side panels, menus, the command menu, toasts, the sign-in card."
+      },
+      {
+        "name": "control",
+        "value": "0 1px 2px rgb(0 0 0 / 0.03)",
+        "purpose": "Primary and secondary buttons, choice cards."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state",
+        "value": "150ms",
+        "purpose": "Hover, focus and press changes."
+      },
+      {
+        "name": "press",
+        "value": "scale(0.97)",
+        "purpose": "Buttons while pressed."
+      },
+      {
+        "name": "fade-in",
+        "value": "220ms ease-out, 4px rise",
+        "purpose": "Menus and the command menu."
+      },
+      {
+        "name": "slide-in",
+        "value": "220ms cubic-bezier(0.2, 0.8, 0.2, 1), 16px from the right",
+        "purpose": "The side panel."
+      },
+      {
+        "name": "scrim",
+        "value": "200ms ease-out",
+        "purpose": "The backdrop behind a dialog."
+      },
+      {
+        "name": "sheen",
+        "value": "1.6s cubic-bezier(0.32, 0.72, 0, 1), 300ms delay",
+        "purpose": "The ink-to-brand sweep on one headline word."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one decisive action in a view.",
+      "html": "<button class=\"ds-btn-primary\">Save changes</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border-radius:8px;font:500 13.5px 'Roboto Flex',system-ui,sans-serif;white-space:nowrap;cursor:pointer;transition:background-color .15s,border-color .15s,color .15s,opacity .15s,transform .15s;background:var(--ink);color:var(--on-ink);border:0;box-shadow:0 1px 2px rgb(0 0 0 / .03);}.ds-btn-primary:hover{opacity:.85;}.ds-btn-primary:active{transform:scale(.97);}.ds-btn-primary:focus-visible{outline:2px solid var(--ring);outline-offset:2px;}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "The default button, and Cancel beside a primary.",
+      "html": "<button class=\"ds-btn-secondary\">Cancel</button>",
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border-radius:8px;font:500 13.5px 'Roboto Flex',system-ui,sans-serif;white-space:nowrap;cursor:pointer;transition:background-color .15s,border-color .15s,color .15s,opacity .15s,transform .15s;background:var(--surface);color:var(--text);border:1px solid var(--border);box-shadow:0 1px 2px rgb(0 0 0 / .03);}.ds-btn-secondary:hover{background:var(--hover);border-color:var(--border-strong);}.ds-btn-secondary:active{transform:scale(.97);}.ds-btn-secondary:focus-visible{outline:2px solid var(--ring);outline-offset:2px;}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Row actions that stay quiet until hovered.",
+      "html": "<button class=\"ds-btn-ghost\">Remove</button>",
+      "css": ".ds-btn-ghost{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border-radius:8px;font:500 13.5px 'Roboto Flex',system-ui,sans-serif;white-space:nowrap;cursor:pointer;transition:background-color .15s,border-color .15s,color .15s,opacity .15s,transform .15s;background:transparent;color:var(--muted);border:0;}.ds-btn-ghost:hover{background:var(--hover);color:var(--text);}.ds-btn-ghost:active{transform:scale(.97);}.ds-btn-ghost:focus-visible{outline:2px solid var(--ring);outline-offset:2px;}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "The look of every text box and closed dropdown.",
+      "html": "<input class=\"ds-input\" placeholder=\"Business name\" />",
+      "css": ".ds-input{width:240px;height:36px;padding:0 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:400 13.5px 'Roboto Flex',system-ui,sans-serif;outline:0;transition:border-color .15s,box-shadow .15s;}.ds-input::placeholder{color:var(--subtle);}.ds-input:hover{border-color:var(--border-strong);}.ds-input:focus{border-color:var(--ring);box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 20%,transparent);}"
+    },
+    {
+      "name": "Navigation Row",
+      "kind": "nav",
+      "refersTo": "nav-row",
+      "description": "One row shared by the sidebar and the Settings and Admin rails.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-row\" href=\"#\">Knowledge</a><a class=\"ds-nav-row ds-current\" href=\"#\">Settings</a></nav>",
+      "css": ".ds-nav{display:flex;flex-direction:column;gap:1px;width:200px;}.ds-nav-row{display:flex;align-items:center;height:28px;padding:0 8px;border-radius:6px;font:400 13px 'Roboto Flex',system-ui,sans-serif;color:var(--muted);text-decoration:none;transition:background-color .15s,color .15s;}.ds-nav-row:hover{background:var(--hover);color:var(--text);}.ds-current{background:var(--active);color:var(--text);font-weight:500;}.ds-nav-row:focus-visible{outline:2px solid var(--ring);outline-offset:2px;}"
+    },
+    {
+      "name": "Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Small status pill; the accent tint is for rare emphasis.",
+      "html": "<span class=\"ds-badge\">Editor</span> <span class=\"ds-badge ds-accent\">Owner</span>",
+      "css": ".ds-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:9999px;font:500 12px/16px 'Roboto Flex',system-ui,sans-serif;background:var(--hover);color:var(--muted);}.ds-accent{background:var(--accent-soft);color:var(--accent);}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "A resting sheet: a soft shadow and no border.",
+      "html": "<div class=\"ds-card\"><h3>Your plan</h3><p>Partner, renews Dec 1.</p></div>",
+      "css": ".ds-card{width:280px;padding:20px;border-radius:12px;background:var(--surface);box-shadow:var(--card-shadow);font:400 13px/1.5 'Roboto Flex',system-ui,sans-serif;color:var(--muted);}.ds-card h3{margin:0 0 2px;font:500 14px/1.5 'Roboto Flex',system-ui,sans-serif;color:var(--text);}.ds-card p{margin:0;}"
+    },
+    {
+      "name": "Side Panel",
+      "kind": "custom",
+      "refersTo": "side-panel",
+      "description": "The single home for forms, with actions pinned at the bottom.",
+      "html": "<aside class=\"ds-panel\"><header><h2>Invite someone</h2></header><div class=\"ds-body\">Fields scroll here.</div><footer><button class=\"ds-cancel\">Done</button><button class=\"ds-send\">Send invitation</button></footer></aside>",
+      "css": ".ds-panel{display:flex;flex-direction:column;width:320px;height:300px;background:var(--surface);color:var(--text);border-left:1px solid var(--border);box-shadow:0 24px 64px -16px rgb(0 0 0 / .14),0 4px 12px rgb(0 0 0 / .04);font:400 13.5px 'Roboto Flex',system-ui,sans-serif;}.ds-panel header{padding:14px 24px;border-bottom:1px solid var(--border);}.ds-panel h2{margin:0;font:400 22px/1.25 'Frank Ruhl Libre',Georgia,serif;letter-spacing:-.015em;}.ds-body{flex:1;padding:20px 24px;color:var(--muted);}.ds-panel footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 24px;border-top:1px solid var(--border);}.ds-panel button{height:36px;padding:0 14px;border-radius:8px;font:500 13.5px 'Roboto Flex',system-ui,sans-serif;cursor:pointer;}.ds-cancel{background:var(--surface);color:var(--text);border:1px solid var(--border);}.ds-send{background:var(--ink);color:var(--on-ink);border:0;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Drafting Table",
+    "overview": "The interface disappears into the work. Pages are drawn in black ink on faint graph paper, with one serif title to say where you are. Color appears once per view, where it means something.\n\nThe app is an Operate surface: people come to finish a task, often between other jobs and sometimes on a phone. Density is compact and text is small but high in contrast, so a page holds a lot without feeling crowded. The serif appears only in titles and headline figures. Everything a person reads while working is in the sans.\n\nThis is also a boilerplate that forks and Partners re-skin, so the system's character lives in ink, line and spacing. The brand arrives through the accent tokens and the logo, and a page must still look finished when that accent is someone else's blue.\n\n- Near-monochrome ink and neutrals, with a single replaceable accent.\n- Serif titles over a compact sans working layer.\n- A faint graph-paper grid and brand glow that fade out down the page.\n- Cards rest on soft shadows, and hairlines divide what is inside them.\n- Every form opens in one side panel.",
+    "keyCharacteristics": [
+      "Near-monochrome ink and neutrals, with a single replaceable accent.",
+      "Serif titles over a compact sans working layer.",
+      "A faint graph-paper grid and brand glow that fade out down the page.",
+      "Cards rest on soft shadows, and hairlines divide what is inside them.",
+      "Every form opens in one side panel."
+    ],
+    "rules": [
+      {
+        "name": "The One Highlighter Rule",
+        "body": "The accent appears at most once or twice in a view, and only where it means something. Primary actions are ink, never accent, by default.",
+        "section": "colors"
+      },
+      {
+        "name": "The Replaceable Brand Rule",
+        "body": "Never hard-code the pink. Use the accent, tint and ring tokens, so a Partner's color reaches everything.",
+        "section": "colors"
+      },
+      {
+        "name": "The Serif Names, Sans Works Rule",
+        "body": "The serif is for page titles, panel titles and headline figures. Labels, buttons, table cells and card headings are always sans.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Any number that sits in a column or changes in place uses tabular numerals.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sheets Don't Stack Rule",
+        "body": "A card is never placed inside a card. Inside a sheet, divide with hairlines.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Border Or Shadow Rule",
+        "body": "A resting surface gets a shadow, a control gets a border. A choice card keeps its border because the border shows what's selected.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do open every form in the side panel, with its actions in the panel footer.",
+      "Do use ink for the primary action and keep the accent for rare emphasis.",
+      "Do use the Sheet shadow for resting surfaces, and hairlines for division inside them.",
+      "Do test every new screen with a non-pink accent and in dark mode.",
+      "Do keep text at Faint Pencil or darker, and draw focus with Focus Pink.",
+      "Do reuse the shared navigation row, fields and buttons rather than restyling them on a page.",
+      "Do keep the ink-to-brand sheen for a single word in a headline. It is the one sanctioned gradient on text."
+    ],
+    "donts": [
+      "Don't open a form in a centered dialog. Forms belong in the side panel.",
+      "Don't hard-code the pink or any brand color.",
+      "Don't put a border on a resting card, or a card inside a card.",
+      "Don't set labels, buttons, table cells or card headings in the serif.",
+      "Don't give a button the Sheet shadow.",
+      "Don't replace a native dropdown's open list with a custom menu.",
+      "Don't let the page grid or glow run behind working content."
+    ]
+  }
+}

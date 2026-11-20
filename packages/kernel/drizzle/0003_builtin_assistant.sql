@@ -1,0 +1,2 @@
+ALTER TABLE "ai"."assistants" ADD COLUMN "builtin" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "assistants_one_builtin" ON "ai"."assistants" USING btree ("organization_id") WHERE builtin;

@@ -1,0 +1,17 @@
+# Local services for `bun dev`. Start with `bun run db:up`.
+# Postgres matches the default TEST_DATABASE_URL and drizzle config (port 5433, password "dev").
+services:
+  postgres:
+    # Postgres 17 with pgvector 0.8.0, as on Neon (knowledge bases).
+    image: pgvector/pgvector:0.8.0-pg17
+    environment:
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: app
+    ports: ["5433:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+  mailpit:
+    # Catches every email sent in dev. Inbox at http://localhost:8025, SMTP on 1025.
+    image: axllent/mailpit:v1.27
+    ports: ["8025:8025", "1025:1025"]
+volumes:
+  pgdata:

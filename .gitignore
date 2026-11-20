@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.production
+dist/
+coverage/
+
+# Local Claude Code state (loops, local settings)
+.claude/*.local.*
+
+# Design hook caches
+**/.impeccable/hook.cache.json
+
+# TypeScript build caches
+*.tsbuildinfo

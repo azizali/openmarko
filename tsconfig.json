@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["bun"],
+    "lib": ["ESNext", "ES2023", "DOM", "DOM.Iterable"]
+  },
+  "include": ["apps/api", "apps/worker", "modules", "packages", "scripts", "tooling", "app.config.ts"],
+  "exclude": ["apps/web", "apps/site"]
+}

@@ -1,0 +1,12 @@
+#!/bin/sh
+# Migrations and the first-deploy data as a release step: the image about to go live runs them once, after it's pushed and before its
+# containers start. A failed migration stops the deploy, and the running version keeps serving.
+#
+# It runs here, on the machine deploying (CI), not on the server: `kamal app exec` reuses the env file the previous
+# boot left on the server (there is none on the first deploy) and runs once per role. Kamal hands this hook the
+# deploy's secrets and KAMAL_VERSION; the image name repeats config/deploy.yml's `registry.server/image`.
+set -e
+docker run --rm --pull always \
+  -e DATABASE_URL -e BETTER_AUTH_SECRET -e MASTER_KEY_V1 -e BETTER_AUTH_URL -e APP_URL \
+  "ghcr.io/your-github-user/your-app:${KAMAL_VERSION}" \
+  sh -c "bun scripts/migrate.ts && bun scripts/bootstrap.ts"

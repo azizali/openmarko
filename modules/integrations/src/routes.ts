@@ -1,0 +1,166 @@
+import { Elysia, t } from "elysia";
+import { ids, invalid, logActivity, type AppContext } from "@app/kernel";
+import { permissionsFor, providerOf, providers, requireAllowed, type ProviderId, type Resource } from "@app/shared";
+import { connect, disconnect, disconnectAppConnection, listAppConnections, listConnections, setAppConnectionMode } from "./service";
+import { receiveWebhook, WEBHOOK_SECRET_FIELD } from "./webhooks";
+import { splitFieldValues } from "./fields";
+
+const connectBody = t.Object({
+  providerId: t.String({ minLength: 1 }),
+  label: t.String({ minLength: 1, maxLength: 120 }),
+  externalId: t.Optional(t.String()),
+  // The provider's fields: secret ones are encrypted, the rest become settings (splitFieldValues).
+  values: t.Optional(t.Record(t.String(), t.String())),
+});
+
+const modeBody = t.Union([t.Literal("live"), t.Literal("stub")]);
+
+function knownProvider(id: string) {
+  const p = providerOf(id as ProviderId);
+  if (!p) throw invalid(`Unknown provider "${id}".`);
+  return p;
+}
+
+/** The catalog as the web app renders it: each provider with its fields, for the connect forms. */
+const catalog = (extraFields = false) =>
+  providers.map((p) => ({
+    id: p.id,
+    name: p.name,
+    vendor: p.vendor ?? null,
+    mark: p.mark,
+    color: p.color,
+    category: p.category,
+    blurb: p.blurb,
+    capabilities: p.capabilities,
+    fields: [...(p.fields ?? []), ...(extraFields ? [WEBHOOK_SECRET_FIELD] : [])],
+  }));
+
+/**
+ * Settings → Integrations: list, connect and disconnect. Connecting a provider needs every permission its
+ * capabilities ask for (ADR 0002).
+ */
+export function integrationRoutes(ctx: AppContext) {
+  const orgRoutes = new Elysia({ name: "integrations.connections" }).group("/api/v1/organizations/:orgId/connections", (g) =>
+    g
+      .use(ctx.orgGuard!)
+      .get("/providers", () => catalog(), {
+        detail: { summary: "What an organization can connect, with each provider's fields" },
+        params: ids(),
+      })
+      .get(
+        "/",
+        ({ caller }) => {
+          requireAllowed(caller, "setup", "view");
+          return listConnections(ctx, caller.orgId);
+        },
+        { detail: { summary: "List this organization's connections (no secrets)" }, params: ids() },
+      )
+      .post(
+        "/",
+        async ({ caller, body }) => {
+          const provider = knownProvider(body.providerId);
+          for (const [resource, action] of permissionsFor(provider)) requireAllowed(caller, resource as Resource, action);
+          const id = await connect(ctx, {
+            organizationId: caller.orgId,
+            providerId: provider.id,
+            target: { type: "organization", id: caller.orgId },
+            externalId: body.externalId ?? null,
+            label: body.label,
+            ...splitFieldValues(provider, body.values ?? {}),
+            // An Organization's own account is real: stub or live is the app admin's choice, for the app's accounts.
+            mode: "live",
+            createdBy: caller.userId,
+          });
+          return { id };
+        },
+        { detail: { summary: "Connect a provider" }, params: ids(), body: connectBody },
+      )
+      .delete(
+        "/:connectionId",
+        async ({ caller, params }) => {
+          requireAllowed(caller, "setup", "connect");
+          await disconnect(ctx, caller.orgId, params.connectionId, caller.userId);
+          return { ok: true };
+        },
+        { detail: { summary: "Disconnect a provider" }, params: ids("connectionId") },
+      ),
+  );
+
+  // The Admin area: the app's own accounts (its default model key, its email provider), used by every Organization
+  // without its own. Each may also hold the secret that signs the provider's webhooks to this app.
+  const adminRoutes = new Elysia({ name: "integrations.admin" }).group("/api/v1/admin/connections", (g) =>
+    g
+      .use(ctx.adminGuard!)
+      .get("/providers", () => catalog(true), {
+        detail: { summary: "What the app can connect as its own account, with each one's fields" },
+      })
+      .get("/", () => listAppConnections(ctx), { detail: { summary: "The app's own Connections (no secrets)" } })
+      .post(
+        "/",
+        async ({ admin, body }) => {
+          const provider = knownProvider(body.providerId);
+          const id = await connect(ctx, {
+            organizationId: null,
+            providerId: provider.id,
+            target: { type: "app", id: null },
+            label: body.label ?? provider.name,
+            ...splitFieldValues({ name: provider.name, fields: [...(provider.fields ?? []), WEBHOOK_SECRET_FIELD] }, body.values),
+            mode: body.mode,
+            createdBy: admin.userId,
+          });
+          return { id };
+        },
+        {
+          body: t.Object({
+            providerId: t.String({ minLength: 1 }),
+            label: t.Optional(t.String({ minLength: 1, maxLength: 120 })),
+            values: t.Record(t.String(), t.String()),
+            mode: t.Optional(modeBody),
+          }),
+          detail: { summary: "Connect the app's own account with a provider (replaces its earlier one for that provider)" },
+        },
+      )
+      .patch(
+        "/:connectionId",
+        async ({ admin, params, body }) => {
+          await setAppConnectionMode(ctx, params.connectionId, body.mode, admin.userId);
+          return { ok: true };
+        },
+        {
+          body: t.Object({ mode: modeBody }),
+          detail: { summary: "Switch one of the app's own accounts between live and stub" },
+          params: t.Object({ connectionId: t.String({ format: "uuid" }) }),
+        },
+      )
+      .delete(
+        "/:connectionId",
+        async ({ admin, params }) => {
+          await disconnectAppConnection(ctx, params.connectionId, admin.userId);
+          await ctx.db.transaction((tx) =>
+            logActivity(tx, {
+              actorType: "admin",
+              actorId: admin.userId,
+              action: "setup.connect",
+              resourceType: "connection",
+              resourceId: params.connectionId,
+              summary: "Disconnected one of the app's accounts",
+            }),
+          );
+          return { ok: true };
+        },
+        {
+          detail: { summary: "Disconnect one of the app's own accounts" },
+          params: t.Object({ connectionId: t.String({ format: "uuid" }) }),
+        },
+      ),
+  );
+
+  // Provider webhooks: authenticated by signature, not by a session.
+  const webhooks = new Elysia({ name: "integrations.webhooks" }).post(
+    "/api/v1/webhooks/:provider",
+    async ({ params, request }) => receiveWebhook(ctx, params.provider, await request.text(), request.headers.get("x-webhook-signature")),
+    { detail: { summary: "Receive a signed provider webhook" } },
+  );
+
+  return new Elysia({ name: "integrations.all" }).use(orgRoutes).use(adminRoutes).use(webhooks);
+}

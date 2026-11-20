@@ -1,0 +1,72 @@
+# The API and worker in production (how-to: docs/deploy.md). Kamal 2, run from the repository root: `kamal deploy`.
+# CI runs it on every green push to main (.github/workflows/ci.yml). One image, two roles on one server. Migrations
+# run before the new containers start (.kamal/hooks/pre-deploy).
+#
+# `bun run deploy:setup` fills in the values that differ per app, from deploy.config.json.
+service: app
+image: your-github-user/your-app
+
+servers:
+  web:
+    hosts: [203.0.113.10]
+  worker:
+    hosts: [203.0.113.10]
+    cmd: bun apps/worker/src/index.ts
+    options:
+      # The image's healthcheck asks the API on :3000; the worker serves no HTTP, so Docker would call it unhealthy.
+      no-healthcheck: true
+
+# kamal-proxy takes ports 80 and 443 and gets a Let's Encrypt certificate for the host.
+proxy:
+  ssl: true
+  host: api.example.com
+  app_port: 3000
+  # Chat answers stream: the proxy passes bytes on as they come, and waits long enough for a model that's slow to
+  # start. Requests stay buffered (uploads arrive whole).
+  response_timeout: 120
+  # X-Forwarded-For carries the visitor's address, which the widget's visitor check uses.
+  forward_headers: true
+  buffering:
+    requests: true
+    responses: false
+  healthcheck:
+    path: /health
+    interval: 2
+    timeout: 3
+
+registry:
+  server: ghcr.io
+  username: your-github-user
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+builder:
+  arch: amd64
+  dockerfile: Dockerfile
+
+env:
+  clear:
+    NODE_ENV: production
+    BETTER_AUTH_URL: https://api.example.com
+    APP_URL: https://app.example.com
+    SITE_URL: https://www.example.com
+    PORT: "3000"
+    ADMIN_EMAILS: you@example.com
+  secret:
+    - DATABASE_URL
+    - BETTER_AUTH_SECRET
+    - MASTER_KEY_V1
+    - GOOGLE_CLIENT_ID
+    - GOOGLE_CLIENT_SECRET
+    - STRIPE_SECRET_KEY
+    - STRIPE_WEBHOOK_SECRET
+    - TURNSTILE_SITE_KEY
+    - TURNSTILE_SECRET_KEY
+
+ssh:
+  user: root
+
+logging:
+  options:
+    max-size: 10m
+    max-file: "5"

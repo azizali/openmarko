@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "apps/web/src/index.css"
+        ],
+        "createdAt": "2026-11-08T10:07:16.997Z",
+        "reason": "user asked to keep OpenMarko's design as is; the ink-sheen headline sweep is part of it"
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "apps/site/src/index.css"
+        ],
+        "createdAt": "2026-11-08T10:22:19.050Z",
+        "reason": "user asked to keep OpenMarko's design as is; the ink-sheen headline sweep is part of it"
+      }
+    ]
+  }
+}

@@ -1,0 +1,66 @@
+# Every push runs the checks; a green push to main deploys the API and worker with Kamal (docs/deploy.md).
+# The web app and the site deploy from Vercel's own GitHub integration, not from here.
+name: ci
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      # Same server as docker-compose.dev.yml, so TEST_DATABASE_URL's default works unchanged.
+      postgres:
+        # With pgvector 0.8.0, as on Neon.
+        image: pgvector/pgvector:0.8.0-pg17
+        env:
+          POSTGRES_PASSWORD: dev
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 2s --health-timeout 3s --health-retries 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - run: bun install --frozen-lockfile
+      - run: bun run check
+
+  deploy:
+    needs: check
+    # Turn on once config/deploy.yml names your server and the secrets below exist.
+    if: github.ref == 'refs/heads/main' && vars.DEPLOY == 'true'
+    runs-on: ubuntu-latest
+    # One deploy at a time; a newer push waits rather than cancelling one halfway.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: write
+    env:
+      # CI's own token pushes the image, and the server pulls with it during the deploy.
+      KAMAL_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+      MASTER_KEY_V1: ${{ secrets.MASTER_KEY_V1 }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
+      TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+      - run: gem install kamal -v "~> 2.12" --no-document
+      - uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - uses: docker/setup-buildx-action@v3
+      # `setup` is `deploy` plus installing Docker where it's missing, so a new server needs no separate first run.
+      - name: Deploy
+        run: kamal setup

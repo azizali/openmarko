@@ -1,0 +1,3 @@
+[test]
+# Every module is on under `bun test`, whatever a fork's app.config.ts says.
+preload = ["./packages/testkit/src/all-modules.ts"]

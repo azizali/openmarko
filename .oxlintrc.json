@@ -1,0 +1,76 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "typescript",
+    "unicorn",
+    "import",
+    "oxc",
+    "react"
+  ],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn"
+  },
+  "rules": {
+    "no-await-in-loop": "off",
+    "react/react-in-jsx-scope": "off",
+    "react/set-state-in-effect": "off"
+  },
+  "ignorePatterns": [
+    "node_modules",
+    "**/dist",
+    "docs",
+    "**/drizzle/**"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "modules/**",
+        "packages/**",
+        "apps/api/**",
+        "apps/worker/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "**/apps/web/**",
+                  "**/apps/site/**"
+                ],
+                "message": "Server code never imports frontend code."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "apps/web/**",
+        "apps/site/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@app/*",
+                  "!@app/server",
+                  "!@app/shared",
+                  "!@app/chat-widget"
+                ],
+                "message": "The frontend reaches the API over HTTP. It imports only types from @app/server, and the pure @app/shared."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
