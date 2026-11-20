@@ -1,3 +1,17 @@
+# Todo
+- [x] Project setup locally
+  - cXutjoKxbE0iJHpIuvW3l_Ws
+- [ ] Deploy to cloud
+- [ ] logo import 
+- [ ] design import from other repo
+
+- [ ] Features
+- [ ] REA openseo
+- [ ] Local Rank Checking with competitors
+- [ ] Website Audit
+- [ ] Connect with My Profile
+- [ ] Actions on profiles (What should be the actions)
+- [ ] 
 # App boilerplate
 
 A fork-and-go starting point for a SaaS product: sign-in, Organizations and Roles, feature switches, settings, Plans and billing, email, integrations with encrypted credentials, AI models and assistants, knowledge bases, a chat widget, automation with Tasks and schedules, and Partners with whitelabel. Each optional part is a switch in one file.

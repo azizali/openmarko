@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { appConfig } from "../../app.config";
+import { appConfig } from "../../app.config.ts";
 
 // Each optional module becomes a build-time constant (__MODULE_BILLING__ and so on). Pages of a module that's off
 // sit behind `__MODULE_X__ && import(...)`, so the bundler drops them: a module that's off never reaches the bundle.

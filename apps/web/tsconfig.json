@@ -10,6 +10,7 @@
     "noUnusedLocals": true,
     "skipLibCheck": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "isolatedModules": true,
     // The typed client's route types come from the API's server code, which is written for Bun.
     "types": ["vite/client", "bun"]

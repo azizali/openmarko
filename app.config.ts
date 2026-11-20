@@ -4,9 +4,9 @@
 
 export const appConfig = {
   /** Shown in the app, emails and API docs. Partners' whitelabel brands replace it for their Clients. */
-  name: "Boilerplate",
+  name: "OpenMarko",
   /** A short id used in cookies and queue names: lowercase letters, digits, dashes. */
-  slug: "app",
+  slug: "openmarko",
 
   /**
    * Optional modules. Core modules (identity, organizations, access, features, settings, integrations, messaging)
