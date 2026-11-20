@@ -11,7 +11,15 @@
 // with credentials in a vault and the rest of each store's state on the feature.
 
 import { useMemo, useSyncExternalStore } from "react";
-import { capabilityOf, permissionsFor, providerOf, type Attach, type CapabilityId, type Provider, type ProviderId } from "../mock/integrations";
+import {
+  capabilityOf,
+  permissionsFor,
+  providerOf,
+  type Attach,
+  type CapabilityId,
+  type Provider,
+  type ProviderId,
+} from "../mock/integrations";
 import { locations } from "../mock/mock";
 import { shortLocation, websites } from "../mock/org";
 import { partner } from "../mock/partner";
@@ -26,35 +34,93 @@ import { product } from "./whitelabel";
 
 export type Target = { kind: Attach; id: string; label: string };
 export type Status = "ok" | "action" | "pending";
-export type Connection = { id: string; provider: ProviderId; target: Target; account: string; status: Status; note?: string; since?: number };
+export type Connection = {
+  id: string;
+  provider: ProviderId;
+  target: Target;
+  account: string;
+  status: Status;
+  note?: string;
+  since?: number;
+};
 
 const org: Target = { kind: "organization", id: "org", label: "Organization" };
-const partnerTarget = (): Target => (partner ? { kind: "partner", id: partner.id, label: partner.name } : { kind: "partner", id: "me", label: "You" });
+const partnerTarget = (): Target =>
+  partner ? { kind: "partner", id: partner.id, label: partner.name } : { kind: "partner", id: "me", label: "You" };
 export const locationTarget = (id: string): Target => ({ kind: "location", id, label: shortLocation(id) || id });
 export const websiteTarget = (id: string): Target => ({ kind: "website", id, label: websites.find((w) => w.id === id)?.domain ?? id });
 /** Every place a provider attaching to `kind` could go. */
 export const targetsOf = (kind: Attach): Target[] =>
-  kind === "location" ? locations.map((l) => locationTarget(l.id)) : kind === "website" ? websites.map((w) => websiteTarget(w.id)) : kind === "partner" ? [partnerTarget()] : [org];
+  kind === "location"
+    ? locations.map((l) => locationTarget(l.id))
+    : kind === "website"
+      ? websites.map((w) => websiteTarget(w.id))
+      : kind === "partner"
+        ? [partnerTarget()]
+        : [org];
 
 /** Managed providers are ours, so they carry the product name (whitelabel). */
-export const providerName = (x: Provider) => (x.id === "managed_email" ? `${product()} sending` : x.id === "managed_phone" ? `${product()} numbers` : x.name);
+export const providerName = (x: Provider) =>
+  x.id === "managed_email" ? `${product()} sending` : x.id === "managed_phone" ? `${product()} numbers` : x.name;
 
 // ---------- Own store: website tools, Slack, extra social accounts ----------
 
 type Extra = Omit<Connection, "status"> & { status?: Status };
 const KEY = "gw-integrations";
 const websiteTool: Record<string, ProviderId> = { "Search Console": "search_console", "Google Analytics 4": "ga4", WordPress: "wordpress" };
-const seed: Extra[] = websites.flatMap((w) => w.tools.filter((t) => t.connected).map((t) => ({ id: `${websiteTool[t.name]}:${w.id}`, provider: websiteTool[t.name], target: websiteTarget(w.id), account: t.detail })));
-let extras: Extra[] = (() => { try { return JSON.parse(localStorage.getItem(KEY) ?? "null") ?? seed; } catch { return seed; } })();
+const seed: Extra[] = websites.flatMap((w) =>
+  w.tools
+    .filter((t) => t.connected)
+    .map((t) => ({ id: `${websiteTool[t.name]}:${w.id}`, provider: websiteTool[t.name], target: websiteTarget(w.id), account: t.detail })),
+);
+let extras: Extra[] = (() => {
+  try {
+    return JSON.parse(localStorage.getItem(KEY) ?? "null") ?? seed;
+  } catch {
+    return seed;
+  }
+})();
 const listeners = new Set<() => void>();
-const setExtras = (next: Extra[]) => { extras = next; try { localStorage.setItem(KEY, JSON.stringify(next)); } catch {} listeners.forEach((l) => l()); };
-const useExtras = () => useSyncExternalStore((l) => { listeners.add(l); return () => { listeners.delete(l); }; }, () => extras, () => extras);
+const setExtras = (next: Extra[]) => {
+  extras = next;
+  try {
+    localStorage.setItem(KEY, JSON.stringify(next));
+  } catch {}
+  listeners.forEach((l) => l());
+};
+const useExtras = () =>
+  useSyncExternalStore(
+    (l) => {
+      listeners.add(l);
+      return () => {
+        listeners.delete(l);
+      };
+    },
+    () => extras,
+    () => extras,
+  );
 
 // ---------- Reading ----------
 
-const adProvider: Partial<Record<ToolId, ProviderId>> = { meta: "meta_ads", google: "google_ads", tiktok: "tiktok_ads", pixel: "meta_pixel" };
+const adProvider: Partial<Record<ToolId, ProviderId>> = {
+  meta: "meta_ads",
+  google: "google_ads",
+  tiktok: "tiktok_ads",
+  pixel: "meta_pixel",
+};
 const toolFor = (p: ProviderId) => (Object.entries(adProvider).find(([, v]) => v === p)?.[0] ?? p) as ToolId;
-const adProviders = new Set<ProviderId>(["meta_ads", "google_ads", "tiktok_ads", "meta_pixel", "gads_conv", "callrail", "booking", "creatomate", "canva", "foreplay"]);
+const adProviders = new Set<ProviderId>([
+  "meta_ads",
+  "google_ads",
+  "tiktok_ads",
+  "meta_pixel",
+  "gads_conv",
+  "callrail",
+  "booking",
+  "creatomate",
+  "canva",
+  "foreplay",
+]);
 
 export function useConnections(): Connection[] {
   const crm = useCrm();
@@ -65,13 +131,57 @@ export function useConnections(): Connection[] {
   return useMemo(() => {
     const out: Connection[] = [];
     const { email, sms } = crm.channels;
-    if (email.provider) out.push({ id: "email", provider: email.provider === "managed" ? "managed_email" : email.provider, target: org, account: email.fromAddress || email.domain, status: email.verified ? "ok" : "action", note: email.verified ? undefined : "Waiting for DNS" });
-    if (sms.provider) out.push({ id: "phone", provider: sms.provider === "managed" ? "managed_phone" : sms.provider, target: org, account: sms.numbers.length ? `${sms.numbers.length} number${sms.numbers.length === 1 ? "" : "s"}` : "No numbers yet", status: sms.campaign === "approved" ? "ok" : "pending", note: sms.campaign === "approved" ? undefined : "Carrier registration in progress" });
+    if (email.provider)
+      out.push({
+        id: "email",
+        provider: email.provider === "managed" ? "managed_email" : email.provider,
+        target: org,
+        account: email.fromAddress || email.domain,
+        status: email.verified ? "ok" : "action",
+        note: email.verified ? undefined : "Waiting for DNS",
+      });
+    if (sms.provider)
+      out.push({
+        id: "phone",
+        provider: sms.provider === "managed" ? "managed_phone" : sms.provider,
+        target: org,
+        account: sms.numbers.length ? `${sms.numbers.length} number${sms.numbers.length === 1 ? "" : "s"}` : "No numbers yet",
+        status: sms.campaign === "approved" ? "ok" : "pending",
+        note: sms.campaign === "approved" ? undefined : "Carrier registration in progress",
+      });
     const c = outreach.connection;
-    if (c) out.push({ id: "sequencer", provider: c.provider, target: partnerTarget(), account: c.workspace, status: "ok", since: c.connectedAt });
-    for (const [id, at] of Object.entries(ads.connected)) if (at) out.push({ id: `ads:${id}`, provider: adProvider[id as ToolId] ?? (id as ProviderId), target: org, account: toolOf(id as ToolId).account, status: "ok", since: at as number });
-    for (const l of locations) if (setup.googleBusinessProfile[l.id]) out.push({ id: `gbp:${l.id}`, provider: "gbp", target: locationTarget(l.id), account: l.address, status: "ok" });
-    for (const a of accounts) if (a.platform !== "google" && accountConnected(a.id, setup)) out.push({ id: `social:${a.id}`, provider: a.platform as ProviderId, target: org, account: a.handle, status: "ok", note: a.locationId ? `Speaks for ${shortLocation(a.locationId)}` : undefined });
+    if (c)
+      out.push({
+        id: "sequencer",
+        provider: c.provider,
+        target: partnerTarget(),
+        account: c.workspace,
+        status: "ok",
+        since: c.connectedAt,
+      });
+    for (const [id, at] of Object.entries(ads.connected))
+      if (at)
+        out.push({
+          id: `ads:${id}`,
+          provider: adProvider[id as ToolId] ?? (id as ProviderId),
+          target: org,
+          account: toolOf(id as ToolId).account,
+          status: "ok",
+          since: at as number,
+        });
+    for (const l of locations)
+      if (setup.googleBusinessProfile[l.id])
+        out.push({ id: `gbp:${l.id}`, provider: "gbp", target: locationTarget(l.id), account: l.address, status: "ok" });
+    for (const a of accounts)
+      if (a.platform !== "google" && accountConnected(a.id, setup))
+        out.push({
+          id: `social:${a.id}`,
+          provider: a.platform as ProviderId,
+          target: org,
+          account: a.handle,
+          status: "ok",
+          note: a.locationId ? `Speaks for ${shortLocation(a.locationId)}` : undefined,
+        });
     for (const x of own) if (x.target.kind !== "website" || setup.website[x.target.id]) out.push({ status: "ok", ...x });
     return out;
   }, [crm.channels, ads.connected, outreach.connection, setup, own]);
@@ -80,7 +190,9 @@ export function useConnections(): Connection[] {
 export const connectionsOf = (list: Connection[], p: ProviderId) => list.filter((c) => c.provider === p);
 /** What serves a capability, optionally at one place. */
 export const servingOf = (list: Connection[], cap: CapabilityId, target?: Target) =>
-  list.filter((c) => providerOf(c.provider).capabilities.includes(cap) && (!target || (c.target.kind === target.kind && c.target.id === target.id)));
+  list.filter(
+    (c) => providerOf(c.provider).capabilities.includes(cap) && (!target || (c.target.kind === target.kind && c.target.id === target.id)),
+  );
 
 /**
  * Connections that connecting `p` at `target` would replace: others serving a
@@ -88,7 +200,13 @@ export const servingOf = (list: Connection[], cap: CapabilityId, target?: Target
  */
 export function replaces(list: Connection[], p: Provider, target: Target) {
   const ones = p.capabilities.filter((c) => capabilityOf(c).max === "one");
-  return list.filter((c) => c.provider !== p.id && c.target.kind === target.kind && c.target.id === target.id && ones.some((cap) => providerOf(c.provider).capabilities.includes(cap)));
+  return list.filter(
+    (c) =>
+      c.provider !== p.id &&
+      c.target.kind === target.kind &&
+      c.target.id === target.id &&
+      ones.some((cap) => providerOf(c.provider).capabilities.includes(cap)),
+  );
 }
 
 /** Places `p` can still be connected: for "one per place" providers, the places that don't have it yet. */
@@ -108,7 +226,15 @@ export const missingPermission = (p: Provider) => permissionsFor(p).find(([r, a]
 /** How the app connects a provider: the setup flows that already exist, or the generic one. */
 export type Flow = "email" | "phone" | "sequencer" | "ad_tool" | "generic";
 export const flowOf = (p: Provider): Flow =>
-  p.category === "Email" ? "email" : p.category === "Texting & calls" ? "phone" : p.category === "Cold outreach" ? "sequencer" : adProviders.has(p.id) ? "ad_tool" : "generic";
+  p.category === "Email"
+    ? "email"
+    : p.category === "Texting & calls"
+      ? "phone"
+      : p.category === "Cold outreach"
+        ? "sequencer"
+        : adProviders.has(p.id)
+          ? "ad_tool"
+          : "generic";
 export const adToolOf = (p: ProviderId) => toolOf(toolFor(p));
 
 /** The generic flow's last step. Social and Google Business Profiles go to the stores features read. */
@@ -116,7 +242,12 @@ export function connectGeneric(p: Provider, target: Target, account: string) {
   if (p.id === "gbp") return setGoogleBusinessProfile(target.id, true);
   const existing = accounts.find((a) => a.platform === (p.id as SocialPlatform) && !a.connected);
   if (existing && p.category === "Social") return setAccount(existing.id, true);
-  setExtras([...extras.filter((x) => !(x.provider === p.id && x.target.id === target.id && p.capabilities.every((c) => capabilityOf(c).max === "one"))), { id: `${p.id}:${target.id}:${Date.now().toString(36)}`, provider: p.id, target, account, since: Date.now() }]);
+  setExtras([
+    ...extras.filter(
+      (x) => !(x.provider === p.id && x.target.id === target.id && p.capabilities.every((c) => capabilityOf(c).max === "one")),
+    ),
+    { id: `${p.id}:${target.id}:${Date.now().toString(36)}`, provider: p.id, target, account, since: Date.now() },
+  ]);
 }
 
 export function disconnectConnection(c: Connection) {
@@ -134,8 +265,21 @@ export function disconnectConnection(c: Connection) {
 type Open = { manage?: ProviderId; connect?: { provider: ProviderId; target?: Target } };
 let open: Open = {};
 const openListeners = new Set<() => void>();
-const setOpen = (o: Open) => { open = o; openListeners.forEach((l) => l()); };
-export const useOpenIntegration = () => useSyncExternalStore((l) => { openListeners.add(l); return () => { openListeners.delete(l); }; }, () => open, () => open);
+const setOpen = (o: Open) => {
+  open = o;
+  openListeners.forEach((l) => l());
+};
+export const useOpenIntegration = () =>
+  useSyncExternalStore(
+    (l) => {
+      openListeners.add(l);
+      return () => {
+        openListeners.delete(l);
+      };
+    },
+    () => open,
+    () => open,
+  );
 export const manageProvider = (id: ProviderId) => setOpen({ manage: id });
 export const connectProvider = (id: ProviderId, target?: Target) => setOpen({ connect: { provider: id, target } });
 export const closeIntegration = () => setOpen({});

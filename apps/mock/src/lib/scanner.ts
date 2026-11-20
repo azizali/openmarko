@@ -7,7 +7,12 @@ import { opportunities, platformOf, type PlatformId } from "../mock/scanner";
 import { trends, type TrendSourceId } from "../mock/social";
 
 export type Frequency = "hourly" | "6h" | "daily" | "weekly";
-export const frequencyLabels: Record<Frequency, string> = { hourly: "every hour", "6h": "every 6 hours", daily: "every morning", weekly: "every Monday" };
+export const frequencyLabels: Record<Frequency, string> = {
+  hourly: "every hour",
+  "6h": "every 6 hours",
+  daily: "every morning",
+  weekly: "every Monday",
+};
 
 export type ScanSource = { platform: PlatformId; enabled: boolean; connected: boolean; places: string[] };
 export type TermGroup = "Services" | "Your name" | "Competitors" | "Other";
@@ -34,16 +39,21 @@ type State = { config: Config; status: Record<string, OppStatus>; drafts: Record
 const initial: Config = {
   sources: [
     { platform: "reddit", enabled: true, connected: true, places: ["r/Austin", "r/askdentists", "r/SouthAustin"] },
-    { platform: "fbgroups", enabled: true, connected: true, places: ["South Austin Parents", "Austin Moms Network", "Travis Heights Neighbors"] },
+    {
+      platform: "fbgroups",
+      enabled: true,
+      connected: true,
+      places: ["South Austin Parents", "Austin Moms Network", "Travis Heights Neighbors"],
+    },
     { platform: "nextdoor", enabled: true, connected: true, places: ["Travis Heights", "Bouldin Creek", "Zilker", "Mueller"] },
     { platform: "x", enabled: true, connected: true, places: ["Within 10 miles of Austin"] },
     { platform: "quora", enabled: true, connected: true, places: ["Dentistry", "Orthodontics", "Oral health"] },
   ],
   terms: {
-    "Services": ["dentist austin", "emergency dentist", "invisalign", "kids dentist 78704", "teeth whitening"],
+    Services: ["dentist austin", "emergency dentist", "invisalign", "kids dentist 78704", "teeth whitening"],
     "Your name": ["Maple & Main Dental", "Dr. Patel dentist"],
-    "Competitors": ["Bright Smile Austin", "Congress Ave Dental"],
-    "Other": ["dentist that doesn't upsell"],
+    Competitors: ["Bright Smile Austin", "Congress Ave Dental"],
+    Other: ["dentist that doesn't upsell"],
   },
   frequency: "6h",
   maxAge: "3d",
@@ -61,16 +71,31 @@ const initial: Config = {
 
 let state: State = { config: initial, status: {}, drafts: {}, scannedAt: Date.now() - 2 * 3_600_000, scanning: false };
 const listeners = new Set<() => void>();
-const set = (patch: Partial<State>) => { state = { ...state, ...patch }; listeners.forEach((l) => l()); };
-export const useScanner = () => useSyncExternalStore((l) => { listeners.add(l); return () => { listeners.delete(l); }; }, () => state, () => state);
+const set = (patch: Partial<State>) => {
+  state = { ...state, ...patch };
+  listeners.forEach((l) => l());
+};
+export const useScanner = () =>
+  useSyncExternalStore(
+    (l) => {
+      listeners.add(l);
+      return () => {
+        listeners.delete(l);
+      };
+    },
+    () => state,
+    () => state,
+  );
 
 export const updateConfig = (patch: Partial<Config>) => set({ config: { ...state.config, ...patch } });
-export const updateTrending = (patch: Partial<Config["trending"]>) => set({ config: { ...state.config, trending: { ...state.config.trending, ...patch } } });
+export const updateTrending = (patch: Partial<Config["trending"]>) =>
+  set({ config: { ...state.config, trending: { ...state.config.trending, ...patch } } });
 export const updateSource = (platform: PlatformId, patch: Partial<ScanSource>) =>
   updateConfig({ sources: state.config.sources.map((s) => (s.platform === platform ? { ...s, ...patch } : s)) });
 export const addSource = (platform: PlatformId) =>
   updateConfig({ sources: [...state.config.sources, { platform, enabled: true, connected: !platformOf(platform).login, places: [] }] });
-export const removeSource = (platform: PlatformId) => updateConfig({ sources: state.config.sources.filter((s) => s.platform !== platform) });
+export const removeSource = (platform: PlatformId) =>
+  updateConfig({ sources: state.config.sources.filter((s) => s.platform !== platform) });
 
 /** Sources the scanner actually reads: added, on, and connected when the platform needs a login. */
 export const activeSources = (c = state.config) => c.sources.filter((s) => s.enabled && s.connected).map((s) => s.platform);

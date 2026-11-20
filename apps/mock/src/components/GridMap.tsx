@@ -1,23 +1,39 @@
 import type { GridPoint, GridScan } from "../mock/mock";
 import { cn } from "./ui";
 
-const rankFill = (r: number | null) =>
-  r === null ? "var(--subtle)" : r <= 3 ? "var(--good)" : r <= 10 ? "var(--warn)" : "var(--bad)";
+const rankFill = (r: number | null) => (r === null ? "var(--subtle)" : r <= 3 ? "var(--good)" : r <= 10 ? "var(--warn)" : "var(--bad)");
 
 /** Stylised map with a rank pin at each grid point. Real build: swap the SVG backdrop for Mapbox/MapLibre tiles. */
-export function GridMap({ scan, selected, onSelect, compact = false }: { scan: GridScan; selected?: GridPoint | null; onSelect?: (p: GridPoint) => void; compact?: boolean }) {
+export function GridMap({
+  scan,
+  selected,
+  onSelect,
+  compact = false,
+}: {
+  scan: GridScan;
+  selected?: GridPoint | null;
+  onSelect?: (p: GridPoint) => void;
+  compact?: boolean;
+}) {
   const n = scan.size;
   const pad = 8;
   const cell = (100 - pad * 2) / (n - 1);
   const c = (n - 1) / 2;
   return (
-    <div className={cn("relative aspect-square w-full overflow-hidden rounded-lg border border-line")} style={{ background: "var(--map-land)" }}>
+    <div
+      className={cn("relative aspect-square w-full overflow-hidden rounded-lg border border-line")}
+      style={{ background: "var(--map-land)" }}
+    >
       <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full" aria-hidden preserveAspectRatio="none">
         <path d="M-5 72 C 20 64, 34 80, 55 70 S 90 58, 105 66 L105 80 C 85 72, 70 86, 52 82 S 18 78, -5 86 Z" fill="var(--map-water)" />
         <rect x="58" y="14" width="18" height="14" rx="2" fill="var(--map-park)" />
         <rect x="12" y="40" width="12" height="16" rx="2" fill="var(--map-park)" />
-        {[18, 36, 54, 88].map((y) => <line key={y} x1="0" x2="100" y1={y} y2={y + 4} stroke="var(--map-road)" strokeWidth="1.4" />)}
-        {[22, 47, 70].map((x) => <line key={x} y1="0" y2="100" x1={x} x2={x - 6} stroke="var(--map-road)" strokeWidth="1.4" />)}
+        {[18, 36, 54, 88].map((y) => (
+          <line key={y} x1="0" x2="100" y1={y} y2={y + 4} stroke="var(--map-road)" strokeWidth="1.4" />
+        ))}
+        {[22, 47, 70].map((x) => (
+          <line key={x} y1="0" y2="100" x1={x} x2={x - 6} stroke="var(--map-road)" strokeWidth="1.4" />
+        ))}
         <line x1="0" y1="100" x2="100" y2="0" stroke="var(--map-road)" strokeWidth="2.4" />
       </svg>
       {scan.points.map((p) => {
@@ -49,21 +65,40 @@ export function GridMap({ scan, selected, onSelect, compact = false }: { scan: G
 export function GridLegend() {
   return (
     <div className="flex flex-wrap items-center gap-4 text-[12px] text-muted">
-      {[["1–3", "var(--good)"], ["4–10", "var(--warn)"], ["11–20", "var(--bad)"], ["20+", "var(--subtle)"]].map(([l, c]) => (
-        <span key={l} className="inline-flex items-center gap-1.5"><span className="size-2.5 rounded-full" style={{ background: c }} />{l}</span>
+      {[
+        ["1–3", "var(--good)"],
+        ["4–10", "var(--warn)"],
+        ["11–20", "var(--bad)"],
+        ["20+", "var(--subtle)"],
+      ].map(([l, c]) => (
+        <span key={l} className="inline-flex items-center gap-1.5">
+          <span className="size-2.5 rounded-full" style={{ background: c }} />
+          {l}
+        </span>
       ))}
     </div>
   );
 }
 
-const dotFill = (r: number | null) => (r === null ? "var(--border-strong)" : r <= 3 ? "var(--good)" : r <= 10 ? "var(--warn)" : "var(--bad)");
+const dotFill = (r: number | null) =>
+  r === null ? "var(--border-strong)" : r <= 3 ? "var(--good)" : r <= 10 ? "var(--warn)" : "var(--bad)";
 
 /** Thumbnail of a geo-grid so a table row shows its map pack at a glance. */
 export function GridThumb({ scan, gap = 7 }: { scan: GridScan; gap?: number }) {
-  const n = scan.size, pad = 4, size = pad * 2 + gap * (n - 1);
+  const n = scan.size,
+    pad = 4,
+    size = pad * 2 + gap * (n - 1);
   return (
-    <svg width={size} height={size} className="shrink-0 rounded bg-hover" role="img" aria-label={`Map pack grid: top 3 at ${scan.points.filter((p) => (p.rank ?? 99) <= 3).length} of ${n * n} points`}>
-      {scan.points.map((p) => <circle key={`${p.row}-${p.col}`} cx={pad + p.col * gap} cy={pad + p.row * gap} r={gap / 3} fill={dotFill(p.rank)} />)}
+    <svg
+      width={size}
+      height={size}
+      className="shrink-0 rounded bg-hover"
+      role="img"
+      aria-label={`Map pack grid: top 3 at ${scan.points.filter((p) => (p.rank ?? 99) <= 3).length} of ${n * n} points`}
+    >
+      {scan.points.map((p) => (
+        <circle key={`${p.row}-${p.col}`} cx={pad + p.col * gap} cy={pad + p.row * gap} r={gap / 3} fill={dotFill(p.rank)} />
+      ))}
     </svg>
   );
 }

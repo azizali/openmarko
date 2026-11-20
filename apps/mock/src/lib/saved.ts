@@ -23,8 +23,32 @@ export type Saved = {
 const KEY = "gw-saved-prospects";
 const hr = 3_600_000;
 const seed: Saved[] = [
-  { id: "s_seed1", kind: "search", query: specToQuery(defaultSpec), title: "plumber", where: "Austin, TX · 5 mi", noSite: false, found: 20, hot: 3, savedAt: Date.now() - 50 * hr, refreshedAt: Date.now() - 2 * hr, pinned: true },
-  { id: "s_seed2", kind: "search", query: specToQuery({ ...defaultSpec, q: "emergency dentist" }), title: "emergency dentist", where: "Austin, TX · 5 mi", noSite: false, found: 20, hot: 2, savedAt: Date.now() - 80 * hr, refreshedAt: Date.now() - 80 * hr, pinned: false },
+  {
+    id: "s_seed1",
+    kind: "search",
+    query: specToQuery(defaultSpec),
+    title: "plumber",
+    where: "Austin, TX · 5 mi",
+    noSite: false,
+    found: 20,
+    hot: 3,
+    savedAt: Date.now() - 50 * hr,
+    refreshedAt: Date.now() - 2 * hr,
+    pinned: true,
+  },
+  {
+    id: "s_seed2",
+    kind: "search",
+    query: specToQuery({ ...defaultSpec, q: "emergency dentist" }),
+    title: "emergency dentist",
+    where: "Austin, TX · 5 mi",
+    noSite: false,
+    found: 20,
+    hot: 2,
+    savedAt: Date.now() - 80 * hr,
+    refreshedAt: Date.now() - 80 * hr,
+    pinned: false,
+  },
 ];
 
 function load(): Saved[] {
@@ -39,21 +63,34 @@ let items: Saved[] = load();
 const listeners = new Set<() => void>();
 const set = (next: Saved[]) => {
   items = next;
-  try { localStorage.setItem(KEY, JSON.stringify(next)); } catch {}
+  try {
+    localStorage.setItem(KEY, JSON.stringify(next));
+  } catch {}
   listeners.forEach((l) => l());
 };
 
 export function useSaved() {
-  return useSyncExternalStore((l) => { listeners.add(l); return () => { listeners.delete(l); }; }, () => items, () => items);
+  return useSyncExternalStore(
+    (l) => {
+      listeners.add(l);
+      return () => {
+        listeners.delete(l);
+      };
+    },
+    () => items,
+    () => items,
+  );
 }
 
 /** Add or refresh an entry, matched on its query so the same search is never listed twice. */
 export function recordSaved(entry: Omit<Saved, "id" | "savedAt" | "refreshedAt" | "pinned">) {
   const now = Date.now();
   const hit = items.find((x) => x.query === entry.query);
-  set(hit
-    ? items.map((x) => (x === hit ? { ...x, ...entry, refreshedAt: now } : x))
-    : [{ ...entry, id: `s_${now}`, savedAt: now, refreshedAt: now, pinned: false }, ...items]);
+  set(
+    hit
+      ? items.map((x) => (x === hit ? { ...x, ...entry, refreshedAt: now } : x))
+      : [{ ...entry, id: `s_${now}`, savedAt: now, refreshedAt: now, pinned: false }, ...items],
+  );
 }
 
 export const togglePin = (id: string) => set(items.map((x) => (x.id === id ? { ...x, pinned: !x.pinned } : x)));

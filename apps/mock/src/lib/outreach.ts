@@ -9,7 +9,16 @@
 
 import { useSyncExternalStore } from "react";
 import { providers, starterCampaign, workspaceFor, type Campaign, type Inbox, type ProviderId } from "../mock/sequencers";
-import { defaultSpec, leadersOf, opportunity, searchMarket, specToQuery, type Market, type Opportunity, type Prospect } from "../mock/prospects";
+import {
+  defaultSpec,
+  leadersOf,
+  opportunity,
+  searchMarket,
+  specToQuery,
+  type Market,
+  type Opportunity,
+  type Prospect,
+} from "../mock/prospects";
 import { ensureShare, recordView, shareUrl } from "./shares";
 import { fmt } from "../components/ui";
 import { appHost } from "./whitelabel";
@@ -32,7 +41,14 @@ export type Lead = {
   unread: boolean;
   thread: Msg[];
 };
-export type Connection = { provider: ProviderId; workspace: string; keyLast4: string; connectedAt: number; inboxes: Inbox[]; campaigns: Campaign[] };
+export type Connection = {
+  provider: ProviderId;
+  workspace: string;
+  keyLast4: string;
+  connectedAt: number;
+  inboxes: Inbox[];
+  campaigns: Campaign[];
+};
 export type Rules = { defaultCampaign: string | null; review: boolean; verifiedOnly: boolean; alertOnAudit: boolean; bookingUrl: string };
 type State = { connection: Connection | null; rules: Rules; leads: Lead[] };
 
@@ -49,24 +65,43 @@ export const statusMeta: Record<LeadStatus, { label: string; tone: "neutral" | "
 
 const KEY = "gw-outreach";
 const hr = 3_600_000;
-const initial: State = { connection: null, rules: { defaultCampaign: null, review: true, verifiedOnly: true, alertOnAudit: true, bookingUrl: "cal.com/your-agency/15min" }, leads: [] };
+const initial: State = {
+  connection: null,
+  rules: { defaultCampaign: null, review: true, verifiedOnly: true, alertOnAudit: true, bookingUrl: "cal.com/your-agency/15min" },
+  leads: [],
+};
 const load = (): State => {
   try {
     const s: State = { ...initial, ...JSON.parse(localStorage.getItem(KEY) ?? "{}") };
     // Leads queued in an earlier visit went out while you were away.
     return { ...s, leads: s.leads.map((l) => (l.status === "queued" ? sendStep(l, s.connection, 1) : l)) };
-  } catch { return initial; }
+  } catch {
+    return initial;
+  }
 };
 let state: State = load();
 const listeners = new Set<() => void>();
 const set = (next: State) => {
   state = next;
-  try { localStorage.setItem(KEY, JSON.stringify(next)); } catch {}
+  try {
+    localStorage.setItem(KEY, JSON.stringify(next));
+  } catch {}
   listeners.forEach((l) => l());
 };
-const patchLead = (path: string, fn: (l: Lead) => Lead) => set({ ...state, leads: state.leads.map((l) => (l.auditPath === path ? fn(l) : l)) });
+const patchLead = (path: string, fn: (l: Lead) => Lead) =>
+  set({ ...state, leads: state.leads.map((l) => (l.auditPath === path ? fn(l) : l)) });
 
-export const useOutreach = () => useSyncExternalStore((l) => { listeners.add(l); return () => { listeners.delete(l); }; }, () => state, () => state);
+export const useOutreach = () =>
+  useSyncExternalStore(
+    (l) => {
+      listeners.add(l);
+      return () => {
+        listeners.delete(l);
+      };
+    },
+    () => state,
+    () => state,
+  );
 export const leadFor = (s: State, auditPath: string) => s.leads.find((l) => l.auditPath === auditPath);
 export const campaignOf = (s: State, id: string | null) => s.connection?.campaigns.find((c) => c.id === id) ?? null;
 export const providerName = (s: State) => (s.connection ? providers[s.connection.provider].name : "your sequencer");
@@ -77,7 +112,14 @@ export const render = (tpl: string, vars: Record<string, string>) => tpl.replace
 
 export function connect(provider: ProviderId, apiKey: string) {
   const ws = workspaceFor(provider);
-  const connection: Connection = { provider, workspace: ws.workspace, keyLast4: apiKey.slice(-4), connectedAt: Date.now(), inboxes: ws.inboxes, campaigns: ws.campaigns };
+  const connection: Connection = {
+    provider,
+    workspace: ws.workspace,
+    keyLast4: apiKey.slice(-4),
+    connectedAt: Date.now(),
+    inboxes: ws.inboxes,
+    campaigns: ws.campaigns,
+  };
   set({ ...state, connection, leads: state.leads.length ? state.leads : sampleLeads(connection) });
 }
 
@@ -87,7 +129,8 @@ export const disconnect = () => set({ ...state, connection: null, rules: { ...st
 export function createStarterCampaign() {
   if (!state.connection) return null;
   const c = state.connection.campaigns.find((x) => x.fromOpenMarko) ?? starterCampaign();
-  if (!state.connection.campaigns.includes(c)) set({ ...state, connection: { ...state.connection, campaigns: [c, ...state.connection.campaigns] } });
+  if (!state.connection.campaigns.includes(c))
+    set({ ...state, connection: { ...state.connection, campaigns: [c, ...state.connection.campaigns] } });
   return c;
 }
 
@@ -101,7 +144,11 @@ export function leadFrom(p: Prospect, o: Opportunity, m: Market, auditPath: stri
   if (!p.contact.email) return null;
   const owner = p.contact.owner?.name ?? null;
   return {
-    auditPath, prospectId: p.id, company: p.name, owner, email: p.contact.email,
+    auditPath,
+    prospectId: p.id,
+    company: p.name,
+    owner,
+    email: p.contact.email,
     vars: {
       first_name: owner?.split(" ")[0] ?? "there",
       company: p.name,
@@ -126,7 +173,13 @@ function sendStep(l: Lead, c: Connection | null, step: number, at = Date.now()):
   const s = (c?.campaigns.find((x) => x.id === l.campaignId)?.steps ?? starterCampaign().steps)[step - 1];
   if (!s) return l;
   const from = l.thread[0]?.inbox ?? inboxFor(c, l.company.length);
-  return { ...l, status: l.status === "queued" ? "sent" : l.status, step, lastAt: at, thread: [...l.thread, { from: "us", at, inbox: from, subject: render(s.subject, l.vars), body: render(s.body, l.vars), step }] };
+  return {
+    ...l,
+    status: l.status === "queued" ? "sent" : l.status,
+    step,
+    lastAt: at,
+    thread: [...l.thread, { from: "us", at, inbox: from, subject: render(s.subject, l.vars), body: render(s.body, l.vars), step }],
+  };
 }
 
 /** Add prospects to a campaign. Returns how many went in; ones already in a campaign are skipped. */
@@ -135,12 +188,25 @@ export function pushLeads(items: LeadInput[], campaignId: string) {
   if (!c) return 0;
   const fresh = items.filter((x) => !leadFor(state, x.auditPath));
   const now = Date.now();
-  const added: Lead[] = fresh.map((x) => ({ ...x, campaignId, campaignName: c.name, status: "queued", step: 0, addedAt: now, lastAt: now, unread: false, thread: [] }));
+  const added: Lead[] = fresh.map((x) => ({
+    ...x,
+    campaignId,
+    campaignName: c.name,
+    status: "queued",
+    step: 0,
+    addedAt: now,
+    lastAt: now,
+    unread: false,
+    thread: [],
+  }));
   set({ ...state, leads: [...added, ...state.leads] });
   // Stands in for the sequencer's "email sent" webhook.
   setTimeout(() => {
     const paths = new Set(added.map((l) => l.auditPath));
-    set({ ...state, leads: state.leads.map((l) => (paths.has(l.auditPath) && l.status === "queued" ? sendStep(l, state.connection, 1) : l)) });
+    set({
+      ...state,
+      leads: state.leads.map((l) => (paths.has(l.auditPath) && l.status === "queued" ? sendStep(l, state.connection, 1) : l)),
+    });
   }, 3000);
   return added.length;
 }
@@ -154,13 +220,22 @@ export function reply(path: string, body: string) {
   patchLead(path, (l) => {
     const last = l.thread[l.thread.length - 1];
     const subject = last ? (last.subject.startsWith("Re:") ? last.subject : `Re: ${last.subject}`) : l.company;
-    return { ...l, unread: false, lastAt: Date.now(), thread: [...l.thread, { from: "us", at: Date.now(), inbox: l.thread[0]?.inbox ?? "your inbox", subject, body }] };
+    return {
+      ...l,
+      unread: false,
+      lastAt: Date.now(),
+      thread: [...l.thread, { from: "us", at: Date.now(), inbox: l.thread[0]?.inbox ?? "your inbox", subject, body }],
+    };
   });
 }
 
 /** Marko's draft for the next reply, from what they said last. */
 export function suggestReply(l: Lead, rules: Rules) {
-  const said = [...l.thread].reverse().find((m) => m.from === "them")?.body.toLowerCase() ?? "";
+  const said =
+    [...l.thread]
+      .reverse()
+      .find((m) => m.from === "them")
+      ?.body.toLowerCase() ?? "";
   const name = l.owner?.split(" ")[0] ?? "there";
   if (/cost|price|how much|pricing/.test(said))
     return `Hi ${name},\n\nGood question. It depends on how many locations and keywords you want covered, but most ${l.vars.keyword} businesses start on a monthly plan that pays for itself with one or two extra jobs.\n\nThe quickest way to give you a real number is a 15-minute walkthrough of the audit: ${rules.bookingUrl}\n\nWhat day works for you?`;
@@ -177,8 +252,21 @@ function sampleLeads(c: Connection): Lead[] {
   const picks = m.prospects.filter((p) => p.contact.email && p.contact.owner).slice(0, 5);
   const camp = c.campaigns.find((x) => x.usesAuditUrl) ?? c.campaigns[0];
   const replies: { status: LeadStatus; hoursAgo: number; them?: string; us?: string; step: number; views?: number }[] = [
-    { status: "replied", hoursAgo: 1, step: 1, views: 3, them: "Hi Alex,\n\nThis is interesting. We've been stuck around the middle of the map for a year and I didn't know {{top_competitor}} was that far ahead. What does something like this cost?\n\nThanks" },
-    { status: "booked", hoursAgo: 20, step: 1, views: 2, them: "Sure, I can do Thursday afternoon.", us: "Perfect. Booked you for Thursday at 2pm, invite's on its way. I'll walk you through the map and the first three fixes." },
+    {
+      status: "replied",
+      hoursAgo: 1,
+      step: 1,
+      views: 3,
+      them: "Hi Alex,\n\nThis is interesting. We've been stuck around the middle of the map for a year and I didn't know {{top_competitor}} was that far ahead. What does something like this cost?\n\nThanks",
+    },
+    {
+      status: "booked",
+      hoursAgo: 20,
+      step: 1,
+      views: 2,
+      them: "Sure, I can do Thursday afternoon.",
+      us: "Perfect. Booked you for Thursday at 2pm, invite's on its way. I'll walk you through the map and the first three fixes.",
+    },
     { status: "replied", hoursAgo: 5, step: 2, them: "Who is this? How did you get my email?" },
     { status: "not_interested", hoursAgo: 30, step: 1, them: "We already have a marketing company, thanks." },
     { status: "sent", hoursAgo: 52, step: 2, views: 2 },
@@ -189,12 +277,42 @@ function sampleLeads(c: Connection): Lead[] {
     const base = leadFrom(p, opportunity(p, m), m, path);
     if (!base || !r) return [];
     const start = Date.now() - (r.hoursAgo + 96) * hr;
-    let l: Lead = { ...base, campaignId: camp.id, campaignName: camp.name, status: "queued", step: 0, addedAt: start, lastAt: start, unread: false, thread: [] };
+    let l: Lead = {
+      ...base,
+      campaignId: camp.id,
+      campaignName: camp.name,
+      status: "queued",
+      step: 0,
+      addedAt: start,
+      lastAt: start,
+      unread: false,
+      thread: [],
+    };
     for (let s = 1; s <= r.step; s++) l = sendStep(l, c, s, start + (s - 1) * 72 * hr);
     const at = Date.now() - r.hoursAgo * hr;
-    if (r.them) l = { ...l, lastAt: at, unread: r.status === "replied", thread: [...l.thread, { from: "them", at, inbox: l.thread[0].inbox, subject: `Re: ${l.thread[0].subject}`, body: render(r.them, l.vars) }] };
-    if (r.us) l = { ...l, lastAt: at + hr, thread: [...l.thread, { from: "us", at: at + hr, inbox: l.thread[0].inbox, subject: `Re: ${l.thread[0].subject}`, body: r.us }] };
-    for (let v = 0; v < (r.views ?? 0); v++) recordView(ensureShare(path, p.name).token, { at: at - (v + 1) * 2 * hr, device: v % 2 ? "iPhone" : "Desktop", seconds: 70 + v * 55, sections: ["Map", "Competitors", "Quick fixes"].slice(0, v + 1) });
+    if (r.them)
+      l = {
+        ...l,
+        lastAt: at,
+        unread: r.status === "replied",
+        thread: [
+          ...l.thread,
+          { from: "them", at, inbox: l.thread[0].inbox, subject: `Re: ${l.thread[0].subject}`, body: render(r.them, l.vars) },
+        ],
+      };
+    if (r.us)
+      l = {
+        ...l,
+        lastAt: at + hr,
+        thread: [...l.thread, { from: "us", at: at + hr, inbox: l.thread[0].inbox, subject: `Re: ${l.thread[0].subject}`, body: r.us }],
+      };
+    for (let v = 0; v < (r.views ?? 0); v++)
+      recordView(ensureShare(path, p.name).token, {
+        at: at - (v + 1) * 2 * hr,
+        device: v % 2 ? "iPhone" : "Desktop",
+        seconds: 70 + v * 55,
+        sections: ["Map", "Competitors", "Quick fixes"].slice(0, v + 1),
+      });
     return [{ ...l, status: r.status }];
   });
 }

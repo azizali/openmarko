@@ -17,20 +17,46 @@ export type Share = {
 };
 
 const KEY = "gw-audit-shares";
-const load = (): Share[] => { try { return JSON.parse(localStorage.getItem(KEY) ?? "[]"); } catch { return []; } };
+const load = (): Share[] => {
+  try {
+    return JSON.parse(localStorage.getItem(KEY) ?? "[]");
+  } catch {
+    return [];
+  }
+};
 let items: Share[] = load();
 const listeners = new Set<() => void>();
 const set = (next: Share[]) => {
   items = next;
-  try { localStorage.setItem(KEY, JSON.stringify(next)); } catch {}
+  try {
+    localStorage.setItem(KEY, JSON.stringify(next));
+  } catch {}
   listeners.forEach((l) => l());
 };
 
-export const useShares = () => useSyncExternalStore((l) => { listeners.add(l); return () => { listeners.delete(l); }; }, () => items, () => items);
+export const useShares = () =>
+  useSyncExternalStore(
+    (l) => {
+      listeners.add(l);
+      return () => {
+        listeners.delete(l);
+      };
+    },
+    () => items,
+    () => items,
+  );
 
-const b64 = (s: string) => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const b64 = (s: string) =>
+  btoa(unescape(encodeURIComponent(s)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 export function pathFromToken(token: string) {
-  try { return decodeURIComponent(escape(atob(token.replace(/-/g, "+").replace(/_/g, "/")))); } catch { return null; }
+  try {
+    return decodeURIComponent(escape(atob(token.replace(/-/g, "+").replace(/_/g, "/"))));
+  } catch {
+    return null;
+  }
 }
 
 export const shareFor = (list: Share[], path: string) => list.find((s) => s.path === path);
@@ -54,4 +80,8 @@ export function recordView(token: string, view: View) {
 }
 
 export const updateLastView = (token: string, patch: Partial<View>) =>
-  set(items.map((x) => (x.token === token && x.views.length ? { ...x, views: [...x.views.slice(0, -1), { ...x.views[x.views.length - 1], ...patch }] } : x)));
+  set(
+    items.map((x) =>
+      x.token === token && x.views.length ? { ...x, views: [...x.views.slice(0, -1), { ...x.views[x.views.length - 1], ...patch }] } : x,
+    ),
+  );

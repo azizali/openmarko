@@ -39,18 +39,41 @@ export type Whitelabel = {
 
 const KEY = "gw-whitelabel";
 const initial: Whitelabel = {
-  on: true, name: "", assistant: "", logo: null, icon: null, accent: "#2563eb",
+  on: true,
+  name: "",
+  assistant: "",
+  logo: null,
+  icon: null,
+  accent: "#2563eb",
   domain: { host: "", status: "none" },
   email: { sender: partner?.name ?? "", address: "", verified: false },
   support: "",
 };
-let state: Whitelabel = (() => { try { return { ...initial, ...JSON.parse(localStorage.getItem(KEY) ?? "{}") }; } catch { return initial; } })();
+let state: Whitelabel = (() => {
+  try {
+    return { ...initial, ...JSON.parse(localStorage.getItem(KEY) ?? "{}") };
+  } catch {
+    return initial;
+  }
+})();
 const listeners = new Set<() => void>();
 
-export const useWhitelabel = () => useSyncExternalStore((l) => { listeners.add(l); return () => { listeners.delete(l); }; }, () => state, () => state);
+export const useWhitelabel = () =>
+  useSyncExternalStore(
+    (l) => {
+      listeners.add(l);
+      return () => {
+        listeners.delete(l);
+      };
+    },
+    () => state,
+    () => state,
+  );
 export function setWhitelabel(patch: Partial<Whitelabel>) {
   state = { ...state, ...patch };
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+  } catch {}
   applyBrand();
   listeners.forEach((l) => l());
 }
@@ -65,7 +88,15 @@ export const maker = () => (whitelabeled() ? partner!.name : OURS.name);
 export const appHost = () => (!whitelabeled() ? OURS.host : state.domain.status === "live" ? state.domain.host : fallbackHost(partner!));
 export const dnsZone = () => (whitelabeled() ? NEUTRAL_ZONE : OURS.dnsZone);
 /** Two-letter mark for places that show a provider badge (the managed email and texting options). */
-export const productMark = () => (whitelabeled() ? product().split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase() : "OM");
+export const productMark = () =>
+  whitelabeled()
+    ? product()
+        .split(/\s+/)
+        .map((w) => w[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "OM";
 export const brandLogo = () => (whitelabeled() ? state.logo : null);
 export const brandIcon = () => (whitelabeled() ? state.icon : null);
 export const brandAccent = () => (whitelabeled() ? state.accent : OURS.accent);
@@ -89,7 +120,7 @@ export function applyBrand() {
   if (link) {
     // No icon uploaded: a plain tile with the first letter, never our mark.
     const letter = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="${state.accent}"/><text x="16" y="22" font-family="system-ui,sans-serif" font-size="18" font-weight="600" fill="#fff" text-anchor="middle">${product().charAt(0).toUpperCase()}</text></svg>`)}`;
-    link.href = !whitelabeled() ? "/favicon.svg" : state.icon ?? letter;
+    link.href = !whitelabeled() ? "/favicon.svg" : (state.icon ?? letter);
     link.type = link.href.startsWith("data:image/svg") || link.href.endsWith(".svg") ? "image/svg+xml" : "";
   }
 }

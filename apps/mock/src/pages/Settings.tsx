@@ -1,10 +1,55 @@
 import { useEffect, useRef, useState } from "react";
 import { Navigate, NavLink, useParams } from "react-router";
 import {
-  Store, Globe, Check, AudioLines, Puzzle, MapPin, Plug, Zap, Users, History,
-  UserRound, Palette, Bell, Building2, Paintbrush, CreditCard, Sun, Moon, Monitor, Plus, Send, Copy, Webhook, AlertTriangle, ToggleRight, CalendarClock, MessageSquareText, Pencil, Phone, ShieldCheck, Trash2,
+  Store,
+  Globe,
+  Check,
+  AudioLines,
+  Puzzle,
+  MapPin,
+  Plug,
+  Zap,
+  Users,
+  History,
+  UserRound,
+  Palette,
+  Bell,
+  Building2,
+  Paintbrush,
+  CreditCard,
+  Sun,
+  Moon,
+  Monitor,
+  Plus,
+  Send,
+  Copy,
+  Webhook,
+  AlertTriangle,
+  ToggleRight,
+  CalendarClock,
+  MessageSquareText,
+  Pencil,
+  Phone,
+  ShieldCheck,
+  Trash2,
 } from "lucide-react";
-import { Badge, Button, Card, CardHeader, Checkbox, Field, FieldLabel, Input, Modal, PageHeader, Progress, Select, Toggle, cn, useToast } from "../components/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  CardHeader,
+  Checkbox,
+  Field,
+  FieldLabel,
+  Input,
+  Modal,
+  PageHeader,
+  Progress,
+  Select,
+  Toggle,
+  cn,
+  useToast,
+} from "../components/ui";
 import { locations, member, type Location } from "../mock/mock";
 import { accounts } from "../mock/social";
 import { PlatformMark } from "../components/Social";
@@ -52,8 +97,26 @@ export const businessSections: Section[] = [
   { id: "skills", label: `${assistant()} skills`, icon: Puzzle, page: Skills, needs: ["brand", "view"], edits: ["brand", "edit"] },
   { id: "locations", label: "Locations", icon: MapPin, page: Locations, needs: ["setup", "view"], edits: ["setup", "connect"] },
   { id: "websites", label: "Websites", icon: Globe, page: Websites, needs: ["setup", "view"], edits: ["setup", "connect"] },
-  { id: "messaging", label: "Email & texting", icon: MessageSquareText, page: Messaging, needs: ["email", "view"], edits: ["email", "connect"] },
-  ...(member.plan === "agency" ? [{ id: "outreach", label: "Outreach", icon: Send, page: Outreach, needs: ["outreach", "view"], edits: ["outreach", "connect"] } satisfies Section] : []),
+  {
+    id: "messaging",
+    label: "Email & texting",
+    icon: MessageSquareText,
+    page: Messaging,
+    needs: ["email", "view"],
+    edits: ["email", "connect"],
+  },
+  ...(member.plan === "agency"
+    ? [
+        {
+          id: "outreach",
+          label: "Outreach",
+          icon: Send,
+          page: Outreach,
+          needs: ["outreach", "view"],
+          edits: ["outreach", "connect"],
+        } satisfies Section,
+      ]
+    : []),
   // Connections are gated one by one, by what each powers (mock/integrations.ts).
   { id: "integrations", label: "Integrations", icon: Plug, page: Integrations },
   { id: "autopilot", label: "Autopilot", icon: Zap, page: Autopilot, needs: ["autopilot", "view"], edits: ["autopilot", "edit"] },
@@ -61,11 +124,14 @@ export const businessSections: Section[] = [
   { id: "team", label: "Team", icon: Users, page: Team },
   { id: "activity", label: "Activity", icon: History, page: Runs, needs: ["activity", "view"] },
 ];
-export const partnerSections: Section[] = partner?.role === "Admin" ? [
-  { id: "whitelabel", label: "Whitelabel", icon: Paintbrush, page: Whitelabel },
-  { id: "clients", label: "Clients", icon: Building2, page: Clients },
-  { id: "partner-team", label: "Partner team", icon: Users, page: PartnerTeam },
-] : [];
+export const partnerSections: Section[] =
+  partner?.role === "Admin"
+    ? [
+        { id: "whitelabel", label: "Whitelabel", icon: Paintbrush, page: Whitelabel },
+        { id: "clients", label: "Clients", icon: Building2, page: Clients },
+        { id: "partner-team", label: "Partner team", icon: Users, page: PartnerTeam },
+      ]
+    : [];
 export const accountSections: Section[] = [
   { id: "profile", label: "Profile", icon: UserRound, page: AccountProfile },
   { id: "appearance", label: "Appearance", icon: Palette, page: Appearance },
@@ -75,7 +141,10 @@ export const accountSections: Section[] = [
 
 const allowed = (x: Section) => (!partnerSections.includes(x) || !previewing()) && (!x.needs || can(...x.needs));
 /** For links to a section from elsewhere (the command palette). */
-export const sectionAllowed = (id: string) => { const x = [...businessSections, ...partnerSections, ...accountSections].find((s) => s.id === id); return !x || allowed(x); };
+export const sectionAllowed = (id: string) => {
+  const x = [...businessSections, ...partnerSections, ...accountSections].find((s) => s.id === id);
+  return !x || allowed(x);
+};
 
 function SubNav() {
   const { orgId } = useScope();
@@ -85,12 +154,28 @@ function SubNav() {
   const flags = useFeatures();
   useAccess();
   // Sections that belong to a turned-off feature (Ad accounts, Email & texting, Outreach), or that the role can't see, are hidden.
-  const visible = (items: Section[]) => items.filter((x) => { const o = settingsOwner(x.id); return (!o || isOn(o, flags)) && allowed(x); });
+  const visible = (items: Section[]) =>
+    items.filter((x) => {
+      const o = settingsOwner(x.id);
+      return (!o || isOn(o, flags)) && allowed(x);
+    });
   // On narrow screens the sections are a scrolling strip; keep the current one in view.
-  useEffect(() => { ref.current?.querySelector("[aria-current=page]")?.scrollIntoView({ block: "nearest", inline: "center" }); }, [section]);
+  useEffect(() => {
+    ref.current?.querySelector("[aria-current=page]")?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [section]);
   const link = (s: Section) => (
-    <NavLink key={s.id} to={`/settings/${s.id}`} className={({ isActive }) => cn("flex h-7 shrink-0 items-center gap-2 rounded-md px-2 text-[13px] whitespace-nowrap transition-colors", isActive ? "bg-active font-medium text-fg" : "text-muted hover:bg-hover hover:text-fg")}>
-      <s.icon size={14} strokeWidth={1.75} className="shrink-0" />{s.label}
+    <NavLink
+      key={s.id}
+      to={`/settings/${s.id}`}
+      className={({ isActive }) =>
+        cn(
+          "flex h-7 shrink-0 items-center gap-2 rounded-md px-2 text-[13px] whitespace-nowrap transition-colors",
+          isActive ? "bg-active font-medium text-fg" : "text-muted hover:bg-hover hover:text-fg",
+        )
+      }
+    >
+      <s.icon size={14} strokeWidth={1.75} className="shrink-0" />
+      {s.label}
     </NavLink>
   );
   const group = (title: string, hint: string, items: Section[]) => (
@@ -103,7 +188,11 @@ function SubNav() {
     </div>
   );
   return (
-    <nav ref={ref} aria-label="Settings" className="-mx-4 flex gap-4 overflow-x-auto border-b border-line px-4 pb-2 lg:sticky lg:top-6 lg:mx-0 lg:flex-col lg:gap-6 lg:self-start lg:overflow-visible lg:border-0 lg:p-0">
+    <nav
+      ref={ref}
+      aria-label="Settings"
+      className="-mx-4 flex gap-4 overflow-x-auto border-b border-line px-4 pb-2 lg:sticky lg:top-6 lg:mx-0 lg:flex-col lg:gap-6 lg:self-start lg:overflow-visible lg:border-0 lg:p-0"
+    >
       {group(current.name, `Organization settings, shared by everyone on ${current.name}`, visible(businessSections))}
       {partner && partnerSections.some(allowed) && (
         <>
@@ -137,7 +226,9 @@ export default function Settings() {
       <div className="min-w-0">
         {found.edits && !can(...found.edits) && <ViewOnly />}
         {/* Settings pages are forms, so view only disables the whole page at once. */}
-        <fieldset disabled={!!found.edits && !can(...found.edits)} className="contents"><Page /></fieldset>
+        <fieldset disabled={!!found.edits && !can(...found.edits)} className="contents">
+          <Page />
+        </fieldset>
       </div>
     </div>
   );
@@ -162,8 +253,25 @@ function Locations() {
   };
   return (
     <>
-      <PageHeader title="Locations" sub={`Places customers visit. Rankings, competitors and citations work from the address alone; connecting the Google Business Profile adds reviews, calls and posting. Every location shares ${organization.name}'s brand voice.`} actions={<Button size="sm" icon={<Plus size={13} />} onClick={() => setEditing("new")}>Add location</Button>} />
-      {editing && <LocationForm location={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSaved={(msg) => { setEditing(null); toast(msg); }} />}
+      <PageHeader
+        title="Locations"
+        sub={`Places customers visit. Rankings, competitors and citations work from the address alone; connecting the Google Business Profile adds reviews, calls and posting. Every location shares ${organization.name}'s brand voice.`}
+        actions={
+          <Button size="sm" icon={<Plus size={13} />} onClick={() => setEditing("new")}>
+            Add location
+          </Button>
+        }
+      />
+      {editing && (
+        <LocationForm
+          location={editing === "new" ? null : editing}
+          onClose={() => setEditing(null)}
+          onSaved={(msg) => {
+            setEditing(null);
+            toast(msg);
+          }}
+        />
+      )}
       {deleting && <DeleteLocation location={deleting} onClose={() => setDeleting(null)} onDelete={() => del(deleting)} />}
       {node}
       <Card pad={false} className="max-w-3xl">
@@ -172,20 +280,44 @@ function Locations() {
           const tagged = accounts.filter((a) => a.locationId === l.id && a.platform !== "google");
           return (
             <div key={l.id} className="flex flex-wrap items-start gap-4 border-b border-line px-5 py-4 last:border-0">
-              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-hover"><MapPin size={16} /></span>
+              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-hover">
+                <MapPin size={16} />
+              </span>
               <div className="min-w-0 flex-1">
                 <div className="text-[14px] font-medium">{shortLocation(l.id)}</div>
                 <div className="text-[12.5px] text-muted">{l.address}</div>
                 <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px]">
                   <Badge>{l.keywords} keywords</Badge>
-                  {site && <Badge><Globe size={11} /> <ExternalUrl domain={site.domain} /></Badge>}
-                  {tagged.map((a) => <Badge key={a.id}><PlatformMark platform={a.platform} size={12} /> {a.handle}</Badge>)}
+                  {site && (
+                    <Badge>
+                      <Globe size={11} /> <ExternalUrl domain={site.domain} />
+                    </Badge>
+                  )}
+                  {tagged.map((a) => (
+                    <Badge key={a.id}>
+                      <PlatformMark platform={a.platform} size={12} /> {a.handle}
+                    </Badge>
+                  ))}
                 </div>
-                <div className="mt-2.5"><ConnectionsAt target={locationTarget(l.id)} /></div>
+                <div className="mt-2.5">
+                  <ConnectionsAt target={locationTarget(l.id)} />
+                </div>
               </div>
               <span className="flex gap-1">
-                <Button size="sm" variant="ghost" icon={<Pencil size={12} />} onClick={() => setEditing(l)}>Edit</Button>
-                <Button size="sm" variant="ghost" icon={<Trash2 size={12} />} disabled={only} title={only ? "An organization needs at least one location" : undefined} onClick={() => setDeleting(l)} className="hover:text-bad">Delete</Button>
+                <Button size="sm" variant="ghost" icon={<Pencil size={12} />} onClick={() => setEditing(l)}>
+                  Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  icon={<Trash2 size={12} />}
+                  disabled={only}
+                  title={only ? "An organization needs at least one location" : undefined}
+                  onClick={() => setDeleting(l)}
+                  className="hover:text-bad"
+                >
+                  Delete
+                </Button>
               </span>
             </div>
           );
@@ -202,22 +334,57 @@ function Websites() {
   const { toast, node } = useToast();
   return (
     <>
-      <PageHeader title="Websites" sub="Sites the organization owns. One website can serve several locations; site health, articles and search data are per website." actions={<Button size="sm" icon={<Plus size={13} />} onClick={() => setEditing("new")}>Add website</Button>} />
-      {editing && <WebsiteForm website={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSaved={(msg) => { setEditing(null); toast(msg); }} />}
+      <PageHeader
+        title="Websites"
+        sub="Sites the organization owns. One website can serve several locations; site health, articles and search data are per website."
+        actions={
+          <Button size="sm" icon={<Plus size={13} />} onClick={() => setEditing("new")}>
+            Add website
+          </Button>
+        }
+      />
+      {editing && (
+        <WebsiteForm
+          website={editing === "new" ? null : editing}
+          onClose={() => setEditing(null)}
+          onSaved={(msg) => {
+            setEditing(null);
+            toast(msg);
+          }}
+        />
+      )}
       {node}
       <div className="max-w-3xl space-y-4">
         {websites.map((w) => (
           <Card key={w.id} pad={false} className={cn(!st.website[w.id] && "opacity-70")}>
             <div className="flex flex-wrap items-center gap-3 border-b border-line px-5 py-4">
-              <span className="grid size-9 place-items-center rounded-lg bg-hover"><Globe size={16} /></span>
+              <span className="grid size-9 place-items-center rounded-lg bg-hover">
+                <Globe size={16} />
+              </span>
               <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-medium"><ExternalUrl domain={w.domain} /></div>
-                <div className="text-[12.5px] text-muted">{!w.locationIds.length ? "Serves no location yet" : `Serves ${w.locationIds.length === locations.length ? "every location" : w.locationIds.map(shortLocation).join(", ")}`}</div>
+                <div className="text-[14px] font-medium">
+                  <ExternalUrl domain={w.domain} />
+                </div>
+                <div className="text-[12.5px] text-muted">
+                  {!w.locationIds.length
+                    ? "Serves no location yet"
+                    : `Serves ${w.locationIds.length === locations.length ? "every location" : w.locationIds.map(shortLocation).join(", ")}`}
+                </div>
               </div>
-              {st.website[w.id] && <Button size="sm" variant="ghost" icon={<Pencil size={12} />} onClick={() => setEditing(w)}>Edit</Button>}
-              <Button size="sm" variant={st.website[w.id] ? "ghost" : "primary"} onClick={() => setWebsite(w.id, !st.website[w.id])}>{st.website[w.id] ? "Remove" : "Add website"}</Button>
+              {st.website[w.id] && (
+                <Button size="sm" variant="ghost" icon={<Pencil size={12} />} onClick={() => setEditing(w)}>
+                  Edit
+                </Button>
+              )}
+              <Button size="sm" variant={st.website[w.id] ? "ghost" : "primary"} onClick={() => setWebsite(w.id, !st.website[w.id])}>
+                {st.website[w.id] ? "Remove" : "Add website"}
+              </Button>
             </div>
-            {st.website[w.id] && <div className="px-5 py-3.5"><ConnectionsAt target={websiteTarget(w.id)} /></div>}
+            {st.website[w.id] && (
+              <div className="px-5 py-3.5">
+                <ConnectionsAt target={websiteTarget(w.id)} />
+              </div>
+            )}
           </Card>
         ))}
       </div>
@@ -226,7 +393,13 @@ function Websites() {
 }
 
 /** Strips a pasted URL down to its domain: "https://www.example.com/about" → "example.com". */
-const toDomain = (v: string) => v.trim().toLowerCase().replace(/^[a-z]+:\/\//, "").replace(/^www\./, "").split(/[/?#]/)[0];
+const toDomain = (v: string) =>
+  v
+    .trim()
+    .toLowerCase()
+    .replace(/^[a-z]+:\/\//, "")
+    .replace(/^www\./, "")
+    .split(/[/?#]/)[0];
 const isDomain = (d: string) => /^([a-z0-9-]+\.)+[a-z]{2,}$/.test(d);
 
 /** Says what goes with a Location before deleting it. */
@@ -236,10 +409,27 @@ function DeleteLocation({ location, onClose, onDelete }: { location: Location; o
   const tagged = accounts.filter((a) => a.platform !== "google" && a.locationId === location.id);
   const sites = websites.filter((w) => w.locationIds.includes(location.id));
   return (
-    <Modal open onClose={onClose} title={`Delete ${name}?`} footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="danger" icon={<Trash2 size={13} />} onClick={onDelete}>Delete location</Button></>}>
+    <Modal
+      open
+      onClose={onClose}
+      title={`Delete ${name}?`}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="danger" icon={<Trash2 size={13} />} onClick={onDelete}>
+            Delete location
+          </Button>
+        </>
+      }
+    >
       <p className="mt-0 text-[13.5px] text-muted">{location.address}</p>
       <ul className="mb-0 space-y-1.5 pl-4 text-[13.5px]">
-        <li>Its {location.keywords ? `${location.keywords} tracked keywords, ` : ""}rank history, map scans, competitors and citations are deleted.</li>
+        <li>
+          Its {location.keywords ? `${location.keywords} tracked keywords, ` : ""}rank history, map scans, competitors and citations are
+          deleted.
+        </li>
         {google && <li>Its Google Business Profile is disconnected. The profile itself stays on Google.</li>}
         {sites.length > 0 && <li>{sites.map((w) => w.domain).join(" and ")} will stop serving it.</li>}
         {tagged.length > 0 && <li>{tagged.map((a) => a.handle).join(", ")} will speak for the whole organization instead.</li>}
@@ -253,28 +443,67 @@ function DeleteLocation({ location, onClose, onDelete }: { location: Location; o
 function LocationForm({ location, onClose, onSaved }: { location: Location | null; onClose: () => void; onSaved: (msg: string) => void }) {
   const [label, setLabel] = useState(location ? shortLocation(location.id) : "");
   const [address, setAddress] = useState(location?.address ?? "");
-  const [site, setSite] = useState(location ? websites.find((w) => w.locationIds.includes(location.id))?.id ?? "" : "");
+  const [site, setSite] = useState(location ? (websites.find((w) => w.locationIds.includes(location.id))?.id ?? "") : "");
   const name = label.trim();
   const taken = locations.some((l) => l.id !== location?.id && shortLocation(l.id).toLowerCase() === name.toLowerCase());
   const ok = !!name && address.trim().length > 5 && !taken;
   const save = () => {
     if (!ok) return;
-    if (location) { updateLocation(location.id, name, address.trim(), site || null); onSaved(`${name} saved`); }
-    else { addLocation(name, address.trim(), site || null); onSaved(`${name} added. Connect its Google Business Profile below.`); }
+    if (location) {
+      updateLocation(location.id, name, address.trim(), site || null);
+      onSaved(`${name} saved`);
+    } else {
+      addLocation(name, address.trim(), site || null);
+      onSaved(`${name} added. Connect its Google Business Profile below.`);
+    }
   };
   return (
-    <Modal open onClose={onClose} title={location ? `Edit ${shortLocation(location.id)}` : "Add a location"} footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" disabled={!ok} onClick={save}>{location ? "Save" : "Add location"}</Button></>}>
-      <form onSubmit={(e) => { e.preventDefault(); save(); }} className="space-y-4">
-        <Field label="Name" hint={taken ? "There's already a location with this name." : `Shown as “${organization.name} — ${name || "Downtown"}”`}>
+    <Modal
+      open
+      onClose={onClose}
+      title={location ? `Edit ${shortLocation(location.id)}` : "Add a location"}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="primary" disabled={!ok} onClick={save}>
+            {location ? "Save" : "Add location"}
+          </Button>
+        </>
+      }
+    >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          save();
+        }}
+        className="space-y-4"
+      >
+        <Field
+          label="Name"
+          hint={taken ? "There's already a location with this name." : `Shown as “${organization.name} — ${name || "Downtown"}”`}
+        >
           <Input autoFocus value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Downtown" />
         </Field>
-        <Field label="Address" hint={location ? "Changing it moves where rankings and map scans are measured from." : "Rankings, competitors and citations start from this."}>
+        <Field
+          label="Address"
+          hint={
+            location
+              ? "Changing it moves where rankings and map scans are measured from."
+              : "Rankings, competitors and citations start from this."
+          }
+        >
           <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street, city, state ZIP" />
         </Field>
         <Field label="Website">
           <Select value={site} onChange={(e) => setSite(e.target.value)}>
             <option value="">None yet</option>
-            {websites.map((w) => <option key={w.id} value={w.id}>{w.domain}</option>)}
+            {websites.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.domain}
+              </option>
+            ))}
           </Select>
         </Field>
         <button type="submit" hidden />
@@ -292,13 +521,46 @@ function WebsiteForm({ website, onClose, onSaved }: { website: Website | null; o
   const ok = isDomain(domain) && !taken && serves.length > 0;
   const save = () => {
     if (!ok) return;
-    if (website) { updateWebsite(website.id, domain, serves); onSaved(`${domain} saved`); }
-    else { addWebsite(domain, serves); onSaved(`${domain} added. Connect Search Console below.`); }
+    if (website) {
+      updateWebsite(website.id, domain, serves);
+      onSaved(`${domain} saved`);
+    } else {
+      addWebsite(domain, serves);
+      onSaved(`${domain} added. Connect Search Console below.`);
+    }
   };
-  const hint = !url.trim() ? "Paste the address or type the domain." : taken ? "This website is already added." : !isDomain(domain) ? "That doesn't look like a website address." : website && domain !== website.domain ? "Reconnect Search Console and Analytics for the new address." : undefined;
+  const hint = !url.trim()
+    ? "Paste the address or type the domain."
+    : taken
+      ? "This website is already added."
+      : !isDomain(domain)
+        ? "That doesn't look like a website address."
+        : website && domain !== website.domain
+          ? "Reconnect Search Console and Analytics for the new address."
+          : undefined;
   return (
-    <Modal open onClose={onClose} title={website ? `Edit ${website.domain}` : "Add a website"} footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" disabled={!ok} onClick={save}>{website ? "Save" : "Add website"}</Button></>}>
-      <form onSubmit={(e) => { e.preventDefault(); save(); }} className="space-y-4">
+    <Modal
+      open
+      onClose={onClose}
+      title={website ? `Edit ${website.domain}` : "Add a website"}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="primary" disabled={!ok} onClick={save}>
+            {website ? "Save" : "Add website"}
+          </Button>
+        </>
+      }
+    >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          save();
+        }}
+        className="space-y-4"
+      >
         <Field label="Website" hint={hint}>
           <Input autoFocus value={url} onChange={(e) => setUrl(e.target.value)} placeholder="yourbusiness.com" inputMode="url" />
         </Field>
@@ -307,8 +569,12 @@ function WebsiteForm({ website, onClose, onSaved }: { website: Website | null; o
           <div className="space-y-2">
             {locations.map((l) => (
               <label key={l.id} className="flex cursor-pointer items-center gap-2 text-[13.5px]">
-                <Checkbox checked={serves.includes(l.id)} onChange={(v) => setServes(v ? [...serves, l.id] : serves.filter((x) => x !== l.id))} />
-                {shortLocation(l.id) || l.name}<span className="text-[12.5px] text-muted">{l.address}</span>
+                <Checkbox
+                  checked={serves.includes(l.id)}
+                  onChange={(v) => setServes(v ? [...serves, l.id] : serves.filter((x) => x !== l.id))}
+                />
+                {shortLocation(l.id) || l.name}
+                <span className="text-[12.5px] text-muted">{l.address}</span>
               </label>
             ))}
           </div>
@@ -326,28 +592,77 @@ function Messaging() {
   const [setup, setSetup] = useState<"email" | "phone" | "numbers" | null>(null);
   const [checking, setChecking] = useState(false);
   const { toast, node } = useToast();
-  const hours = Array.from({ length: 24 }, (_, h) => ({ h, label: new Date(2026, 0, 1, h).toLocaleTimeString("en-US", { hour: "numeric" }) }));
+  const hours = Array.from({ length: 24 }, (_, h) => ({
+    h,
+    label: new Date(2026, 0, 1, h).toLocaleTimeString("en-US", { hour: "numeric" }),
+  }));
   const missing = email.records.filter((r) => !r.ok).length;
   const row = (label: string, control: React.ReactNode, hint?: string) => (
-    <div key={label} className="grid gap-1.5 border-t border-line py-3 first:border-0 first:pt-0 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center sm:gap-4">
-      <div><div className="text-[13px] font-medium">{label}</div>{hint && <div className="text-[12px] text-muted">{hint}</div>}</div>{control}
+    <div
+      key={label}
+      className="grid gap-1.5 border-t border-line py-3 first:border-0 first:pt-0 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center sm:gap-4"
+    >
+      <div>
+        <div className="text-[13px] font-medium">{label}</div>
+        {hint && <div className="text-[12px] text-muted">{hint}</div>}
+      </div>
+      {control}
     </div>
   );
   const ep = email.provider ? emailProviders[email.provider] : null;
   const pp = sms.provider ? phoneProviders[sms.provider] : null;
   return (
     <>
-      <PageHeader title="Email & texting" sub="Who sends your campaigns, workflows and Inbox replies, and how. The connections themselves are also under Integrations." />
+      <PageHeader
+        title="Email & texting"
+        sub="Who sends your campaigns, workflows and Inbox replies, and how. The connections themselves are also under Integrations."
+      />
       <div className="max-w-3xl space-y-4">
         <Card>
           <CapabilityCard cap="email.send" title="Email" />
           {ep && (
             <div className="mt-4">
-              {missing > 0 && email.verified && <p className="mb-3 flex items-start gap-2 text-[12.5px] text-muted"><AlertTriangle size={13} className="mt-0.5 shrink-0 text-warn" /><span>{missing} record still missing. Gmail and Yahoo require DMARC from anyone sending in bulk. Add it, then <button onClick={() => { setChecking(true); checkDns((m) => { setChecking(false); toast(m ? `${m} still missing` : "All records found"); }); }} className="underline underline-offset-2">{checking ? "checking…" : "check again"}</button>.</span></p>}
-              {(missing > 0 || !email.verified) && <div className="mb-4"><DnsTable records={email.records} /></div>}
+              {missing > 0 && email.verified && (
+                <p className="mb-3 flex items-start gap-2 text-[12.5px] text-muted">
+                  <AlertTriangle size={13} className="mt-0.5 shrink-0 text-warn" />
+                  <span>
+                    {missing} record still missing. Gmail and Yahoo require DMARC from anyone sending in bulk. Add it, then{" "}
+                    <button
+                      onClick={() => {
+                        setChecking(true);
+                        checkDns((m) => {
+                          setChecking(false);
+                          toast(m ? `${m} still missing` : "All records found");
+                        });
+                      }}
+                      className="underline underline-offset-2"
+                    >
+                      {checking ? "checking…" : "check again"}
+                    </button>
+                    .
+                  </span>
+                </p>
+              )}
+              {(missing > 0 || !email.verified) && (
+                <div className="mb-4">
+                  <DnsTable records={email.records} />
+                </div>
+              )}
               {row("From", <Input value={`${email.fromName} <${email.fromAddress}>`} readOnly aria-label="From" />)}
-              {row("Replies go to", <Input value={email.replyTo} onChange={(e) => setChannels("email", { replyTo: e.target.value })} aria-label="Reply-to" />, "And show in the Inbox")}
-              {row("Footer address", <Input value={email.footer} onChange={(e) => setChannels("email", { footer: e.target.value })} aria-label="Footer address" />, "Required by CAN-SPAM, with an unsubscribe link")}
+              {row(
+                "Replies go to",
+                <Input value={email.replyTo} onChange={(e) => setChannels("email", { replyTo: e.target.value })} aria-label="Reply-to" />,
+                "And show in the Inbox",
+              )}
+              {row(
+                "Footer address",
+                <Input
+                  value={email.footer}
+                  onChange={(e) => setChannels("email", { footer: e.target.value })}
+                  aria-label="Footer address"
+                />,
+                "Required by CAN-SPAM, with an unsubscribe link",
+              )}
               <p className="mt-1 text-[12px] text-subtle">{ep.privacy}</p>
             </div>
           )}
@@ -357,38 +672,154 @@ function Messaging() {
           <CapabilityCard cap="sms.send" title="Texting & calls" />
           {pp && (
             <div className="mt-4">
-              {sms.numbers.map((n) => row(n.location, <div className="flex flex-wrap items-center gap-2 text-[13.5px]"><span className="num">{n.number}</span><Badge tone={n.status === "active" ? "good" : "info"}>{n.status === "active" ? "Live" : n.how === "port" ? "Moving here" : "Being text-enabled"}</Badge></div>))}
-              {row("Numbers", <div><Button size="sm" onClick={() => setSetup("numbers")}>{sms.numbers.length ? "Change numbers" : "Add numbers"}</Button></div>)}
-              {row("Carrier registration", <div className="flex flex-wrap items-center gap-2 text-[13px]">Business <Badge tone={regTone(sms.brand)}>{regLabel(sms.brand)}</Badge> Campaign <Badge tone={regTone(sms.campaign)}>{regLabel(sms.campaign)}</Badge>{sms.brand === "none" && sms.numbers.length > 0 && <Button size="sm" variant="primary" onClick={() => setSetup("numbers")}>Register</Button>}</div>, "A2P 10DLC, required by US carriers")}
-              {row("Quiet hours", <div className="flex items-center gap-2 text-[13px]">Only between
-                <Select size="sm" className="w-auto" value={sms.quietStart} onChange={(e) => setChannels("sms", { quietStart: +e.target.value })} aria-label="From">{hours.map((x) => <option key={x.h} value={x.h}>{x.label}</option>)}</Select>and
-                <Select size="sm" className="w-auto" value={sms.quietEnd} onChange={(e) => setChannels("sms", { quietEnd: +e.target.value })} aria-label="Until">{hours.map((x) => <option key={x.h} value={x.h}>{x.label}</option>)}</Select></div>, "In their time zone. Later texts wait for morning")}
-              {row("Opt-out line", <Input value={sms.optOutLine} onChange={(e) => setChannels("sms", { optOutLine: e.target.value })} aria-label="Opt-out line" />, "Added to the first text anyone gets. STOP, END and UNSUBSCRIBE are honored on their own")}
+              {sms.numbers.map((n) =>
+                row(
+                  n.location,
+                  <div className="flex flex-wrap items-center gap-2 text-[13.5px]">
+                    <span className="num">{n.number}</span>
+                    <Badge tone={n.status === "active" ? "good" : "info"}>
+                      {n.status === "active" ? "Live" : n.how === "port" ? "Moving here" : "Being text-enabled"}
+                    </Badge>
+                  </div>,
+                ),
+              )}
+              {row(
+                "Numbers",
+                <div>
+                  <Button size="sm" onClick={() => setSetup("numbers")}>
+                    {sms.numbers.length ? "Change numbers" : "Add numbers"}
+                  </Button>
+                </div>,
+              )}
+              {row(
+                "Carrier registration",
+                <div className="flex flex-wrap items-center gap-2 text-[13px]">
+                  Business <Badge tone={regTone(sms.brand)}>{regLabel(sms.brand)}</Badge> Campaign{" "}
+                  <Badge tone={regTone(sms.campaign)}>{regLabel(sms.campaign)}</Badge>
+                  {sms.brand === "none" && sms.numbers.length > 0 && (
+                    <Button size="sm" variant="primary" onClick={() => setSetup("numbers")}>
+                      Register
+                    </Button>
+                  )}
+                </div>,
+                "A2P 10DLC, required by US carriers",
+              )}
+              {row(
+                "Quiet hours",
+                <div className="flex items-center gap-2 text-[13px]">
+                  Only between
+                  <Select
+                    size="sm"
+                    className="w-auto"
+                    value={sms.quietStart}
+                    onChange={(e) => setChannels("sms", { quietStart: +e.target.value })}
+                    aria-label="From"
+                  >
+                    {hours.map((x) => (
+                      <option key={x.h} value={x.h}>
+                        {x.label}
+                      </option>
+                    ))}
+                  </Select>
+                  and
+                  <Select
+                    size="sm"
+                    className="w-auto"
+                    value={sms.quietEnd}
+                    onChange={(e) => setChannels("sms", { quietEnd: +e.target.value })}
+                    aria-label="Until"
+                  >
+                    {hours.map((x) => (
+                      <option key={x.h} value={x.h}>
+                        {x.label}
+                      </option>
+                    ))}
+                  </Select>
+                </div>,
+                "In their time zone. Later texts wait for morning",
+              )}
+              {row(
+                "Opt-out line",
+                <Input
+                  value={sms.optOutLine}
+                  onChange={(e) => setChannels("sms", { optOutLine: e.target.value })}
+                  aria-label="Opt-out line"
+                />,
+                "Added to the first text anyone gets. STOP, END and UNSUBSCRIBE are honored on their own",
+              )}
             </div>
           )}
         </Card>
 
         {pp && (
           <Card>
-            <CardHeader title={<span className="flex items-center gap-2"><Phone size={15} />Calls</span>} sub="Calls to your location numbers ring the front desk and show in each contact's timeline." />
+            <CardHeader
+              title={
+                <span className="flex items-center gap-2">
+                  <Phone size={15} />
+                  Calls
+                </span>
+              }
+              sub="Calls to your location numbers ring the front desk and show in each contact's timeline."
+            />
             {row("Rings", <span className="text-[13.5px]">{call.forwardTo}</span>)}
-            {row("Voicemail to text", <Toggle label="Voicemail to text" checked={call.voicemailToText} onChange={(v) => setChannels("call", { voicemailToText: v })} />, "Voicemails are written out in the Inbox")}
-            {row("Record calls", <Toggle label="Record calls" checked={call.recordCalls} onChange={(v) => setChannels("call", { recordCalls: v })} />, "Callers hear “this call may be recorded” first")}
-            {row("Missed calls", <NavLink to="/workflows" className="text-[13px] underline underline-offset-2">{st.workflows.some((a) => a.when.event === "missed_call" && a.on) ? "Texted back by the Missed call text-back workflow" : "Turn on Missed call text-back in Workflows"}</NavLink>)}
-            <p className="mt-1 text-[12px] text-subtle">{product()} never dials automatically. Call steps in workflows make a task with a script for the front desk.</p>
+            {row(
+              "Voicemail to text",
+              <Toggle
+                label="Voicemail to text"
+                checked={call.voicemailToText}
+                onChange={(v) => setChannels("call", { voicemailToText: v })}
+              />,
+              "Voicemails are written out in the Inbox",
+            )}
+            {row(
+              "Record calls",
+              <Toggle label="Record calls" checked={call.recordCalls} onChange={(v) => setChannels("call", { recordCalls: v })} />,
+              "Callers hear “this call may be recorded” first",
+            )}
+            {row(
+              "Missed calls",
+              <NavLink to="/workflows" className="text-[13px] underline underline-offset-2">
+                {st.workflows.some((a) => a.when.event === "missed_call" && a.on)
+                  ? "Texted back by the Missed call text-back workflow"
+                  : "Turn on Missed call text-back in Workflows"}
+              </NavLink>,
+            )}
+            <p className="mt-1 text-[12px] text-subtle">
+              {product()} never dials automatically. Call steps in workflows make a task with a script for the front desk.
+            </p>
           </Card>
         )}
 
         <Card>
-          <CardHeader title={<span className="flex items-center gap-2"><ShieldCheck size={15} />Patient privacy</span>} sub="Messages to patients count as health information under HIPAA." />
+          <CardHeader
+            title={
+              <span className="flex items-center gap-2">
+                <ShieldCheck size={15} />
+                Patient privacy
+              </span>
+            }
+            sub="Messages to patients count as health information under HIPAA."
+          />
           <ul className="space-y-1.5 text-[13px]">
-            <li className="flex items-start gap-2"><Check size={14} className="mt-0.5 shrink-0 text-good" />Use providers that have signed a Business Associate Agreement with you. Each provider above says where it stands.</li>
-            <li className="flex items-start gap-2"><Check size={14} className="mt-0.5 shrink-0 text-good" />Messages that name a treatment get a warning before they're sent. Texts show on lock screens.</li>
-            <li className="flex items-start gap-2"><Check size={14} className="mt-0.5 shrink-0 text-good" />Who agreed to texts and email, and how, is kept on each contact.</li>
+            <li className="flex items-start gap-2">
+              <Check size={14} className="mt-0.5 shrink-0 text-good" />
+              Use providers that have signed a Business Associate Agreement with you. Each provider above says where it stands.
+            </li>
+            <li className="flex items-start gap-2">
+              <Check size={14} className="mt-0.5 shrink-0 text-good" />
+              Messages that name a treatment get a warning before they're sent. Texts show on lock screens.
+            </li>
+            <li className="flex items-start gap-2">
+              <Check size={14} className="mt-0.5 shrink-0 text-good" />
+              Who agreed to texts and email, and how, is kept on each contact.
+            </li>
           </ul>
         </Card>
       </div>
-      {(setup === "phone" || setup === "numbers") && <PhoneSetup open onClose={() => setSetup(null)} toast={toast} startAt={setup === "numbers" ? "numbers" : undefined} />}
+      {(setup === "phone" || setup === "numbers") && (
+        <PhoneSetup open onClose={() => setSetup(null)} startAt={setup === "numbers" ? "numbers" : undefined} />
+      )}
       {node}
     </>
   );
@@ -401,15 +832,26 @@ function AccountProfile() {
       <Card className="max-w-3xl">
         <div className="mb-5 flex items-center gap-3">
           <span className="grid size-12 place-items-center rounded-full bg-hover text-[15px] font-medium">AP</span>
-          <Button size="sm" variant="ghost">Change photo</Button>
+          <Button size="sm" variant="ghost">
+            Change photo
+          </Button>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Name"><Input size="lg" defaultValue="Dr. Anika Patel" /></Field>
-          <Field label="Email"><Input size="lg" defaultValue="anika@mapleandmaindental.com" /></Field>
+          <Field label="Name">
+            <Input size="lg" defaultValue="Dr. Anika Patel" />
+          </Field>
+          <Field label="Email">
+            <Input size="lg" defaultValue="anika@mapleandmaindental.com" />
+          </Field>
         </div>
         <div className="mt-5 flex items-center gap-4 border-t border-line pt-4">
-          <div className="flex-1"><div className="text-[14px]">Sign-in</div><div className="text-[12.5px] text-muted">Google · last signed in today</div></div>
-          <Button size="sm" variant="ghost">Manage</Button>
+          <div className="flex-1">
+            <div className="text-[14px]">Sign-in</div>
+            <div className="text-[12.5px] text-muted">Google · last signed in today</div>
+          </div>
+          <Button size="sm" variant="ghost">
+            Manage
+          </Button>
         </div>
       </Card>
     </>
@@ -428,7 +870,16 @@ function Appearance() {
       <PageHeader title="Appearance" sub="Saved on this device. The moon in the sidebar switches it too." />
       <div role="radiogroup" aria-label="Theme" className="grid max-w-3xl gap-3 sm:grid-cols-3">
         {options.map((o) => (
-          <button key={o.id} role="radio" aria-checked={mode === o.id} onClick={() => setThemeMode(o.id)} className={cn("flex items-center gap-2.5 rounded-xl border bg-surface p-4 text-left text-[14px] shadow-card transition-colors", mode === o.id ? "border-ink" : "border-line hover:border-line-strong")}>
+          <button
+            key={o.id}
+            role="radio"
+            aria-checked={mode === o.id}
+            onClick={() => setThemeMode(o.id)}
+            className={cn(
+              "flex items-center gap-2.5 rounded-xl border bg-surface p-4 text-left text-[14px] shadow-card transition-colors",
+              mode === o.id ? "border-ink" : "border-line hover:border-line-strong",
+            )}
+          >
             <o.icon size={16} strokeWidth={1.75} className="text-muted" />
             <span className="flex-1">{o.label}</span>
             {mode === o.id && <Check size={14} />}
@@ -445,15 +896,20 @@ function Notifications() {
     <>
       <PageHeader title="Notifications" sub={`What ${product()} emails you about, for every business you're on.`} />
       <Card className="max-w-3xl">
-        {([
-          ["digest", "Weekly digest", `Rankings, reviews and what ${assistant()} did, every Monday`],
-          ["drops", "Ranking drops", "When a tracked keyword falls out of the top 3"],
-          ["reviews", "New reviews", "Within the hour, with a suggested reply"],
-          ["approvals", "Waiting for you", "When something in To-do needs your approval"],
-          ["product", "Product updates", "New features, about once a month"],
-        ] as const).map(([k, l, d]) => (
+        {(
+          [
+            ["digest", "Weekly digest", `Rankings, reviews and what ${assistant()} did, every Monday`],
+            ["drops", "Ranking drops", "When a tracked keyword falls out of the top 3"],
+            ["reviews", "New reviews", "Within the hour, with a suggested reply"],
+            ["approvals", "Waiting for you", "When something in To-do needs your approval"],
+            ["product", "Product updates", "New features, about once a month"],
+          ] as const
+        ).map(([k, l, d]) => (
           <div key={k} className="flex items-center gap-4 border-t border-line py-3.5 first:border-0 first:pt-0 last:pb-0">
-            <div className="flex-1"><div className="text-[14px]">{l}</div><div className="text-[12.5px] text-muted">{d}</div></div>
+            <div className="flex-1">
+              <div className="text-[14px]">{l}</div>
+              <div className="text-[12.5px] text-muted">{d}</div>
+            </div>
             <Toggle label={l} checked={on[k]} onChange={(v) => setOn({ ...on, [k]: v })} />
           </div>
         ))}
@@ -466,64 +922,132 @@ function Outreach() {
   const st = useOutreach();
   const [copied, setCopied] = useState<string | null>(null);
   const c = st.connection;
-  const copy = async (t: string) => { try { await navigator.clipboard.writeText(t); setCopied(t); setTimeout(() => setCopied(null), 1500); } catch {} };
-  if (!c) return (
-    <>
-      <PageHeader title="Outreach" sub="Connect the sequencer you send cold email from. Prospects go to it with their audit link in one click, and replies come back to Outreach." />
-      <Card className="max-w-3xl"><CapabilityCard cap="leads.push" title="Sequencer" /></Card>
-    </>
-  );
+  const copy = async (t: string) => {
+    try {
+      await navigator.clipboard.writeText(t);
+      setCopied(t);
+      setTimeout(() => setCopied(null), 1500);
+    } catch {}
+  };
+  if (!c)
+    return (
+      <>
+        <PageHeader
+          title="Outreach"
+          sub="Connect the sequencer you send cold email from. Prospects go to it with their audit link in one click, and replies come back to Outreach."
+        />
+        <Card className="max-w-3xl">
+          <CapabilityCard cap="leads.push" title="Sequencer" />
+        </Card>
+      </>
+    );
   const name = providers[c.provider].name;
   const row = "flex flex-wrap items-center gap-4 border-b border-line px-5 py-3.5 last:border-0";
   return (
     <>
-      <PageHeader title="Outreach" sub={`${name} sends, warms up and rotates your inboxes. ${product()} hands it prospects and reads back replies, labels and bounces.`} />
+      <PageHeader
+        title="Outreach"
+        sub={`${name} sends, warms up and rotates your inboxes. ${product()} hands it prospects and reads back replies, labels and bounces.`}
+      />
       <div className="max-w-3xl space-y-4">
         <Card pad={false}>
-          <div className="px-5 py-4"><CapabilityCard cap="leads.push" title="Sequencer" /></div>
-          <div className="flex items-start gap-3 px-5 py-3 text-[12.5px] text-muted"><Webhook size={14} className="mt-0.5 shrink-0" /><span>Listening for replies, label changes, bounces and unibox sends. Disconnecting stops updates here; anything already sent keeps going in {name}.</span></div>
+          <div className="px-5 py-4">
+            <CapabilityCard cap="leads.push" title="Sequencer" />
+          </div>
+          <div className="flex items-start gap-3 px-5 py-3 text-[12.5px] text-muted">
+            <Webhook size={14} className="mt-0.5 shrink-0" />
+            <span>
+              Listening for replies, label changes, bounces and unibox sends. Disconnecting stops updates here; anything already sent keeps
+              going in {name}.
+            </span>
+          </div>
         </Card>
 
         <Card pad={false}>
           <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
-            <div><div className="text-[14px] font-medium">Campaigns</div><div className="text-[12.5px] text-muted">The default is where one-click sends go.</div></div>
-            {!c.campaigns.some((x) => x.fromOpenMarko) && <Button size="sm" icon={<Plus size={13} />} onClick={() => { const n = createStarterCampaign(); if (n) setRules({ defaultCampaign: n.id }); }}>Create audit campaign</Button>}
+            <div>
+              <div className="text-[14px] font-medium">Campaigns</div>
+              <div className="text-[12.5px] text-muted">The default is where one-click sends go.</div>
+            </div>
+            {!c.campaigns.some((x) => x.fromOpenMarko) && (
+              <Button
+                size="sm"
+                icon={<Plus size={13} />}
+                onClick={() => {
+                  const n = createStarterCampaign();
+                  if (n) setRules({ defaultCampaign: n.id });
+                }}
+              >
+                Create audit campaign
+              </Button>
+            )}
           </div>
           {c.campaigns.map((x) => (
             <div key={x.id} className={row}>
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2 text-[13.5px] font-medium">{x.name}{st.rules.defaultCampaign === x.id && <Badge tone="accent">Default</Badge>}{x.fromOpenMarko && <Badge>Made by {product()}</Badge>}</div>
-                <div className="text-[12.5px] text-muted">{x.steps.length} steps over {x.steps[x.steps.length - 1].day} days · {x.leads} leads · {x.replyRate}% reply rate · {x.status}</div>
-                {!x.usesAuditUrl && <div className="mt-1 flex items-center gap-1.5 text-[12px] text-warn"><AlertTriangle size={12} />Doesn't use {"{{audit_url}}"}. Add it to the first email in {name}.</div>}
+                <div className="flex flex-wrap items-center gap-2 text-[13.5px] font-medium">
+                  {x.name}
+                  {st.rules.defaultCampaign === x.id && <Badge tone="accent">Default</Badge>}
+                  {x.fromOpenMarko && <Badge>Made by {product()}</Badge>}
+                </div>
+                <div className="text-[12.5px] text-muted">
+                  {x.steps.length} steps over {x.steps[x.steps.length - 1].day} days · {x.leads} leads · {x.replyRate}% reply rate ·{" "}
+                  {x.status}
+                </div>
+                {!x.usesAuditUrl && (
+                  <div className="mt-1 flex items-center gap-1.5 text-[12px] text-warn">
+                    <AlertTriangle size={12} />
+                    Doesn't use {"{{audit_url}}"}. Add it to the first email in {name}.
+                  </div>
+                )}
               </div>
-              {st.rules.defaultCampaign !== x.id && <Button size="sm" variant="ghost" onClick={() => setRules({ defaultCampaign: x.id })}>Make default</Button>}
+              {st.rules.defaultCampaign !== x.id && (
+                <Button size="sm" variant="ghost" onClick={() => setRules({ defaultCampaign: x.id })}>
+                  Make default
+                </Button>
+              )}
             </div>
           ))}
         </Card>
 
         <Card pad={false}>
-          <div className="border-b border-line px-5 py-3"><div className="text-[14px] font-medium">Sending inboxes</div><div className="text-[12.5px] text-muted">Read from {name}. Add inboxes and change warmup there.</div></div>
+          <div className="border-b border-line px-5 py-3">
+            <div className="text-[14px] font-medium">Sending inboxes</div>
+            <div className="text-[12.5px] text-muted">Read from {name}. Add inboxes and change warmup there.</div>
+          </div>
           {c.inboxes.map((i) => (
             <div key={i.email} className={row}>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[13.5px]">{i.email}</div>
-                <div className="mt-1.5 flex items-center gap-2"><Progress value={i.warmup} tone={i.warmup >= 90 ? "good" : "warn"} className="w-24" /><span className="num text-[12px] text-muted">Warmup {i.warmup}%</span></div>
+                <div className="mt-1.5 flex items-center gap-2">
+                  <Progress value={i.warmup} tone={i.warmup >= 90 ? "good" : "warn"} className="w-24" />
+                  <span className="num text-[12px] text-muted">Warmup {i.warmup}%</span>
+                </div>
               </div>
-              <span className="num text-[12.5px] text-muted">{i.dailyLimit ? `${i.sentToday} / ${i.dailyLimit} today` : "Not sending"}</span>
-              <Badge tone={i.status === "ready" ? "good" : i.status === "warming" ? "warn" : "neutral"} className="capitalize">{i.status}</Badge>
+              <span className="num text-[12.5px] text-muted">
+                {i.dailyLimit ? `${i.sentToday} / ${i.dailyLimit} today` : "Not sending"}
+              </span>
+              <Badge tone={i.status === "ready" ? "good" : i.status === "warming" ? "warn" : "neutral"} className="capitalize">
+                {i.status}
+              </Badge>
             </div>
           ))}
         </Card>
 
         <Card>
           <CardHeader title="Sending" />
-          {([
-            ["review", "Review before sending", "Off: Send to campaign on a prospect or audit sends straight to the default campaign."],
-            ["verifiedOnly", "Only verified emails", "Skips catch-all and unverified addresses to protect your inboxes' reputation."],
-            ["alertOnAudit", "Tell me when a prospect opens their audit twice", "Usually the best moment to call."],
-          ] as const).map(([k, l, d]) => (
+          {(
+            [
+              ["review", "Review before sending", "Off: Send to campaign on a prospect or audit sends straight to the default campaign."],
+              ["verifiedOnly", "Only verified emails", "Skips catch-all and unverified addresses to protect your inboxes' reputation."],
+              ["alertOnAudit", "Tell me when a prospect opens their audit twice", "Usually the best moment to call."],
+            ] as const
+          ).map(([k, l, d]) => (
             <div key={k} className="flex items-center gap-4 border-t border-line py-3.5 first:border-0 first:pt-0">
-              <div className="flex-1"><div className="text-[14px]">{l}</div><div className="text-[12.5px] text-muted">{d}</div></div>
+              <div className="flex-1">
+                <div className="text-[14px]">{l}</div>
+                <div className="text-[12.5px] text-muted">{d}</div>
+              </div>
               <Toggle label={l} checked={st.rules[k]} onChange={(v) => setRules({ [k]: v })} />
             </div>
           ))}
@@ -535,12 +1059,23 @@ function Outreach() {
         </Card>
 
         <Card pad={false}>
-          <div className="border-b border-line px-5 py-3"><div className="text-[14px] font-medium">Variables sent with each prospect</div><div className="text-[12.5px] text-muted">Use these in your {name} templates.</div></div>
+          <div className="border-b border-line px-5 py-3">
+            <div className="text-[14px] font-medium">Variables sent with each prospect</div>
+            <div className="text-[12.5px] text-muted">Use these in your {name} templates.</div>
+          </div>
           {leadVariables.map((v) => (
             <div key={v.key} className="flex items-center gap-3 border-b border-line px-5 py-2.5 last:border-0">
               <code className="w-36 shrink-0 font-mono text-[12.5px]">{`{{${v.key}}}`}</code>
-              <span className="min-w-0 flex-1 truncate text-[13px]">{v.label} <span className="text-subtle">· {v.example}</span></span>
-              <button onClick={() => copy(`{{${v.key}}}`)} aria-label={`Copy {{${v.key}}}`} className="rounded p-1 text-muted hover:bg-hover hover:text-fg">{copied === `{{${v.key}}}` ? <Check size={13} /> : <Copy size={13} />}</button>
+              <span className="min-w-0 flex-1 truncate text-[13px]">
+                {v.label} <span className="text-subtle">· {v.example}</span>
+              </span>
+              <button
+                onClick={() => copy(`{{${v.key}}}`)}
+                aria-label={`Copy {{${v.key}}}`}
+                className="rounded p-1 text-muted hover:bg-hover hover:text-fg"
+              >
+                {copied === `{{${v.key}}}` ? <Check size={13} /> : <Copy size={13} />}
+              </button>
             </div>
           ))}
         </Card>
@@ -555,9 +1090,19 @@ function Billing() {
       <PageHeader title="Plan & billing" sub="Your plan covers every business and location on your account." />
       <Card className="max-w-3xl">
         <CardHeader title="Growth plan" sub="$79 / month · renews Nov 14" right={<Button size="sm">Change plan</Button>} />
-        {[["Tracked keywords", 16, 25], ["Locations", 2, 3], ["Grid scans this month", 38, 100], ["Auto-applied changes", 11, 50]].map(([l, u, t]) => (
+        {[
+          ["Tracked keywords", 16, 25],
+          ["Locations", 2, 3],
+          ["Grid scans this month", 38, 100],
+          ["Auto-applied changes", 11, 50],
+        ].map(([l, u, t]) => (
           <div key={l as string} className="mt-4">
-            <div className="mb-1.5 flex justify-between text-[13px]"><span>{l}</span><span className="num text-muted">{u} / {t}</span></div>
+            <div className="mb-1.5 flex justify-between text-[13px]">
+              <span>{l}</span>
+              <span className="num text-muted">
+                {u} / {t}
+              </span>
+            </div>
             <Progress value={((u as number) / (t as number)) * 100} />
           </div>
         ))}

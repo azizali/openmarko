@@ -17,7 +17,13 @@ import { partner } from "../mock/partner";
 import { featureForPage } from "./features";
 
 export type Person = { id: string; name: string; email: string; roleId: string; invited?: boolean };
-export type Staff = { id: string; name: string; email: string; partnerRole: "Admin" | "Member"; /** Client Organization → role, for Partner Members. */ clients: Record<string, string> };
+export type Staff = {
+  id: string;
+  name: string;
+  email: string;
+  partnerRole: "Admin" | "Member";
+  /** Client Organization → role, for Partner Members. */ clients: Record<string, string>;
+};
 
 type State = { people: Person[]; roles: RoleSpec[]; staff: Staff[]; me: string; preview: string | null };
 const KEY = "gw-access";
@@ -29,24 +35,66 @@ const seed: State = {
     { id: "p_priya", name: "Priya Shah", email: "priya@studioshah.co", roleId: "r_social", invited: true },
   ],
   roles: [
-    { id: "r_social", name: "Social media manager", description: "Runs social end to end. Sees SEO, nothing else.", base: "none", groups: { social: "publish", seo: "view", marko: "view" }, resources: { brand: "view" } },
-    { id: "r_frontdesk", name: "Front desk", description: "Answers customers and drafts review replies for someone to post.", base: "none", groups: { customers: "publish", marko: "view" }, resources: { reviews: ["view", "reply"], seo: "view", email: "view", sms: "view", campaigns: "view" } },
+    {
+      id: "r_social",
+      name: "Social media manager",
+      description: "Runs social end to end. Sees SEO, nothing else.",
+      base: "none",
+      groups: { social: "publish", seo: "view", marko: "view" },
+      resources: { brand: "view" },
+    },
+    {
+      id: "r_frontdesk",
+      name: "Front desk",
+      description: "Answers customers and drafts review replies for someone to post.",
+      base: "none",
+      groups: { customers: "publish", marko: "view" },
+      resources: { reviews: ["view", "reply"], seo: "view", email: "view", sms: "view", campaigns: "view" },
+    },
   ],
-  staff: partner ? [
-    { id: "s_jordan", name: "Jordan Reyes", email: "jordan@brightlinelocal.com", partnerRole: "Admin", clients: {} },
-    { id: "s_casey", name: "Casey Nguyen", email: "casey@brightlinelocal.com", partnerRole: "Member", clients: { org_maple: "editor", org_hill: "viewer" } },
-  ] : [],
+  staff: partner
+    ? [
+        { id: "s_jordan", name: "Jordan Reyes", email: "jordan@brightlinelocal.com", partnerRole: "Admin", clients: {} },
+        {
+          id: "s_casey",
+          name: "Casey Nguyen",
+          email: "casey@brightlinelocal.com",
+          partnerRole: "Member",
+          clients: { org_maple: "editor", org_hill: "viewer" },
+        },
+      ]
+    : [],
   me: "p_anika",
   preview: null,
 };
-let state: State = (() => { try { const s = JSON.parse(localStorage.getItem(KEY) ?? "null"); return s ? { ...seed, ...s, preview: null } : seed; } catch { return seed; } })();
+let state: State = (() => {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY) ?? "null");
+    return s ? { ...seed, ...s, preview: null } : seed;
+  } catch {
+    return seed;
+  }
+})();
 const listeners = new Set<() => void>();
 const set = (patch: Partial<State>) => {
   state = { ...state, ...patch };
-  try { const { preview: _, ...keep } = state; localStorage.setItem(KEY, JSON.stringify(keep)); } catch {}
+  try {
+    const { preview: _, ...keep } = state;
+    localStorage.setItem(KEY, JSON.stringify(keep));
+  } catch {}
   listeners.forEach((l) => l());
 };
-export const useAccess = () => useSyncExternalStore((l) => { listeners.add(l); return () => { listeners.delete(l); }; }, () => state, () => state);
+export const useAccess = () =>
+  useSyncExternalStore(
+    (l) => {
+      listeners.add(l);
+      return () => {
+        listeners.delete(l);
+      };
+    },
+    () => state,
+    () => state,
+  );
 
 export const allRoles = (s: State = state) => [...presets, ...s.roles];
 export const roleById = (id: string, s: State = state) => allRoles(s).find((r) => r.id === id) ?? presets[presets.length - 1];
@@ -67,7 +115,8 @@ export const useCan = (r: Resource, action: string) => can(r, action, useAccess(
 /** Better Auth's shape: hasPermission({ permissions: { reviews: ["post"] } }). */
 export const hasPermission = ({ permissions }: { permissions: Permission }) => allowsAll(myPermission(), permissions);
 /** Seen but not changeable: the role stops at View on something that has more to do. */
-export const viewOnly = (r: Resource, s: State = state) => reach(myPermission(s), r) === "view" && resources[r].some((a) => a.tier !== "view");
+export const viewOnly = (r: Resource, s: State = state) =>
+  reach(myPermission(s), r) === "view" && resources[r].some((a) => a.tier !== "view");
 
 /** Whether the page behind a link may be opened. Pages without a feature (Home, Reports, Todo) are open to everyone. */
 export function pageAllowed(to: string, s: State = state) {
@@ -79,7 +128,10 @@ export function pageAllowed(to: string, s: State = state) {
 // ---------- People ----------
 
 export const invite = (email: string, roleId: string) => {
-  const name = email.split("@")[0].replace(/[._-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const name = email
+    .split("@")[0]
+    .replace(/[._-]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
   set({ people: [...state.people, { id: `p_${Date.now().toString(36)}`, name, email, roleId, invited: true }] });
 };
 export const setPersonRole = (id: string, roleId: string) => set({ people: state.people.map((p) => (p.id === id ? { ...p, roleId } : p)) });
@@ -94,7 +146,14 @@ export function saveRole(spec: RoleSpec) {
 }
 /** Deleting a role moves its people to `fallback`, so nobody is left without one. */
 export function deleteRole(id: string, fallback = "viewer") {
-  set({ roles: state.roles.filter((r) => r.id !== id), people: state.people.map((p) => (p.roleId === id ? { ...p, roleId: fallback } : p)), staff: state.staff.map((x) => ({ ...x, clients: Object.fromEntries(Object.entries(x.clients).map(([o, r]) => [o, r === id ? fallback : r])) })) });
+  set({
+    roles: state.roles.filter((r) => r.id !== id),
+    people: state.people.map((p) => (p.roleId === id ? { ...p, roleId: fallback } : p)),
+    staff: state.staff.map((x) => ({
+      ...x,
+      clients: Object.fromEntries(Object.entries(x.clients).map(([o, r]) => [o, r === id ? fallback : r])),
+    })),
+  });
 }
 export const setPreview = (roleId: string | null) => set({ preview: roleId });
 /** While previewing, the app acts as that role on this Organization, so Partner-only pages are hidden too. */
@@ -104,12 +163,18 @@ export const actionCount = (spec: RoleSpec) => Object.values(compile(spec)).redu
 
 // ---------- Partner staff ----------
 
-export const setStaff = (id: string, patch: Partial<Staff>) => set({ staff: state.staff.map((x) => (x.id === id ? { ...x, ...patch } : x)) });
+export const setStaff = (id: string, patch: Partial<Staff>) =>
+  set({ staff: state.staff.map((x) => (x.id === id ? { ...x, ...patch } : x)) });
 export const inviteStaff = (email: string, partnerRole: Staff["partnerRole"]) => {
-  const name = email.split("@")[0].replace(/[._-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const name = email
+    .split("@")[0]
+    .replace(/[._-]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
   set({ staff: [...state.staff, { id: `s_${Date.now().toString(36)}`, name, email, partnerRole, clients: {} }] });
 };
 export const removeStaff = (id: string) => set({ staff: state.staff.filter((x) => x.id !== id) });
 /** Partner staff who can open this Organization, with the role they get on it. */
 export const staffOn = (orgId: string, s: State = state) =>
-  s.staff.flatMap((x) => (x.partnerRole === "Admin" ? [{ staff: x, roleId: "admin" }] : x.clients[orgId] ? [{ staff: x, roleId: x.clients[orgId] }] : []));
+  s.staff.flatMap((x) =>
+    x.partnerRole === "Admin" ? [{ staff: x, roleId: "admin" }] : x.clients[orgId] ? [{ staff: x, roleId: x.clients[orgId] }] : [],
+  );

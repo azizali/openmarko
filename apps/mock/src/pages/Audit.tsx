@@ -19,18 +19,42 @@ export default function Audit() {
     <>
       <PageHeader
         title="Site audit"
-        sub={website
-          ? <><ExternalUrl domain={website.domain} /> · {websiteData[website.id].summary.pages} pages · crawled {websiteData[website.id].summary.crawled} in {websiteData[website.id].summary.duration}</>
-          : "Every website the organization owns, checked weekly."}
+        sub={
+          website ? (
+            <>
+              <ExternalUrl domain={website.domain} /> · {websiteData[website.id].summary.pages} pages · crawled{" "}
+              {websiteData[website.id].summary.crawled} in {websiteData[website.id].summary.duration}
+            </>
+          ) : (
+            "Every website the organization owns, checked weekly."
+          )
+        }
       />
       <ScopeBar kind="website" />
-      {website ? <AuditBody key={website.id} websiteId={website.id} /> : missing ? <Needs kind="website" locationId={location?.id} note="Site health is checked on a website." /> : (
+      {website ? (
+        <AuditBody key={website.id} websiteId={website.id} />
+      ) : missing ? (
+        <Needs kind="website" locationId={location?.id} note="Site health is checked on a website." />
+      ) : (
         <WebsiteOverview
           columns={["Site health", "Critical", "Warnings", "Pages"]}
           row={(w) => {
             const d = websiteData[w.id];
             const n = (s: Severity) => d.issues.filter((i) => i.severity === s).length;
-            return [<span className={d.summary.score >= 80 ? "text-good" : "text-warn"}>{d.summary.score}</span>, n("critical") ? <Badge tone="bad">{n("critical")}</Badge> : "0", n("warning"), d.summary.pages];
+            return [
+              <span key="score" className={d.summary.score >= 80 ? "text-good" : "text-warn"}>
+                {d.summary.score}
+              </span>,
+              n("critical") ? (
+                <Badge key="critical" tone="bad">
+                  {n("critical")}
+                </Badge>
+              ) : (
+                "0"
+              ),
+              n("warning"),
+              d.summary.pages,
+            ];
           }}
         />
       )}
@@ -58,7 +82,10 @@ function AuditBody({ websiteId }: { websiteId: string }) {
           <ScoreRing score={auditSummary.score} size={88} stroke={7} label="Site health" />
           <div>
             <div className="text-[12.5px] text-muted">Site health</div>
-            <div className="mt-1 flex items-center gap-2"><Delta cur={auditSummary.score} prev={auditSummary.prevScore} suffix=" pts" /><span className="text-[12.5px] text-muted">since Oct 21</span></div>
+            <div className="mt-1 flex items-center gap-2">
+              <Delta cur={auditSummary.score} prev={auditSummary.prevScore} suffix=" pts" />
+              <span className="text-[12.5px] text-muted">since Oct 21</span>
+            </div>
             <div className="mt-3 flex gap-2">
               <Badge tone="bad">{count("critical")} critical</Badge>
               <Badge tone="warn">{count("warning")} warnings</Badge>
@@ -80,27 +107,52 @@ function AuditBody({ websiteId }: { websiteId: string }) {
         </Card>
       </div>
 
-      <Tabs value={sev} onChange={setSev} tabs={[
-        { id: "all", label: "All issues", count: auditIssues.length },
-        { id: "critical", label: "Critical", count: count("critical") },
-        { id: "warning", label: "Warnings", count: count("warning") },
-        { id: "notice", label: "Notices", count: count("notice") },
-      ]} />
+      <Tabs
+        value={sev}
+        onChange={setSev}
+        tabs={[
+          { id: "all", label: "All issues", count: auditIssues.length },
+          { id: "critical", label: "Critical", count: count("critical") },
+          { id: "warning", label: "Warnings", count: count("warning") },
+          { id: "notice", label: "Notices", count: count("notice") },
+        ]}
+      />
       <div className="my-4 flex flex-wrap gap-1.5">
         {cats.map((c) => (
-          <button key={c} onClick={() => setCat(c)} className={cn("h-7 rounded-full border px-3 text-[12.5px] transition-colors", cat === c ? "border-ink bg-ink text-on-ink" : "border-line text-muted hover:bg-hover")}>{c}</button>
+          <button
+            key={c}
+            onClick={() => setCat(c)}
+            className={cn(
+              "h-7 rounded-full border px-3 text-[12.5px] transition-colors",
+              cat === c ? "border-ink bg-ink text-on-ink" : "border-line text-muted hover:bg-hover",
+            )}
+          >
+            {c}
+          </button>
         ))}
       </div>
 
       <Card pad={false}>
         {list.map((i) => (
-          <Link key={i.id} to={`/audit/${i.id}`} className="group flex items-center gap-4 border-b border-line px-5 py-3.5 last:border-0 hover:bg-hover">
-            <Badge tone={sevTone[i.severity]} className="w-[68px] justify-center capitalize">{i.severity}</Badge>
+          <Link
+            key={i.id}
+            to={`/audit/${i.id}`}
+            className="group flex items-center gap-4 border-b border-line px-5 py-3.5 last:border-0 hover:bg-hover"
+          >
+            <Badge tone={sevTone[i.severity]} className="w-[68px] justify-center capitalize">
+              {i.severity}
+            </Badge>
             <div className="min-w-0 flex-1">
               <div className="truncate text-[14px] font-medium">{i.title}</div>
-              <div className="text-[12.5px] text-muted">{i.category} · {i.pages.length} page{i.pages.length > 1 ? "s" : ""}</div>
+              <div className="text-[12.5px] text-muted">
+                {i.category} · {i.pages.length} page{i.pages.length > 1 ? "s" : ""}
+              </div>
             </div>
-            {i.autoFix && <Badge tone="info" className="hidden sm:inline-flex"><Wand2 size={11} /> Auto-fix · {i.autoFix.executor}</Badge>}
+            {i.autoFix && (
+              <Badge tone="info" className="hidden sm:inline-flex">
+                <Wand2 size={11} /> Auto-fix · {i.autoFix.executor}
+              </Badge>
+            )}
             <ChevronRight size={16} className="text-subtle" />
           </Link>
         ))}

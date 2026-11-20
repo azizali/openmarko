@@ -20,8 +20,6 @@ const page = (load: false | (() => Promise<{ default: ComponentType }>)) => (loa
 const Widgets = page(__MODULE_AI__ && (() => import("./pages/Widgets")));
 const Knowledge = page(__MODULE_KNOWLEDGE__ && (() => import("./pages/Knowledge")));
 const Automation = page(__MODULE_AUTOMATION__ && (() => import("./pages/Automation")));
-/** The mock is its own route, outside Layout and sign-in. Lazy, so its data stays out of the main bundle. */
-const MockPage = lazy(() => import("./mock/MockPage"));
 
 /** Admin moved into Settings (ADR 0027); old links still land on the same section. */
 function AdminRedirect() {
@@ -42,7 +40,6 @@ export default function App() {
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/accept-invitation/:id" element={<AcceptInvitation />} />
               <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/mock" element={<MockPage />} />
               <Route element={<Layout />}>
                 <Route index element={<Home />} />
                 {Widgets && <Route path="widgets" element={<Widgets />} />}

@@ -23,15 +23,29 @@ export default function Content() {
   const { location } = useScopedLocation();
   const all = useContent();
   if (website) return <ContentBody key={website.id} websiteId={website.id} domain={website.domain} />;
-  if (missing) return <><PageHeader title="Articles" sub="Articles live on a website." /><ScopeBar kind="website" /><Needs kind="website" locationId={location?.id} note="Articles are published to a website." /></>;
+  if (missing)
+    return (
+      <>
+        <PageHeader title="Articles" sub="Articles live on a website." />
+        <ScopeBar kind="website" />
+        <Needs kind="website" locationId={location?.id} note="Articles are published to a website." />
+      </>
+    );
   return (
     <>
       <PageHeader title="Articles" sub="Articles on each of the organization's websites, from idea to published." />
       <ScopeBar kind="website" />
-      <WebsiteOverview columns={["Published", "Drafts & scheduled", "Ideas"]} row={(w) => {
-        const mine = all.filter((i) => onWebsite(i, w.id));
-        return [mine.filter((i) => i.status === "published").length, mine.filter((i) => i.status === "draft" || i.status === "scheduled").length, mine.filter((i) => i.status === "idea").length];
-      }} />
+      <WebsiteOverview
+        columns={["Published", "Drafts & scheduled", "Ideas"]}
+        row={(w) => {
+          const mine = all.filter((i) => onWebsite(i, w.id));
+          return [
+            mine.filter((i) => i.status === "published").length,
+            mine.filter((i) => i.status === "draft" || i.status === "scheduled").length,
+            mine.filter((i) => i.status === "idea").length,
+          ];
+        }}
+      />
     </>
   );
 }
@@ -69,8 +83,22 @@ function ContentBody({ websiteId, domain }: { websiteId: string; domain: string 
     <>
       <PageHeader
         title="Articles"
-        sub={<>Every article on <ExternalUrl domain={domain} />, from idea to published, each aimed at a keyword you track. Google Business Profile and social posts are in Posts & calendar.</>}
-        actions={<Button variant="primary" icon={suggesting ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} disabled={suggesting} onClick={suggest}>Suggest ideas</Button>}
+        sub={
+          <>
+            Every article on <ExternalUrl domain={domain} />, from idea to published, each aimed at a keyword you track. Google Business
+            Profile and social posts are in Posts & calendar.
+          </>
+        }
+        actions={
+          <Button
+            variant="primary"
+            icon={suggesting ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+            disabled={suggesting}
+            onClick={suggest}
+          >
+            Suggest ideas
+          </Button>
+        }
       />
       <ScopeBar kind="website" />
 
@@ -83,17 +111,29 @@ function ContentBody({ websiteId, domain }: { websiteId: string; domain: string 
 
       {uncovered.length > 0 && (
         <p className="mb-4 text-[13px] text-muted">
-          <b className="font-medium text-fg">{uncovered.length} tracked keyword{uncovered.length === 1 ? " has" : "s have"} no content yet:</b>{" "}
-          {uncovered.slice(0, 4).map((k) => k.term).join(", ")}{uncovered.length > 4 && ` and ${uncovered.length - 4} more`}. Suggest ideas picks these first.
+          <b className="font-medium text-fg">
+            {uncovered.length} tracked keyword{uncovered.length === 1 ? " has" : "s have"} no content yet:
+          </b>{" "}
+          {uncovered
+            .slice(0, 4)
+            .map((k) => k.term)
+            .join(", ")}
+          {uncovered.length > 4 && ` and ${uncovered.length - 4} more`}. Suggest ideas picks these first.
         </p>
       )}
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Select size="sm" aria-label="Keyword" value={kw} onChange={(e) => setKw(e.target.value)} className="max-w-60">
           <option value="all">All keywords</option>
-          {keywords.map((k) => <option key={k.id} value={k.id}>{k.term}</option>)}
+          {keywords.map((k) => (
+            <option key={k.id} value={k.id}>
+              {k.term}
+            </option>
+          ))}
         </Select>
-        <span className="num ml-auto text-[12.5px] text-subtle">{shown.length} of {items.length} articles</span>
+        <span className="num ml-auto text-[12.5px] text-subtle">
+          {shown.length} of {items.length} articles
+        </span>
       </div>
 
       <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -107,10 +147,20 @@ function ContentBody({ websiteId, domain }: { websiteId: string; domain: string 
                 <span className="num text-[12px] text-muted">{col.length}</span>
               </header>
               <div className="space-y-2">
-                {col.map((i) => <ContentCard key={i.id} item={i} busy={busy === i.id} onAdvance={() => advance(i)} onRemove={() => removeContent(i.id)} />)}
-                {!col.length && <div className="rounded-lg border border-dashed border-line px-3 py-6 text-center text-[12.5px] text-muted">Nothing here</div>}
+                {col.map((i) => (
+                  <ContentCard key={i.id} item={i} busy={busy === i.id} onAdvance={() => advance(i)} onRemove={() => removeContent(i.id)} />
+                ))}
+                {!col.length && (
+                  <div className="rounded-lg border border-dashed border-line px-3 py-6 text-center text-[12.5px] text-muted">
+                    Nothing here
+                  </div>
+                )}
                 {c.id === "idea" && (
-                  <button onClick={suggest} disabled={suggesting} className="flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-[12.5px] text-muted hover:bg-surface hover:text-fg disabled:opacity-50">
+                  <button
+                    onClick={suggest}
+                    disabled={suggesting}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-[12.5px] text-muted hover:bg-surface hover:text-fg disabled:opacity-50"
+                  >
                     <Sparkles size={12} /> Suggest more
                   </button>
                 )}
@@ -119,7 +169,9 @@ function ContentBody({ websiteId, domain }: { websiteId: string; domain: string 
           );
         })}
       </div>
-      <Link to="/social/posts" className="mt-4 inline-flex text-[12.5px] text-muted hover:text-fg">Google Business Profile and social posts are in Posts & calendar →</Link>
+      <Link to="/social/posts" className="mt-4 inline-flex text-[12.5px] text-muted hover:text-fg">
+        Google Business Profile and social posts are in Posts & calendar →
+      </Link>
       {node}
     </>
   );
@@ -135,7 +187,11 @@ function ContentCard({ item, busy, onAdvance, onRemove }: { item: PlanItem; busy
           <Newspaper size={14} />
         </span>
         <div className="min-w-0 flex-1 text-[13.5px] leading-snug font-medium">{item.title}</div>
-        {item.status === "idea" && <button onClick={onRemove} aria-label="Dismiss idea" className="rounded p-0.5 text-subtle hover:bg-hover hover:text-fg"><X size={13} /></button>}
+        {item.status === "idea" && (
+          <button onClick={onRemove} aria-label="Dismiss idea" className="rounded p-0.5 text-subtle hover:bg-hover hover:text-fg">
+            <X size={13} />
+          </button>
+        )}
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 pl-[22px] text-[12px] text-muted">
         {item.isNew && <Badge tone="accent">New</Badge>}
@@ -147,7 +203,17 @@ function ContentCard({ item, busy, onAdvance, onRemove }: { item: PlanItem; busy
       {(item.metric || act) && (
         <div className="mt-2.5 flex items-center gap-2 pl-[22px]">
           {item.metric && <span className="num text-[12.5px] font-medium text-good">{item.metric}</span>}
-          {act && <Button size="sm" className="ml-auto" onClick={onAdvance} disabled={busy} icon={busy ? <Loader2 size={12} className="animate-spin" /> : item.status === "idea" ? <Sparkles size={12} /> : undefined}>{act}</Button>}
+          {act && (
+            <Button
+              size="sm"
+              className="ml-auto"
+              onClick={onAdvance}
+              disabled={busy}
+              icon={busy ? <Loader2 size={12} className="animate-spin" /> : item.status === "idea" ? <Sparkles size={12} /> : undefined}
+            >
+              {act}
+            </Button>
+          )}
         </div>
       )}
     </article>

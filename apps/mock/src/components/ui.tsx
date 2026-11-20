@@ -1,4 +1,14 @@
-import { useEffect, useId, useState, type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes, type Ref, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import {
+  useEffect,
+  useId,
+  useState,
+  type ReactNode,
+  type ButtonHTMLAttributes,
+  type InputHTMLAttributes,
+  type Ref,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+} from "react";
 import { ArrowDown, ArrowUp, Minus, Search, X } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -63,7 +73,13 @@ const toneCls: Record<Tone, string> = {
 };
 
 export function Badge({ tone = "neutral", children, className }: { tone?: Tone; children: ReactNode; className?: string }) {
-  return <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-medium leading-4", toneCls[tone], className)}>{children}</span>;
+  return (
+    <span
+      className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-medium leading-4", toneCls[tone], className)}
+    >
+      {children}
+    </span>
+  );
 }
 
 export function Dot({ tone }: { tone: Tone }) {
@@ -75,7 +91,12 @@ export function Dot({ tone }: { tone: Tone }) {
 export function RankDelta({ cur, prev }: { cur: number | null; prev: number | null }) {
   if (cur === null || prev === null) return <span className="text-subtle">—</span>;
   const d = prev - cur;
-  if (d === 0) return <span className="inline-flex items-center text-subtle"><Minus size={12} /></span>;
+  if (d === 0)
+    return (
+      <span className="inline-flex items-center text-subtle">
+        <Minus size={12} />
+      </span>
+    );
   return (
     <span className={cn("num inline-flex items-center gap-0.5 font-medium", d > 0 ? "text-good" : "text-bad")}>
       {d > 0 ? <ArrowUp size={12} strokeWidth={2.5} /> : <ArrowDown size={12} strokeWidth={2.5} />}
@@ -101,7 +122,9 @@ export function Delta({ cur, prev, suffix = "%", invert = false }: { cur: number
 export function Stat({ label, value, delta, hint }: { label: string; value: ReactNode; delta?: ReactNode; hint?: string }) {
   return (
     <div>
-      <div className="text-[12.5px] text-muted" title={hint}>{label}</div>
+      <div className="text-[12.5px] text-muted" title={hint}>
+        {label}
+      </div>
       <div className="mt-1 flex items-baseline gap-2">
         <span className="num font-serif text-[30px] leading-none tracking-tight">{value}</span>
         {delta}
@@ -110,7 +133,17 @@ export function Stat({ label, value, delta, hint }: { label: string; value: Reac
   );
 }
 
-export function PageHeader({ title, sub, actions, crumbs }: { title: ReactNode; sub?: ReactNode; actions?: ReactNode; crumbs?: ReactNode }) {
+export function PageHeader({
+  title,
+  sub,
+  actions,
+  crumbs,
+}: {
+  title: ReactNode;
+  sub?: ReactNode;
+  actions?: ReactNode;
+  crumbs?: ReactNode;
+}) {
   return (
     <div className="mb-7">
       {crumbs && <div className="mb-3 text-[13px] text-muted">{crumbs}</div>}
@@ -125,7 +158,15 @@ export function PageHeader({ title, sub, actions, crumbs }: { title: ReactNode; 
   );
 }
 
-export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { id: T; label: ReactNode; count?: number }[]; value: T; onChange: (v: T) => void }) {
+export function Tabs<T extends string>({
+  tabs,
+  value,
+  onChange,
+}: {
+  tabs: { id: T; label: ReactNode; count?: number }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
   return (
     <div role="tablist" className="flex gap-5 overflow-x-auto border-b border-line">
       {tabs.map((t) => (
@@ -147,7 +188,17 @@ export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { id: 
   );
 }
 
-export function Segmented<T extends string>({ options, value, onChange, label }: { options: { id: T; label: ReactNode }[]; value: T; onChange: (v: T) => void; label?: string }) {
+export function Segmented<T extends string>({
+  options,
+  value,
+  onChange,
+  label,
+}: {
+  options: { id: T; label: ReactNode }[];
+  value: T;
+  onChange: (v: T) => void;
+  label?: string;
+}) {
   return (
     <div role="radiogroup" aria-label={label} className="inline-flex rounded-lg bg-hover p-0.5">
       {options.map((o) => (
@@ -156,7 +207,10 @@ export function Segmented<T extends string>({ options, value, onChange, label }:
           role="radio"
           aria-checked={value === o.id}
           onClick={() => onChange(o.id)}
-          className={cn("h-7 rounded-md px-2.5 text-[13px] transition-colors", value === o.id ? "bg-surface font-medium text-fg shadow-sm" : "text-muted hover:text-fg")}
+          className={cn(
+            "h-7 rounded-md px-2.5 text-[13px] transition-colors",
+            value === o.id ? "bg-surface font-medium text-fg shadow-sm" : "text-muted hover:text-fg",
+          )}
         >
           {o.label}
         </button>
@@ -174,7 +228,12 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
       onClick={() => onChange(!checked)}
       className={cn("relative h-5 w-9 shrink-0 rounded-full transition-colors", checked ? "bg-ink" : "bg-line-strong")}
     >
-      <span className={cn("absolute top-0.5 left-0.5 size-4 rounded-full bg-surface shadow-sm transition-transform", checked && "translate-x-4")} />
+      <span
+        className={cn(
+          "absolute top-0.5 left-0.5 size-4 rounded-full bg-surface shadow-sm transition-transform",
+          checked && "translate-x-4",
+        )}
+      />
     </button>
   );
 }
@@ -197,8 +256,14 @@ export function Checkbox({ checked, onChange, label }: { checked: boolean; onCha
 
 /** xs sits beside small buttons in a toolbar row; lg beside a primary action. */
 export type FieldSize = "xs" | "sm" | "md" | "lg";
-const fieldBase = "w-full rounded-lg border border-line bg-surface text-[13.5px] text-fg outline-none transition-colors placeholder:text-subtle focus:border-line-strong focus-within:border-line-strong disabled:opacity-70";
-const fieldSizes: Record<FieldSize, string> = { xs: "h-7 rounded-md px-2 text-[12.5px]", sm: "h-8 px-2.5 text-[13px]", md: "h-9 px-3", lg: "h-10 px-3" };
+const fieldBase =
+  "w-full rounded-lg border border-line bg-surface text-[13.5px] text-fg outline-none transition-colors placeholder:text-subtle focus:border-line-strong focus-within:border-line-strong disabled:opacity-70";
+const fieldSizes: Record<FieldSize, string> = {
+  xs: "h-7 rounded-md px-2 text-[12.5px]",
+  sm: "h-8 px-2.5 text-[13px]",
+  md: "h-9 px-3",
+  lg: "h-10 px-3",
+};
 /** Field classes for markup that can't use Input/Select. */
 export const fieldClass = (size: FieldSize = "md", className?: string) => cn(fieldBase, fieldSizes[size], className);
 
@@ -234,7 +299,12 @@ export function Select({ size = "md", className, ...rest }: SelectProps) {
 
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & { mono?: boolean; ref?: Ref<HTMLTextAreaElement> };
 export function Textarea({ mono, className, ...rest }: TextareaProps) {
-  return <textarea {...rest} className={cn(fieldBase, "resize-y p-3 leading-[1.55]", mono && "font-mono text-[12.5px] leading-[1.6]", className)} />;
+  return (
+    <textarea
+      {...rest}
+      className={cn(fieldBase, "resize-y p-3 leading-[1.55]", mono && "font-mono text-[12.5px] leading-[1.6]", className)}
+    />
+  );
 }
 
 /** The text above a field. On its own, for a group of buttons that isn't a single input. */
@@ -243,7 +313,17 @@ export function FieldLabel({ children, className }: { children: ReactNode; class
 }
 
 /** A label above a field, with an optional hint below it. */
-export function Field({ label, hint, className, children }: { label: ReactNode; hint?: ReactNode; className?: string; children: ReactNode }) {
+export function Field({
+  label,
+  hint,
+  className,
+  children,
+}: {
+  label: ReactNode;
+  hint?: ReactNode;
+  className?: string;
+  children: ReactNode;
+}) {
   return (
     <label className={cn("block", className)}>
       <FieldLabel>{label}</FieldLabel>
@@ -253,10 +333,24 @@ export function Field({ label, hint, className, children }: { label: ReactNode; 
   );
 }
 
-export function Progress({ value, tone = "ink", className }: { value: number; tone?: "ink" | "good" | "warn" | "bad" | "accent" | "info"; className?: string }) {
+export function Progress({
+  value,
+  tone = "ink",
+  className,
+}: {
+  value: number;
+  tone?: "ink" | "good" | "warn" | "bad" | "accent" | "info";
+  className?: string;
+}) {
   const c = { ink: "bg-ink", good: "bg-good", warn: "bg-warn", bad: "bg-bad", accent: "bg-accent", info: "bg-info" }[tone];
   return (
-    <div className={cn("h-1.5 overflow-hidden rounded-full bg-hover", className)} role="progressbar" aria-valuenow={Math.round(value)} aria-valuemin={0} aria-valuemax={100}>
+    <div
+      className={cn("h-1.5 overflow-hidden rounded-full bg-hover", className)}
+      role="progressbar"
+      aria-valuenow={Math.round(value)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
       <div className={cn("h-full rounded-full transition-[width] duration-500", c)} style={{ width: `${Math.min(100, value)}%` }} />
     </div>
   );
@@ -267,12 +361,29 @@ export function ScoreRing({ score, size = 72, stroke = 6, label }: { score: numb
   const c = 2 * Math.PI * r;
   const color = score >= 80 ? "var(--good)" : score >= 60 ? "var(--warn)" : "var(--bad)";
   return (
-    <div className="relative inline-grid place-items-center" style={{ width: size, height: size }} role="img" aria-label={`${label ?? "Score"} ${score} of 100`}>
+    <div
+      className="relative inline-grid place-items-center"
+      style={{ width: size, height: size }}
+      role="img"
+      aria-label={`${label ?? "Score"} ${score} of 100`}
+    >
       <svg width={size} height={size} className="-rotate-90">
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--hover)" strokeWidth={stroke} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - score / 100)} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - score / 100)}
+        />
       </svg>
-      <span className="num absolute font-serif" style={{ fontSize: size * 0.32 }}>{score}</span>
+      <span className="num absolute font-serif" style={{ fontSize: size * 0.32 }}>
+        {score}
+      </span>
     </div>
   );
 }
@@ -288,16 +399,37 @@ function useEscape(open: boolean, onClose: () => void) {
   }, [open, onClose]);
 }
 
-export function Drawer({ open, onClose, title, children, footer, width = 520 }: { open: boolean; onClose: () => void; title: ReactNode; children: ReactNode; footer?: ReactNode; width?: number }) {
+export function Drawer({
+  open,
+  onClose,
+  title,
+  children,
+  footer,
+  width = 520,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: ReactNode;
+  children: ReactNode;
+  footer?: ReactNode;
+  width?: number;
+}) {
   useEscape(open, onClose);
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/20 anim-fade" onClick={onClose} />
-      <aside role="dialog" aria-modal="true" className="anim-slide absolute top-0 right-0 flex h-full max-w-full flex-col border-l border-line bg-surface shadow-float" style={{ width }}>
+      <aside
+        role="dialog"
+        aria-modal="true"
+        className="anim-slide absolute top-0 right-0 flex h-full max-w-full flex-col border-l border-line bg-surface shadow-float"
+        style={{ width }}
+      >
         <div className="flex items-center justify-between gap-4 border-b border-line px-6 py-4">
           <div className="min-w-0 text-[15px] font-medium">{title}</div>
-          <button onClick={onClose} aria-label="Close" className="rounded p-1 text-muted hover:bg-hover"><X size={16} /></button>
+          <button onClick={onClose} aria-label="Close" className="rounded p-1 text-muted hover:bg-hover">
+            <X size={16} />
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
         {footer && <div className="flex items-center justify-end gap-2 border-t border-line px-6 py-3">{footer}</div>}
@@ -306,17 +438,38 @@ export function Drawer({ open, onClose, title, children, footer, width = 520 }: 
   );
 }
 
-export function Modal({ open, onClose, title, children, footer, width = 480 }: { open: boolean; onClose: () => void; title: ReactNode; children: ReactNode; footer?: ReactNode; width?: number }) {
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  footer,
+  width = 480,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: ReactNode;
+  children: ReactNode;
+  footer?: ReactNode;
+  width?: number;
+}) {
   useEscape(open, onClose);
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-4">
       <div className="absolute inset-0 bg-black/25 anim-fade" onClick={onClose} />
       {/* Capped to the viewport: header and footer stay put, the body scrolls. */}
-      <div role="dialog" aria-modal="true" className="anim-fade relative flex max-h-[calc(100dvh-2rem)] w-full flex-col rounded-xl border border-line bg-surface shadow-float" style={{ maxWidth: width }}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="anim-fade relative flex max-h-[calc(100dvh-2rem)] w-full flex-col rounded-xl border border-line bg-surface shadow-float"
+        style={{ maxWidth: width }}
+      >
         <div className="flex shrink-0 items-center justify-between px-6 pt-5 pb-1">
           <h2 className="font-serif text-[22px]">{title}</h2>
-          <button onClick={onClose} aria-label="Close" className="rounded p-1 text-muted hover:bg-hover"><X size={16} /></button>
+          <button onClick={onClose} aria-label="Close" className="rounded p-1 text-muted hover:bg-hover">
+            <X size={16} />
+          </button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-4">{children}</div>
         {footer && <div className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-line px-6 py-3">{footer}</div>}
@@ -333,23 +486,46 @@ export function useToast() {
     return () => clearTimeout(t);
   }, [msg]);
   const node = msg ? (
-    <div role="status" className="anim-fade fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-full bg-ink px-4 py-2.5 text-[13.5px] text-on-ink shadow-float">{msg}</div>
+    <div
+      role="status"
+      className="anim-fade fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-full bg-ink px-4 py-2.5 text-[13.5px] text-on-ink shadow-float"
+    >
+      {msg}
+    </div>
   ) : null;
   return { toast: setMsg, node };
 }
 
 // ---------- Charts ----------
 
-export function Sparkline({ data, width = 72, height = 22, invert = false, tone }: { data: (number | null)[]; width?: number; height?: number; invert?: boolean; tone?: "good" | "bad" | "muted" }) {
+export function Sparkline({
+  data,
+  width = 72,
+  height = 22,
+  invert = false,
+  tone,
+}: {
+  data: (number | null)[];
+  width?: number;
+  height?: number;
+  invert?: boolean;
+  tone?: "good" | "bad" | "muted";
+}) {
   const vals = data.filter((d): d is number => d !== null);
   if (vals.length < 2) return <span className="text-subtle">—</span>;
-  const min = Math.min(...vals), max = Math.max(...vals);
+  const min = Math.min(...vals),
+    max = Math.max(...vals);
   const span = max - min || 1;
   const pts = data
-    .map((d, i) => (d === null ? null : `${(i / (data.length - 1)) * width},${invert ? ((d - min) / span) * (height - 4) + 2 : height - 2 - ((d - min) / span) * (height - 4)}`))
+    .map((d, i) =>
+      d === null
+        ? null
+        : `${(i / (data.length - 1)) * width},${invert ? ((d - min) / span) * (height - 4) + 2 : height - 2 - ((d - min) / span) * (height - 4)}`,
+    )
     .filter(Boolean)
     .join(" ");
-  const first = vals[0], last = vals[vals.length - 1];
+  const first = vals[0],
+    last = vals[vals.length - 1];
   const auto = (invert ? last < first : last > first) ? "good" : last === first ? "muted" : "bad";
   const stroke = { good: "var(--good)", bad: "var(--bad)", muted: "var(--subtle)" }[tone ?? auto];
   return (
@@ -362,10 +538,31 @@ export function Sparkline({ data, width = 72, height = 22, invert = false, tone 
 type Series = { name: string; color: string; values: (number | null)[]; dashed?: boolean };
 
 /** Line chart with optional inverted y-axis (for rank positions where 1 is top). */
-export function LineChart({ labels, series, height = 220, invert = false, yMax, area = false, format = (v: number) => String(v) }: { labels: string[]; series: Series[]; height?: number; invert?: boolean; yMax?: number; area?: boolean; format?: (v: number) => string }) {
+export function LineChart({
+  labels,
+  series,
+  height = 220,
+  invert = false,
+  yMax,
+  area = false,
+  format = (v: number) => String(v),
+}: {
+  labels: string[];
+  series: Series[];
+  height?: number;
+  invert?: boolean;
+  yMax?: number;
+  area?: boolean;
+  format?: (v: number) => string;
+}) {
   const id = useId();
   const [hover, setHover] = useState<number | null>(null);
-  const W = 640, H = height, pl = 36, pr = 12, pt = 12, pb = 26;
+  const W = 640,
+    H = height,
+    pl = 36,
+    pr = 12,
+    pt = 12,
+    pb = 26;
   const all = series.flatMap((s) => s.values.filter((v): v is number => v !== null));
   const lo = invert ? 1 : Math.min(0, ...all);
   const hi = yMax ?? Math.ceil(Math.max(...all) * (invert ? 1.1 : 1.15));
@@ -376,18 +573,34 @@ export function LineChart({ labels, series, height = 220, invert = false, yMax, 
 
   return (
     <div className="relative">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height }} onMouseLeave={() => setHover(null)} role="img" aria-label={series.map((s) => s.name).join(", ") + " chart"}>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="w-full"
+        style={{ height }}
+        onMouseLeave={() => setHover(null)}
+        role="img"
+        aria-label={series.map((s) => s.name).join(", ") + " chart"}
+      >
         {ticks.map((t) => (
           <g key={t}>
             <line x1={pl} x2={W - pr} y1={y(t)} y2={y(t)} stroke="var(--border)" strokeDasharray="2 4" />
-            <text x={pl - 8} y={y(t) + 4} textAnchor="end" fontSize="11" fill="var(--subtle)" className="num">{format(t)}</text>
+            <text x={pl - 8} y={y(t) + 4} textAnchor="end" fontSize="11" fill="var(--subtle)" className="num">
+              {format(t)}
+            </text>
           </g>
         ))}
-        {labels.map((l, i) => i % step === 0 && (
-          <text key={l + i} x={x(i)} y={H - 6} textAnchor="middle" fontSize="11" fill="var(--subtle)">{l}</text>
-        ))}
+        {labels.map(
+          (l, i) =>
+            i % step === 0 && (
+              <text key={l + i} x={x(i)} y={H - 6} textAnchor="middle" fontSize="11" fill="var(--subtle)">
+                {l}
+              </text>
+            ),
+        )}
         {series.map((s, si) => {
-          const pts = s.values.map((v, i) => (v === null ? null : [x(i), y(v)] as const)).filter((p): p is readonly [number, number] => p !== null);
+          const pts = s.values
+            .map((v, i) => (v === null ? null : ([x(i), y(v)] as const)))
+            .filter((p): p is readonly [number, number] => p !== null);
           const d = pts.map((p, i) => `${i ? "L" : "M"}${p[0]},${p[1]}`).join(" ");
           return (
             <g key={s.name}>
@@ -402,22 +615,53 @@ export function LineChart({ labels, series, height = 220, invert = false, yMax, 
                   <path d={`${d} L${pts[pts.length - 1][0]},${H - pb} L${pts[0][0]},${H - pb} Z`} fill={`url(#${id}-g)`} />
                 </>
               )}
-              <path d={d} fill="none" stroke={s.color} strokeWidth={1.75} strokeDasharray={s.dashed ? "4 4" : undefined} strokeLinejoin="round" />
+              <path
+                d={d}
+                fill="none"
+                stroke={s.color}
+                strokeWidth={1.75}
+                strokeDasharray={s.dashed ? "4 4" : undefined}
+                strokeLinejoin="round"
+              />
             </g>
           );
         })}
         {labels.map((_, i) => (
-          <rect key={i} x={x(i) - (W - pl - pr) / labels.length / 2} y={pt} width={(W - pl - pr) / labels.length} height={H - pt - pb} fill="transparent" onMouseEnter={() => setHover(i)} />
+          <rect
+            key={i}
+            x={x(i) - (W - pl - pr) / labels.length / 2}
+            y={pt}
+            width={(W - pl - pr) / labels.length}
+            height={H - pt - pb}
+            fill="transparent"
+            onMouseEnter={() => setHover(i)}
+          />
         ))}
         {hover !== null && (
           <g pointerEvents="none">
             <line x1={x(hover)} x2={x(hover)} y1={pt} y2={H - pb} stroke="var(--border-strong)" />
-            {series.map((s) => s.values[hover] !== null && <circle key={s.name} cx={x(hover)} cy={y(s.values[hover]!)} r={3.5} fill="var(--surface)" stroke={s.color} strokeWidth={2} />)}
+            {series.map(
+              (s) =>
+                s.values[hover] !== null && (
+                  <circle
+                    key={s.name}
+                    cx={x(hover)}
+                    cy={y(s.values[hover]!)}
+                    r={3.5}
+                    fill="var(--surface)"
+                    stroke={s.color}
+                    strokeWidth={2}
+                  />
+                ),
+            )}
           </g>
         )}
       </svg>
       {hover !== null && (
-        <div className="pointer-events-none absolute top-1 rounded-md border border-line bg-surface px-2.5 py-1.5 text-[12px] shadow-sm" style={{ left: `min(calc(${(x(hover) / W) * 100}% + 8px), calc(100% - 140px))` }}>
+        <div
+          className="pointer-events-none absolute top-1 rounded-md border border-line bg-surface px-2.5 py-1.5 text-[12px] shadow-sm"
+          style={{ left: `min(calc(${(x(hover) / W) * 100}% + 8px), calc(100% - 140px))` }}
+        >
           <div className="mb-0.5 text-muted">{labels[hover]}</div>
           {series.map((s) => (
             <div key={s.name} className="num flex items-center gap-1.5">

@@ -27,13 +27,32 @@ export default function SwipeFile() {
     <>
       <PageHeader
         title="Swipe file"
-        sub={<>Formats and ideas worth reusing: ones you saved from <Link to="/social/scanner?tab=trending" className="underline decoration-line-strong underline-offset-2 hover:text-fg">trends</Link>, ones you wrote, and a few to start with. Turn any of them into a post in your voice.</>}
-        actions={<Button variant="primary" icon={<Plus size={14} />} onClick={() => setEdit(blankSwipe())}>New idea</Button>}
+        sub={
+          <>
+            Formats and ideas worth reusing: ones you saved from{" "}
+            <Link to="/social/scanner?tab=trending" className="underline decoration-line-strong underline-offset-2 hover:text-fg">
+              trends
+            </Link>
+            , ones you wrote, and a few to start with. Turn any of them into a post in your voice.
+          </>
+        }
+        actions={
+          <Button variant="primary" icon={<Plus size={14} />} onClick={() => setEdit(blankSwipe())}>
+            New idea
+          </Button>
+        }
       />
 
       <div className="mb-4 flex flex-wrap gap-1.5">
         {sources.map((s) => (
-          <button key={s.id} onClick={() => setSource(s.id)} className={cn("inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[12.5px] transition-colors", source === s.id ? "border-ink bg-ink text-on-ink" : "border-line text-muted hover:bg-hover")}>
+          <button
+            key={s.id}
+            onClick={() => setSource(s.id)}
+            className={cn(
+              "inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[12.5px] transition-colors",
+              source === s.id ? "border-ink bg-ink text-on-ink" : "border-line text-muted hover:bg-hover",
+            )}
+          >
             {s.label} <span className="num opacity-70">{items.filter((x) => s.id === "all" || x.source === s.id).length}</span>
           </button>
         ))}
@@ -41,7 +60,10 @@ export default function SwipeFile() {
 
       <Card pad={false}>
         {shown.map((s) => (
-          <article key={s.id} className="flex flex-col gap-3 border-b border-line px-5 py-4 last:border-0 md:flex-row md:items-start md:gap-6">
+          <article
+            key={s.id}
+            className="flex flex-col gap-3 border-b border-line px-5 py-4 last:border-0 md:flex-row md:items-start md:gap-6"
+          >
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted">
                 <Badge tone={s.source === "trend" ? "accent" : "neutral"}>{s.kind}</Badge>
@@ -53,21 +75,57 @@ export default function SwipeFile() {
               <ol className="mt-2 mb-0 flex list-none flex-wrap items-center gap-x-1.5 gap-y-1 pl-0 text-[13px]">
                 {s.structure.filter(Boolean).map((b, i) => (
                   <li key={b} className="flex items-center gap-1.5">
-                    {i > 0 && <span className="text-subtle" aria-hidden>→</span>}
-                    <span className="num text-[11px] text-subtle">{i + 1}</span><span>{b}</span>
+                    {i > 0 && (
+                      <span className="text-subtle" aria-hidden>
+                        →
+                      </span>
+                    )}
+                    <span className="num text-[11px] text-subtle">{i + 1}</span>
+                    <span>{b}</span>
                   </li>
                 ))}
               </ol>
-              {s.example && <p className="mt-2 mb-0 text-[13.5px] leading-[1.55]"><span className="font-medium">Yours: </span>{s.example}</p>}
-              <div className="mt-2 flex items-center gap-1">{s.platforms.map((c) => <PlatformMark key={c} platform={c} size={16} />)}</div>
+              {s.example && (
+                <p className="mt-2 mb-0 text-[13.5px] leading-[1.55]">
+                  <span className="font-medium">Yours: </span>
+                  {s.example}
+                </p>
+              )}
+              <div className="mt-2 flex items-center gap-1">
+                {s.platforms.map((c) => (
+                  <PlatformMark key={c} platform={c} size={16} />
+                ))}
+              </div>
             </div>
             <div className="flex shrink-0 items-center gap-2 md:flex-col md:items-end">
-              <Button size="sm" variant="primary" icon={<Wand2 size={12} />} onClick={() => { markUsed(s.id); setPost(asTrend(s)); }}>Create post</Button>
-              {s.source !== "starter" && <Button size="sm" variant="ghost" icon={<Pencil size={12} />} onClick={() => setEdit(s)}>Edit</Button>}
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<Wand2 size={12} />}
+                onClick={() => {
+                  markUsed(s.id);
+                  setPost(asTrend(s));
+                }}
+              >
+                Create post
+              </Button>
+              {s.source !== "starter" && (
+                <Button size="sm" variant="ghost" icon={<Pencil size={12} />} onClick={() => setEdit(s)}>
+                  Edit
+                </Button>
+              )}
             </div>
           </article>
         ))}
-        {!shown.length && <div className="px-5 py-10 text-center text-[13.5px] text-muted">Nothing here yet. Save a trend from <Link to="/social/scanner?tab=trending" className="text-fg underline decoration-line-strong underline-offset-2">Social scanner → Trending</Link>, or add your own.</div>}
+        {!shown.length && (
+          <div className="px-5 py-10 text-center text-[13.5px] text-muted">
+            Nothing here yet. Save a trend from{" "}
+            <Link to="/social/scanner?tab=trending" className="text-fg underline decoration-line-strong underline-offset-2">
+              Social scanner → Trending
+            </Link>
+            , or add your own.
+          </div>
+        )}
       </Card>
 
       <PostDrawer trend={post} onClose={() => setPost(null)} />
@@ -76,15 +134,23 @@ export default function SwipeFile() {
   );
 }
 
-const kinds: { id: SwipeKind; label: string }[] = [{ id: "Format", label: "Format" }, { id: "Hook", label: "Hook" }, { id: "Idea", label: "Idea" }, { id: "Series", label: "Series" }];
+const kinds: { id: SwipeKind; label: string }[] = [
+  { id: "Format", label: "Format" },
+  { id: "Hook", label: "Hook" },
+  { id: "Idea", label: "Idea" },
+  { id: "Series", label: "Series" },
+];
 
 function SwipeEditor({ swipe, onClose }: { swipe: Swipe | null; onClose: () => void }) {
   const [s, setS] = useState<Swipe | null>(swipe);
   const saved = useSwipes();
-  useEffect(() => { setS(swipe); }, [swipe?.id]);
+  useEffect(() => {
+    setS(swipe);
+  }, [swipe]);
   if (!swipe || !s) return null;
   const isNew = !saved.some((x) => x.id === swipe.id);
-  const toggleCh = (c: SocialPlatform) => setS({ ...s, platforms: s.platforms.includes(c) ? s.platforms.filter((x) => x !== c) : [...s.platforms, c] });
+  const toggleCh = (c: SocialPlatform) =>
+    setS({ ...s, platforms: s.platforms.includes(c) ? s.platforms.filter((x) => x !== c) : [...s.platforms, c] });
 
   return (
     <Drawer
@@ -92,35 +158,88 @@ function SwipeEditor({ swipe, onClose }: { swipe: Swipe | null; onClose: () => v
       onClose={onClose}
       width={560}
       title={isNew ? "New idea" : s.title}
-      footer={<>
-        {!isNew && <Button variant="ghost" icon={<Trash2 size={13} />} onClick={() => { removeSwipe(s.id); onClose(); }}>Delete</Button>}
-        <span className="flex-1" />
-        <Button variant="ghost" onClick={onClose}>Cancel</Button>
-        <Button variant="primary" disabled={!s.title.trim()} onClick={() => { saveSwipe({ ...s, structure: s.structure.map((b) => b.trim()).filter(Boolean) }); onClose(); }}>Save</Button>
-      </>}
+      footer={
+        <>
+          {!isNew && (
+            <Button
+              variant="ghost"
+              icon={<Trash2 size={13} />}
+              onClick={() => {
+                removeSwipe(s.id);
+                onClose();
+              }}
+            >
+              Delete
+            </Button>
+          )}
+          <span className="flex-1" />
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            disabled={!s.title.trim()}
+            onClick={() => {
+              saveSwipe({ ...s, structure: s.structure.map((b) => b.trim()).filter(Boolean) });
+              onClose();
+            }}
+          >
+            Save
+          </Button>
+        </>
+      }
     >
       <div className="flex flex-col gap-5">
         <Field label="Name">
-          <Input size="lg" value={s.title} onChange={(e) => setS({ ...s, title: e.target.value })} placeholder="e.g. Patient question of the week" className="p-3 leading-[1.55] py-0" />
+          <Input
+            size="lg"
+            value={s.title}
+            onChange={(e) => setS({ ...s, title: e.target.value })}
+            placeholder="e.g. Patient question of the week"
+            className="p-3 leading-[1.55] py-0"
+          />
         </Field>
         <div>
           <FieldLabel>Kind</FieldLabel>
           <Segmented label="Kind" value={s.kind} onChange={(k) => setS({ ...s, kind: k })} options={kinds} />
         </div>
         <Field label="Why it works">
-          <Textarea value={s.why} onChange={(e) => setS({ ...s, why: e.target.value })} rows={2} placeholder="What makes people stop, save or share it" />
+          <Textarea
+            value={s.why}
+            onChange={(e) => setS({ ...s, why: e.target.value })}
+            rows={2}
+            placeholder="What makes people stop, save or share it"
+          />
         </Field>
         <Field label="The beats, one per line">
-          <Textarea value={s.structure.join("\n")} onChange={(e) => setS({ ...s, structure: e.target.value.split("\n") })} rows={5} placeholder={"Hook\nThe tip\nWhy it matters\nAsk a question"} />
+          <Textarea
+            value={s.structure.join("\n")}
+            onChange={(e) => setS({ ...s, structure: e.target.value.split("\n") })}
+            rows={5}
+            placeholder={"Hook\nThe tip\nWhy it matters\nAsk a question"}
+          />
         </Field>
         <Field label="Your version (optional)">
-          <Textarea value={s.example} onChange={(e) => setS({ ...s, example: e.target.value })} rows={3} placeholder="A line or two of how it sounds for you" />
+          <Textarea
+            value={s.example}
+            onChange={(e) => setS({ ...s, example: e.target.value })}
+            rows={3}
+            placeholder="A line or two of how it sounds for you"
+          />
         </Field>
         <div>
           <FieldLabel>Best on</FieldLabel>
           <div className="flex flex-wrap gap-1.5">
             {(Object.keys(platformMeta) as SocialPlatform[]).map((p) => (
-              <button key={p} onClick={() => toggleCh(p)} aria-pressed={s.platforms.includes(p)} className={cn("inline-flex h-8 items-center gap-2 rounded-full border pr-3 pl-1.5 text-[13px] transition-colors", s.platforms.includes(p) ? "border-ink bg-active" : "border-line text-muted hover:bg-hover")}>
+              <button
+                key={p}
+                onClick={() => toggleCh(p)}
+                aria-pressed={s.platforms.includes(p)}
+                className={cn(
+                  "inline-flex h-8 items-center gap-2 rounded-full border pr-3 pl-1.5 text-[13px] transition-colors",
+                  s.platforms.includes(p) ? "border-ink bg-active" : "border-line text-muted hover:bg-hover",
+                )}
+              >
                 <PlatformMark platform={p} size={20} /> {platformMeta[p].name}
               </button>
             ))}

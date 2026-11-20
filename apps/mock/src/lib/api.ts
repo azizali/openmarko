@@ -77,7 +77,7 @@ export function estimateGridCost(size: number, keywords: number, perTask = 0.000
   return size * size * keywords * perTask;
 }
 
-const delay = <T,>(v: T, ms = 250) => new Promise<T>((r) => setTimeout(() => r(v), ms));
+const delay = <T>(v: T, ms = 250) => new Promise<T>((r) => setTimeout(() => r(v), ms));
 
 export const api = {
   getKeywords: () => delay(mock.keywords),

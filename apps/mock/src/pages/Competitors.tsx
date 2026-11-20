@@ -13,11 +13,15 @@ export default function Competitors() {
     <>
       <PageHeader title="Competitors" sub="Businesses that share the map pack with each location." />
       <ScopeBar kind="location" />
-      <LocationOverview columns={["Top 3 of nearby searches", "Leader", "Reviews vs leader"]} row={(id) => {
-        const list = competitorsFor(id);
-        const you = list.find((c) => c.isYou)!, lead = [...list].filter((c) => !c.isYou).sort((a, b) => b.solv - a.solv)[0];
-        return [`${you.solv}%`, `${lead.name} (${lead.solv}%)`, `${you.reviews} vs ${lead.reviews}`];
-      }} />
+      <LocationOverview
+        columns={["Top 3 of nearby searches", "Leader", "Reviews vs leader"]}
+        row={(id) => {
+          const list = competitorsFor(id);
+          const you = list.find((c) => c.isYou)!,
+            lead = [...list].filter((c) => !c.isYou).sort((a, b) => b.solv - a.solv)[0];
+          return [`${you.solv}%`, `${lead.name} (${lead.solv}%)`, `${you.reviews} vs ${lead.reviews}`];
+        }}
+      />
     </>
   );
 }
@@ -34,7 +38,11 @@ function CompetitorsBody({ locationId }: { locationId: string }) {
       <PageHeader
         title="Competitors"
         sub="Businesses that share the map pack with you most often. Profiles refresh weekly."
-        actions={<Button variant="primary" icon={<Plus size={14} />}>Add competitor</Button>}
+        actions={
+          <Button variant="primary" icon={<Plus size={14} />}>
+            Add competitor
+          </Button>
+        }
       />
       <ScopeBar kind="location" />
 
@@ -69,16 +77,43 @@ function CompetitorsBody({ locationId }: { locationId: string }) {
           </thead>
           <tbody>
             {sorted.map((c) => (
-              <tr key={c.id} onClick={() => !c.isYou && navigate(`/competitors/${c.id}`)} className={cn("border-b border-line last:border-0", c.isYou ? "bg-accent-soft/30" : "cursor-pointer hover:bg-hover")}>
+              <tr
+                key={c.id}
+                onClick={() => !c.isYou && navigate(`/competitors/${c.id}`)}
+                className={cn("border-b border-line last:border-0", c.isYou ? "bg-accent-soft/30" : "cursor-pointer hover:bg-hover")}
+              >
                 <td className="px-5 py-3">
-                  <div className="font-medium">{c.isYou ? c.name : <Link to={`/competitors/${c.id}`} onClick={(e) => e.stopPropagation()} className="hover:underline">{c.name}</Link>} {c.isYou && <Badge tone="accent">You</Badge>}</div>
-                  <div className="text-[12px] text-muted">{c.categories.length} categories · {c.isYou ? "your location" : `${c.distanceMi} mi`}</div>
+                  <div className="font-medium">
+                    {c.isYou ? (
+                      c.name
+                    ) : (
+                      <Link to={`/competitors/${c.id}`} onClick={(e) => e.stopPropagation()} className="hover:underline">
+                        {c.name}
+                      </Link>
+                    )}{" "}
+                    {c.isYou && <Badge tone="accent">You</Badge>}
+                  </div>
+                  <div className="text-[12px] text-muted">
+                    {c.categories.length} categories · {c.isYou ? "your location" : `${c.distanceMi} mi`}
+                  </div>
                 </td>
-                <td className="w-36 px-3 py-3"><div className="flex items-center gap-2"><Progress value={c.solv} tone={c.isYou ? "accent" : "ink"} className="w-16" /><span className="num text-muted">{c.solv}%</span></div></td>
+                <td className="w-36 px-3 py-3">
+                  <div className="flex items-center gap-2">
+                    <Progress value={c.solv} tone={c.isYou ? "accent" : "ink"} className="w-16" />
+                    <span className="num text-muted">{c.solv}%</span>
+                  </div>
+                </td>
                 <td className="num px-3 py-3 text-right">{c.avgGridRank.toFixed(1)}</td>
-                <td className="num px-3 py-3 text-right"><span className="inline-flex items-center gap-1"><Star size={11} className="fill-current text-warn" />{c.rating}</span></td>
+                <td className="num px-3 py-3 text-right">
+                  <span className="inline-flex items-center gap-1">
+                    <Star size={11} className="fill-current text-warn" />
+                    {c.rating}
+                  </span>
+                </td>
                 <td className="num px-3 py-3 text-right">{fmt(c.reviews)}</td>
-                <td className={cn("num px-3 py-3 text-right", !c.isYou && c.reviewVelocity > you.reviewVelocity && "text-bad")}>{c.reviewVelocity}</td>
+                <td className={cn("num px-3 py-3 text-right", !c.isYou && c.reviewVelocity > you.reviewVelocity && "text-bad")}>
+                  {c.reviewVelocity}
+                </td>
                 <td className="num px-3 py-3 text-right">{c.photos}</td>
                 <td className="num px-3 py-3 text-right">{c.posts30d}</td>
                 <td className="num px-3 py-3 pr-5 text-right">{Math.round(c.backlinks / 5.8)}</td>

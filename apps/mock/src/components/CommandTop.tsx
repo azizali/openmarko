@@ -1,9 +1,33 @@
 import { useId, type ReactNode } from "react";
 import { Link } from "react-router";
-import { ArrowDown, ArrowUp, Activity, MapPin, MousePointerClick, Navigation, Phone, Sparkles, Star, TrendingUp, Eye, Users } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Activity,
+  MapPin,
+  MousePointerClick,
+  Navigation,
+  Phone,
+  Sparkles,
+  Star,
+  TrendingUp,
+  Eye,
+  Users,
+} from "lucide-react";
 import { cn, fmt } from "./ui";
 import { scanFor } from "./KeywordTable";
-import { auditIssues, auditSummary, business, competitors, gbpInsights, gbpWeekly, gridStats, keywords, reviews, visibilitySeries } from "../mock/mock";
+import {
+  auditIssues,
+  auditSummary,
+  business,
+  competitors,
+  gbpInsights,
+  gbpWeekly,
+  gridStats,
+  keywords,
+  reviews,
+  visibilitySeries,
+} from "../mock/mock";
 import { aiVisibility } from "../mock/ai";
 import { accounts } from "../mock/social";
 import { totals, useSocialPosts, type SocialPost } from "../lib/social";
@@ -12,7 +36,8 @@ import { accountConnected, useSetup, type getSetup } from "../lib/setup";
 /** Social numbers for the scorecard: followers on connected Accounts, and views on posts from the last 7 days. */
 function socialData(posts: SocialPost[], setup: ReturnType<typeof getSetup>) {
   const live = accounts.filter((a) => accountConnected(a.id, setup) && a.followers);
-  const followers = live.reduce((a, c) => a + c.followers, 0), prev = live.reduce((a, c) => a + c.followersPrev, 0);
+  const followers = live.reduce((a, c) => a + c.followers, 0),
+    prev = live.reduce((a, c) => a + c.followersPrev, 0);
   const recent = posts.filter((p) => p.status === "published" && p.day >= -7);
   const views = recent.reduce((a, p) => a + totals(p).views, 0);
   const growth = prev ? ((followers - prev) / prev) * 100 : 0;
@@ -56,7 +81,8 @@ export function pulseData(state: Record<string, string>, social: ReturnType<type
   const unreplied = reviews.filter((r) => !r.replied && state[r.id] !== "done").length;
 
   const metric = (key: "calls" | "directions" | "websiteClicks" | "views", label: string, icon: typeof Phone, plain: string) => {
-    const cur = gbpInsights[key], prev = gbpInsights[`${key}Prev` as const];
+    const cur = gbpInsights[key],
+      prev = gbpInsights[`${key}Prev` as const];
     return { key, label, icon, plain, cur, prev, pct: ((cur - prev) / prev) * 100, weeks: gbpWeekly[key] };
   };
   const outcomes = [
@@ -66,7 +92,8 @@ export function pulseData(state: Record<string, string>, social: ReturnType<type
     metric("views", "Profile views", Eye, "saw your profile"),
   ];
   const actions = outcomes.slice(0, 3);
-  const actionsCur = actions.reduce((a, m) => a + m.cur, 0), actionsPrev = actions.reduce((a, m) => a + m.prev, 0);
+  const actionsCur = actions.reduce((a, m) => a + m.cur, 0),
+    actionsPrev = actions.reduce((a, m) => a + m.prev, 0);
   const actionsWeeks = actions[0].weeks.map((_, i) => actions.reduce((a, m) => a + m.weeks[i], 0));
 
   const ai = aiVisibility();
@@ -74,23 +101,50 @@ export function pulseData(state: Record<string, string>, social: ReturnType<type
     { key: "maps", label: "Map pack", value: Math.min(100, Math.round((solv / 40) * 100)), href: "/rankings?view=local" },
     { key: "google", label: "Google search", value: Math.round((page1 / keywords.length) * 100), href: "/rankings" },
     { key: "site", label: "Website", value: health, href: "/audit" },
-    { key: "reviews", label: "Reviews", value: Math.round((business.rating / 5) * 70 + Math.min(1, you.reviewVelocity / leader.reviewVelocity) * 30), href: "/profile?tab=reviews" },
+    {
+      key: "reviews",
+      label: "Reviews",
+      value: Math.round((business.rating / 5) * 70 + Math.min(1, you.reviewVelocity / leader.reviewVelocity) * 30),
+      href: "/profile?tab=reviews",
+    },
     { key: "ai", label: "AI answers", value: Math.round(ai.pct), href: "/ai" },
     ...(social.connected ? [{ key: "social", label: "Social", value: social.score, href: "/social/posts" }] : []),
   ];
   const overall = Math.round(scores.reduce((a, s) => a + s.value, 0) / scores.length);
 
   return {
-    solv, solvDelta: solv - visTrend[visTrend.length - 5], visTrend, best, localCount: local.length,
-    buckets, page1, total: keywords.length, inPack: keywords.filter((k) => (k.local ?? 99) <= 3).length,
+    solv,
+    solvDelta: solv - visTrend[visTrend.length - 5],
+    visTrend,
+    best,
+    localCount: local.length,
+    buckets,
+    page1,
+    total: keywords.length,
+    inPack: keywords.filter((k) => (k.local ?? 99) <= 3).length,
     up: keywords.filter((k) => k.organic !== null && k.organicPrev !== null && k.organicPrev > k.organic).length,
     down: keywords.filter((k) => k.organic !== null && k.organicPrev !== null && k.organicPrev < k.organic).length,
     posTrend,
-    health, healthDelta: health - auditSummary.prevScore, critical, warnings, lcp: auditSummary.lcp,
-    rating: business.rating, reviewCount: business.reviews, velocity: you.reviewVelocity, leader, unreplied,
-    outcomes, actionsCur, actionsPrev, actionsPct: ((actionsCur - actionsPrev) / actionsPrev) * 100, actionsWeeks,
-    ai, aiDelta: ai.pct - ai.prevPct,
-    scores, overall, social,
+    health,
+    healthDelta: health - auditSummary.prevScore,
+    critical,
+    warnings,
+    lcp: auditSummary.lcp,
+    rating: business.rating,
+    reviewCount: business.reviews,
+    velocity: you.reviewVelocity,
+    leader,
+    unreplied,
+    outcomes,
+    actionsCur,
+    actionsPrev,
+    actionsPct: ((actionsCur - actionsPrev) / actionsPrev) * 100,
+    actionsWeeks,
+    ai,
+    aiDelta: ai.pct - ai.prevPct,
+    scores,
+    overall,
+    social,
   };
 }
 type P = ReturnType<typeof pulseData>;
@@ -100,31 +154,65 @@ type P = ReturnType<typeof pulseData>;
 function Delta({ v, suffix = "%", digits = 0, className }: { v: number; suffix?: string; digits?: number; className?: string }) {
   const up = v >= 0;
   return (
-    <span className={cn("num inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[11.5px] font-medium whitespace-nowrap", up ? "bg-good-soft text-good" : "bg-bad-soft text-bad", className)}>
-      {up ? <ArrowUp size={10} strokeWidth={2.75} /> : <ArrowDown size={10} strokeWidth={2.75} />}{Math.abs(v).toFixed(digits)}{suffix}
+    <span
+      className={cn(
+        "num inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[11.5px] font-medium whitespace-nowrap",
+        up ? "bg-good-soft text-good" : "bg-bad-soft text-bad",
+        className,
+      )}
+    >
+      {up ? <ArrowUp size={10} strokeWidth={2.75} /> : <ArrowDown size={10} strokeWidth={2.75} />}
+      {Math.abs(v).toFixed(digits)}
+      {suffix}
     </span>
   );
 }
 
 /** Responsive area chart: stretches to its container. */
-function Area({ values, color = "var(--accent)", h = 64, invert = false, className, dot = true }: { values: number[]; color?: string; h?: number; invert?: boolean; className?: string; dot?: boolean }) {
+function Area({
+  values,
+  color = "var(--accent)",
+  h = 64,
+  invert = false,
+  className,
+  dot = true,
+}: {
+  values: number[];
+  color?: string;
+  h?: number;
+  invert?: boolean;
+  className?: string;
+  dot?: boolean;
+}) {
   const id = useId();
-  const min = Math.min(...values), max = Math.max(...values), span = max - min || 1;
+  const min = Math.min(...values),
+    max = Math.max(...values),
+    span = max - min || 1;
   const W = 300;
   const y = (v: number) => (invert ? 4 + ((v - min) / span) * (h - 10) : h - 4 - ((v - min) / span) * (h - 10));
   const pts = values.map((v, i) => [(i / (values.length - 1)) * W, y(v)] as const);
   // Catmull-Rom → cubic Bézier, so weekly data reads as a trend rather than a zigzag.
   const f = (p: readonly [number, number]) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`;
-  const d = pts.map((p, i) => {
-    if (!i) return `M${f(p)}`;
-    const p0 = pts[i - 2] ?? pts[i - 1], p1 = pts[i - 1], p3 = pts[i + 1] ?? p;
-    const c1 = [p1[0] + (p[0] - p0[0]) / 6, p1[1] + (p[1] - p0[1]) / 6] as const;
-    const c2 = [p[0] - (p3[0] - p1[0]) / 6, p[1] - (p3[1] - p1[1]) / 6] as const;
-    return `C${f(c1)} ${f(c2)} ${f(p)}`;
-  }).join(" ");
+  const d = pts
+    .map((p, i) => {
+      if (!i) return `M${f(p)}`;
+      const p0 = pts[i - 2] ?? pts[i - 1],
+        p1 = pts[i - 1],
+        p3 = pts[i + 1] ?? p;
+      const c1 = [p1[0] + (p[0] - p0[0]) / 6, p1[1] + (p[1] - p0[1]) / 6] as const;
+      const c2 = [p[0] - (p3[0] - p1[0]) / 6, p[1] - (p3[1] - p1[1]) / 6] as const;
+      return `C${f(c1)} ${f(c2)} ${f(p)}`;
+    })
+    .join(" ");
   const last = pts[pts.length - 1];
   return (
-    <svg viewBox={`0 0 ${W} ${h}`} preserveAspectRatio="none" className={cn("block w-full overflow-visible", className)} style={{ height: h }} aria-hidden>
+    <svg
+      viewBox={`0 0 ${W} ${h}`}
+      preserveAspectRatio="none"
+      className={cn("block w-full overflow-visible", className)}
+      style={{ height: h }}
+      aria-hidden
+    >
       <defs>
         <linearGradient id={id} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="0.22" />
@@ -132,12 +220,21 @@ function Area({ values, color = "var(--accent)", h = 64, invert = false, classNa
         </linearGradient>
       </defs>
       <path d={`${d} L${W},${h} L0,${h} Z`} fill={`url(#${id})`} />
-      <path d={d} fill="none" stroke={color} strokeWidth={2} vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
-      {dot && <circle cx={last[0]} cy={last[1]} r={3.5} fill="var(--surface)" stroke={color} strokeWidth={2} vectorEffect="non-scaling-stroke" />}
+      <path
+        d={d}
+        fill="none"
+        stroke={color}
+        strokeWidth={2}
+        vectorEffect="non-scaling-stroke"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      {dot && (
+        <circle cx={last[0]} cy={last[1]} r={3.5} fill="var(--surface)" stroke={color} strokeWidth={2} vectorEffect="non-scaling-stroke" />
+      )}
     </svg>
   );
 }
-
 
 const sheen = "linear-gradient(90deg, var(--sheen-a), var(--sheen-b), var(--sheen-c))";
 const scoreOf = (d: P, key: string) => d.scores.find((s) => s.key === key)!.value;
@@ -145,7 +242,9 @@ const scoreOf = (d: P, key: string) => d.scores.find((s) => s.key === key)!.valu
 function ScoreBar({ value, className }: { value: number; className?: string }) {
   return (
     <span className={cn("flex items-center gap-2", className)} title={`Score ${value} of 100`}>
-      <span className="block h-1 flex-1 overflow-hidden rounded-full bg-hover"><span className="block h-full rounded-full" style={{ width: `${Math.max(3, value)}%`, background: sheen }} /></span>
+      <span className="block h-1 flex-1 overflow-hidden rounded-full bg-hover">
+        <span className="block h-full rounded-full" style={{ width: `${Math.max(3, value)}%`, background: sheen }} />
+      </span>
       <span className="num w-6 text-right text-[11px] font-medium text-muted">{value}</span>
     </span>
   );
@@ -157,22 +256,94 @@ function ScoreSummary({ d, size = 72 }: { d: P; size?: number }) {
       <Ring value={d.overall} size={size} stroke={Math.round(size / 11)} gradient />
       <div>
         <div className="text-[12px] font-medium tracking-wide text-muted uppercase">Presence score</div>
-        <div className="mt-0.5 text-[13px] text-muted">Map pack, Google, AI answers, website, reviews and social in one number, out of 100.</div>
+        <div className="mt-0.5 text-[13px] text-muted">
+          Map pack, Google, AI answers, website, reviews and social in one number, out of 100.
+        </div>
       </div>
     </div>
   );
 }
 
-
 function Story({ d }: { d: P }) {
   const calls = d.outcomes[0];
-  const rows: { href: string; icon: typeof Phone; label: string; score: string; value: ReactNode; sub: string; delta: ReactNode; spark: ReactNode }[] = [
-    { href: "/rankings?view=local", icon: MapPin, label: "Map pack", score: "maps", value: `${d.solv.toFixed(0)}%`, sub: "of nearby searches, top 3", delta: <Delta v={d.solvDelta} suffix=" pts" digits={1} />, spark: <Area values={d.visTrend} h={26} dot={false} /> },
-    { href: "/rankings", icon: TrendingUp, label: "Google search", score: "google", value: `${d.page1}/${d.total}`, sub: "keywords on page 1", delta: <span className="num text-[11.5px] font-medium"><span className="text-good">▲{d.up}</span> <span className="text-bad">▼{d.down}</span></span>, spark: <Area values={d.posTrend} h={26} invert color="var(--info)" dot={false} /> },
-    { href: "/ai", icon: Sparkles, label: "AI answers", score: "ai", value: `${d.ai.pct.toFixed(0)}%`, sub: "of answers name you", delta: <Delta v={d.aiDelta} suffix=" pts" />, spark: <Area values={d.ai.weekly} h={26} color="var(--sheen-c)" dot={false} /> },
-    { href: "/audit", icon: Activity, label: "Website", score: "site", value: String(d.health), sub: `${d.critical} critical to fix`, delta: <Delta v={d.healthDelta} suffix=" pts" />, spark: <Meter value={d.health} /> },
-    { href: "/profile?tab=reviews", icon: Star, label: "Reviews", score: "reviews", value: `${d.rating}★`, sub: d.unreplied ? `${d.unreplied} waiting for a reply` : "all replied", delta: <span className="num text-[11.5px] text-muted">{d.velocity}/mo</span>, spark: <Meter value={(d.velocity / d.leader.reviewVelocity) * 100} tone="warn" /> },
-    ...(d.social.connected ? [{ href: "/social/posts", icon: Users, label: "Social", score: "social", value: compact(d.social.followers), sub: `followers · ${compact(d.social.views)} views this week`, delta: <Delta v={d.social.growth} />, spark: <Area values={d.social.weeks} h={26} color="var(--sheen-b)" dot={false} /> }] : []),
+  const rows: {
+    href: string;
+    icon: typeof Phone;
+    label: string;
+    score: string;
+    value: ReactNode;
+    sub: string;
+    delta: ReactNode;
+    spark: ReactNode;
+  }[] = [
+    {
+      href: "/rankings?view=local",
+      icon: MapPin,
+      label: "Map pack",
+      score: "maps",
+      value: `${d.solv.toFixed(0)}%`,
+      sub: "of nearby searches, top 3",
+      delta: <Delta v={d.solvDelta} suffix=" pts" digits={1} />,
+      spark: <Area values={d.visTrend} h={26} dot={false} />,
+    },
+    {
+      href: "/rankings",
+      icon: TrendingUp,
+      label: "Google search",
+      score: "google",
+      value: `${d.page1}/${d.total}`,
+      sub: "keywords on page 1",
+      delta: (
+        <span className="num text-[11.5px] font-medium">
+          <span className="text-good">▲{d.up}</span> <span className="text-bad">▼{d.down}</span>
+        </span>
+      ),
+      spark: <Area values={d.posTrend} h={26} invert color="var(--info)" dot={false} />,
+    },
+    {
+      href: "/ai",
+      icon: Sparkles,
+      label: "AI answers",
+      score: "ai",
+      value: `${d.ai.pct.toFixed(0)}%`,
+      sub: "of answers name you",
+      delta: <Delta v={d.aiDelta} suffix=" pts" />,
+      spark: <Area values={d.ai.weekly} h={26} color="var(--sheen-c)" dot={false} />,
+    },
+    {
+      href: "/audit",
+      icon: Activity,
+      label: "Website",
+      score: "site",
+      value: String(d.health),
+      sub: `${d.critical} critical to fix`,
+      delta: <Delta v={d.healthDelta} suffix=" pts" />,
+      spark: <Meter value={d.health} />,
+    },
+    {
+      href: "/profile?tab=reviews",
+      icon: Star,
+      label: "Reviews",
+      score: "reviews",
+      value: `${d.rating}★`,
+      sub: d.unreplied ? `${d.unreplied} waiting for a reply` : "all replied",
+      delta: <span className="num text-[11.5px] text-muted">{d.velocity}/mo</span>,
+      spark: <Meter value={(d.velocity / d.leader.reviewVelocity) * 100} tone="warn" />,
+    },
+    ...(d.social.connected
+      ? [
+          {
+            href: "/social/posts",
+            icon: Users,
+            label: "Social",
+            score: "social",
+            value: compact(d.social.followers),
+            sub: `followers · ${compact(d.social.views)} views this week`,
+            delta: <Delta v={d.social.growth} />,
+            spark: <Area values={d.social.weeks} h={26} color="var(--sheen-b)" dot={false} />,
+          },
+        ]
+      : []),
   ];
   return (
     <section className="mb-6 overflow-hidden rounded-2xl border border-line bg-surface">
@@ -180,34 +351,69 @@ function Story({ d }: { d: P }) {
         <div className="relative p-6 sm:p-7">
           <div className="text-[12px] font-medium tracking-wide text-muted uppercase">Last 28 days</div>
           <p className="mt-2 max-w-xl font-serif text-[27px] leading-[1.2] tracking-tight">
-            <span className="num">{fmt(calls.cur)}</span> people called you from Google, <span className={calls.pct >= 0 ? "text-good" : "text-bad"}>{calls.pct >= 0 ? "up" : "down"} {Math.abs(calls.pct).toFixed(0)}%</span>.
-            <span className="text-muted"> You're in the top 3 for {d.solv.toFixed(0)}% of nearby searches, AI assistants name you in {d.ai.pct.toFixed(0)}% of answers{d.social.connected ? <>, and your posts were seen {compact(d.social.views)} times this week</> : null}.</span>
+            <span className="num">{fmt(calls.cur)}</span> people called you from Google,{" "}
+            <span className={calls.pct >= 0 ? "text-good" : "text-bad"}>
+              {calls.pct >= 0 ? "up" : "down"} {Math.abs(calls.pct).toFixed(0)}%
+            </span>
+            .
+            <span className="text-muted">
+              {" "}
+              You're in the top 3 for {d.solv.toFixed(0)}% of nearby searches, AI assistants name you in {d.ai.pct.toFixed(0)}% of answers
+              {d.social.connected ? <>, and your posts were seen {compact(d.social.views)} times this week</> : null}.
+            </span>
           </p>
           <div className="mt-6">
-            <div className="mb-1 flex items-baseline justify-between text-[12px] text-muted"><span>Customer actions per week · calls, directions, website</span><span className="num">{fmt(d.actionsCur)} total <Delta v={d.actionsPct} className="ml-1" /></span></div>
+            <div className="mb-1 flex items-baseline justify-between text-[12px] text-muted">
+              <span>Customer actions per week · calls, directions, website</span>
+              <span className="num">
+                {fmt(d.actionsCur)} total <Delta v={d.actionsPct} className="ml-1" />
+              </span>
+            </div>
             <Area values={d.actionsWeeks} h={96} />
-            <div className="mt-1 flex justify-between text-[11px] text-subtle"><span>8 weeks ago</span><span>This week</span></div>
+            <div className="mt-1 flex justify-between text-[11px] text-subtle">
+              <span>8 weeks ago</span>
+              <span>This week</span>
+            </div>
           </div>
           <div className="mt-5 grid grid-cols-3 gap-4 border-t border-line pt-4">
             {d.outcomes.slice(1).map((m) => (
               <Link key={m.key} to="/profile" className="group">
-                <div className="flex items-center gap-1.5 text-[12px] text-muted"><m.icon size={12} /> {m.label}</div>
-                <div className="mt-0.5 flex items-baseline gap-1.5"><span className="num text-[20px] font-semibold tracking-tight">{fmt(m.cur)}</span><Delta v={m.pct} /></div>
+                <div className="flex items-center gap-1.5 text-[12px] text-muted">
+                  <m.icon size={12} /> {m.label}
+                </div>
+                <div className="mt-0.5 flex items-baseline gap-1.5">
+                  <span className="num text-[20px] font-semibold tracking-tight">{fmt(m.cur)}</span>
+                  <Delta v={m.pct} />
+                </div>
               </Link>
             ))}
           </div>
         </div>
         <div className="border-t border-line bg-bg/60 lg:border-t-0 lg:border-l">
-          <div className="border-b border-line px-6 py-5"><ScoreSummary d={d} /></div>
+          <div className="border-b border-line px-6 py-5">
+            <ScoreSummary d={d} />
+          </div>
           <ul>
             {rows.map((r) => (
               <li key={r.label}>
-                <Link to={r.href} className="grid grid-cols-[1fr_auto_88px] items-center gap-4 px-6 py-3 transition-colors hover:bg-hover/70">
+                <Link
+                  to={r.href}
+                  className="grid grid-cols-[1fr_auto_88px] items-center gap-4 px-6 py-3 transition-colors hover:bg-hover/70"
+                >
                   <span className="flex min-w-0 items-center gap-2.5">
-                    <span className="grid size-7 shrink-0 place-items-center rounded-lg border border-line bg-surface"><r.icon size={14} /></span>
-                    <span className="min-w-0 flex-1"><span className="block text-[13.5px] font-medium">{r.label}</span><span className="block truncate text-[12px] text-muted">{r.sub}</span><ScoreBar value={scoreOf(d, r.score)} className="mt-1.5 max-w-[140px]" /></span>
+                    <span className="grid size-7 shrink-0 place-items-center rounded-lg border border-line bg-surface">
+                      <r.icon size={14} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[13.5px] font-medium">{r.label}</span>
+                      <span className="block truncate text-[12px] text-muted">{r.sub}</span>
+                      <ScoreBar value={scoreOf(d, r.score)} className="mt-1.5 max-w-[140px]" />
+                    </span>
                   </span>
-                  <span className="text-right"><span className="num block text-[18px] leading-tight font-semibold tracking-tight">{r.value}</span>{r.delta}</span>
+                  <span className="text-right">
+                    <span className="num block text-[18px] leading-tight font-semibold tracking-tight">{r.value}</span>
+                    {r.delta}
+                  </span>
                   <span className="w-[88px]">{r.spark}</span>
                 </Link>
               </li>
@@ -222,21 +428,54 @@ function Story({ d }: { d: P }) {
 function Meter({ value, tone }: { value: number; tone?: "warn" }) {
   const v = Math.max(0, Math.min(100, value));
   const c = tone ?? (v >= 80 ? "good" : v >= 60 ? "warn" : "bad");
-  return <span className="block h-1.5 overflow-hidden rounded-full bg-hover"><span className={cn("block h-full rounded-full", { good: "bg-good", warn: "bg-warn", bad: "bg-bad" }[c])} style={{ width: `${v}%` }} /></span>;
+  return (
+    <span className="block h-1.5 overflow-hidden rounded-full bg-hover">
+      <span
+        className={cn("block h-full rounded-full", { good: "bg-good", warn: "bg-warn", bad: "bg-bad" }[c])}
+        style={{ width: `${v}%` }}
+      />
+    </span>
+  );
 }
 
 function Ring({ value, size = 64, stroke = 6, gradient = false }: { value: number; size?: number; stroke?: number; gradient?: boolean }) {
   const id = useId();
-  const r = (size - stroke) / 2, c = 2 * Math.PI * r;
+  const r = (size - stroke) / 2,
+    c = 2 * Math.PI * r;
   const color = value >= 80 ? "var(--good)" : value >= 60 ? "var(--warn)" : "var(--bad)";
   return (
-    <span className="relative inline-grid shrink-0 place-items-center" style={{ width: size, height: size }} role="img" aria-label={`Score ${value} of 100`}>
+    <span
+      className="relative inline-grid shrink-0 place-items-center"
+      style={{ width: size, height: size }}
+      role="img"
+      aria-label={`Score ${value} of 100`}
+    >
       <svg width={size} height={size} className="-rotate-90">
-        {gradient && <defs><linearGradient id={id} x1="0" x2="1" y1="0" y2="1"><stop offset="0%" stopColor="var(--sheen-a)" /><stop offset="55%" stopColor="var(--sheen-b)" /><stop offset="100%" stopColor="var(--sheen-c)" /></linearGradient></defs>}
+        {gradient && (
+          <defs>
+            <linearGradient id={id} x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0%" stopColor="var(--sheen-a)" />
+              <stop offset="55%" stopColor="var(--sheen-b)" />
+              <stop offset="100%" stopColor="var(--sheen-c)" />
+            </linearGradient>
+          </defs>
+        )}
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--hover)" strokeWidth={stroke} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={gradient ? `url(#${id})` : color} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - value / 100)} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={gradient ? `url(#${id})` : color}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - value / 100)}
+        />
       </svg>
-      <span className="num absolute font-semibold tracking-tight" style={{ fontSize: size * 0.3 }}>{value}</span>
+      <span className="num absolute font-semibold tracking-tight" style={{ fontSize: size * 0.3 }}>
+        {value}
+      </span>
     </span>
   );
 }

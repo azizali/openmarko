@@ -24,12 +24,20 @@ export function applyTheme() {
 
 export function setThemeMode(m: ThemeMode) {
   current = m;
-  try { if (m === "system") localStorage.removeItem(KEY); else localStorage.setItem(KEY, m); } catch {}
+  try {
+    if (m === "system") localStorage.removeItem(KEY);
+    else localStorage.setItem(KEY, m);
+  } catch {}
   applyTheme();
   listeners.forEach((l) => l());
 }
 
-const subscribe = (l: () => void) => { listeners.add(l); return () => { listeners.delete(l); }; };
+const subscribe = (l: () => void) => {
+  listeners.add(l);
+  return () => {
+    listeners.delete(l);
+  };
+};
 
 export function useThemeMode() {
   return useSyncExternalStore(subscribe, () => current);

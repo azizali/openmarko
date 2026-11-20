@@ -26,16 +26,36 @@ let setup: Setup = {
   account: Object.fromEntries(accounts.map((a) => [a.id, a.connected])),
 };
 const listeners = new Set<() => void>();
-const set = (next: Setup) => { setup = next; listeners.forEach((l) => l()); };
-export const useSetup = () => useSyncExternalStore((l) => { listeners.add(l); return () => { listeners.delete(l); }; }, () => setup, () => setup);
+const set = (next: Setup) => {
+  setup = next;
+  listeners.forEach((l) => l());
+};
+export const useSetup = () =>
+  useSyncExternalStore(
+    (l) => {
+      listeners.add(l);
+      return () => {
+        listeners.delete(l);
+      };
+    },
+    () => setup,
+    () => setup,
+  );
 export const getSetup = () => setup;
 
-export const setGoogleBusinessProfile = (locationId: string, on: boolean) => set({ ...setup, googleBusinessProfile: { ...setup.googleBusinessProfile, [locationId]: on } });
+export const setGoogleBusinessProfile = (locationId: string, on: boolean) =>
+  set({ ...setup, googleBusinessProfile: { ...setup.googleBusinessProfile, [locationId]: on } });
 export const setWebsite = (websiteId: string, on: boolean) => set({ ...setup, website: { ...setup.website, [websiteId]: on } });
 export const setAccount = (accountId: string, on: boolean) => set({ ...setup, account: { ...setup.account, [accountId]: on } });
 
 /** "1204 S Congress Ave, Austin, TX 78704" → "Austin, TX". */
-const cityOf = (address: string) => address.split(",").slice(-2).join(",").replace(/\s+\d{5}(-\d{4})?$/, "").trim();
+const cityOf = (address: string) =>
+  address
+    .split(",")
+    .slice(-2)
+    .join(",")
+    .replace(/\s+\d{5}(-\d{4})?$/, "")
+    .trim();
 
 /**
  * Adds a Location to the Organization. Mock: it borrows Mueller's sample
@@ -43,7 +63,14 @@ const cityOf = (address: string) => address.split(",").slice(-2).join(",").repla
  */
 export function addLocation(label: string, address: string, websiteId: string | null) {
   const id = `loc_${Date.now().toString(36)}`;
-  locations.push({ id, name: `${organization.name} — ${label}`, city: cityOf(address), address, googleBusinessProfile: "none", keywords: 0 });
+  locations.push({
+    id,
+    name: `${organization.name} — ${label}`,
+    city: cityOf(address),
+    address,
+    googleBusinessProfile: "none",
+    keywords: 0,
+  });
   locationData[id] = locationData.loc_2;
   const w = websites.find((x) => x.id === websiteId);
   if (w) w.locationIds.push(id);
@@ -95,7 +122,9 @@ export function updateWebsite(id: string, domain: string, locationIds: string[])
 export function addWebsite(domain: string, locationIds: string[]) {
   const id = `web_${Date.now().toString(36)}`;
   websites.push({
-    id, domain, locationIds,
+    id,
+    domain,
+    locationIds,
     tools: [
       { name: "Search Console", connected: false, detail: "Rankings and clicks from Google search" },
       { name: "Google Analytics 4", connected: false, detail: "Attributes calls and bookings to search" },
@@ -108,9 +137,10 @@ export function addWebsite(domain: string, locationIds: string[]) {
   return id;
 }
 
-export const hasGoogleBusinessProfile =(locationId: string, s = setup) => !!s.googleBusinessProfile[locationId];
+export const hasGoogleBusinessProfile = (locationId: string, s = setup) => !!s.googleBusinessProfile[locationId];
 /** The Website serving a Location, if the Organization has one. */
-export const websiteOf = (locationId: string, s = setup) => websites.find((w) => w.locationIds.includes(locationId) && s.website[w.id]) ?? null;
+export const websiteOf = (locationId: string, s = setup) =>
+  websites.find((w) => w.locationIds.includes(locationId) && s.website[w.id]) ?? null;
 /** A Google Business Profile Account is connected when its Location's Google Business Profile is. */
 export const accountConnected = (accountId: string, s = setup) => {
   const a = accountOf(accountId);

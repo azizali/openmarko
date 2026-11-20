@@ -9,9 +9,17 @@ export function LogoMark({ size = 22, className }: { size?: number; className?: 
   // Whitelabeled: the Partner's icon, or a tile with its first letter. Never our mark.
   if (whitelabeled()) {
     const icon = brandIcon();
-    return icon
-      ? <img src={icon} alt="" width={size} height={size} className={cn("shrink-0 rounded object-contain", className)} />
-      : <span aria-hidden className={cn("grid shrink-0 place-items-center rounded-[28%] bg-accent font-semibold text-white", className)} style={{ width: size, height: size, fontSize: size * 0.56 }}>{product().charAt(0).toUpperCase()}</span>;
+    return icon ? (
+      <img src={icon} alt="" width={size} height={size} className={cn("shrink-0 rounded object-contain", className)} />
+    ) : (
+      <span
+        aria-hidden
+        className={cn("grid shrink-0 place-items-center rounded-[28%] bg-accent font-semibold text-white", className)}
+        style={{ width: size, height: size, fontSize: size * 0.56 }}
+      >
+        {product().charAt(0).toUpperCase()}
+      </span>
+    );
   }
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" className={cn("shrink-0", className)} aria-hidden>
@@ -33,11 +41,16 @@ export function LogoMark({ size = 22, className }: { size?: number; className?: 
 export function Logo({ size = 22, className }: { size?: number; className?: string }) {
   useWhitelabel();
   const logo = brandLogo();
-  if (logo) return <img src={logo} alt={product()} className={cn("w-auto max-w-[180px] object-contain", className)} style={{ height: size * 1.15 }} />;
+  if (logo)
+    return (
+      <img src={logo} alt={product()} className={cn("w-auto max-w-[180px] object-contain", className)} style={{ height: size * 1.15 }} />
+    );
   return (
     <span className={cn("inline-flex items-center gap-1.5", className)}>
       <LogoMark size={size} />
-      <span className="font-sans leading-none font-semibold tracking-[-0.03em]" style={{ fontSize: size * 0.86 }}>{product()}</span>
+      <span className="font-sans leading-none font-semibold tracking-[-0.03em]" style={{ fontSize: size * 0.86 }}>
+        {product()}
+      </span>
     </span>
   );
 }

@@ -83,9 +83,15 @@
 
 /* Re-points the page tokens at the sidebar palette for everything inside. */
 .sidebar-scope {
-  --text: var(--sb-text); --muted: var(--sb-muted); --subtle: var(--sb-subtle);
-  --surface: var(--sb-surface); --hover: var(--sb-hover); --active: var(--sb-active);
-  --border: var(--sb-border); --ink: var(--sb-ink); --on-ink: var(--sb-on-ink);
+  --text: var(--sb-text);
+  --muted: var(--sb-muted);
+  --subtle: var(--sb-subtle);
+  --surface: var(--sb-surface);
+  --hover: var(--sb-hover);
+  --active: var(--sb-active);
+  --border: var(--sb-border);
+  --ink: var(--sb-ink);
+  --on-ink: var(--sb-on-ink);
   color: var(--text);
 }
 
@@ -118,7 +124,11 @@
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.03);
 }
 
-html, body, #root { height: 100%; }
+html,
+body,
+#root {
+  height: 100%;
+}
 body {
   background: var(--bg);
   color: var(--text);
@@ -127,20 +137,39 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3, .font-serif { font-optical-sizing: auto; }
-.font-serif { letter-spacing: -0.015em; }
-.num { font-variant-numeric: tabular-nums; }
-:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 4px; }
-button { cursor: pointer; }
-button:disabled { cursor: not-allowed; }
+h1,
+h2,
+h3,
+.font-serif {
+  font-optical-sizing: auto;
+}
+.font-serif {
+  letter-spacing: -0.015em;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
 
 /* Faint 80px graph-paper grid over a soft brand glow, fading out down the page. */
 .grid-backdrop {
   background-image:
-    linear-gradient(var(--grid-line) 1px, transparent 0),
-    linear-gradient(90deg, var(--grid-line) 1px, transparent 0),
+    linear-gradient(var(--grid-line) 1px, transparent 0), linear-gradient(90deg, var(--grid-line) 1px, transparent 0),
     radial-gradient(ellipse 70% 90% at 30% 0%, var(--glow), transparent 70%);
-  background-size: 80px 80px, 80px 80px, 100% 100%;
+  background-size:
+    80px 80px,
+    80px 80px,
+    100% 100%;
   mask-image: linear-gradient(black, transparent 520px);
 }
 /* Ink-to-brand sweep used to highlight a single word in a headline. */
@@ -151,14 +180,48 @@ button:disabled { cursor: not-allowed; }
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: sheen 1.6s cubic-bezier(.32,.72,0,1) 300ms both;
+  animation: sheen 1.6s cubic-bezier(0.32, 0.72, 0, 1) 300ms both;
 }
-@keyframes sheen { from { background-position: 0% 0; } to { background-position: 100% 0; } }
+@keyframes sheen {
+  from {
+    background-position: 0% 0;
+  }
+  to {
+    background-position: 100% 0;
+  }
+}
 
-@keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-@keyframes slide-in { from { transform: translateX(16px); opacity: 0; } to { transform: none; opacity: 1; } }
-.anim-fade { animation: fade-in 220ms ease-out both; }
-.anim-slide { animation: slide-in 220ms cubic-bezier(.2,.8,.2,1) both; }
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes slide-in {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.anim-fade {
+  animation: fade-in 220ms ease-out both;
+}
+.anim-slide {
+  animation: slide-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
 }

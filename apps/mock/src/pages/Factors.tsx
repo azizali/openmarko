@@ -22,12 +22,18 @@ export default function Factors() {
         <ScoreRing score={total} size={96} stroke={7} label="Local SEO score" />
         <div className="min-w-0 flex-1">
           <div className="font-serif text-[22px] leading-snug">Your Business Profile and reviews are where the biggest gains are.</div>
-          <p className="mt-1.5 text-[13.5px] text-muted">Score is weighted by each factor group's estimated influence on map pack rankings. Proximity is shown for context but you can't change it.</p>
+          <p className="mt-1.5 text-[13.5px] text-muted">
+            Score is weighted by each factor group's estimated influence on map pack rankings. Proximity is shown for context but you can't
+            change it.
+          </p>
         </div>
         <div className="grid w-full grid-cols-2 gap-x-8 gap-y-3 sm:w-auto">
           {factorGroups.slice(0, 6).map((g) => (
             <div key={g.id} className="w-full sm:w-40">
-              <div className="mb-1 flex justify-between text-[12.5px]"><span className="truncate text-muted">{g.name}</span><span className="num">{g.score}</span></div>
+              <div className="mb-1 flex justify-between text-[12.5px]">
+                <span className="truncate text-muted">{g.name}</span>
+                <span className="num">{g.score}</span>
+              </div>
               <Progress value={g.score} tone={g.score >= 75 ? "good" : g.score >= 60 ? "warn" : "bad"} />
             </div>
           ))}
@@ -40,10 +46,16 @@ export default function Factors() {
           const issues = g.factors.filter((f) => f.status !== "good").length;
           return (
             <Card key={g.id} pad={false}>
-              <button onClick={() => setOpen(isOpen ? null : g.id)} aria-expanded={isOpen} className="flex w-full items-center gap-4 px-5 py-4 text-left">
+              <button
+                onClick={() => setOpen(isOpen ? null : g.id)}
+                aria-expanded={isOpen}
+                className="flex w-full items-center gap-4 px-5 py-4 text-left"
+              >
                 <ScoreRing score={g.score} size={40} stroke={4} label={g.name} />
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 font-medium">{g.name} <span className="num text-[12px] font-normal text-subtle">~{g.weight}% weight</span></div>
+                  <div className="flex items-center gap-2 font-medium">
+                    {g.name} <span className="num text-[12px] font-normal text-subtle">~{g.weight}% weight</span>
+                  </div>
                   <div className="truncate text-[13px] text-muted">{g.summary}</div>
                 </div>
                 {issues > 0 && <span className="num hidden text-[12.5px] text-muted sm:block">{issues} to improve</span>}
@@ -59,7 +71,12 @@ export default function Factors() {
                         <div className="text-[13px] text-muted">{f.detail}</div>
                       </div>
                       {f.actionId && (
-                        <Link to={`/todo?task=${f.actionId}`} className="inline-flex shrink-0 items-center gap-1 text-[13px] text-accent hover:underline">Fix <ArrowRight size={13} /></Link>
+                        <Link
+                          to={`/todo?task=${f.actionId}`}
+                          className="inline-flex shrink-0 items-center gap-1 text-[13px] text-accent hover:underline"
+                        >
+                          Fix <ArrowRight size={13} />
+                        </Link>
                       )}
                     </li>
                   ))}
@@ -69,7 +86,10 @@ export default function Factors() {
           );
         })}
       </div>
-      <p className="mt-4 flex items-center gap-1.5 text-[12px] text-subtle"><Info size={12} /> Weights are estimates based on published industry surveys of local search factors, and are tuned per category over time.</p>
+      <p className="mt-4 flex items-center gap-1.5 text-[12px] text-subtle">
+        <Info size={12} /> Weights are estimates based on published industry surveys of local search factors, and are tuned per category
+        over time.
+      </p>
     </>
   );
 }

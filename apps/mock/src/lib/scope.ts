@@ -9,8 +9,21 @@ import { locations } from "../mock/mock";
 type Scope = { orgId: string; locationId: string | null }; // null = all Locations
 let scope: Scope = { orgId: organization.id, locationId: null };
 const listeners = new Set<() => void>();
-export const useScope = () => useSyncExternalStore((l) => { listeners.add(l); return () => { listeners.delete(l); }; }, () => scope, () => scope);
-export const setScope = (patch: Partial<Scope>) => { scope = { ...scope, ...patch }; listeners.forEach((l) => l()); };
+export const useScope = () =>
+  useSyncExternalStore(
+    (l) => {
+      listeners.add(l);
+      return () => {
+        listeners.delete(l);
+      };
+    },
+    () => scope,
+    () => scope,
+  );
+export const setScope = (patch: Partial<Scope>) => {
+  scope = { ...scope, ...patch };
+  listeners.forEach((l) => l());
+};
 
 /**
  * The Location a Location page should show. `location` is null when the Scope is

@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { Copy, Printer, Star, Check, X, Zap, TrendingUp, UserPlus, Globe } from "lucide-react";
 import { Badge, Button, Card, CardHeader, PageHeader, ScoreRing, cn, fmt, useToast } from "../components/ui";
@@ -8,25 +8,40 @@ import { ShareAuditButton } from "../components/ShareAudit";
 import { SendToCampaignButton } from "../components/Outreach";
 import { prospectAi } from "../mock/ai";
 import { ExternalUrl } from "../components/Scope";
-import { findProspect, leadersOf, opportunity, profileScore, searchMarket, specFromParams, specToQuery, visibilityScore, type Market, type Prospect } from "../mock/prospects";
+import {
+  findProspect,
+  leadersOf,
+  opportunity,
+  profileScore,
+  searchMarket,
+  specFromParams,
+  specToQuery,
+  visibilityScore,
+  type Market,
+  type Prospect,
+} from "../mock/prospects";
 
 const impactTone = { high: "good", medium: "info", low: "neutral" } as const;
 
 export default function ProspectAudit() {
   const { id = "" } = useParams();
   const [params] = useSearchParams();
-  const spec = specFromParams(params);
+  const spec = useMemo(() => specFromParams(params), [params]);
   const qs = specToQuery(spec);
-  const market = useMemo(() => searchMarket(spec), [qs]);
+  const market = useMemo(() => searchMarket(spec), [spec]);
   const p = findProspect(market, id);
   const { toast, node } = useToast();
+  // Fixed when the page opens, so the date on the audit doesn't change while it's on screen.
+  const [prepared] = useState(() => new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }));
 
   if (!p) {
     return (
       <Card className="py-16 text-center">
         <div className="font-medium">Prospect not found</div>
         <p className="mt-1 text-[13px] text-muted">Run the search again to refresh the list.</p>
-        <Link to={spec.biz ? "/prospects" : `/prospects${qs}`} className="mt-4 inline-block text-[13px] underline">Back to prospects</Link>
+        <Link to={spec.biz ? "/prospects" : `/prospects${qs}`} className="mt-4 inline-block text-[13px] underline">
+          Back to prospects
+        </Link>
       </Card>
     );
   }
@@ -36,44 +51,87 @@ export default function ProspectAudit() {
   const pitch = pitchText(p, market, leaders, o);
 
   const copy = async () => {
-    try { await navigator.clipboard.writeText(pitch); toast("Pitch copied to clipboard"); } catch { toast("Couldn't access the clipboard"); }
+    try {
+      await navigator.clipboard.writeText(pitch);
+      toast("Pitch copied to clipboard");
+    } catch {
+      toast("Couldn't access the clipboard");
+    }
   };
 
   return (
     <>
       <PageHeader
-        crumbs={<span className="print:hidden"><Link to={spec.biz ? "/prospects" : `/prospects${qs}`} className="hover:text-fg">Prospects</Link> / {spec.biz ? "Direct audit" : <>“{market.keyword}” in {market.city}</>}</span>}
+        crumbs={
+          <span className="print:hidden">
+            <Link to={spec.biz ? "/prospects" : `/prospects${qs}`} className="hover:text-fg">
+              Prospects
+            </Link>{" "}
+            /{" "}
+            {spec.biz ? (
+              "Direct audit"
+            ) : (
+              <>
+                “{market.keyword}” in {market.city}
+              </>
+            )}
+          </span>
+        }
         title={p.name}
-        sub={<>Local visibility audit for <b className="font-medium text-fg">“{market.keyword}”</b> in {market.city} · {p.address} · prepared {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</>}
+        sub={
+          <>
+            Local visibility audit for <b className="font-medium text-fg">“{market.keyword}”</b> in {market.city} · {p.address} · prepared{" "}
+            {prepared}
+          </>
+        }
         actions={
           <div className="flex flex-wrap gap-2 print:hidden">
             <ShareAuditButton path={`/prospects/${p.id}${qs}`} name={p.name} />
-            <Button icon={<Copy size={14} />} onClick={copy}>Copy pitch</Button>
-            <Button icon={<Printer size={14} />} onClick={() => window.print()}>Save as PDF</Button>
-            <Button icon={<UserPlus size={14} />} onClick={() => toast(`${p.name} added to pipeline`)}>Add to pipeline</Button>
+            <Button icon={<Copy size={14} />} onClick={copy}>
+              Copy pitch
+            </Button>
+            <Button icon={<Printer size={14} />} onClick={() => window.print()}>
+              Save as PDF
+            </Button>
+            <Button icon={<UserPlus size={14} />} onClick={() => toast(`${p.name} added to pipeline`)}>
+              Add to pipeline
+            </Button>
             <SendToCampaignButton p={p} o={o} market={market} qsKey={qs} onSent={toast} />
           </div>
         }
       />
 
-      <AuditBody p={p} market={market} o={o} beforeSections={
-      <Card className="mb-8 print:hidden">
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-[15px] font-medium">Who to contact</h2>
-          <span className="text-[12px] text-subtle">Only you see this. It's left out of the PDF.</span>
-        </div>
-        <ContactCard p={p} />
-      </Card>
-      } />
+      <AuditBody
+        p={p}
+        market={market}
+        o={o}
+        beforeSections={
+          <Card className="mb-8 print:hidden">
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="text-[15px] font-medium">Who to contact</h2>
+              <span className="text-[12px] text-subtle">Only you see this. It's left out of the PDF.</span>
+            </div>
+            <ContactCard p={p} />
+          </Card>
+        }
+      />
 
       <section className="mb-4 print:hidden">
         <SectionTitle n={6} title="Your pitch" sub="For you, not the prospect. Copy it into an email or use it on the call." />
         <Card>
           <div className="mb-4 flex flex-wrap gap-2">
-            {o.reasons.map((r) => <Badge key={r} tone="neutral">{r}</Badge>)}
+            {o.reasons.map((r) => (
+              <Badge key={r} tone="neutral">
+                {r}
+              </Badge>
+            ))}
           </div>
           <pre className="rounded-lg bg-bg p-4 font-sans text-[13.5px] whitespace-pre-wrap">{pitch}</pre>
-          <div className="mt-3 flex justify-end"><Button icon={<Copy size={14} />} onClick={copy}>Copy pitch</Button></div>
+          <div className="mt-3 flex justify-end">
+            <Button icon={<Copy size={14} />} onClick={copy}>
+              Copy pitch
+            </Button>
+          </div>
         </Card>
       </section>
       {node}
@@ -82,8 +140,22 @@ export default function ProspectAudit() {
 }
 
 /** The audit itself: shared by the internal page and the public share link (#/a/:token). */
-export function AuditBody({ p, market, o, publicView = false, beforeSections }: { p: Prospect; market: Market; o: ReturnType<typeof opportunity>; publicView?: boolean; beforeSections?: ReactNode }) {
-  const they = publicView ? "you" : "they", them = publicView ? "you" : "them", theyre = publicView ? "you're" : "they're";
+export function AuditBody({
+  p,
+  market,
+  o,
+  publicView = false,
+  beforeSections,
+}: {
+  p: Prospect;
+  market: Market;
+  o: ReturnType<typeof opportunity>;
+  publicView?: boolean;
+  beforeSections?: ReactNode;
+}) {
+  const they = publicView ? "you" : "they",
+    them = publicView ? "you" : "them",
+    theyre = publicView ? "you're" : "they're";
   const ai = prospectAi(p, market);
   const vis = visibilityScore(p);
   return (
@@ -93,16 +165,34 @@ export function AuditBody({ p, market, o, publicView = false, beforeSections }: 
         <div className="flex flex-col gap-6 md:flex-row md:items-center">
           <div className="flex items-center gap-5">
             <ScoreRing score={vis} size={96} stroke={7} label="Local visibility" />
-            <div className="md:hidden"><div className="text-[12.5px] text-muted">Local visibility</div><Badge tone={vis >= 80 ? "good" : vis >= 60 ? "warn" : "bad"}>{vis >= 80 ? "Strong" : vis >= 60 ? "Fair" : "Needs work"}</Badge></div>
+            <div className="md:hidden">
+              <div className="text-[12.5px] text-muted">Local visibility</div>
+              <Badge tone={vis >= 80 ? "good" : vis >= 60 ? "warn" : "bad"}>
+                {vis >= 80 ? "Strong" : vis >= 60 ? "Fair" : "Needs work"}
+              </Badge>
+            </div>
           </div>
           <div className="min-w-0 flex-1">
             <p className="font-serif text-[21px] leading-snug">
-              {p.mapRank === null
-                ? <>{p.name} doesn't show up in the top 20 on Google Maps for “{market.keyword}”.</>
-                : p.mapRank <= 3
-                  ? <>{p.name} is #{p.mapRank} on Google Maps for “{market.keyword}”, but only in part of the area around the business.</>
-                  : <>{p.name} is <span className="text-bad">#{p.mapRank}</span> on Google Maps for “{market.keyword}”. Most calls go to the top 3.</>}
-              {" "}{o.wins.length > 0 && <>We found <b className="font-semibold">{o.wins.length} fixes</b>, {o.easyWins} of them under an hour each.</>}
+              {p.mapRank === null ? (
+                <>
+                  {p.name} doesn't show up in the top 20 on Google Maps for “{market.keyword}”.
+                </>
+              ) : p.mapRank <= 3 ? (
+                <>
+                  {p.name} is #{p.mapRank} on Google Maps for “{market.keyword}”, but only in part of the area around the business.
+                </>
+              ) : (
+                <>
+                  {p.name} is <span className="text-bad">#{p.mapRank}</span> on Google Maps for “{market.keyword}”. Most calls go to the top
+                  3.
+                </>
+              )}{" "}
+              {o.wins.length > 0 && (
+                <>
+                  We found <b className="font-semibold">{o.wins.length} fixes</b>, {o.easyWins} of them under an hour each.
+                </>
+              )}
             </p>
             <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
               <Mini label="Map pack rank" value={p.mapRank ? `#${p.mapRank}` : "20+"} tone={p.mapRank && p.mapRank <= 3 ? "good" : "bad"} />
@@ -117,13 +207,23 @@ export function AuditBody({ p, market, o, publicView = false, beforeSections }: 
       {beforeSections}
 
       <section data-section="competitors" className="mb-8 break-inside-avoid">
-        <SectionTitle n={1} title={`How ${they} rank against competitors`} sub={`The businesses Google shows above ${them}, and where the gap is. Red means ${theyre} behind the top 3.`} />
+        <SectionTitle
+          n={1}
+          title={`How ${they} rank against competitors`}
+          sub={`The businesses Google shows above ${them}, and where the gap is. Red means ${theyre} behind the top 3.`}
+        />
         <CompetitorTable p={p} market={market} />
       </section>
 
       <section data-section="map" className="mb-8 break-inside-avoid">
-        <SectionTitle n={2} title="Map pack coverage" sub={`Google results change depending on where the searcher is. We searched “${market.keyword}” from 49 points within 3 miles. Switch between ${publicView ? "your business" : "the business"} and the top 3 to see who owns which part of town.`} />
-        <Card><ProspectMap p={p} market={market} /></Card>
+        <SectionTitle
+          n={2}
+          title="Map pack coverage"
+          sub={`Google results change depending on where the searcher is. We searched “${market.keyword}” from 49 points within 3 miles. Switch between ${publicView ? "your business" : "the business"} and the top 3 to see who owns which part of town.`}
+        />
+        <Card>
+          <ProspectMap p={p} market={market} />
+        </Card>
       </section>
 
       <section data-section="profile & website" className="mb-8 break-inside-avoid">
@@ -132,33 +232,52 @@ export function AuditBody({ p, market, o, publicView = false, beforeSections }: 
       </section>
 
       <section data-section="AI answers" className="mb-8 break-inside-avoid">
-        <SectionTitle n={4} title={`Do AI assistants recommend ${them}?`} sub={`More people now ask ChatGPT or Google's AI instead of scrolling the map. We asked each one: “${ai.question}”`} />
+        <SectionTitle
+          n={4}
+          title={`Do AI assistants recommend ${them}?`}
+          sub={`More people now ask ChatGPT or Google's AI instead of scrolling the map. We asked each one: “${ai.question}”`}
+        />
         <AiCheck p={p} ai={ai} />
       </section>
 
       <section data-section="game plan" className="mb-8 break-inside-avoid">
-        <SectionTitle n={5} title="The game plan" sub="Quickest fixes first. Rank estimates are directional, based on the gap to the current top 3." />
+        <SectionTitle
+          n={5}
+          title="The game plan"
+          sub="Quickest fixes first. Rank estimates are directional, based on the gap to the current top 3."
+        />
         <Card pad={false}>
           {o.wins.map((w, i) => (
             <div key={w.id} className="flex gap-4 border-b border-line px-5 py-4 last:border-0">
-              <span className="num mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-hover text-[12px] text-muted">{i + 1}</span>
+              <span className="num mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-hover text-[12px] text-muted">
+                {i + 1}
+              </span>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[14px] font-medium">{w.title}</span>
-                  {w.minutes <= 60 && <Badge tone="accent"><Zap size={11} /> Quick win</Badge>}
+                  {w.minutes <= 60 && (
+                    <Badge tone="accent">
+                      <Zap size={11} /> Quick win
+                    </Badge>
+                  )}
                 </div>
                 <p className="mt-0.5 text-[13px] text-muted">{w.detail}</p>
               </div>
               <div className="hidden shrink-0 text-right sm:block">
-                <Badge tone={impactTone[w.impact]} className="capitalize">{w.impact} impact</Badge>
-                <div className="mt-1 text-[12px] text-subtle">{w.area} · {w.effort}</div>
+                <Badge tone={impactTone[w.impact]} className="capitalize">
+                  {w.impact} impact
+                </Badge>
+                <div className="mt-1 text-[12px] text-subtle">
+                  {w.area} · {w.effort}
+                </div>
               </div>
             </div>
           ))}
-          {!o.wins.length && <div className="py-10 text-center text-[13px] text-muted">No obvious gaps. This one is already well optimised.</div>}
+          {!o.wins.length && (
+            <div className="py-10 text-center text-[13px] text-muted">No obvious gaps. This one is already well optimised.</div>
+          )}
         </Card>
       </section>
-
     </>
   );
 }
@@ -168,7 +287,9 @@ function AiCheck({ p, ai }: { p: Prospect; ai: ReturnType<typeof prospectAi> }) 
   return (
     <Card>
       <div className="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <span className={cn("num font-serif text-[28px] leading-none", hits >= 3 ? "text-good" : "text-bad")}>{hits} of {ai.answers.length}</span>
+        <span className={cn("num font-serif text-[28px] leading-none", hits >= 3 ? "text-good" : "text-bad")}>
+          {hits} of {ai.answers.length}
+        </span>
         <span className="text-[13.5px] text-muted">AI assistants mention {p.name}</span>
       </div>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -176,13 +297,32 @@ function AiCheck({ p, ai }: { p: Prospect; ai: ReturnType<typeof prospectAi> }) 
           <div key={a.engine.id} className={cn("rounded-lg border p-3", a.mentioned ? "border-good/30 bg-good-soft/40" : "border-line")}>
             <div className="flex items-center justify-between gap-2 text-[13px] font-medium">
               {a.engine.name}
-              {a.mentioned ? <Badge tone="good"><Check size={11} /> Mentioned</Badge> : <Badge tone="bad"><X size={11} /> Not mentioned</Badge>}
+              {a.mentioned ? (
+                <Badge tone="good">
+                  <Check size={11} /> Mentioned
+                </Badge>
+              ) : (
+                <Badge tone="bad">
+                  <X size={11} /> Not mentioned
+                </Badge>
+              )}
             </div>
-            <div className="mt-1.5 text-[12px] text-muted">Recommends: {a.listed.map((n, i) => <span key={n} className={cn(n === p.name && "font-medium text-good")}>{i ? ", " : ""}{n}</span>)}</div>
+            <div className="mt-1.5 text-[12px] text-muted">
+              Recommends:{" "}
+              {a.listed.map((n, i) => (
+                <span key={n} className={cn(n === p.name && "font-medium text-good")}>
+                  {i ? ", " : ""}
+                  {n}
+                </span>
+              ))}
+            </div>
           </div>
         ))}
       </div>
-      <p className="mt-3 text-[12px] text-subtle">AI answers lean on reviews, directory listings (Yelp, BBB, industry sites) and the business's own website, so the fixes below help here too.</p>
+      <p className="mt-3 text-[12px] text-subtle">
+        AI answers lean on reviews, directory listings (Yelp, BBB, industry sites) and the business's own website, so the fixes below help
+        here too.
+      </p>
     </Card>
   );
 }
@@ -191,7 +331,9 @@ function Mini({ label, value, tone }: { label: string; value: string; tone?: "go
   return (
     <div>
       <div className="text-[12px] text-muted">{label}</div>
-      <div className={cn("num mt-0.5 font-serif text-[24px] leading-none", tone === "good" && "text-good", tone === "bad" && "text-bad")}>{value}</div>
+      <div className={cn("num mt-0.5 font-serif text-[24px] leading-none", tone === "good" && "text-good", tone === "bad" && "text-bad")}>
+        {value}
+      </div>
     </div>
   );
 }
@@ -199,7 +341,10 @@ function Mini({ label, value, tone }: { label: string; value: string; tone?: "go
 function SectionTitle({ n, title, sub }: { n: number; title: string; sub: string }) {
   return (
     <div className="mb-3">
-      <h2 className="flex items-baseline gap-2 font-serif text-[22px]"><span className="num text-[15px] text-subtle">{n}.</span>{title}</h2>
+      <h2 className="flex items-baseline gap-2 font-serif text-[22px]">
+        <span className="num text-[15px] text-subtle">{n}.</span>
+        {title}
+      </h2>
       <p className="mt-0.5 max-w-2xl text-[13px] text-muted">{sub}</p>
     </div>
   );
@@ -227,7 +372,11 @@ function CompetitorTable({ p, market }: { p: Prospect; market: Market }) {
             <th className="px-5 py-2.5 font-normal">Map rank</th>
             <th className="px-3 py-2.5 font-normal">Business</th>
             <th className="px-3 py-2.5 text-right font-normal">Rating</th>
-            {cols.map((c) => <th key={c.label} className="px-3 py-2.5 text-right font-normal last:pr-5">{c.label}</th>)}
+            {cols.map((c) => (
+              <th key={c.label} className="px-3 py-2.5 text-right font-normal last:pr-5">
+                {c.label}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -237,12 +386,23 @@ function CompetitorTable({ p, market }: { p: Prospect; market: Market }) {
               <tr key={x.id} className={cn("border-b border-line last:border-0", isP && "bg-accent-soft/40")}>
                 <td className="num px-5 py-3 font-serif text-[18px]">{x.mapRank ? `#${x.mapRank}` : "20+"}</td>
                 <td className="px-3 py-3">
-                  <div className="font-medium">{x.name} {isP && <Badge tone="accent">Prospect</Badge>}</div>
-                  <div className="text-[12px] text-muted">{x.distanceMi} mi · {x.website ?? "no website"}</div>
+                  <div className="font-medium">
+                    {x.name} {isP && <Badge tone="accent">Prospect</Badge>}
+                  </div>
+                  <div className="text-[12px] text-muted">
+                    {x.distanceMi} mi · {x.website ?? "no website"}
+                  </div>
                 </td>
-                <td className="num px-3 py-3 text-right"><span className="inline-flex items-center gap-1"><Star size={11} className="fill-current text-warn" />{x.rating}</span></td>
+                <td className="num px-3 py-3 text-right">
+                  <span className="inline-flex items-center gap-1">
+                    <Star size={11} className="fill-current text-warn" />
+                    {x.rating}
+                  </span>
+                </td>
                 {cols.map((c) => (
-                  <td key={c.label} className={cn("num px-3 py-3 text-right last:pr-5", behind(x, c.get) && "font-medium text-bad")}>{c.show(x)}</td>
+                  <td key={c.label} className={cn("num px-3 py-3 text-right last:pr-5", behind(x, c.get) && "font-medium text-bad")}>
+                    {c.show(x)}
+                  </td>
                 ))}
               </tr>
             );
@@ -279,16 +439,31 @@ function SiteAudit({ p, market }: { p: Prospect; market: Market }) {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <Card>
-        <CardHeader title="Google Business Profile" sub={`${gbp.filter((x) => x[1]).length} of ${gbp.length} checks passed`} right={<ScoreRing score={profileScore(p)} size={52} stroke={5} label="Profile" />} />
+        <CardHeader
+          title="Google Business Profile"
+          sub={`${gbp.filter((x) => x[1]).length} of ${gbp.length} checks passed`}
+          right={<ScoreRing score={profileScore(p)} size={52} stroke={5} label="Profile" />}
+        />
         <CheckList items={gbp} />
       </Card>
       <Card>
         {site ? (
           <>
-            <CardHeader title="Website" sub={<>{p.website && <ExternalUrl domain={p.website} />} · {site.pages} pages crawled</>} right={<ScoreRing score={site.score} size={52} stroke={5} label="Website" />} />
+            <CardHeader
+              title="Website"
+              sub={
+                <>
+                  {p.website && <ExternalUrl domain={p.website} />} · {site.pages} pages crawled
+                </>
+              }
+              right={<ScoreRing score={site.score} size={52} stroke={5} label="Website" />}
+            />
             <CheckList items={web} />
             {p.organicRank !== null && (
-              <div className="mt-4 flex items-center gap-2 rounded-md bg-hover px-3 py-2 text-[13px]"><TrendingUp size={14} className="text-muted" /> Organic rank for “{market.keyword}”: <b className="num font-medium">#{p.organicRank}</b></div>
+              <div className="mt-4 flex items-center gap-2 rounded-md bg-hover px-3 py-2 text-[13px]">
+                <TrendingUp size={14} className="text-muted" /> Organic rank for “{market.keyword}”:{" "}
+                <b className="num font-medium">#{p.organicRank}</b>
+              </div>
             )}
           </>
         ) : (
@@ -296,7 +471,9 @@ function SiteAudit({ p, market }: { p: Prospect; market: Market }) {
             <div>
               <Globe size={28} className="mx-auto text-bad" />
               <div className="mt-3 font-medium">No website linked</div>
-              <p className="mx-auto mt-1 max-w-xs text-[13px] text-muted">Every business in the top 3 has a website. This is the single biggest gap, and the easiest upsell.</p>
+              <p className="mx-auto mt-1 max-w-xs text-[13px] text-muted">
+                Every business in the top 3 has a website. This is the single biggest gap, and the easiest upsell.
+              </p>
             </div>
           </div>
         )}
@@ -310,7 +487,11 @@ function CheckList({ items }: { items: [string, boolean, string][] }) {
     <ul className="divide-y divide-line">
       {items.map(([label, ok, detail]) => (
         <li key={label} className="flex items-center gap-3 py-2.5 text-[13.5px]">
-          <span className={cn("grid size-5 shrink-0 place-items-center rounded-full", ok ? "bg-good-soft text-good" : "bg-bad-soft text-bad")}>{ok ? <Check size={12} strokeWidth={2.5} /> : <X size={12} strokeWidth={2.5} />}</span>
+          <span
+            className={cn("grid size-5 shrink-0 place-items-center rounded-full", ok ? "bg-good-soft text-good" : "bg-bad-soft text-bad")}
+          >
+            {ok ? <Check size={12} strokeWidth={2.5} /> : <X size={12} strokeWidth={2.5} />}
+          </span>
           <span className="flex-1">{label}</span>
           <span className={cn("text-right text-[12.5px]", ok ? "text-subtle" : "text-bad")}>{detail}</span>
         </li>
@@ -323,7 +504,10 @@ function pitchText(p: Prospect, m: Market, leaders: Prospect[], o: ReturnType<ty
   const names = leaders.map((l) => l.name);
   const beatOn = leaders.filter((l) => p.rating > l.rating).length;
   const where = p.mapRank === null ? "doesn't show up in the top 20 on Google Maps" : `shows up #${p.mapRank} on Google Maps`;
-  const fixes = o.wins.slice(0, 3).map((w) => `  • ${w.title}`).join("\n");
+  const fixes = o.wins
+    .slice(0, 3)
+    .map((w) => `  • ${w.title}`)
+    .join("\n");
   return `Hi ${p.contact.owner?.name.split(" ")[0] ?? "there"},
 
 I searched “${m.keyword}” in ${m.city.split(",")[0]} and ${p.name} ${where}${names.length ? `, behind ${names.join(", ")}` : ""}. The top 3 get most of the ~${fmt(m.volume)} searches a month, which I estimate is about ${fmt(o.missedLeads)} customers (~$${fmt(o.missedRevenue)}) a month you're not getting.
