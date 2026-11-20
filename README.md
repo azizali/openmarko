@@ -1,9 +1,9 @@
 # Todo
 - [x] Project setup locally
   - cXutjoKxbE0iJHpIuvW3l_Ws
-- [ ] Deploy to cloud
-- [ ] logo import 
+- [x] logo import 
 - [ ] design import from other repo
+- [ ] Deploy to cloud
 
 - [ ] Features
 - [ ] REA openseo
