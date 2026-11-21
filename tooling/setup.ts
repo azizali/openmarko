@@ -61,8 +61,8 @@ const portFree = async (port: number) => {
 
 /** Starts `bun dev`, and opens the browser once the API answers. */
 async function startApp() {
-  if (!(await portFree(3000)) || !(await portFree(5173))) {
-    p.log.warn("Ports 3000 or 5173 are in use, so I didn't start the app. Stop what's using them, then run: bun dev");
+  if (!(await portFree(3000)) || !(await portFree(5173)) || !(await portFree(5174)) || !(await portFree(5175))) {
+    p.log.warn("Ports 3000, 5173, 5174 or 5175 are in use, so I didn't start the app. Stop what's using them, then run: bun dev");
     return;
   }
   const dev = Bun.spawn(["bun", "dev"], { cwd: root, stdio: ["inherit", "inherit", "inherit"] });
@@ -181,8 +181,9 @@ p.note(
     "  member@example.test    an Editor in Acme",
     ...(modules.partners ? ["  partner@example.test   a Partner that manages Acme"] : []),
     "",
-    "App       http://localhost:5173",
-    "Site      http://localhost:5174",
+    "App       http://localhost:5173   (sign-in and the product)",
+    "Site      http://localhost:5174   (its Sign in goes to the App)",
+    "Mock      http://localhost:5175   (clickable prototype, not the product)",
     "API docs  http://localhost:3000/openapi",
     "Email     http://localhost:8025",
   ].join("\n"),

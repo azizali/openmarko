@@ -4,7 +4,7 @@ Clickable mock of a local rank-tracking tool that tracks your Google Business Pr
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
+npm run dev      # http://localhost:5175 (the mock; the product app is on 5173, the site on 5174)
 npm run build
 ```
 

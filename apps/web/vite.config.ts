@@ -16,6 +16,7 @@ export default defineConfig({
   define: { ...moduleFlags, __APP_NAME__: JSON.stringify(appConfig.name), __FEATURES__: JSON.stringify(appConfig.features) },
   server: {
     port: 5173,
+    strictPort: true,
     proxy: {
       "/api": { target: "http://localhost:3000", changeOrigin: true },
       "^/widget/": { target: "http://localhost:3000", changeOrigin: true },

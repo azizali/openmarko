@@ -57,7 +57,7 @@ It asks where the app goes, checks that those places work, prepares the database
 | `bun run setup` | From a fresh fork to the app running here. Safe to rerun. |
 | `bun run deploy:setup` | From a working fork to production. Safe to rerun. |
 | `bun run admin:create <email>` | Make an app admin in whichever database `DATABASE_URL` names |
-| `bun dev [api\|worker\|web\|site]` | Start everything, or only the named processes |
+| `bun dev [api\|worker\|web\|site\|mock]` | Start everything, or only the named processes. Prints which URL is the app (5173), the site (5174), the mock (5175) and the API (3000). |
 | `bun run check` | Lint, format check, type check, tests. Green before every merge. |
 | `bun test` | The API's tests, each file on its own throwaway database |
 | `bun run db:generate` | A new migration from the modules' schemas, after a schema change |

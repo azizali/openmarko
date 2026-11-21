@@ -41,7 +41,7 @@ Everything is checked at boot (`packages/kernel/src/config.ts`): a bad value lis
 | `BETTER_AUTH_SECRET` | yes | Signs sessions and tokens. 32+ characters. |
 | `MASTER_KEY_CURRENT`, `MASTER_KEY_V<n>` | yes | Envelope encryption for provider secrets. Rotate by adding `V2` and pointing `CURRENT` at it. |
 | `BETTER_AUTH_URL` | | The API's own public address (default `http://localhost:3000`). The chat widget's embed code points here. |
-| `APP_URL` | | The web app's address (default `http://localhost:5173`): a trusted origin, and where emails link to. |
+| `APP_URL` | | The web app's address (default `http://localhost:5173`): a trusted origin, and where emails link to. In development the site's Sign in goes to this same address (`bun dev` sets `VITE_APP_URL` for the site). |
 | `SITE_URL` | | The site's address, if it calls the API. |
 | `TRUSTED_ORIGINS` | | Extra browser origins that may call with cookies. |
 | `PORT` | | API port (default 3000). |
