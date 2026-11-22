@@ -3,23 +3,8 @@
 // and who is ahead of you on each one. Competitors differ by keyword and by where the person searched.
 
 import { Fragment, useState, type ReactNode } from "react";
-import {
-  ArrowDown,
-  ArrowUp,
-  ChevronRight,
-  ExternalLink,
-  X,
-} from "lucide-react";
-import {
-  Badge,
-  Button,
-  Card,
-  cn,
-  fmt,
-  LineChart,
-  rankTone,
-  Segmented,
-} from "../components/ui";
+import { ArrowDown, ArrowUp, ChevronRight, ExternalLink, X } from "lucide-react";
+import { Badge, Button, Card, cn, fmt, LineChart, rankTone, Segmented } from "../components/ui";
 import {
   ahead,
   aheadCount,
@@ -47,18 +32,10 @@ import {
 
 /** Up is good here: a count that grew, or a position that got smaller. */
 export function Change({ by, unit }: { by: number; unit: string }) {
-  if (by === 0)
-    return (
-      <span className="text-[12.5px] text-muted">No change in 30 days</span>
-    );
+  if (by === 0) return <span className="text-[12.5px] text-muted">No change in 30 days</span>;
   const Icon = by > 0 ? ArrowUp : ArrowDown;
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-0.5 text-[12.5px] font-medium",
-        by > 0 ? "text-good" : "text-bad",
-      )}
-    >
+    <span className={cn("inline-flex items-center gap-0.5 text-[12.5px] font-medium", by > 0 ? "text-good" : "text-bad")}>
       <Icon size={13} />
       {Math.abs(by)} {unit} in 30 days
     </span>
@@ -99,17 +76,11 @@ export function Headline({
       <div>
         <p className="text-[13px] text-muted">{label}</p>
         <div className="mt-1.5 flex flex-wrap items-end gap-x-3 gap-y-1">
-          <span className="num font-serif text-[44px] leading-none tracking-tight">
-            {value}
-          </span>
+          <span className="num font-serif text-[44px] leading-none tracking-tight">{value}</span>
           <span
             className={cn(
               "num mb-1 inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[12px] font-medium",
-              by > 0
-                ? "bg-good-soft text-good"
-                : by < 0
-                  ? "bg-bad-soft text-bad"
-                  : "bg-hover text-muted",
+              by > 0 ? "bg-good-soft text-good" : by < 0 ? "bg-bad-soft text-bad" : "bg-hover text-muted",
             )}
           >
             {by > 0 && <ArrowUp size={11} strokeWidth={2.5} />}
@@ -117,9 +88,7 @@ export function Headline({
             {by === 0 ? "No change" : `${Math.abs(by)}${byUnit}`} in 30 days
           </span>
         </div>
-        {children && (
-          <p className="mt-2 text-[13px] text-muted">{children}</p>
-        )}
+        {children && <p className="mt-2 text-[13px] text-muted">{children}</p>}
       </div>
       <LineChart
         height={120}
@@ -146,20 +115,12 @@ function Position({ now, prev }: { now: number | null; prev: number | null }) {
   return (
     <span className="num inline-flex items-center gap-1.5">
       <span
-        className={cn(
-          "inline-grid h-6 min-w-8 place-items-center rounded-full px-1.5 text-[12px] font-medium",
-          pillTone[rankTone(now)],
-        )}
+        className={cn("inline-grid h-6 min-w-8 place-items-center rounded-full px-1.5 text-[12px] font-medium", pillTone[rankTone(now)])}
       >
         {now}
       </span>
       {by !== 0 && (
-        <span
-          className={cn(
-            "inline-flex items-center text-[12px]",
-            by > 0 ? "text-good" : "text-bad",
-          )}
-        >
+        <span className={cn("inline-flex items-center text-[12px]", by > 0 ? "text-good" : "text-bad")}>
           {by > 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
           {Math.abs(by)}
         </span>
@@ -186,36 +147,16 @@ export function Bar({
 }) {
   const body = (
     <>
-      <span
-        className={cn(
-          "w-44 shrink-0 truncate text-left text-[13.5px]",
-          mine && "font-medium",
-        )}
-      >
-        {name}
-      </span>
+      <span className={cn("w-44 shrink-0 truncate text-left text-[13.5px]", mine && "font-medium")}>{name}</span>
       <span className="h-2 min-w-0 flex-1 rounded-full bg-hover">
-        <span
-          className={cn(
-            "block h-2 rounded-full",
-            mine ? "bg-ink" : "bg-line-strong",
-          )}
-          style={{ width: `${(value / max) * 100}%` }}
-        />
+        <span className={cn("block h-2 rounded-full", mine ? "bg-ink" : "bg-line-strong")} style={{ width: `${(value / max) * 100}%` }} />
       </span>
       <span className="num w-8 shrink-0 text-right text-[13.5px]">{value}</span>
     </>
   );
-  const cls = cn(
-    "flex w-full items-center gap-3 rounded-md px-2 py-1.5",
-    active && "bg-hover",
-  );
+  const cls = cn("flex w-full items-center gap-3 rounded-md px-2 py-1.5", active && "bg-hover");
   return onClick ? (
-    <button
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(cls, "hover:bg-hover")}
-    >
+    <button onClick={onClick} aria-pressed={active} className={cn(cls, "hover:bg-hover")}>
       {body}
     </button>
   ) : (
@@ -236,9 +177,8 @@ export function KeywordsPage({ keywords }: { keywords: TrackedKeyword[] }) {
   return (
     <>
       <p className="max-w-2xl text-[13.5px] text-muted">
-        Where your website shows in Google's normal results for each keyword.
-        Open one to see the whole first page: other dentists, and directories
-        like Yelp that often take the top places.
+        Where your website shows in Google's normal results for each keyword. Open one to see the whole first page: other dentists, and
+        directories like Yelp that often take the top places.
       </p>
       <Headline
         label="On Google's first page"
@@ -270,9 +210,7 @@ export function KeywordsPage({ keywords }: { keywords: TrackedKeyword[] }) {
                 return (
                   <tr key={k.id} className="border-b border-line last:border-0">
                     <td className="py-3 pl-4">{k.term}</td>
-                    <td className="num py-3 text-right text-muted">
-                      {fmt(k.volume)}
-                    </td>
+                    <td className="num py-3 text-right text-muted">{fmt(k.volume)}</td>
                     <td colSpan={4} className="py-3 pr-4 text-right text-muted">
                       First check running
                     </td>
@@ -285,24 +223,16 @@ export function KeywordsPage({ keywords }: { keywords: TrackedKeyword[] }) {
                 <Fragment key={k.id}>
                   <tr
                     onClick={() => setOpen(isOpen ? null : k.id)}
-                    className={cn(
-                      "cursor-pointer hover:bg-hover",
-                      !isOpen && "border-b border-line",
-                    )}
+                    className={cn("cursor-pointer hover:bg-hover", !isOpen && "border-b border-line")}
                   >
                     <td className="py-3 pl-4 font-medium">{k.term}</td>
-                    <td className="num py-3 text-right text-muted">
-                      {fmt(k.volume)}
-                    </td>
+                    <td className="num py-3 text-right text-muted">{fmt(k.volume)}</td>
                     <td className="py-3 text-right">
                       <Position now={k.google} prev={k.googlePrev} />
                     </td>
-                    <td className="py-3 pl-6 text-muted">
-                      {first === "you" ? "You" : first.name}
-                    </td>
+                    <td className="py-3 pl-6 text-muted">{first === "you" ? "You" : first.name}</td>
                     <td className="num py-3 text-right">
-                      {top3Spots(k.id)}{" "}
-                      <span className="text-muted">/ {GRID_SPOTS}</span>
+                      {top3Spots(k.id)} <span className="text-muted">/ {GRID_SPOTS}</span>
                     </td>
                     <td className="py-3 pr-3 text-right">
                       <button
@@ -310,13 +240,7 @@ export function KeywordsPage({ keywords }: { keywords: TrackedKeyword[] }) {
                         aria-expanded={isOpen}
                         className="rounded p-1 text-subtle hover:text-fg"
                       >
-                        <ChevronRight
-                          size={15}
-                          className={cn(
-                            "transition-transform",
-                            isOpen && "rotate-90",
-                          )}
-                        />
+                        <ChevronRight size={15} className={cn("transition-transform", isOpen && "rotate-90")} />
                       </button>
                     </td>
                   </tr>
@@ -325,28 +249,17 @@ export function KeywordsPage({ keywords }: { keywords: TrackedKeyword[] }) {
                       <td colSpan={6} className="bg-hover/50 px-4 pt-1 pb-4">
                         <p className="py-2 text-[12.5px] text-muted">
                           Google's first page for “{k.term}”
-                          {k.google !== null &&
-                            k.google > 10 &&
-                            `. You are at ${k.google}, on page ${Math.ceil(k.google / 10)}.`}
+                          {k.google !== null && k.google > 10 && `. You are at ${k.google}, on page ${Math.ceil(k.google / 10)}.`}
                         </p>
                         <ol className="grid gap-x-8 gap-y-1 sm:grid-cols-2">
                           {top.map((s, i) => (
                             <li
                               key={s === "you" ? "you" : s.id}
-                              className={cn(
-                                "flex items-center gap-2 text-[13.5px]",
-                                s === "you" && "font-medium",
-                              )}
+                              className={cn("flex items-center gap-2 text-[13.5px]", s === "you" && "font-medium")}
                             >
-                              <span className="num w-5 shrink-0 text-right text-muted">
-                                {i + 1}
-                              </span>
-                              <span className="min-w-0 truncate">
-                                {s === "you" ? "You" : s.name}
-                              </span>
-                              {s !== "you" && s.kind === "directory" && (
-                                <Badge>Directory</Badge>
-                              )}
+                              <span className="num w-5 shrink-0 text-right text-muted">{i + 1}</span>
+                              <span className="min-w-0 truncate">{s === "you" ? "You" : s.name}</span>
+                              {s !== "you" && s.kind === "directory" && <Badge>Directory</Badge>}
                             </li>
                           ))}
                         </ol>
@@ -371,15 +284,12 @@ export function AiPage({ prompts }: { prompts: TrackedPrompt[] }) {
   const me = aiNamed(prompts);
   const pct = me.total ? Math.round((me.hits / me.total) * 100) : 0;
   // Mock: the check 30 days back named you in two fewer answers.
-  const pctAgo = me.total
-    ? Math.round((Math.max(0, me.hits - 2) / me.total) * 100)
-    : 0;
+  const pctAgo = me.total ? Math.round((Math.max(0, me.hits - 2) / me.total) * 100) : 0;
   return (
     <>
       <p className="max-w-2xl text-[13.5px] text-muted">
-        We ask each assistant the question the way a customer would, read who it
-        names, and note the sites it leaned on. Open a question to read each
-        answer.
+        We ask each assistant the question the way a customer would, read who it names, and note the sites it leaned on. Open a question to
+        read each answer.
       </p>
       <Headline
         label="Named in AI answers"
@@ -423,10 +333,7 @@ export function AiPage({ prompts }: { prompts: TrackedPrompt[] }) {
                 return (
                   <tr key={p.id} className="border-b border-line last:border-0">
                     <td className="py-3 pl-4">{p.text}</td>
-                    <td
-                      colSpan={engines.length + 1}
-                      className="py-3 pr-4 text-right text-muted"
-                    >
+                    <td colSpan={engines.length + 1} className="py-3 pr-4 text-right text-muted">
                       First answers coming
                     </td>
                   </tr>
@@ -436,10 +343,7 @@ export function AiPage({ prompts }: { prompts: TrackedPrompt[] }) {
                 <Fragment key={p.id}>
                   <tr
                     onClick={() => setOpen(isOpen ? null : p.id)}
-                    className={cn(
-                      "cursor-pointer hover:bg-hover",
-                      !isOpen && "border-b border-line",
-                    )}
+                    className={cn("cursor-pointer hover:bg-hover", !isOpen && "border-b border-line")}
                   >
                     <td className="py-3 pl-4 font-medium">{p.text}</td>
                     {engines.map((e) => {
@@ -465,62 +369,28 @@ export function AiPage({ prompts }: { prompts: TrackedPrompt[] }) {
                       );
                     })}
                     <td className="py-3 pr-3 text-right">
-                      <button
-                        aria-label={`Answers for ${p.text}`}
-                        aria-expanded={isOpen}
-                        className="rounded p-1 text-subtle hover:text-fg"
-                      >
-                        <ChevronRight
-                          size={15}
-                          className={cn(
-                            "transition-transform",
-                            isOpen && "rotate-90",
-                          )}
-                        />
+                      <button aria-label={`Answers for ${p.text}`} aria-expanded={isOpen} className="rounded p-1 text-subtle hover:text-fg">
+                        <ChevronRight size={15} className={cn("transition-transform", isOpen && "rotate-90")} />
                       </button>
                     </td>
                   </tr>
                   {isOpen && (
                     <tr className="border-b border-line">
-                      <td
-                        colSpan={engines.length + 2}
-                        className="bg-hover/50 px-4 py-4"
-                      >
+                      <td colSpan={engines.length + 2} className="bg-hover/50 px-4 py-4">
                         <div className="anim-fade grid gap-3 md:grid-cols-3">
                           {engines.map((e) => {
                             const a = p.answers[e.id];
                             return (
-                              <div
-                                key={e.id}
-                                className={cn(
-                                  "rounded-lg border bg-surface p-3",
-                                  a.you ? "border-good/30" : "border-line",
-                                )}
-                              >
+                              <div key={e.id} className={cn("rounded-lg border bg-surface p-3", a.you ? "border-good/30" : "border-line")}>
                                 <div className="mb-1.5 flex items-center justify-between gap-2 text-[13px] font-medium">
                                   {e.name}
-                                  {a.you ? (
-                                    <Badge tone="good">Names you #{a.at}</Badge>
-                                  ) : (
-                                    <Badge tone="bad">Not named</Badge>
-                                  )}
+                                  {a.you ? <Badge tone="good">Names you #{a.at}</Badge> : <Badge tone="bad">Not named</Badge>}
                                 </div>
-                                <p className="text-[12.5px] leading-relaxed text-muted italic">
-                                  “{a.excerpt}”
-                                </p>
+                                <p className="text-[12.5px] leading-relaxed text-muted italic">“{a.excerpt}”</p>
                                 <ol className="mt-2 space-y-0.5 text-[12.5px]">
                                   {ranked(a).map((n, i) => (
-                                    <li
-                                      key={n}
-                                      className={cn(
-                                        n === you.name &&
-                                          "font-medium text-accent",
-                                      )}
-                                    >
-                                      <span className="num text-subtle">
-                                        {i + 1}.
-                                      </span>{" "}
-                                      {n === you.name ? "You" : n}
+                                    <li key={n} className={cn(n === you.name && "font-medium text-accent")}>
+                                      <span className="num text-subtle">{i + 1}.</span> {n === you.name ? "You" : n}
                                     </li>
                                   ))}
                                 </ol>
@@ -530,9 +400,7 @@ export function AiPage({ prompts }: { prompts: TrackedPrompt[] }) {
                                       key={s}
                                       className={cn(
                                         "inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[11px]",
-                                        s === you.website
-                                          ? "bg-good-soft text-good"
-                                          : "bg-hover text-muted",
+                                        s === you.website ? "bg-good-soft text-good" : "bg-hover text-muted",
                                       )}
                                     >
                                       <ExternalLink size={9} />
@@ -560,21 +428,10 @@ export function AiPage({ prompts }: { prompts: TrackedPrompt[] }) {
 
 // ---------- Competitors ----------
 
-const cell = (channel: Channel, v: number | null) =>
-  v === null || (channel !== "google" && v === 0) ? "–" : v;
+const cell = (channel: Channel, v: number | null) => (v === null || (channel !== "google" && v === 0) ? "–" : v);
 
 /** A competitor's result next to yours, on one keyword or question. */
-function Versus({
-  channel,
-  label,
-  theirs,
-  yours,
-}: {
-  channel: Channel;
-  label: string;
-  theirs: number | null;
-  yours: number | null;
-}) {
+function Versus({ channel, label, theirs, yours }: { channel: Channel; label: string; theirs: number | null; yours: number | null }) {
   const beats = ahead(channel, theirs, yours);
   return (
     <li className="flex items-center gap-3 py-1.5 text-[13px]">
@@ -589,9 +446,7 @@ function Versus({
       >
         {cell(channel, theirs)}
       </span>
-      <span className="num w-10 shrink-0 text-right text-muted">
-        {cell(channel, yours)}
-      </span>
+      <span className="num w-10 shrink-0 text-right text-muted">{cell(channel, yours)}</span>
     </li>
   );
 }
@@ -605,23 +460,17 @@ export function CompetitorsPage({
   onRemove?: (id: string) => void;
 }) {
   const [channel, setChannel] = useState<Channel>("maps");
-  const [open, setOpen] = useState<string | null>(
-    field("maps")[0]?.id ?? null,
-  );
+  const [open, setOpen] = useState<string | null>(field("maps")[0]?.id ?? null);
   const cols = columns(channel);
   const rows = field(channel);
   const info = channels.find((c) => c.id === channel)!;
   const what = channel === "ai" ? "questions" : "keywords";
-  const everyone = new Set(
-    channels.flatMap((c) => field(c.id).map((s) => s.id)),
-  );
+  const everyone = new Set(channels.flatMap((c) => field(c.id).map((s) => s.id)));
   return (
     <>
       <p className="max-w-2xl text-[13.5px] text-muted">
-        You didn't have to name these. {everyone.size} businesses and sites show
-        up for your keywords and questions:{" "}
-        {channels.map((c) => `${field(c.id).length} on ${c.name}`).join(", ")}.
-        Open one to see where they beat you.
+        You didn't have to name these. {everyone.size} businesses and sites show up for your keywords and questions:{" "}
+        {channels.map((c) => `${field(c.id).length} on ${c.name}`).join(", ")}. Open one to see where they beat you.
       </p>
       <div className="mt-6">
         <Segmented<Channel>
@@ -654,19 +503,12 @@ export function CompetitorsPage({
                   theirs: score(channel, s, c.id),
                   yours: score(channel, "you", c.id),
                 }))
-                .sort(
-                  (a, b) =>
-                    Number(ahead(channel, b.theirs, b.yours)) -
-                    Number(ahead(channel, a.theirs, a.yours)),
-                );
+                .sort((a, b) => Number(ahead(channel, b.theirs, b.yours)) - Number(ahead(channel, a.theirs, a.yours)));
               return (
                 <Fragment key={s.id}>
                   <tr
                     onClick={() => setOpen(isOpen ? null : s.id)}
-                    className={cn(
-                      "cursor-pointer hover:bg-hover",
-                      !isOpen && "border-b border-line",
-                    )}
+                    className={cn("cursor-pointer hover:bg-hover", !isOpen && "border-b border-line")}
                   >
                     <td className="py-2.5 pl-4">
                       <span className="flex items-center gap-2">
@@ -681,24 +523,14 @@ export function CompetitorsPage({
                     </td>
                     <td className="py-2.5 pr-4">
                       <span className="num mb-1 block text-[12.5px]">
-                        <b
-                          className={cn(
-                            "font-medium",
-                            n ? "text-bad" : "text-good",
-                          )}
-                        >
-                          {n}
-                        </b>
+                        <b className={cn("font-medium", n ? "text-bad" : "text-good")}>{n}</b>
                         <span className="text-muted">
                           {" "}
                           of {cols.length} {what}
                         </span>
                       </span>
                       <span className="block h-1.5 overflow-hidden rounded-full bg-hover">
-                        <span
-                          className="block h-full rounded-full bg-bad"
-                          style={{ width: `${(n / cols.length) * 100}%` }}
-                        />
+                        <span className="block h-full rounded-full bg-bad" style={{ width: `${(n / cols.length) * 100}%` }} />
                       </span>
                     </td>
                     <td className="py-2.5 pr-3 text-right">
@@ -707,48 +539,26 @@ export function CompetitorsPage({
                         aria-expanded={isOpen}
                         className="rounded p-1 text-subtle hover:text-fg"
                       >
-                        <ChevronRight
-                          size={15}
-                          className={cn(
-                            "transition-transform",
-                            isOpen && "rotate-90",
-                          )}
-                        />
+                        <ChevronRight size={15} className={cn("transition-transform", isOpen && "rotate-90")} />
                       </button>
                     </td>
                   </tr>
                   {isOpen && (
                     <tr className="border-b border-line">
                       <td colSpan={3} className="bg-hover/50 px-4 pt-2 pb-3">
-                        <p className="py-1 text-[12.5px] text-muted">
-                          {info.unit}. Red: they beat you.
-                        </p>
+                        <p className="py-1 text-[12.5px] text-muted">{info.unit}. Red: they beat you.</p>
                         <div className="grid gap-x-10 md:grid-cols-2">
                           {[0, 1].map((half) => (
                             <ul key={half} className="divide-y divide-line">
                               <li className="flex gap-3 pb-1 text-[12px] text-subtle">
-                                <span className="flex-1">
-                                  {channel === "ai" ? "Question" : "Keyword"}
-                                </span>
-                                <span className="min-w-8 text-center">
-                                  Them
-                                </span>
+                                <span className="flex-1">{channel === "ai" ? "Question" : "Keyword"}</span>
+                                <span className="min-w-8 text-center">Them</span>
                                 <span className="w-10 text-right">You</span>
                               </li>
                               {lines
-                                .filter(
-                                  (_, i) =>
-                                    i < Math.ceil(lines.length / 2) ===
-                                    (half === 0),
-                                )
+                                .filter((_, i) => i < Math.ceil(lines.length / 2) === (half === 0))
                                 .map((l) => (
-                                  <Versus
-                                    key={l.c.id}
-                                    channel={channel}
-                                    label={l.c.label}
-                                    theirs={l.theirs}
-                                    yours={l.yours}
-                                  />
+                                  <Versus key={l.c.id} channel={channel} label={l.c.label} theirs={l.theirs} yours={l.yours} />
                                 ))}
                             </ul>
                           ))}
@@ -767,19 +577,12 @@ export function CompetitorsPage({
                     <Badge tone="info">Added by you</Badge>
                   </span>
                   <span className="block text-[12.5px] text-muted">
-                    {c.rating.toFixed(1)} stars · {fmt(c.reviews)} reviews ·{" "}
-                    {c.distanceMi} mi away
+                    {c.rating.toFixed(1)} stars · {fmt(c.reviews)} reviews · {c.distanceMi} mi away
                   </span>
                 </td>
-                <td className="py-2.5 pr-4 text-[12.5px] text-muted">
-                  Read from the next check
-                </td>
+                <td className="py-2.5 pr-4 text-[12.5px] text-muted">Read from the next check</td>
                 <td className="py-2.5 pr-3 text-right">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => onRemove?.(c.id)}
-                  >
+                  <Button size="sm" variant="ghost" onClick={() => onRemove?.(c.id)}>
                     Remove
                   </Button>
                 </td>
@@ -790,8 +593,7 @@ export function CompetitorsPage({
       </Card>
       {channel === "google" && (
         <p className="mt-2 text-[12.5px] text-muted">
-          Directories can't be beaten the way another dentist can. The move
-          there is a complete, well-reviewed listing on them.
+          Directories can't be beaten the way another dentist can. The move there is a complete, well-reviewed listing on them.
         </p>
       )}
       <Source>{sources.competitors}</Source>

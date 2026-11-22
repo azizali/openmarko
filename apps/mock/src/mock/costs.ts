@@ -10,15 +10,13 @@
 // (rating, reviews, photos…) and the keywords their websites rank for are separate calls.
 
 export type Frequency = "daily" | "weekly" | "biweekly" | "monthly";
-export const frequencies: { id: Frequency; label: string; perMonth: number }[] =
-  [
-    { id: "daily", label: "Daily", perMonth: 30 },
-    { id: "weekly", label: "Weekly", perMonth: 52 / 12 },
-    { id: "biweekly", label: "Every 2 weeks", perMonth: 26 / 12 },
-    { id: "monthly", label: "Monthly", perMonth: 1 },
-  ];
-export const perMonth = (f: Frequency) =>
-  frequencies.find((x) => x.id === f)!.perMonth;
+export const frequencies: { id: Frequency; label: string; perMonth: number }[] = [
+  { id: "daily", label: "Daily", perMonth: 30 },
+  { id: "weekly", label: "Weekly", perMonth: 52 / 12 },
+  { id: "biweekly", label: "Every 2 weeks", perMonth: 26 / 12 },
+  { id: "monthly", label: "Monthly", perMonth: 1 },
+];
+export const perMonth = (f: Frequency) => frequencies.find((x) => x.id === f)!.perMonth;
 
 export type Queue = "standard" | "priority" | "live";
 export const queues: { id: Queue; label: string; wait: string }[] = [
@@ -31,8 +29,7 @@ export const queues: { id: Queue; label: string; wait: string }[] = [
   { id: "live", label: "Live", wait: "results in a few seconds" },
 ];
 
-export type AiEngine =
-  "chatgpt" | "gemini" | "aio" | "aimode" | "perplexity" | "claude";
+export type AiEngine = "chatgpt" | "gemini" | "aio" | "aimode" | "perplexity" | "claude";
 export const aiEngines: { id: AiEngine; label: string; how: string }[] = [
   {
     id: "chatgpt",
@@ -161,10 +158,8 @@ export type Line = {
   free?: string;
 };
 
-const organicRead = (depth: number, p: Prices) =>
-  p.organicFirstPage + (Math.ceil(depth / 10) - 1) * p.organicNextPage;
-const n = (x: number) =>
-  x.toLocaleString("en-US", { maximumFractionDigits: 1 });
+const organicRead = (depth: number, p: Prices) => p.organicFirstPage + (Math.ceil(depth / 10) - 1) * p.organicNextPage;
+const n = (x: number) => x.toLocaleString("en-US", { maximumFractionDigits: 1 });
 
 /** Every DataForSEO call one Location makes in a month. */
 export function lines(s: Settings, p: Prices): Line[] {
@@ -271,10 +266,7 @@ export function totals(s: Settings, p: Prices) {
   const ls = lines(s, p);
   const perLocation = ls.reduce((a, l) => a + lineCost(l), 0);
   const byArea = Object.fromEntries(
-    areas.map((a) => [
-      a.id,
-      ls.filter((l) => l.area === a.id).reduce((x, l) => x + lineCost(l), 0),
-    ]),
+    areas.map((a) => [a.id, ls.filter((l) => l.area === a.id).reduce((x, l) => x + lineCost(l), 0)]),
   ) as Record<Area, number>;
   return {
     lines: ls,

@@ -42,31 +42,13 @@ import { openTasksFor, useRunState } from "../lib/tasks";
 import { runningOf, useRuns } from "../lib/runs";
 import { useTheme } from "../lib/theme";
 import { unreadCount, useCrm } from "../lib/crm";
-import {
-  featureForPage,
-  isOn,
-  pageOn,
-  settingsOwner,
-  statusOf,
-  useFeatures,
-} from "../lib/features";
+import { featureForPage, isOn, pageOn, settingsOwner, statusOf, useFeatures } from "../lib/features";
 import { featureOf } from "../mock/features";
 import { Freshness, RunButton, kindForPath } from "./RunStatus";
 import { AssistantPanel, MarkoLauncher } from "./Assistant";
 import { ask, toggleAssistant, type PageContext } from "../lib/assistant";
-import {
-  accountSections,
-  businessSections,
-  sectionAllowed,
-} from "../pages/Settings";
-import {
-  can,
-  myRole,
-  pageAllowed,
-  setPreview,
-  useAccess,
-  viewOnly,
-} from "../lib/access";
+import { accountSections, businessSections, sectionAllowed } from "../pages/Settings";
+import { can, myRole, pageAllowed, setPreview, useAccess, viewOnly } from "../lib/access";
 import { ViewOnly } from "./ViewOnly";
 import { IntegrationHost } from "./Integrations";
 import { assistant, product } from "../lib/whitelabel";
@@ -80,20 +62,33 @@ type Nav = Leaf & {
 };
 
 // Every page is one click from the sidebar, under a section per kind of marketing
-// (SEO, Social, Ads, Customers, Sales). Groups list their pages as sub-items; the group holding
+// (SEO, SEO legacy, Social, Ads, Customers, Sales). Groups list their pages as sub-items; the group holding
 // the current page is open, the rest open with their chevron. Marko's setup
 // (Brand voice, Skills) and Activity live in Settings.
 const nav: Nav[] = [
   { to: "/", label: "Home", icon: LayoutGrid },
   { to: "/todo", label: "To-do", icon: ListChecks },
   { to: "/reports", label: "Reports", icon: FileText },
-  // The small version of Local SEO: one page, opens without this sidebar.
-  { to: "/local", label: "Local SEO, simple", icon: MapPin },
+  // Local SEO: four weekly checks and what to do about them. The pages it replaces sit under SEO legacy.
+  {
+    to: "/local",
+    label: "Local SEO",
+    icon: MapPin,
+    section: "SEO",
+    children: [
+      { to: "/local", label: "Overview" },
+      { to: "/local/maps", label: "Google Maps ranking" },
+      { to: "/local/keywords", label: "Keywords" },
+      { to: "/local/ai", label: "AI answers" },
+      { to: "/local/competitors", label: "Competitors" },
+      { to: "/local/costs", label: "API costs" },
+    ],
+  },
   {
     to: "/rankings",
     label: "Rankings",
     icon: TrendingUp,
-    section: "SEO",
+    section: "SEO legacy",
     children: [
       { to: "/rankings", label: "Keywords & map pack" },
       { to: "/competitors", label: "Competitors" },
@@ -169,11 +164,8 @@ function visibleNav(f: ReturnType<typeof useFeatures>): Nav[] {
   let shownSection: string | undefined;
   return nav.flatMap((n) => {
     if (n.section) section = n.section;
-    const kids = n.children?.filter(
-      (c) => pageOn(c.to, f) && pageAllowed(c.to),
-    );
-    if (kids ? !kids.length : !(pageOn(n.to, f) && pageAllowed(n.to)))
-      return [];
+    const kids = n.children?.filter((c) => pageOn(c.to, f) && pageAllowed(c.to));
+    if (kids ? !kids.length : !(pageOn(n.to, f) && pageAllowed(n.to))) return [];
     const item: Nav = {
       ...n,
       section: section !== shownSection ? section : undefined,
@@ -184,62 +176,33 @@ function visibleNav(f: ReturnType<typeof useFeatures>): Nav[] {
     return [item];
   });
 }
-const settingsLeaves: Leaf[] = [...businessSections, ...accountSections].map(
-  (s) => ({ to: `/settings/${s.id}`, label: s.label }),
-);
+const settingsLeaves: Leaf[] = [...businessSections, ...accountSections].map((s) => ({ to: `/settings/${s.id}`, label: s.label }));
 
 const split = (to: string) => {
   const [path, q = ""] = to.split("?");
   return { path, params: new URLSearchParams(q) };
 };
-const onPath = (path: string, to: string) =>
-  to === "/" ? path === "/" : path === to || path.startsWith(`${to}/`);
+const onPath = (path: string, to: string) => (to === "/" ? path === "/" : path === to || path.startsWith(`${to}/`));
 
 /** The leaf that matches the current URL best: right path, and the most query params that agree. */
-function activeLeaf(
-  leaves: Leaf[],
-  pathname: string,
-  search: string,
-): Leaf | undefined {
+function activeLeaf(leaves: Leaf[], pathname: string, search: string): Leaf | undefined {
   const cur = new URLSearchParams(search);
   const fits = leaves
     .map((l) => ({ l, ...split(l.to) }))
-    .filter(
-      ({ path, params }) =>
-        onPath(pathname, path) &&
-        [...params].every(([k, v]) => cur.get(k) === v),
-    );
+    .filter(({ path, params }) => onPath(pathname, path) && [...params].every(([k, v]) => cur.get(k) === v));
   // Most agreeing params first, then the deepest path (/ads/studio over /ads).
-  return fits.sort(
-    (a, b) =>
-      [...b.params].length - [...a.params].length ||
-      b.path.length - a.path.length,
-  )[0]?.l;
+  return fits.sort((a, b) => [...b.params].length - [...a.params].length || b.path.length - a.path.length)[0]?.l;
 }
-const inGroup = (n: Nav, pathname: string) =>
-  (n.children ?? [n]).some((l) => onPath(pathname, split(l.to).path));
+const inGroup = (n: Nav, pathname: string) => (n.children ?? [n]).some((l) => onPath(pathname, split(l.to).path));
 
-const iconBtn =
-  "grid size-7 shrink-0 place-items-center rounded-md text-muted hover:bg-hover hover:text-fg";
+const iconBtn = "grid size-7 shrink-0 place-items-center rounded-md text-muted hover:bg-hover hover:text-fg";
 const row = (active: boolean) =>
   cn(
     "flex h-7 items-center gap-2.5 rounded-md px-2 text-[13px] transition-colors",
-    active
-      ? "bg-active font-medium text-fg"
-      : "text-muted hover:bg-hover hover:text-fg",
+    active ? "bg-active font-medium text-fg" : "text-muted hover:bg-hover hover:text-fg",
   );
 
-function NavItem({
-  item,
-  badge,
-  open,
-  onToggle,
-}: {
-  item: Nav;
-  badge?: number;
-  open?: boolean;
-  onToggle?: () => void;
-}) {
+function NavItem({ item, badge, open, onToggle }: { item: Nav; badge?: number; open?: boolean; onToggle?: () => void }) {
   const { pathname, search } = useLocation();
   const Icon = item.icon;
   const here = inGroup(item, pathname);
@@ -250,18 +213,12 @@ function NavItem({
         <Link
           to={item.to}
           aria-current={here && !item.children ? "page" : undefined}
-          className={cn(
-            row(here && !item.children),
-            "min-w-0 flex-1",
-            here && item.children && "font-medium text-fg",
-          )}
+          className={cn(row(here && !item.children), "min-w-0 flex-1", here && item.children && "font-medium text-fg")}
         >
           <Icon size={15} strokeWidth={1.75} className="shrink-0" />
           <span className="flex-1 truncate">{item.label}</span>
           {badge ? (
-            <span className="num min-w-5 rounded-full bg-active px-1.5 text-center text-[11px] font-medium text-muted">
-              {badge}
-            </span>
+            <span className="num min-w-5 rounded-full bg-active px-1.5 text-center text-[11px] font-medium text-muted">{badge}</span>
           ) : null}
         </Link>
         {item.children && (
@@ -271,10 +228,7 @@ function NavItem({
             aria-label={`${open ? "Hide" : "Show"} ${item.label} pages`}
             className="grid size-7 shrink-0 place-items-center rounded-md text-subtle hover:bg-hover hover:text-fg"
           >
-            <ChevronDown
-              size={14}
-              className={cn("transition-transform", !open && "-rotate-90")}
-            />
+            <ChevronDown size={14} className={cn("transition-transform", !open && "-rotate-90")} />
           </button>
         )}
       </div>
@@ -305,10 +259,7 @@ function pageContext(pathname: string, search: string): PageContext {
       : item?.children
         ? activeLeaf(item.children, pathname, search)
         : item;
-  const kw =
-    pathname.match(/^\/rankings\/([^/]+)/)?.[1] ??
-    new URLSearchParams(search).get("kw") ??
-    undefined;
+  const kw = pathname.match(/^\/rankings\/([^/]+)/)?.[1] ?? new URLSearchParams(search).get("kw") ?? undefined;
   return { label: leaf?.label ?? "This page", path: pathname, keywordId: kw };
 }
 
@@ -322,13 +273,8 @@ function OrgSwitcher() {
   const { orgId, locationId } = useScope();
   useSetup(); // re-render when a Location is added
   const org = memberships.find((m) => m.id === orgId) ?? memberships[0];
-  const sub = locationId
-    ? shortLocation(locationId)
-    : locations.length > 1
-      ? `All ${locations.length} locations`
-      : locations[0]?.city;
-  const row =
-    "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[13px] hover:bg-hover";
+  const sub = locationId ? shortLocation(locationId) : locations.length > 1 ? `All ${locations.length} locations` : locations[0]?.city;
+  const row = "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[13px] hover:bg-hover";
   return (
     <div className="relative">
       <button
@@ -340,9 +286,7 @@ function OrgSwitcher() {
           {org.initial}
         </span>
         <span className="min-w-0 flex-1 leading-tight">
-          <span className="block truncate text-[13px] font-medium">
-            {org.name}
-          </span>
+          <span className="block truncate text-[13px] font-medium">{org.name}</span>
           <span className="block truncate text-[12px] text-muted">{sub}</span>
         </span>
         <ChevronsUpDown size={14} className="text-subtle" />
@@ -351,9 +295,7 @@ function OrgSwitcher() {
         <div className="anim-fade absolute top-full right-0 left-0 z-30 mt-1 rounded-lg border border-line bg-surface p-1 shadow-float">
           {locations.length > 1 && (
             <>
-              <div className="px-2 pt-1 pb-0.5 text-[11px] font-medium tracking-[0.06em] text-subtle uppercase">
-                Show
-              </div>
+              <div className="px-2 pt-1 pb-0.5 text-[11px] font-medium tracking-[0.06em] text-subtle uppercase">Show</div>
               {[null, ...locations.map((l) => l.id)].map((id) => (
                 <button
                   key={id ?? "all"}
@@ -363,9 +305,7 @@ function OrgSwitcher() {
                   }}
                   className={row}
                 >
-                  <span className="flex-1 truncate">
-                    {id ? shortLocation(id) : "All locations"}
-                  </span>
+                  <span className="flex-1 truncate">{id ? shortLocation(id) : "All locations"}</span>
                   {id === locationId && <Check size={14} />}
                 </button>
               ))}
@@ -380,9 +320,7 @@ function OrgSwitcher() {
           )}
           {/* Always listed, so even a single Organization has its settings button here. */}
           <>
-            {locations.length > 1 && (
-              <div className="my-1 border-t border-line" />
-            )}
+            {locations.length > 1 && <div className="my-1 border-t border-line" />}
             <div className="px-2 pt-1 pb-0.5 text-[11px] font-medium tracking-[0.06em] text-subtle uppercase">
               {memberships.length > 1 ? "Organizations" : "Organization"}
             </div>
@@ -395,9 +333,7 @@ function OrgSwitcher() {
                   }}
                   className={cn(row, "min-w-0 flex-1")}
                 >
-                  <span className="grid size-5 shrink-0 place-items-center rounded bg-hover text-[11px] font-semibold">
-                    {m.initial}
-                  </span>
+                  <span className="grid size-5 shrink-0 place-items-center rounded bg-hover text-[11px] font-semibold">{m.initial}</span>
                   <span className="min-w-0 flex-1 truncate">{m.name}</span>
                   {m.id === orgId && <Check size={14} />}
                 </button>
@@ -431,15 +367,7 @@ function OrgSwitcher() {
   );
 }
 
-function CommandPalette({
-  open,
-  onClose,
-  ctx,
-}: {
-  open: boolean;
-  onClose: () => void;
-  ctx: PageContext;
-}) {
+function CommandPalette({ open, onClose, ctx }: { open: boolean; onClose: () => void; ctx: PageContext }) {
   const [q, setQ] = useState("");
   const [idx, setIdx] = useState(0);
   const navigate = useNavigate();
@@ -476,9 +404,7 @@ function CommandPalette({
       hint: "Keyword",
       to: `/rankings/${k.id}`,
     }));
-    const found = [...pages, ...extra, ...kws]
-      .filter((i) => i.label.toLowerCase().includes(q.toLowerCase()))
-      .slice(0, 8);
+    const found = [...pages, ...extra, ...kws].filter((i) => i.label.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
     // Anything typed can go to Marko. It leads when nothing matches or it reads like a sentence.
     if (q.trim().length < 2 || !isOn("marko", flags)) return found;
     const askRow = {
@@ -487,9 +413,7 @@ function CommandPalette({
       to: "",
       ask: true,
     };
-    return !found.length || q.trim().split(/\s+/).length >= 3
-      ? [askRow, ...found]
-      : [...found, askRow];
+    return !found.length || q.trim().split(/\s+/).length >= 3 ? [askRow, ...found] : [...found, askRow];
   })();
   useEffect(() => {
     setIdx(0);
@@ -540,27 +464,16 @@ function CommandPalette({
               <button
                 onMouseEnter={() => setIdx(i)}
                 onClick={() => go(it)}
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-[13.5px]",
-                  i === idx && "bg-hover",
-                )}
+                className={cn("flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-[13.5px]", i === idx && "bg-hover")}
               >
-                {"ask" in it && (
-                  <Sparkles size={14} className="shrink-0 text-accent" />
-                )}
+                {"ask" in it && <Sparkles size={14} className="shrink-0 text-accent" />}
                 <span className="flex-1 truncate">{it.label}</span>
                 <span className="text-[12px] text-subtle">{it.hint}</span>
-                {i === idx && (
-                  <CornerDownLeft size={13} className="text-subtle" />
-                )}
+                {i === idx && <CornerDownLeft size={13} className="text-subtle" />}
               </button>
             </li>
           ))}
-          {!items.length && (
-            <li className="px-3 py-6 text-center text-[13px] text-muted">
-              No results for “{q}”
-            </li>
-          )}
+          {!items.length && <li className="px-3 py-6 text-center text-[13px] text-muted">No results for “{q}”</li>}
         </ul>
       </div>
     </div>
@@ -584,10 +497,7 @@ export default function Layout() {
   const owner = featureForPage(loc.pathname, loc.search);
   const gated = owner && !isOn(owner, flags) ? owner : null;
   // A page the role can't see says so; one it can only see gets a View only note.
-  const denied =
-    owner && !gated && !pageAllowed(loc.pathname + loc.search, access)
-      ? owner
-      : null;
+  const denied = owner && !gated && !pageAllowed(loc.pathname + loc.search, access) ? owner : null;
   const ctx = pageContext(loc.pathname, loc.search);
   // A group is open while it holds the current page, unless its chevron says otherwise.
   const [manual, setManual] = useState<Record<string, boolean>>({});
@@ -596,10 +506,7 @@ export default function Layout() {
   // Arriving in a group opens it, even if it was closed by hand earlier.
   useEffect(() => {
     const here = nav.find((n) => n.children && inGroup(n, loc.pathname));
-    if (here)
-      setManual((m) =>
-        m[here.label] === false ? { ...m, [here.label]: true } : m,
-      );
+    if (here) setManual((m) => (m[here.label] === false ? { ...m, [here.label]: true } : m));
   }, [loc.pathname]);
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
@@ -607,12 +514,7 @@ export default function Layout() {
         e.preventDefault();
         setCmd((v) => !v);
       }
-      if (
-        (e.metaKey || e.ctrlKey) &&
-        e.key.toLowerCase() === "j" &&
-        isOn("marko") &&
-        can("marko", "use")
-      ) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j" && isOn("marko") && can("marko", "use")) {
         e.preventDefault();
         toggleAssistant();
       }
@@ -631,53 +533,28 @@ export default function Layout() {
     <div className="flex h-full flex-col gap-1 px-2.5 py-2.5">
       {/* Logo, Search and Ask Marko share one row; the shortcuts are in the tooltips. */}
       <div className="flex h-8 items-center gap-0.5">
-        <NavLink
-          to="/"
-          aria-label={`${product()} home`}
-          className="mr-auto flex h-7 items-center rounded-md px-2 hover:bg-hover"
-        >
+        <NavLink to="/" aria-label={`${product()} home`} className="mr-auto flex h-7 items-center rounded-md px-2 hover:bg-hover">
           <Logo size={17} />
         </NavLink>
-        <button
-          onClick={() => setCmd(true)}
-          aria-label="Search"
-          title="Search (⌘K)"
-          className={iconBtn}
-        >
+        <button onClick={() => setCmd(true)} aria-label="Search" title="Search (⌘K)" className={iconBtn}>
           <Search size={15} strokeWidth={1.75} />
         </button>
         {marko && (
-          <button
-            onClick={toggleAssistant}
-            aria-label={`Ask ${assistant()}`}
-            title={`Ask ${assistant()} (⌘J)`}
-            className={iconBtn}
-          >
+          <button onClick={toggleAssistant} aria-label={`Ask ${assistant()}`} title={`Ask ${assistant()} (⌘J)`} className={iconBtn}>
             <Sparkles size={15} strokeWidth={1.75} />
           </button>
         )}
       </div>
       <OrgSwitcher />
-      <nav
-        className="mt-1 flex flex-1 flex-col gap-px overflow-y-auto"
-        aria-label="Main"
-      >
+      <nav className="mt-1 flex flex-1 flex-col gap-px overflow-y-auto" aria-label="Main">
         {items.map((n) => (
           <div key={n.label}>
             {n.section && (
-              <div className="mt-3 mb-0.5 px-2 text-[10.5px] font-medium tracking-[0.06em] text-subtle uppercase">
-                {n.section}
-              </div>
+              <div className="mt-3 mb-0.5 px-2 text-[10.5px] font-medium tracking-[0.06em] text-subtle uppercase">{n.section}</div>
             )}
             <NavItem
               item={n}
-              badge={
-                n.to === "/todo"
-                  ? openTasksFor(runState).length
-                  : n.to === "/inbox"
-                    ? unreadCount(crm)
-                    : undefined
-              }
+              badge={n.to === "/todo" ? openTasksFor(runState).length : n.to === "/inbox" ? unreadCount(crm) : undefined}
               open={shown(n)}
               onToggle={() => toggle(n)}
             />
@@ -689,10 +566,7 @@ export default function Layout() {
         className="mb-1 rounded-lg border border-line bg-surface px-2.5 py-2 shadow-card transition-colors hover:border-line-strong"
       >
         <div className="flex items-center gap-2 text-[12.5px] font-medium">
-          <Rocket size={13} /> Setup 4 of 5
-          <span className="ml-auto truncate text-[11.5px] font-normal text-muted">
-            Connect GA4
-          </span>
+          <Rocket size={13} /> Setup 4 of 5<span className="ml-auto truncate text-[11.5px] font-normal text-muted">Connect GA4</span>
         </div>
         <div className="mt-1.5 h-1 rounded-full bg-hover">
           <div className="h-full w-4/5 rounded-full bg-accent" />
@@ -709,11 +583,7 @@ export default function Layout() {
           title={dark ? "Light mode" : "Dark mode"}
           className={iconBtn}
         >
-          {dark ? (
-            <Sun size={15} strokeWidth={1.75} />
-          ) : (
-            <Moon size={15} strokeWidth={1.75} />
-          )}
+          {dark ? <Sun size={15} strokeWidth={1.75} /> : <Moon size={15} strokeWidth={1.75} />}
         </button>
       </div>
     </div>
@@ -726,26 +596,14 @@ export default function Layout() {
       </aside>
       {mobileNav && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div
-            className="absolute inset-0 bg-black/20"
-            onClick={() => setMobileNav(false)}
-          />
-          <aside className="sidebar-scope anim-fade absolute inset-y-0 left-0 w-64 border-r border-line bg-sidebar">
-            {sidebar}
-          </aside>
+          <div className="absolute inset-0 bg-black/20" onClick={() => setMobileNav(false)} />
+          <aside className="sidebar-scope anim-fade absolute inset-y-0 left-0 w-64 border-r border-line bg-sidebar">{sidebar}</aside>
         </div>
       )}
       <div className="relative min-w-0 flex-1">
-        <div
-          aria-hidden
-          className="grid-backdrop pointer-events-none absolute inset-x-0 top-0 h-[520px] print:hidden"
-        />
+        <div aria-hidden className="grid-backdrop pointer-events-none absolute inset-x-0 top-0 h-[520px] print:hidden" />
         <div className="sticky top-0 z-20 flex h-12 items-center gap-3 border-b border-line bg-bg/90 px-4 backdrop-blur lg:hidden print:hidden">
-          <button
-            onClick={() => setMobileNav(true)}
-            aria-label="Open navigation"
-            className="rounded p-1.5 hover:bg-hover"
-          >
+          <button onClick={() => setMobileNav(true)} aria-label="Open navigation" className="rounded p-1.5 hover:bg-hover">
             <Menu size={18} />
           </button>
           <Logo size={20} />
@@ -761,17 +619,12 @@ export default function Layout() {
         <main
           className={cn(
             "relative mx-auto w-full px-4 py-8 sm:px-8 lg:px-12 lg:py-10",
-            /^\/(prospects|outreach|contacts|inbox|ads(\/\w+)?)$/.test(
-              loc.pathname,
-            )
-              ? "max-w-[1680px]"
-              : "max-w-[1180px]",
+            /^\/(prospects|outreach|contacts|inbox|ads(\/\w+)?)$/.test(loc.pathname) ? "max-w-[1680px]" : "max-w-[1180px]",
           )}
         >
           <div className="mb-5 flex min-h-9 flex-wrap items-center justify-between gap-3 print:hidden">
             {/* Detail pages one level down (an audit issue, a competitor) get a way back. */}
-            {loc.pathname.split("/").length > 2 &&
-            !/^\/(prospects|social|settings)\//.test(loc.pathname) ? (
+            {loc.pathname.split("/").length > 2 && !/^\/(prospects|social|settings|local)\//.test(loc.pathname) ? (
               <NavLink
                 to={`/${loc.pathname.split("/")[1]}`}
                 className="inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-fg"
@@ -783,12 +636,7 @@ export default function Layout() {
             )}
             <div className="flex flex-wrap items-center gap-3">
               <Freshness kind={kind} />
-              {kind && kind !== "prospect" && (
-                <RunButton
-                  kind={kind}
-                  variant={loc.pathname === "/" ? "primary" : "secondary"}
-                />
-              )}
+              {kind && kind !== "prospect" && <RunButton kind={kind} variant={loc.pathname === "/" ? "primary" : "secondary"} />}
             </div>
           </div>
           {access.preview && <PreviewBar />}
@@ -820,13 +668,9 @@ export default function Layout() {
 function PreviewBar() {
   const role = myRole(useAccess());
   return (
-    <div
-      role="status"
-      className="mb-4 flex flex-wrap items-center gap-2 rounded-lg bg-ink px-3 py-2 text-[13px] text-on-ink print:hidden"
-    >
+    <div role="status" className="mb-4 flex flex-wrap items-center gap-2 rounded-lg bg-ink px-3 py-2 text-[13px] text-on-ink print:hidden">
       <span className="flex-1">
-        Previewing as <b>{role.name}</b>. The sidebar, pages and buttons show
-        what this role can do.
+        Previewing as <b>{role.name}</b>. The sidebar, pages and buttons show what this role can do.
       </span>
       <Link
         to="/settings/team"
@@ -847,12 +691,9 @@ function NoAccess({ id }: { id: Parameters<typeof featureOf>[0] }) {
       <div className="mx-auto mb-4 grid size-11 place-items-center rounded-xl bg-hover text-muted">
         <Lock size={20} />
       </div>
-      <h1 className="font-serif text-[28px]">
-        No access to {featureOf(id).label}
-      </h1>
+      <h1 className="font-serif text-[28px]">No access to {featureOf(id).label}</h1>
       <p className="mt-2 text-[14px] text-muted">
-        Your role ({role.name}) doesn't include it. Ask an admin on your team to
-        change your role.
+        Your role ({role.name}) doesn't include it. Ask an admin on your team to change your role.
       </p>
     </div>
   );

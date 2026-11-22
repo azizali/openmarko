@@ -5,13 +5,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button, cn, fmt, Modal, Textarea } from "../components/ui";
-import {
-  GRID_SPOTS,
-  KEYWORD_LIMIT,
-  keywordIdeas,
-  volumeOf,
-  type TrackedKeyword,
-} from "../mock/local";
+import { GRID_SPOTS, KEYWORD_LIMIT, keywordIdeas, volumeOf, type TrackedKeyword } from "../mock/local";
 
 const clean = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
 
@@ -32,9 +26,7 @@ export function AddKeywords({
   const fresh = typed.filter((t) => !have.has(t));
   const room = KEYWORD_LIMIT - tracked.length;
   const over = fresh.length > room;
-  const ideas = keywordIdeas.filter(
-    (i) => !have.has(i.term) && !typed.includes(i.term),
-  );
+  const ideas = keywordIdeas.filter((i) => !have.has(i.term) && !typed.includes(i.term));
 
   const close = () => {
     setText("");
@@ -49,12 +41,7 @@ export function AddKeywords({
       width={560}
       footer={
         <>
-          <p
-            className={cn(
-              "mr-auto self-center text-[12.5px]",
-              over ? "text-bad" : "text-muted",
-            )}
-          >
+          <p className={cn("mr-auto self-center text-[12.5px]", over ? "text-bad" : "text-muted")}>
             {over
               ? `Your plan has room for ${room} more. Remove ${fresh.length - room}.`
               : `${tracked.length + fresh.length} of ${KEYWORD_LIMIT} keywords on your plan`}
@@ -68,20 +55,14 @@ export function AddKeywords({
               close();
             }}
           >
-            {fresh.length
-              ? `Track ${fresh.length} keyword${fresh.length > 1 ? "s" : ""}`
-              : "Track"}
+            {fresh.length ? `Track ${fresh.length} keyword${fresh.length > 1 ? "s" : ""}` : "Track"}
           </Button>
         </>
       }
     >
       <label className="block">
-        <span className="text-[13px] font-medium">
-          What would a customer type into Google?
-        </span>
-        <span className="block text-[12.5px] text-muted">
-          One per line. Include the city or area when they would.
-        </span>
+        <span className="text-[13px] font-medium">What would a customer type into Google?</span>
+        <span className="block text-[12.5px] text-muted">One per line. Include the city or area when they would.</span>
         <Textarea
           autoFocus
           className="mt-2 w-full"
@@ -95,22 +76,10 @@ export function AddKeywords({
       {typed.length > 0 && (
         <ul className="mt-3 divide-y divide-line rounded-lg border border-line">
           {typed.map((t) => (
-            <li
-              key={t}
-              className="flex items-center justify-between gap-3 px-3 py-2 text-[13.5px]"
-            >
-              <span
-                className={cn(
-                  "min-w-0 truncate",
-                  have.has(t) && "text-muted line-through",
-                )}
-              >
-                {t}
-              </span>
+            <li key={t} className="flex items-center justify-between gap-3 px-3 py-2 text-[13.5px]">
+              <span className={cn("min-w-0 truncate", have.has(t) && "text-muted line-through")}>{t}</span>
               <span className="num shrink-0 text-[12.5px] text-muted">
-                {have.has(t)
-                  ? "Already tracked"
-                  : `${fmt(volumeOf(t))} searches / mo`}
+                {have.has(t) ? "Already tracked" : `${fmt(volumeOf(t))} searches / mo`}
               </span>
             </li>
           ))}
@@ -120,27 +89,17 @@ export function AddKeywords({
       {ideas.length > 0 && (
         <div className="mt-5">
           <p className="text-[13px] font-medium">Ideas</p>
-          <p className="text-[12.5px] text-muted">
-            From your services and what competitors rank for. Click to add.
-          </p>
+          <p className="text-[12.5px] text-muted">From your services and what competitors rank for. Click to add.</p>
           <ul className="mt-2 flex flex-wrap gap-2">
             {ideas.map((i) => (
               <li key={i.term}>
                 <button
-                  onClick={() =>
-                    setText(
-                      (text.trim() ? text.replace(/\s+$/, "") + "\n" : "") +
-                        i.term +
-                        "\n",
-                    )
-                  }
+                  onClick={() => setText((text.trim() ? text.replace(/\s+$/, "") + "\n" : "") + i.term + "\n")}
                   className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface py-1 pr-3 pl-2 text-[13px] hover:border-line-strong hover:bg-hover"
                 >
                   <Plus size={13} className="text-muted" />
                   {i.term}
-                  <span className="num text-[12px] text-muted">
-                    {fmt(i.volume)}
-                  </span>
+                  <span className="num text-[12px] text-muted">{fmt(i.volume)}</span>
                 </button>
               </li>
             ))}
@@ -149,9 +108,8 @@ export function AddKeywords({
       )}
 
       <p className="mt-5 text-[12.5px] text-muted">
-        Each keyword is checked every week: once on Google, and from{" "}
-        {GRID_SPOTS} spots on the map. Searches a month come from the DataForSEO
-        Keywords Data API.
+        Each keyword is checked every week: once on Google, and from {GRID_SPOTS} spots on the map. Searches a month come from the
+        DataForSEO Keywords Data API.
       </p>
     </Modal>
   );

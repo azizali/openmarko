@@ -3,26 +3,12 @@
 // Google's normal results, or an AI assistant), so everything here is worked out per keyword and per channel.
 // Each check and each kind of suggestion names where its data would come from, so the page doubles as a build list.
 
-import {
-  business,
-  competitors,
-  gridStats,
-  makeGrid,
-  makeRivalGrid,
-  type Competitor,
-  type GridScan,
-} from "./mock";
+import { business, competitors, gridStats, makeGrid, makeRivalGrid, type Competitor, type GridScan } from "./mock";
 
 export const you: Competitor = competitors.find((c) => c.isYou)!;
 /** Every local business seen in the top 3 somewhere on the map grid. Found, not typed in. */
 export const businesses: Competitor[] = competitors.filter((c) => !c.isYou);
-const [r1, r2, r3, r4, r5] = businesses as [
-  Competitor,
-  Competitor,
-  Competitor,
-  Competitor,
-  Competitor,
-];
+const [r1, r2, r3, r4, r5] = businesses as [Competitor, Competitor, Competitor, Competitor, Competitor];
 
 // ---------- Checks ----------
 
@@ -115,30 +101,18 @@ export function volumeOf(term: string) {
 }
 
 /** The map grid for a keyword, for you or another business. `ago` is the scan from 30 days back. */
-export function gridFor(
-  keywordId: string,
-  who: Competitor = you,
-  ago = false,
-): GridScan {
+export function gridFor(keywordId: string, who: Competitor = you, ago = false): GridScan {
   if (!who.isYou) return makeRivalGrid(keywordId, who, 7, ago ? 2 : 1);
   const n = Number(keywordId.split("_")[1]);
   return makeGrid(keywordId, 7, ago ? 2 : 1, 2.5 + (n % 3) - (ago ? 1 : 0));
 }
-export const top3Spots = (
-  keywordId: string,
-  who: Competitor = you,
-  ago = false,
-) => gridStats(gridFor(keywordId, who, ago)).top3;
+export const top3Spots = (keywordId: string, who: Competitor = you, ago = false) => gridStats(gridFor(keywordId, who, ago)).top3;
 export const GRID_SPOTS = 49;
 
 // ---------- Reading a map grid ----------
 
 /** Average position over every spot (21 where not found), and the position when searching from your own door. */
-export const avgPosition = (
-  keywordId: string,
-  who: Competitor = you,
-  ago = false,
-) => gridStats(gridFor(keywordId, who, ago)).arp;
+export const avgPosition = (keywordId: string, who: Competitor = you, ago = false) => gridStats(gridFor(keywordId, who, ago)).arp;
 export function doorPosition(keywordId: string, who: Competitor = you) {
   const scan = gridFor(keywordId, who);
   const c = (scan.size - 1) / 2;
@@ -152,10 +126,7 @@ const sides: [string, (row: number, col: number, c: number) => boolean][] = [
   ["west", (_row, col, c) => col < c],
 ];
 /** The side of the area where a business does best and worst, by average position. Null when it's in the top 3 nowhere. */
-export function reach(
-  keywordId: string,
-  who: Competitor = you,
-): { best: string; worst: string } | null {
+export function reach(keywordId: string, who: Competitor = you): { best: string; worst: string } | null {
   const scan = gridFor(keywordId, who);
   if (!scan.points.some((p) => (p.rank ?? 99) <= 3)) return null;
   const c = (scan.size - 1) / 2;
@@ -172,22 +143,15 @@ export function reach(
 }
 
 /** Thirteen weekly counts of top-3 spots, ending today; the scan from 30 days back sits four weeks from the end. */
-export function spotsHistory(
-  keywordId: string,
-  who: Competitor = you,
-): number[] {
+export function spotsHistory(keywordId: string, who: Competitor = you): number[] {
   const now = top3Spots(keywordId, who);
   const ago = top3Spots(keywordId, who, true);
-  const n =
-    Number(keywordId.split("_")[1]) + who.id.charCodeAt(who.id.length - 1);
+  const n = Number(keywordId.split("_")[1]) + who.id.charCodeAt(who.id.length - 1);
   const start = Math.max(0, ago - 2 - (n % 3));
   return Array.from({ length: 13 }, (_, i) => {
     if (i === 12) return now;
     if (i === 8) return ago;
-    const base =
-      i < 8
-        ? start + ((ago - start) * i) / 8
-        : ago + ((now - ago) * (i - 8)) / 4;
+    const base = i < 8 ? start + ((ago - start) * i) / 8 : ago + ((now - ago) * (i - 8)) / 4;
     return Math.max(0, Math.round(base + (((i * 7 + n) % 3) - 1)));
   });
 }
@@ -197,10 +161,7 @@ export function weekly(ago: number, now: number, wobble = 0): number[] {
   return Array.from({ length: 13 }, (_, i) => {
     if (i === 12) return now;
     if (i === 8) return ago;
-    const base =
-      i < 8
-        ? start + ((ago - start) * i) / 8
-        : ago + ((now - ago) * (i - 8)) / 4;
+    const base = i < 8 ? start + ((ago - start) * i) / 8 : ago + ((now - ago) * (i - 8)) / 4;
     return Math.max(0, Math.round(base + (((i * 7) % 3) - 1) * wobble));
   });
 }
@@ -289,10 +250,7 @@ export function googleTop10(k: TrackedKeyword): (Site | "you")[] {
   return list;
 }
 /** A site's position on Google for a keyword; null is off the first page (yours is known further down). */
-export function googlePos(
-  k: TrackedKeyword,
-  site: Site | "you",
-): number | null {
+export function googlePos(k: TrackedKeyword, site: Site | "you"): number | null {
   if (site === "you") return k.google;
   const i = googleTop10(k).indexOf(site);
   return i < 0 ? null : i + 1;
@@ -325,13 +283,7 @@ export type TrackedPrompt = {
   pending?: boolean;
 };
 
-const answer = (
-  youNamed: boolean,
-  named: string[],
-  cites: string[],
-  excerpt: string,
-  at?: number,
-): AiAnswer => ({
+const answer = (youNamed: boolean, named: string[], cites: string[], excerpt: string, at?: number): AiAnswer => ({
   you: youNamed,
   named,
   cites,
@@ -476,18 +428,11 @@ export const basePrompts: TrackedPrompt[] = [
 ];
 
 /** How many answers named a business (you, when no name is given), across the tracked questions. */
-export function aiNamed(
-  prompts: TrackedPrompt[],
-  name?: string,
-  engine?: EngineId,
-) {
+export function aiNamed(prompts: TrackedPrompt[], name?: string, engine?: EngineId) {
   const live = prompts.filter((p) => !p.pending);
   const asked = engines.filter((e) => !engine || e.id === engine);
   let hits = 0;
-  for (const p of live)
-    for (const e of asked)
-      if (name ? p.answers[e.id].named.includes(name) : p.answers[e.id].you)
-        hits++;
+  for (const p of live) for (const e of asked) if (name ? p.answers[e.id].named.includes(name) : p.answers[e.id].you) hits++;
   return { hits, total: live.length * asked.length };
 }
 
@@ -495,12 +440,8 @@ export function aiNamed(
 export function aiCites(prompts: TrackedPrompt[]) {
   const counts = new Map<string, number>();
   for (const p of prompts.filter((x) => !x.pending))
-    for (const e of engines)
-      for (const d of p.answers[e.id].cites)
-        counts.set(d, (counts.get(d) ?? 0) + 1);
-  return [...counts]
-    .map(([domain, count]) => ({ domain, count }))
-    .sort((a, b) => b.count - a.count);
+    for (const e of engines) for (const d of p.answers[e.id].cites) counts.set(d, (counts.get(d) ?? 0) + 1);
+  return [...counts].map(([domain, count]) => ({ domain, count })).sort((a, b) => b.count - a.count);
 }
 
 // ---------- Competitors, per channel ----------
@@ -523,23 +464,13 @@ export const channels: { id: Channel; name: string; unit: string }[] = [
 
 /** What a channel is measured over: the tracked keywords, or the tracked questions. */
 export const columns = (channel: Channel): { id: string; label: string }[] =>
-  channel === "ai"
-    ? basePrompts.map((p) => ({ id: p.id, label: p.text }))
-    : baseKeywords.map((k) => ({ id: k.id, label: k.term }));
+  channel === "ai" ? basePrompts.map((p) => ({ id: p.id, label: p.text })) : baseKeywords.map((k) => ({ id: k.id, label: k.term }));
 
 /** One cell of the comparison: how a site (or you) does in a channel for one keyword or question. */
-export function score(
-  channel: Channel,
-  site: Site | "you",
-  columnId: string,
-): number | null {
+export function score(channel: Channel, site: Site | "you", columnId: string): number | null {
   if (channel === "ai") {
     const p = basePrompts.find((x) => x.id === columnId)!;
-    return engines.filter((e) =>
-      site === "you"
-        ? p.answers[e.id].you
-        : p.answers[e.id].named.includes(site.name),
-    ).length;
+    return engines.filter((e) => (site === "you" ? p.answers[e.id].you : p.answers[e.id].named.includes(site.name))).length;
   }
   if (channel === "google")
     return googlePos(
@@ -551,11 +482,7 @@ export function score(
 }
 
 /** Is their score better than yours? Lower is better on Google; higher everywhere else. */
-export function ahead(
-  channel: Channel,
-  theirs: number | null,
-  yours: number | null,
-) {
+export function ahead(channel: Channel, theirs: number | null, yours: number | null) {
   if (theirs === null) return false;
   if (channel === "google") return yours === null || theirs < yours;
   return theirs > (yours ?? 0);
@@ -563,9 +490,7 @@ export function ahead(
 
 /** On how many keywords (or questions) a site is ahead of you in a channel. */
 export const aheadCount = (channel: Channel, site: Site) =>
-  columns(channel).filter((c) =>
-    ahead(channel, score(channel, site, c.id), score(channel, "you", c.id)),
-  ).length;
+  columns(channel).filter((c) => ahead(channel, score(channel, site, c.id), score(channel, "you", c.id))).length;
 
 /** Who competes with you in a channel, the one ahead of you most often first. */
 export function field(channel: Channel): Site[] {
@@ -579,16 +504,12 @@ export function field(channel: Channel): Site[] {
 
 export type SuggestionKind = "keyword" | "prompt" | "profile" | "post";
 
-export const kinds: Record<
-  SuggestionKind,
-  { label: string; action: string; done: string; source: string }
-> = {
+export const kinds: Record<SuggestionKind, { label: string; action: string; done: string; source: string }> = {
   keyword: {
     label: "Track a keyword",
     action: "Track it",
     done: "Tracking. First result in a few minutes.",
-    source:
-      "DataForSEO Labs: the keywords each competitor's website ranks for, minus the ones you already track.",
+    source: "DataForSEO Labs: the keywords each competitor's website ranks for, minus the ones you already track.",
   },
   prompt: {
     label: "Track an AI question",
@@ -608,8 +529,7 @@ export const kinds: Record<
     label: "Post on your Google profile",
     action: "Publish",
     done: "Published on your Google profile.",
-    source:
-      "Draft written by the AI model. Published with the Google Business Profile API.",
+    source: "Draft written by the AI model. Published with the Google Business Profile API.",
   },
 };
 
@@ -647,8 +567,7 @@ export const suggestions: Suggestion[] = [
     change: {
       field: "Categories",
       before: "Dentist, Cosmetic dentist",
-      after:
-        "Dentist, Cosmetic dentist, Emergency dental service, Teeth whitening service",
+      after: "Dentist, Cosmetic dentist, Emergency dental service, Teeth whitening service",
     },
   },
   {
@@ -682,8 +601,7 @@ export const suggestions: Suggestion[] = [
     id: "s_p_emergency",
     kind: "prompt",
     helps: "ai",
-    title:
-      "Track “Who is the best emergency dentist in Austin open on Saturday?”",
+    title: "Track “Who is the best emergency dentist in Austin open on Saturday?”",
     why: "People ask AI in full questions. This one fits a service you offer and nobody else nearby is open Saturdays.",
     evidence: [
       `Built from your services (emergency visits) and your hours (Saturday 8–2).`,
@@ -703,8 +621,7 @@ export const suggestions: Suggestion[] = [
     ],
     change: {
       field: "Description",
-      before:
-        "Maple & Main Dental is a family dental practice on South Congress offering cleanings, fillings and cosmetic dentistry.",
+      before: "Maple & Main Dental is a family dental practice on South Congress offering cleanings, fillings and cosmetic dentistry.",
       after:
         "Maple & Main Dental is a family dental practice on South Congress. Cleanings, fillings, teeth whitening and same-day emergency visits. Open Saturdays 8–2.",
     },
@@ -729,10 +646,7 @@ export const suggestions: Suggestion[] = [
     helps: "ai",
     title: "Track “Which Austin dentist is good for nervous patients?”",
     why: "Your reviews mention it more than anyone's, so this is a question you can win.",
-    evidence: [
-      `“gentle”, “nervous” or “anxious” appear in 31 of your ${business.reviews} reviews.`,
-      `${r3.name} is named for it today.`,
-    ],
+    evidence: [`“gentle”, “nervous” or “anxious” appear in 31 of your ${business.reviews} reviews.`, `${r3.name} is named for it today.`],
     track: "Which Austin dentist is good for nervous patients?",
   },
 ];

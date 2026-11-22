@@ -1,11 +1,4 @@
-import {
-  HashRouter,
-  Navigate,
-  Route,
-  Routes,
-  useParams,
-  useSearchParams,
-} from "react-router";
+import { HashRouter, Navigate, Route, Routes, useParams, useSearchParams } from "react-router";
 import Layout from "./components/Layout";
 import Onboarding from "./pages/Onboarding";
 import CommandCenter from "./pages/CommandCenter";
@@ -44,9 +37,7 @@ import { useWhitelabel } from "./lib/whitelabel";
 function GridRedirect() {
   const [params] = useSearchParams();
   const kw = params.get("kw");
-  return (
-    <Navigate replace to={`/rankings?view=local${kw ? `&kw=${kw}` : ""}`} />
-  );
+  return <Navigate replace to={`/rankings?view=local${kw ? `&kw=${kw}` : ""}`} />;
 }
 
 // The Action plan merged into To-do; keep old links working.
@@ -70,10 +61,10 @@ export default function App() {
         <Route path="/onboarding" element={<Onboarding />} />
         {/* Shared audit links open on their own, without the app around them. */}
         <Route path="/a/:token" element={<PublicAudit />} />
-        {/* Local SEO, the small version: one page, without the sidebar. */}
-        <Route path="/local/:tab?" element={<Local />} />
         <Route element={<Layout />}>
           <Route index element={<CommandCenter />} />
+          {/* Local SEO: the overview and one page per check. */}
+          <Route path="local/:tab?" element={<Local />} />
           <Route path="rankings" element={<Rankings />} />
           <Route path="rankings/:id" element={<Rankings />} />
           <Route path="grid" element={<GridRedirect />} />
@@ -89,29 +80,17 @@ export default function App() {
           <Route path="actions/:id" element={<ActionRedirect />} />
           <Route path="profile" element={<Profile />} />
           <Route path="reports" element={<Reports />} />
-          <Route
-            path="settings"
-            element={<Navigate replace to="/settings/brand" />}
-          />
+          <Route path="settings" element={<Navigate replace to="/settings/brand" />} />
           <Route path="settings/:section" element={<Settings />} />
           <Route path="prospects" element={<Prospects />} />
           <Route path="prospects/:id" element={<ProspectAudit />} />
           <Route path="outreach" element={<Outreach />} />
-          <Route
-            path="runs"
-            element={<Navigate replace to="/settings/activity" />}
-          />
+          <Route path="runs" element={<Navigate replace to="/settings/activity" />} />
           <Route path="ai" element={<AiVisibility />} />
           <Route path="citations" element={<Citations />} />
-          <Route
-            path="social"
-            element={<Navigate replace to="/social/scanner" />}
-          />
+          <Route path="social" element={<Navigate replace to="/social/scanner" />} />
           <Route path="social/scanner" element={<SocialScanner />} />
-          <Route
-            path="social/trends"
-            element={<Navigate replace to="/social/scanner?tab=trending" />}
-          />
+          <Route path="social/trends" element={<Navigate replace to="/social/scanner?tab=trending" />} />
           <Route path="social/swipe" element={<SwipeFile />} />
           <Route path="social/posts" element={<SocialPosts />} />
           <Route path="ads" element={<Ads />} />
@@ -124,24 +103,12 @@ export default function App() {
           <Route path="workflows" element={<Workflows />} />
           <Route path="workflows/:id" element={<Workflows />} />
           {/* Contact workflows were called Automations; keep old links working. */}
-          <Route
-            path="automations"
-            element={<Navigate replace to="/workflows" />}
-          />
+          <Route path="automations" element={<Navigate replace to="/workflows" />} />
           <Route path="automations/:id" element={<AutomationRedirect />} />
-          <Route
-            path="social/voice"
-            element={<Navigate replace to="/settings/brand" />}
-          />
+          <Route path="social/voice" element={<Navigate replace to="/settings/brand" />} />
           {/* Brand voice, Skills and Activity moved into Settings; keep old links working. */}
-          <Route
-            path="brand"
-            element={<Navigate replace to="/settings/brand" />}
-          />
-          <Route
-            path="skills"
-            element={<Navigate replace to="/settings/skills" />}
-          />
+          <Route path="brand" element={<Navigate replace to="/settings/brand" />} />
+          <Route path="skills" element={<Navigate replace to="/settings/skills" />} />
           <Route path="*" element={<CommandCenter />} />
         </Route>
       </Routes>

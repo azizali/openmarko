@@ -4,15 +4,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { RotateCcw } from "lucide-react";
-import {
-  Button,
-  Card,
-  Checkbox,
-  cn,
-  fmt,
-  Input,
-  Select,
-} from "../components/ui";
+import { Button, Card, Checkbox, cn, fmt, Input, Select } from "../components/ui";
 import {
   aiEngines,
   areas,
@@ -42,13 +34,7 @@ function load(): { s: Settings; p: Prices } {
 }
 
 const usd = (x: number) =>
-  x === 0
-    ? "$0"
-    : x < 0.01
-      ? `$${x.toFixed(4)}`
-      : x < 100
-        ? `$${x.toFixed(2)}`
-        : `$${Math.round(x).toLocaleString("en-US")}`;
+  x === 0 ? "$0" : x < 0.01 ? `$${x.toFixed(4)}` : x < 100 ? `$${x.toFixed(2)}` : `$${Math.round(x).toLocaleString("en-US")}`;
 
 function Num({
   label,
@@ -84,24 +70,11 @@ function Num({
   );
 }
 
-function Every({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: Frequency;
-  onChange: (v: Frequency) => void;
-}) {
+function Every({ label, value, onChange }: { label: string; value: Frequency; onChange: (v: Frequency) => void }) {
   return (
     <label className="flex items-center justify-between gap-3 py-1">
       <span className="text-[13px]">{label}</span>
-      <Select
-        size="sm"
-        value={value}
-        onChange={(e) => onChange(e.target.value as Frequency)}
-        className="w-36 shrink-0"
-      >
+      <Select size="sm" value={value} onChange={(e) => onChange(e.target.value as Frequency)} className="w-36 shrink-0">
         {frequencies.map((f) => (
           <option key={f.id} value={f.id}>
             {f.label}
@@ -130,18 +103,15 @@ export function CostsPage() {
     } catch {}
   }, [s, p]);
 
-  const set = <K extends keyof Settings>(k: K, v: Settings[K]) =>
-    setState((x) => ({ ...x, s: { ...x.s, [k]: v } }));
-  const price = (patch: Partial<Prices>) =>
-    setState((x) => ({ ...x, p: { ...x.p, ...patch } }));
+  const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setState((x) => ({ ...x, s: { ...x.s, [k]: v } }));
+  const price = (patch: Partial<Prices>) => setState((x) => ({ ...x, p: { ...x.p, ...patch } }));
   const t = totals(s, p);
 
   return (
     <>
       <p className="max-w-2xl text-[13.5px] text-muted">
-        Every DataForSEO call behind these pages, and what it costs. Change a
-        setting or a price and the table follows. Prices are DataForSEO's,
-        before any markup, as OpenSEO meters them (read September 2026).
+        Every DataForSEO call behind these pages, and what it costs. Change a setting or a price and the table follows. Prices are
+        DataForSEO's, before any markup, as OpenSEO meters them (read September 2026).
       </p>
 
       <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line lg:grid-cols-4">
@@ -156,9 +126,7 @@ export function CostsPage() {
         ].map((x) => (
           <div key={x.label} className="bg-surface p-4">
             <p className="text-[12.5px] text-muted">{x.label}</p>
-            <p className="num mt-1 font-serif text-[26px] leading-none">
-              {x.value}
-            </p>
+            <p className="num mt-1 font-serif text-[26px] leading-none">{x.value}</p>
           </div>
         ))}
       </div>
@@ -177,27 +145,13 @@ export function CostsPage() {
             </Button>
           </div>
           <Group title="Business">
-            <Num
-              label="Locations"
-              value={s.locations}
-              onChange={(v) => set("locations", v)}
-              min={1}
-            />
+            <Num label="Locations" value={s.locations} onChange={(v) => set("locations", v)} min={1} />
           </Group>
           <Group title="Google Maps">
-            <Num
-              label="Keywords"
-              value={s.keywords}
-              onChange={(v) => set("keywords", v)}
-            />
+            <Num label="Keywords" value={s.keywords} onChange={(v) => set("keywords", v)} />
             <label className="flex items-center justify-between gap-3 py-1">
               <span className="text-[13px]">Grid</span>
-              <Select
-                size="sm"
-                value={s.gridSize}
-                onChange={(e) => set("gridSize", Number(e.target.value))}
-                className="w-36 shrink-0"
-              >
+              <Select size="sm" value={s.gridSize} onChange={(e) => set("gridSize", Number(e.target.value))} className="w-36 shrink-0">
                 {[3, 5, 7, 9, 11, 13, 15].map((g) => (
                   <option key={g} value={g}>
                     {g} × {g} ({g * g} spots)
@@ -205,24 +159,16 @@ export function CostsPage() {
                 ))}
               </Select>
             </label>
-            <Every
-              label="Scan"
-              value={s.mapsEvery}
-              onChange={(v) => set("mapsEvery", v)}
-            />
+            <Every label="Scan" value={s.mapsEvery} onChange={(v) => set("mapsEvery", v)} />
             <label className="flex items-center justify-between gap-3 py-1">
               <span className="min-w-0 text-[13px]">
                 Queue
-                <span className="block text-[12px] text-muted">
-                  {queues.find((q) => q.id === s.mapsQueue)!.wait}
-                </span>
+                <span className="block text-[12px] text-muted">{queues.find((q) => q.id === s.mapsQueue)!.wait}</span>
               </span>
               <Select
                 size="sm"
                 value={s.mapsQueue}
-                onChange={(e) =>
-                  set("mapsQueue", e.target.value as Settings["mapsQueue"])
-                }
+                onChange={(e) => set("mapsQueue", e.target.value as Settings["mapsQueue"])}
                 className="w-36 shrink-0"
               >
                 {queues.map((q) => (
@@ -234,11 +180,7 @@ export function CostsPage() {
             </label>
           </Group>
           <Group title="Google search (same keywords)">
-            <Every
-              label="Check"
-              value={s.organicEvery}
-              onChange={(v) => set("organicEvery", v)}
-            />
+            <Every label="Check" value={s.organicEvery} onChange={(v) => set("organicEvery", v)} />
             <label className="flex items-center justify-between gap-3 py-1">
               <span className="text-[13px]">Read</span>
               <Select
@@ -256,11 +198,7 @@ export function CostsPage() {
             </label>
           </Group>
           <Group title="AI answers">
-            <Num
-              label="Questions"
-              value={s.questions}
-              onChange={(v) => set("questions", v)}
-            />
+            <Num label="Questions" value={s.questions} onChange={(v) => set("questions", v)} />
             <Num
               label="Places asked from"
               hint="1 is your address; more is an AI grid"
@@ -268,28 +206,13 @@ export function CostsPage() {
               onChange={(v) => set("aiPlaces", v)}
               min={1}
             />
-            <Every
-              label="Check"
-              value={s.aiEvery}
-              onChange={(v) => set("aiEvery", v)}
-            />
+            <Every label="Check" value={s.aiEvery} onChange={(v) => set("aiEvery", v)} />
             <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 pt-1">
               {aiEngines.map((e) => (
-                <label
-                  key={e.id}
-                  className="flex items-center gap-2 text-[13px]"
-                  title={e.how}
-                >
+                <label key={e.id} className="flex items-center gap-2 text-[13px]" title={e.how}>
                   <Checkbox
                     checked={s.engines.includes(e.id)}
-                    onChange={(on) =>
-                      set(
-                        "engines",
-                        on
-                          ? [...s.engines, e.id]
-                          : s.engines.filter((x) => x !== e.id),
-                      )
-                    }
+                    onChange={(on) => set("engines", on ? [...s.engines, e.id] : s.engines.filter((x) => x !== e.id))}
                   />
                   {e.label}
                 </label>
@@ -297,40 +220,14 @@ export function CostsPage() {
             </div>
           </Group>
           <Group title="Competitors">
-            <Num
-              label="Profiles compared"
-              value={s.competitorProfiles}
-              onChange={(v) => set("competitorProfiles", v)}
-            />
-            <Every
-              label="Refresh profiles"
-              value={s.profilesEvery}
-              onChange={(v) => set("profilesEvery", v)}
-            />
-            <Num
-              label="Websites studied"
-              value={s.competitorSites}
-              onChange={(v) => set("competitorSites", v)}
-            />
-            <Num
-              label="Keywords read per website"
-              value={s.rankedRows}
-              onChange={(v) => set("rankedRows", v)}
-              step={50}
-            />
+            <Num label="Profiles compared" value={s.competitorProfiles} onChange={(v) => set("competitorProfiles", v)} />
+            <Every label="Refresh profiles" value={s.profilesEvery} onChange={(v) => set("profilesEvery", v)} />
+            <Num label="Websites studied" value={s.competitorSites} onChange={(v) => set("competitorSites", v)} />
+            <Num label="Keywords read per website" value={s.rankedRows} onChange={(v) => set("rankedRows", v)} step={50} />
           </Group>
           <Group title="Keyword research (monthly)">
-            <Num
-              label="Idea requests"
-              value={s.ideaRequests}
-              onChange={(v) => set("ideaRequests", v)}
-            />
-            <Num
-              label="Ideas per request"
-              value={s.ideaRows}
-              onChange={(v) => set("ideaRows", v)}
-              step={50}
-            />
+            <Num label="Idea requests" value={s.ideaRequests} onChange={(v) => set("ideaRequests", v)} />
+            <Num label="Ideas per request" value={s.ideaRows} onChange={(v) => set("ideaRows", v)} step={50} />
           </Group>
           <Group title="Prices">
             <button
@@ -371,30 +268,10 @@ export function CostsPage() {
                     onChange={(v) => price({ ai: { ...p.ai, [e.id]: v } })}
                   />
                 ))}
-                <Num
-                  label="Google profile"
-                  value={p.profile}
-                  step={0.0001}
-                  onChange={(v) => price({ profile: v })}
-                />
-                <Num
-                  label="Labs request"
-                  value={p.labsTask}
-                  step={0.001}
-                  onChange={(v) => price({ labsTask: v })}
-                />
-                <Num
-                  label="Labs row"
-                  value={p.labsRow}
-                  step={0.00001}
-                  onChange={(v) => price({ labsRow: v })}
-                />
-                <Num
-                  label="Search volume request"
-                  value={p.searchVolume}
-                  step={0.01}
-                  onChange={(v) => price({ searchVolume: v })}
-                />
+                <Num label="Google profile" value={p.profile} step={0.0001} onChange={(v) => price({ profile: v })} />
+                <Num label="Labs request" value={p.labsTask} step={0.001} onChange={(v) => price({ labsTask: v })} />
+                <Num label="Labs row" value={p.labsRow} step={0.00001} onChange={(v) => price({ labsRow: v })} />
+                <Num label="Search volume request" value={p.searchVolume} step={0.01} onChange={(v) => price({ searchVolume: v })} />
               </div>
             )}
           </Group>
@@ -405,9 +282,7 @@ export function CostsPage() {
             <table className="w-full min-w-[680px] text-[13.5px]">
               <thead>
                 <tr className="border-b border-line text-left text-[12.5px] text-muted">
-                  <th className="py-2.5 pl-4 font-normal">
-                    One location, one month
-                  </th>
+                  <th className="py-2.5 pl-4 font-normal">One location, one month</th>
                   <th className="px-3 py-2.5 text-right font-normal">Calls</th>
                   <th className="px-3 py-2.5 text-right font-normal">Each</th>
                   <th className="py-2.5 pr-4 text-right font-normal">Cost</th>
@@ -421,34 +296,18 @@ export function CostsPage() {
                     <tr key={a.id} className="border-b border-line bg-hover/60">
                       <td className="py-2 pl-4 font-medium">{a.label}</td>
                       <td colSpan={2} />
-                      <td className="num py-2 pr-4 text-right font-medium">
-                        {usd(t.byArea[a.id])}
-                      </td>
+                      <td className="num py-2 pr-4 text-right font-medium">{usd(t.byArea[a.id])}</td>
                     </tr>,
                     ...rows.map((l) => (
                       <tr key={a.id + l.what} className="border-b border-line">
                         <td className="py-2.5 pl-4">
-                          <span className={cn(l.free && "text-muted")}>
-                            {l.what}
-                          </span>
-                          <span className="block text-[12px] text-muted">
-                            {l.free ? `${l.how}. ${l.free}.` : l.how}
-                          </span>
-                          {!l.free && (
-                            <span className="block font-mono text-[11px] text-subtle">
-                              {l.endpoint}
-                            </span>
-                          )}
+                          <span className={cn(l.free && "text-muted")}>{l.what}</span>
+                          <span className="block text-[12px] text-muted">{l.free ? `${l.how}. ${l.free}.` : l.how}</span>
+                          {!l.free && <span className="block font-mono text-[11px] text-subtle">{l.endpoint}</span>}
                         </td>
-                        <td className="num px-3 py-2.5 text-right">
-                          {l.free ? "–" : fmt(Math.round(l.calls))}
-                        </td>
-                        <td className="num px-3 py-2.5 text-right text-muted">
-                          {l.free ? "–" : usd(l.unit)}
-                        </td>
-                        <td className="num py-2.5 pr-4 text-right">
-                          {l.free ? "$0" : usd(lineCost(l))}
-                        </td>
+                        <td className="num px-3 py-2.5 text-right">{l.free ? "–" : fmt(Math.round(l.calls))}</td>
+                        <td className="num px-3 py-2.5 text-right text-muted">{l.free ? "–" : usd(l.unit)}</td>
+                        <td className="num py-2.5 pr-4 text-right">{l.free ? "$0" : usd(lineCost(l))}</td>
                       </tr>
                     )),
                   ];
@@ -456,9 +315,7 @@ export function CostsPage() {
                 <tr>
                   <td className="py-3 pl-4 font-medium">Total per location</td>
                   <td colSpan={2} />
-                  <td className="num py-3 pr-4 text-right font-medium">
-                    {usd(t.perLocation)}
-                  </td>
+                  <td className="num py-3 pr-4 text-right font-medium">{usd(t.perLocation)}</td>
                 </tr>
               </tbody>
             </table>
@@ -468,31 +325,16 @@ export function CostsPage() {
             <p className="text-[14px] font-medium">Reading it</p>
             <ul className="mt-2 space-y-1.5 text-[13px] text-muted">
               <li>
-                The map grid is{" "}
-                {Math.round(
-                  (t.byArea.maps / Math.max(t.perLocation, 1e-9)) * 100,
-                )}
-                % of the bill. Grid size and how often you scan move the total
-                most: a {s.gridSize}×{s.gridSize} grid is{" "}
-                {s.gridSize * s.gridSize} calls per keyword per scan.
+                The map grid is {Math.round((t.byArea.maps / Math.max(t.perLocation, 1e-9)) * 100)}% of the bill. Grid size and how often
+                you scan move the total most: a {s.gridSize}×{s.gridSize} grid is {s.gridSize * s.gridSize} calls per keyword per scan.
               </li>
+              <li>Each tracked keyword costs {usd(t.perKeyword)} a month (map and Google together).</li>
               <li>
-                Each tracked keyword costs {usd(t.perKeyword)} a month (map and
-                Google together).
-              </li>
-              <li>
-                Competitors are nearly free: who ranks where comes with your own
-                results. Only their profile facts and the keywords their
+                Competitors are nearly free: who ranks where comes with your own results. Only their profile facts and the keywords their
                 websites rank for are separate calls.
               </li>
-              <li>
-                Perplexity and Claude answers are priced by tokens, so they cost
-                30 to 150 times a ChatGPT or Google answer.
-              </li>
-              <li>
-                Not included: the AI model that writes suggestions and posts,
-                Google's own APIs (free), and any markup you add.
-              </li>
+              <li>Perplexity and Claude answers are priced by tokens, so they cost 30 to 150 times a ChatGPT or Google answer.</li>
+              <li>Not included: the AI model that writes suggestions and posts, Google's own APIs (free), and any markup you add.</li>
             </ul>
           </Card>
         </div>
