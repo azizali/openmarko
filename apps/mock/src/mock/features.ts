@@ -55,9 +55,9 @@ export type Feature = {
 export const features: Feature[] = [
   {
     id: "seo",
-    label: "Local SEO",
+    label: "SEO",
     blurb: "Rankings, reviews, citations and your Business Profile.",
-    links: ["/profile"],
+    links: ["/seo", "/profile"],
     off: "Home leaves out search numbers.",
   },
   {

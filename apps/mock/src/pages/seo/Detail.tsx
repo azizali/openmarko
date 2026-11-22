@@ -1,10 +1,10 @@
-// Detail pages of the small Local SEO section (#/local/keywords, /ai, /competitors); the map page is LocalMaps.tsx.
+// Detail pages of the SEO section (#/seo/keywords, /ai, /competitors); the map page is Maps.tsx.
 // The overview gives one number per check; these show what is behind it: every keyword, every question,
 // and who is ahead of you on each one. Competitors differ by keyword and by where the person searched.
 
 import { Fragment, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, ChevronRight, ExternalLink, X } from "lucide-react";
-import { Badge, Button, Card, cn, fmt, LineChart, rankTone, Segmented } from "../components/ui";
+import { Badge, Button, Card, cn, fmt, LineChart, rankTone, Segmented } from "../../components/ui";
 import {
   ahead,
   aheadCount,
@@ -28,7 +28,7 @@ import {
   type Site,
   type TrackedKeyword,
   type TrackedPrompt,
-} from "../mock/local";
+} from "../../mock/seo";
 
 /** Up is good here: a count that grew, or a position that got smaller. */
 export function Change({ by, unit }: { by: number; unit: string }) {

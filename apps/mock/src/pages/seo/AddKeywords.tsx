@@ -1,11 +1,11 @@
-// Adding keywords by hand, in the small Local SEO section. Type or paste them one per line; each line shows its
+// Adding keywords by hand, in the SEO section. Type or paste them one per line; each line shows its
 // searches a month before anything is tracked, and ones already tracked are skipped. Ideas can be added with a
 // click. Used from the Google Maps ranking and Keywords pages.
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { Button, cn, fmt, Modal, Textarea } from "../components/ui";
-import { GRID_SPOTS, KEYWORD_LIMIT, keywordIdeas, volumeOf, type TrackedKeyword } from "../mock/local";
+import { Button, cn, fmt, Modal, Textarea } from "../../components/ui";
+import { GRID_SPOTS, KEYWORD_LIMIT, keywordIdeas, volumeOf, type TrackedKeyword } from "../../mock/seo";
 
 const clean = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
 

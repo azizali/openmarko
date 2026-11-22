@@ -31,6 +31,9 @@ import { useScanner } from "../lib/scanner";
 import { setScope } from "../lib/scope";
 import { product } from "../lib/whitelabel";
 import { toggled } from "../lib/sets";
+import { isOn, setFeature } from "../lib/features";
+import { KEYWORD_LIMIT, basePrompts, engines, questionIdeas } from "../mock/seo";
+import { defaultPrices, defaultSettings, totals } from "../mock/costs";
 
 // Adding an Organization. Start from its website (or name); OpenMarko reads the
 // site and Google to find its Locations, Websites and social Accounts, drafts
@@ -43,7 +46,28 @@ import { toggled } from "../lib/sets";
 // and reviews and pick keywords from Search Console, the site's service pages
 // and nearby search volume.
 
-const steps = ["Start", "What we found", "Connect", "Brand voice", "What to track", "Launch"];
+// The steps follow what the organization will use. With only SEO it is four short steps: find the business, confirm
+// it and its services, pick what the weekly checks track, connect Google if you want suggestions applied for you. Social
+// adds its accounts, brand voice and listening; Customers adds the voice. Setup ends on SEO when it's in use.
+
+/** What an organization can use: the sidebar's modules (Settings → Features). */
+type Use = "seo" | "social" | "ads" | "customers";
+const uses: { id: Use; label: string; blurb: string }[] = [
+  { id: "seo", label: "SEO", blurb: "Where you show on Google Maps, Google search and AI answers, with suggestions each week." },
+  { id: "social", label: "Social", blurb: "Conversations to join, ideas, and posting to your accounts." },
+  { id: "ads", label: "Ads", blurb: "Research other advertisers and run your own ads." },
+  { id: "customers", label: "Customers", blurb: "Inbox, contacts, campaigns and workflows." },
+];
+
+type StepId = "start" | "found" | "connect" | "voice" | "track" | "launch";
+const stepNames: Record<StepId, string> = {
+  start: "Start",
+  found: "What we found",
+  connect: "Connect",
+  voice: "Brand voice",
+  track: "What to track",
+  launch: "Launch",
+};
 
 type GoogleTool = "gbp" | "gsc" | "ga4";
 const googleTools: { id: GoogleTool; name: string; desc: string; icon: typeof Store; required?: boolean; scope: string; pick: string[] }[] =
@@ -93,6 +117,21 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const { config } = useScanner();
   const [step, setStep] = useState(0);
+  const [using, setUsing] = useState(new Set(uses.filter((u) => isOn(u.id)).map((u) => u.id)));
+  const seo = using.has("seo");
+  const useSocial = using.has("social");
+  const onlySeo = seo && using.size === 1;
+  const flow: StepId[] = [
+    "start",
+    "found",
+    ...(seo || useSocial ? (["connect"] as const) : []),
+    ...(useSocial || using.has("customers") ? (["voice"] as const) : []),
+    ...(seo || useSocial ? (["track"] as const) : []),
+    "launch",
+  ];
+  const at = flow[Math.min(step, flow.length - 1)];
+  const [qSel, setQSel] = useState(new Set(basePrompts.map((p) => p.text)));
+  const [myQ, setMyQ] = useState<string[]>([]);
   const [query, setQuery] = useState(business.website);
   const [read, setRead] = useState(-1); // -1 not started; reading.length = done
   const [name, setName] = useState(business.name);
@@ -162,9 +201,23 @@ export default function Onboarding() {
   const toggle = toggled;
   const chosenLocs = locations.filter((l) => locSel.has(l.id));
   const kwCount = chosenLocs.reduce((a, l) => a + kwSel[l.id].size, 0);
-  const compCount = chosenLocs.reduce((a, l) => a + compSel[l.id].size, 0);
+  // SEO competitors aren't picked: everyone in the results is read. Hand-added ones are counted on top.
+  const compCount = seo
+    ? chosenLocs.reduce((a, l) => a + competitorsFor(l.id).filter((c) => !c.isYou).length + (myComp[l.id] ?? []).length, 0)
+    : chosenLocs.reduce((a, l) => a + compSel[l.id].size, 0);
+  const cost = totals(
+    {
+      ...defaultSettings,
+      locations: Math.max(1, chosenLocs.length),
+      keywords: Math.max(1, Math.round(kwCount / Math.max(1, chosenLocs.length))),
+      gridSize: Number(size),
+      mapsEvery: freq,
+      questions: qSel.size,
+    },
+    defaultPrices,
+  );
   // Nothing is required beyond a name: someone may only want local rankings, or only social.
-  const canNext = [doneReading && !!name.trim(), true, true, true, true, true][step];
+  const canNext = at === "start" ? doneReading && !!name.trim() && using.size > 0 : true;
   const connectSocial = (id: string) => {
     setSocial((s) => ({ ...s, [id]: "busy" }));
     setTimeout(() => setSocial((s) => ({ ...s, [id]: "done" })), 900);
@@ -172,7 +225,9 @@ export default function Onboarding() {
   const finish = () => {
     // A new Client joins the switcher; the mock keeps showing Maple & Main's data.
     if (name.trim() !== business.name) setScope({ orgId: addMembership(name.trim(), category), locationId: null });
-    navigate("/");
+    // What it uses becomes its features: the sidebar shows only those. Settings → Features turns the rest back on.
+    for (const u of uses) setFeature(u.id, using.has(u.id));
+    navigate(seo ? "/seo" : "/");
   };
 
   return (
@@ -181,10 +236,12 @@ export default function Onboarding() {
         <Link to="/" aria-label={`${product()} home`}>
           <Logo size={22} />
         </Link>
-        <p className="mt-1 text-[13px] text-muted">Add an organization in about 5 minutes. We read your website and suggest the rest.</p>
+        <p className="mt-1 text-[13px] text-muted">
+          Add an organization in about {onlySeo ? 2 : 5} minutes. We read your website and Google and suggest the rest.
+        </p>
         <ol className="mt-10 space-y-1">
-          {steps.map((s, i) => (
-            <li key={s}>
+          {flow.map((id, i) => (
+            <li key={id}>
               <button
                 disabled={i > step}
                 onClick={() => setStep(i)}
@@ -201,7 +258,7 @@ export default function Onboarding() {
                 >
                   {i < step ? <Check size={11} strokeWidth={3} /> : i + 1}
                 </span>
-                {s}
+                {stepNames[id]}
               </button>
             </li>
           ))}
@@ -212,10 +269,10 @@ export default function Onboarding() {
         <div className="flex-1 overflow-y-auto">
           <div key={step} className="anim-fade mx-auto w-full max-w-2xl px-4 py-12 sm:px-8">
             <div className="mb-2 text-[12.5px] text-muted md:hidden">
-              Step {step + 1} of {steps.length}
+              Step {step + 1} of {flow.length}
             </div>
 
-            {step === 0 && (
+            {at === "start" && (
               <>
                 <h1 className="font-serif text-[34px] leading-tight">Add an organization</h1>
                 <p className="mt-2 text-muted">
@@ -278,20 +335,46 @@ export default function Onboarding() {
                     </p>
                   </Card>
                 )}
+                {doneReading && (
+                  <Section
+                    title="What will you use?"
+                    sub="The next steps only ask for what these need. Change it any time in Settings → Features."
+                  >
+                    {uses.map((u) => (
+                      <label
+                        key={u.id}
+                        className="flex cursor-pointer items-start gap-3 border-b border-line px-4 py-3 last:border-0 hover:bg-hover/50"
+                      >
+                        <Checkbox checked={using.has(u.id)} onChange={() => setUsing(toggle(using, u.id))} label={`Use ${u.label}`} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[14px] font-medium">{u.label}</span>
+                          <span className="block text-[12.5px] text-muted">{u.blurb}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </Section>
+                )}
               </>
             )}
 
-            {step === 1 && (
+            {at === "found" && (
               <>
                 <h1 className="font-serif text-[34px] leading-tight">Here's what we found</h1>
                 <p className="mt-2 text-muted">
-                  Untick anything that isn't {name}'s, or that you don't want to use yet. {product()} works with any of these on its own:
-                  just a location, just a website, or just social accounts. You can add the rest later in Settings.
+                  Untick anything that isn't {name}'s, or that you don't want to use yet.{" "}
+                  {useSocial
+                    ? `${product()} works with any of these on its own: just a location, just a website, or just social accounts.`
+                    : "Your checks start from these."}{" "}
+                  You can add the rest later in Settings.
                 </p>
 
                 <Section
                   title="Locations"
-                  sub="Places customers visit. Each has its own Google Business Profile, keywords and map rankings."
+                  sub={
+                    seo
+                      ? "Each one's Google profile is how we recognise you on the map, on Google and in AI answers. Its address is the centre of the map scan."
+                      : "Places customers visit. Each has its own Google Business Profile."
+                  }
                 >
                   {locations.map((l) => (
                     <label
@@ -344,120 +427,151 @@ export default function Onboarding() {
                   ))}
                 </Section>
 
-                <Section
-                  title="Social accounts"
-                  sub="Linked from the websites and Google Business Profiles. Each speaks for every location unless you pick one."
-                >
-                  {found.map((a) => (
-                    <div key={a.id} className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-3 last:border-0">
-                      <Checkbox
-                        checked={acctSel.has(a.id)}
-                        onChange={() => setAcctSel(toggle(acctSel, a.id))}
-                        label={`Include ${a.handle}`}
-                      />
-                      <PlatformMark platform={a.platform} size={22} />
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-[14px] font-medium">{a.handle}</span>
-                        <span className="block text-[12.5px] text-muted">
-                          {platformMeta[a.platform].name}
-                          {a.followers ? ` · ${fmt(a.followers)} followers` : " · found on your website, not confirmed"}
-                        </span>
-                      </span>
-                      {chosenLocs.length > 1 && (
-                        <Select
-                          size="sm"
-                          aria-label={`${a.handle} speaks for`}
-                          value={speaksFor[a.id]}
-                          onChange={(e) => setSpeaksFor({ ...speaksFor, [a.id]: e.target.value })}
-                          className="w-auto"
-                        >
-                          <option value="">All locations</option>
-                          {chosenLocs.map((l) => (
-                            <option key={l.id} value={l.id}>
-                              {shortLocation(l.id)}
-                            </option>
-                          ))}
-                        </Select>
-                      )}
+                {seo && (
+                  <Section
+                    title="Services"
+                    sub="Read from the websites and Google profiles. Keyword and question ideas, and suggestions, come from these."
+                  >
+                    <div className="px-4 py-3">
+                      <WordList label="Services" words={services} onChange={setServices} />
                     </div>
-                  ))}
-                  <button className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-muted hover:bg-hover/50">
-                    <Plus size={14} /> Add an account we missed
-                  </button>
-                </Section>
+                  </Section>
+                )}
+
+                {useSocial && (
+                  <Section
+                    title="Social accounts"
+                    sub="Linked from the websites and Google Business Profiles. Each speaks for every location unless you pick one."
+                  >
+                    {found.map((a) => (
+                      <div key={a.id} className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-3 last:border-0">
+                        <Checkbox
+                          checked={acctSel.has(a.id)}
+                          onChange={() => setAcctSel(toggle(acctSel, a.id))}
+                          label={`Include ${a.handle}`}
+                        />
+                        <PlatformMark platform={a.platform} size={22} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[14px] font-medium">{a.handle}</span>
+                          <span className="block text-[12.5px] text-muted">
+                            {platformMeta[a.platform].name}
+                            {a.followers ? ` · ${fmt(a.followers)} followers` : " · found on your website, not confirmed"}
+                          </span>
+                        </span>
+                        {chosenLocs.length > 1 && (
+                          <Select
+                            size="sm"
+                            aria-label={`${a.handle} speaks for`}
+                            value={speaksFor[a.id]}
+                            onChange={(e) => setSpeaksFor({ ...speaksFor, [a.id]: e.target.value })}
+                            className="w-auto"
+                          >
+                            <option value="">All locations</option>
+                            {chosenLocs.map((l) => (
+                              <option key={l.id} value={l.id}>
+                                {shortLocation(l.id)}
+                              </option>
+                            ))}
+                          </Select>
+                        )}
+                      </div>
+                    ))}
+                    <button className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-muted hover:bg-hover/50">
+                      <Plus size={14} /> Add an account we missed
+                    </button>
+                  </Section>
+                )}
               </>
             )}
 
-            {step === 2 && (
+            {at === "connect" && (
               <>
                 <h1 className="font-serif text-[34px] leading-tight">Connect the accounts</h1>
                 <p className="mt-2 text-muted">
                   All optional. Connect what you want to use now; pages that need something you skip will say so and connect it in one
                   click. Read-only by default: {product()} only posts or changes something after you approve it.
                 </p>
+                {seo && (
+                  <Card className="mt-6 bg-hover text-[13px] text-muted shadow-none">
+                    SEO reads public results, so every check works without connecting anything. Connect your Google Business Profile to
+                    apply suggestions (categories, posts) with one click instead of doing them yourself.
+                  </Card>
+                )}
                 <div className="mt-8 mb-2 text-[12.5px] font-medium text-muted">Google</div>
                 <div className="space-y-3">
-                  {googleTools.map((it) => (
-                    <Card key={it.id} className="flex items-center gap-4">
-                      <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-hover">
-                        <it.icon size={18} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 font-medium">
-                          {it.name} {it.required && <Badge>Required</Badge>}
+                  {googleTools
+                    .filter((t) => (t.id === "gbp" ? seo || useSocial : !onlySeo))
+                    .map((it) => (
+                      <Card key={it.id} className="flex items-center gap-4">
+                        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-hover">
+                          <it.icon size={18} />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 font-medium">
+                            {it.name} {it.required && <Badge>Required</Badge>}
+                          </div>
+                          <div className="text-[13px] text-muted">
+                            {google[it.id] ? (
+                              <span className="text-good">Connected · {google[it.id]}</span>
+                            ) : it.id === "gbp" && onlySeo ? (
+                              "Apply suggestions to your profile: categories, hours and posts."
+                            ) : (
+                              it.desc
+                            )}
+                          </div>
                         </div>
-                        <div className="text-[13px] text-muted">
-                          {google[it.id] ? <span className="text-good">Connected · {google[it.id]}</span> : it.desc}
-                        </div>
-                      </div>
-                      {google[it.id] ? (
-                        <Button size="sm" variant="ghost" onClick={() => setGoogle({ ...google, [it.id]: null })}>
-                          Disconnect
-                        </Button>
-                      ) : (
-                        <Button size="sm" variant="primary" onClick={() => setOauth(it.id)}>
-                          Connect
-                        </Button>
-                      )}
-                    </Card>
-                  ))}
+                        {google[it.id] ? (
+                          <Button size="sm" variant="ghost" onClick={() => setGoogle({ ...google, [it.id]: null })}>
+                            Disconnect
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="primary" onClick={() => setOauth(it.id)}>
+                            Connect
+                          </Button>
+                        )}
+                      </Card>
+                    ))}
                 </div>
-                <div className="mt-8 mb-2 text-[12.5px] font-medium text-muted">Social</div>
-                <Card pad={false}>
-                  {socialLogins
-                    .filter((s) => found.some((a) => acctSel.has(a.id) && s.platforms.includes(a.platform)))
-                    .map((s) => {
-                      const mine = found.filter((a) => acctSel.has(a.id) && s.platforms.includes(a.platform));
-                      return (
-                        <div key={s.id} className="flex items-center gap-4 border-b border-line px-5 py-4 last:border-0">
-                          <span className="flex -space-x-1">
-                            {s.platforms.map((p) => (
-                              <PlatformMark key={p} platform={p} size={26} />
-                            ))}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="font-medium">{s.name}</div>
-                            <div className="truncate text-[13px] text-muted">
+                {useSocial && (
+                  <>
+                    <div className="mt-8 mb-2 text-[12.5px] font-medium text-muted">Social</div>
+                    <Card pad={false}>
+                      {socialLogins
+                        .filter((s) => found.some((a) => acctSel.has(a.id) && s.platforms.includes(a.platform)))
+                        .map((s) => {
+                          const mine = found.filter((a) => acctSel.has(a.id) && s.platforms.includes(a.platform));
+                          return (
+                            <div key={s.id} className="flex items-center gap-4 border-b border-line px-5 py-4 last:border-0">
+                              <span className="flex -space-x-1">
+                                {s.platforms.map((p) => (
+                                  <PlatformMark key={p} platform={p} size={26} />
+                                ))}
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <div className="font-medium">{s.name}</div>
+                                <div className="truncate text-[13px] text-muted">
+                                  {social[s.id] === "done" ? (
+                                    <span className="text-good">Connected · {mine.map((a) => a.handle).join(", ")}</span>
+                                  ) : (
+                                    mine.map((a) => a.handle).join(", ")
+                                  )}
+                                </div>
+                              </div>
                               {social[s.id] === "done" ? (
-                                <span className="text-good">Connected · {mine.map((a) => a.handle).join(", ")}</span>
+                                <Badge tone="good">
+                                  <Check size={10} /> Connected
+                                </Badge>
                               ) : (
-                                mine.map((a) => a.handle).join(", ")
+                                <Button size="sm" variant="primary" disabled={social[s.id] === "busy"} onClick={() => connectSocial(s.id)}>
+                                  {social[s.id] === "busy" ? <Loader2 size={13} className="animate-spin" /> : "Connect"}
+                                </Button>
                               )}
                             </div>
-                          </div>
-                          {social[s.id] === "done" ? (
-                            <Badge tone="good">
-                              <Check size={10} /> Connected
-                            </Badge>
-                          ) : (
-                            <Button size="sm" variant="primary" disabled={social[s.id] === "busy"} onClick={() => connectSocial(s.id)}>
-                              {social[s.id] === "busy" ? <Loader2 size={13} className="animate-spin" /> : "Connect"}
-                            </Button>
-                          )}
-                        </div>
-                      );
-                    })}
-                </Card>
+                          );
+                        })}
+                    </Card>
+                  </>
+                )}
                 <div className="mt-6 flex items-start gap-2 text-[12.5px] text-muted">
                   <ShieldCheck size={14} className="mt-0.5 shrink-0" /> Tokens are encrypted at rest. Revoke access any time from Settings
                   or from each platform.
@@ -473,7 +587,7 @@ export default function Onboarding() {
               </>
             )}
 
-            {step === 3 && (
+            {at === "voice" && (
               <>
                 <h1 className="font-serif text-[34px] leading-tight">How {name} sounds</h1>
                 <p className="mt-2 text-muted">
@@ -494,19 +608,19 @@ export default function Onboarding() {
                   <div className="mt-4 flex flex-col gap-4">
                     <WordList label="Say" words={use} onChange={setUse} />
                     <WordList label="Never say" words={avoid} onChange={setAvoid} />
-                    <WordList label="Services" words={services} onChange={setServices} />
+                    {!seo && <WordList label="Services" words={services} onChange={setServices} />}
                   </div>
                 </Card>
                 <p className="mt-3 text-[12.5px] text-subtle">Tone, offers and rules are in Settings → Brand voice once you're set up.</p>
               </>
             )}
 
-            {step === 4 && (
+            {at === "track" && (
               <>
                 <h1 className="font-serif text-[34px] leading-tight">What to track</h1>
                 <p className="mt-2 text-muted">
-                  Suggested from the websites, Search Console and what people search nearby. Everything is ticked; untick what you don't
-                  want.
+                  Suggested from {seo ? "your services, the websites" : "the websites, Search Console"} and what people search nearby.
+                  Everything is ticked; untick what you don't want.
                 </p>
 
                 {!chosenLocs.length && (
@@ -515,13 +629,24 @@ export default function Onboarding() {
                     Locations.
                   </Card>
                 )}
+                {seo && chosenLocs.length > 0 && (
+                  <p className="mt-4 text-[13px] text-muted">
+                    Every week we check each keyword on Google Maps and Google search, and ask the AI assistants each question. About{" "}
+                    <b className="num font-medium text-fg">${cost.perMonth.toFixed(0)}</b> a month in data for what's ticked.
+                  </p>
+                )}
                 {chosenLocs.map((l) => {
                   const kws = keywordsFor(l.id);
+                  const full = seo && kwSel[l.id].size >= KEYWORD_LIMIT;
                   return (
                     <Section
                       key={l.id}
                       title={chosenLocs.length > 1 ? `Keywords · ${shortLocation(l.id)}` : "Keywords"}
-                      sub={`${kwSel[l.id].size} of ${kws.length} suggested · measured from around ${shortLocation(l.id)}`}
+                      sub={
+                        seo
+                          ? `${kwSel[l.id].size} of ${KEYWORD_LIMIT} on your plan · suggested from your services, your city and what competitors rank for`
+                          : `${kwSel[l.id].size} of ${kws.length} suggested · measured from around ${shortLocation(l.id)}`
+                      }
                     >
                       {kws.slice(0, 10).map((k) => (
                         <label
@@ -530,7 +655,7 @@ export default function Onboarding() {
                         >
                           <Checkbox
                             checked={kwSel[l.id].has(k.id)}
-                            onChange={() => setKwSel({ ...kwSel, [l.id]: toggle(kwSel[l.id], k.id) })}
+                            onChange={() => (kwSel[l.id].has(k.id) || !full) && setKwSel({ ...kwSel, [l.id]: toggle(kwSel[l.id], k.id) })}
                             label={`Track ${k.term}`}
                           />
                           <span className="flex-1 text-[14px]">{k.term}</span>
@@ -556,48 +681,102 @@ export default function Onboarding() {
                   );
                 })}
 
-                {chosenLocs.map((l) => (
-                  <Section
-                    key={l.id}
-                    title={chosenLocs.length > 1 ? `Competitors · ${shortLocation(l.id)}` : "Competitors"}
-                    sub="The businesses that show up most in the map pack around this location."
-                  >
-                    {competitorsFor(l.id)
-                      .filter((c) => !c.isYou)
-                      .map((c) => (
-                        <div key={c.id} className="flex items-center gap-3 border-b border-line px-4 py-2.5 last:border-0">
-                          <span className="min-w-0 flex-1">
-                            <span className="block text-[14px]">{c.name}</span>
-                            <span className="block text-[12.5px] text-muted">
-                              {c.rating}★ · {c.reviews} reviews · {c.distanceMi} mi away
+                {!seo &&
+                  chosenLocs.map((l) => (
+                    <Section
+                      key={l.id}
+                      title={chosenLocs.length > 1 ? `Competitors · ${shortLocation(l.id)}` : "Competitors"}
+                      sub="The businesses that show up most in the map pack around this location."
+                    >
+                      {competitorsFor(l.id)
+                        .filter((c) => !c.isYou)
+                        .map((c) => (
+                          <div key={c.id} className="flex items-center gap-3 border-b border-line px-4 py-2.5 last:border-0">
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-[14px]">{c.name}</span>
+                              <span className="block text-[12.5px] text-muted">
+                                {c.rating}★ · {c.reviews} reviews · {c.distanceMi} mi away
+                              </span>
                             </span>
+                            <Toggle
+                              label={`Track ${c.name}`}
+                              checked={compSel[l.id].has(c.id)}
+                              onChange={() => setCompSel({ ...compSel, [l.id]: toggle(compSel[l.id], c.id) })}
+                            />
+                          </div>
+                        ))}
+                      {(myComp[l.id] ?? []).map((n) => (
+                        <div key={n} className="flex items-center gap-3 border-b border-line px-4 py-2.5">
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-[14px]">{n}</span>
+                            <span className="block text-[12.5px] text-muted">Added by you · we'll find its Google Business Profile</span>
                           </span>
                           <Toggle
-                            label={`Track ${c.name}`}
-                            checked={compSel[l.id].has(c.id)}
-                            onChange={() => setCompSel({ ...compSel, [l.id]: toggle(compSel[l.id], c.id) })}
+                            label={`Track ${n}`}
+                            checked={compSel[l.id].has(`mine:${n}`)}
+                            onChange={() => setCompSel({ ...compSel, [l.id]: toggle(compSel[l.id], `mine:${n}`) })}
                           />
                         </div>
                       ))}
-                    {(myComp[l.id] ?? []).map((n) => (
-                      <div key={n} className="flex items-center gap-3 border-b border-line px-4 py-2.5">
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-[14px]">{n}</span>
-                          <span className="block text-[12.5px] text-muted">Added by you · we'll find its Google Business Profile</span>
-                        </span>
-                        <Toggle
-                          label={`Track ${n}`}
-                          checked={compSel[l.id].has(`mine:${n}`)}
-                          onChange={() => setCompSel({ ...compSel, [l.id]: toggle(compSel[l.id], `mine:${n}`) })}
-                        />
-                      </div>
-                    ))}
-                    <AddRow placeholder="Add a competitor by name or Google Maps link" onAdd={(v) => addMine("comp", l.id, v)} />
+                      <AddRow placeholder="Add a competitor by name or Google Maps link" onAdd={(v) => addMine("comp", l.id, v)} />
+                    </Section>
+                  ))}
+
+                {seo && chosenLocs.length > 0 && (
+                  <Section
+                    title="Competitors"
+                    sub="Nothing to pick: everyone who shows up for your keywords and questions is compared with you. Add one only if we missed it."
+                  >
+                    {chosenLocs.map((l) => {
+                      const them = competitorsFor(l.id).filter((c) => !c.isYou);
+                      return (
+                        <div key={l.id} className="border-b border-line px-4 py-3 text-[13.5px]">
+                          {chosenLocs.length > 1 && <span className="font-medium">{shortLocation(l.id)}: </span>}
+                          <span className="text-muted">
+                            {them.length} found so far: {[...them.map((c) => c.name), ...(myComp[l.id] ?? [])].join(", ")}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    <AddRow
+                      placeholder="Add a competitor by name or Google Maps link"
+                      onAdd={(v) => chosenLocs.forEach((l) => addMine("comp", l.id, v))}
+                    />
                   </Section>
-                ))}
+                )}
+
+                {seo && chosenLocs.length > 0 && (
+                  <Section
+                    title="Questions for AI assistants"
+                    sub={`Asked the way a customer would, on ${engines.map((e) => e.name).join(", ")}. Suggested from your services and reviews.`}
+                  >
+                    {[...basePrompts.map((p) => p.text), ...questionIdeas, ...myQ].map((q) => (
+                      <label
+                        key={q}
+                        className="flex cursor-pointer items-center gap-3 border-b border-line px-4 py-2.5 last:border-0 hover:bg-hover/50"
+                      >
+                        <Checkbox checked={qSel.has(q)} onChange={() => setQSel(toggle(qSel, q))} label={`Ask ${q}`} />
+                        <span className="flex-1 text-[14px]">{q}</span>
+                        {myQ.includes(q) && <Badge>Added by you</Badge>}
+                      </label>
+                    ))}
+                    <AddRow
+                      placeholder="Add a question, e.g. which dentist is good for nervous patients?"
+                      onAdd={(v) => {
+                        const q = v.trim();
+                        if (!q || myQ.includes(q)) return;
+                        setMyQ([...myQ, q]);
+                        setQSel(new Set([...qSel, q]));
+                      }}
+                    />
+                  </Section>
+                )}
 
                 {chosenLocs.length > 0 && (
-                  <Section title="Map scans" sub="We check Google Maps from points around each location to see where it shows up.">
+                  <Section
+                    title="Map scans"
+                    sub={`We search Google Maps from ${Number(size) ** 2} spots around each location, about ${((Number(size) - 1) * 0.5).toFixed(0)} mi across, to see where it shows up.`}
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-[13.5px]">
                       <Segmented
                         label="Grid size"
@@ -622,59 +801,76 @@ export default function Onboarding() {
                   </Section>
                 )}
 
-                <Section title="Conversations to join" sub="Where the social scanner looks for people asking for a business like yours.">
-                  {config.sources.map((s) => (
-                    <div key={s.platform} className="flex items-start gap-3 border-b border-line px-4 py-3 last:border-0">
-                      <PlatformBadge id={s.platform as PlatformId} size={22} />
-                      <div className="min-w-0 flex-1">
-                        <WordList
-                          label={`${scanPlatform(s.platform).name} · ${scanPlatform(s.platform).places}`}
-                          words={places[s.platform] ?? []}
-                          onChange={(w) => setPlaces({ ...places, [s.platform]: w })}
-                        />
+                {useSocial && (
+                  <>
+                    <Section
+                      title="Conversations to join"
+                      sub="Where the social scanner looks for people asking for a business like yours."
+                    >
+                      {config.sources.map((s) => (
+                        <div key={s.platform} className="flex items-start gap-3 border-b border-line px-4 py-3 last:border-0">
+                          <PlatformBadge id={s.platform as PlatformId} size={22} />
+                          <div className="min-w-0 flex-1">
+                            <WordList
+                              label={`${scanPlatform(s.platform).name} · ${scanPlatform(s.platform).places}`}
+                              words={places[s.platform] ?? []}
+                              onChange={(w) => setPlaces({ ...places, [s.platform]: w })}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      <div className="px-4 py-3">
+                        <WordList label="Keywords to scan for" words={terms} onChange={setTerms} />
                       </div>
-                    </div>
-                  ))}
-                  <div className="px-4 py-3">
-                    <WordList label="Keywords to scan for" words={terms} onChange={setTerms} />
-                  </div>
-                </Section>
+                    </Section>
 
-                <Section
-                  title="Profiles to watch"
-                  sub="Competitors' social profiles we found on their websites, plus anyone whose posts you'd like to learn from. Their best posts show up as ideas to remix."
-                >
-                  <WatchEditor />
-                </Section>
+                    <Section
+                      title="Profiles to watch"
+                      sub="Competitors' social profiles we found on their websites, plus anyone whose posts you'd like to learn from. Their best posts show up as ideas to remix."
+                    >
+                      <WatchEditor />
+                    </Section>
 
-                <Section title="Trending" sub="Trends are scored for fit against these topics and the brand voice.">
-                  <div className="px-4 py-3">
-                    <WordList label="Topics" words={topics} onChange={setTopics} />
-                  </div>
-                </Section>
+                    <Section title="Trending" sub="Trends are scored for fit against these topics and the brand voice.">
+                      <div className="px-4 py-3">
+                        <WordList label="Topics" words={topics} onChange={setTopics} />
+                      </div>
+                    </Section>
+                  </>
+                )}
               </>
             )}
 
-            {step === 5 && (
-              <Launch name={name} locs={chosenLocs.length} kw={kwCount} comp={compCount} accounts={acctSel.size} onDone={finish} />
+            {at === "launch" && (
+              <Launch
+                name={name}
+                locs={chosenLocs.length}
+                kw={kwCount}
+                comp={compCount}
+                questions={qSel.size}
+                accounts={acctSel.size}
+                seo={seo}
+                social={useSocial}
+                onDone={finish}
+              />
             )}
           </div>
         </div>
 
-        {step < 5 && (
+        {at !== "launch" && (
           <div className="border-t border-line bg-bg">
             <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3 sm:px-8">
               <Button variant="ghost" icon={<ArrowLeft size={14} />} onClick={() => (step ? setStep(step - 1) : navigate("/"))}>
                 {step ? "Back" : "Cancel"}
               </Button>
               <div className="flex items-center gap-2">
-                {(step === 1 || step === 2) && (
+                {(at === "found" || at === "connect") && (
                   <Button variant="ghost" onClick={() => setStep(step + 1)}>
                     Skip for now
                   </Button>
                 )}
                 <Button variant="primary" disabled={!canNext} onClick={() => setStep(step + 1)}>
-                  {step === 4 ? "Finish setup" : "Continue"} <ArrowRight size={14} />
+                  {flow[step + 1] === "launch" ? "Finish setup" : "Continue"} <ArrowRight size={14} />
                 </Button>
               </div>
             </div>
@@ -810,25 +1006,37 @@ function Launch({
   locs,
   kw,
   comp,
+  questions,
   accounts: acc,
+  seo,
+  social,
   onDone,
 }: {
   name: string;
   locs: number;
   kw: number;
   comp: number;
+  questions: number;
   accounts: number;
+  seo: boolean;
+  social: boolean;
   onDone: () => void;
 }) {
   const tasks = [
     `Importing ${locs} Google Business Profile${locs === 1 ? "" : "s"} and their reviews`,
     `Reading ${websites.length} website${websites.length === 1 ? "" : "s"}`,
-    `Connecting ${acc} social account${acc === 1 ? "" : "s"}`,
-    `Running map scans for ${kw} keywords`,
-    `Benchmarking ${comp} competitors`,
-    "Scanning for conversations to join",
-    "Finding trends that fit",
-    "Writing the first to-dos",
+    ...(social ? [`Connecting ${acc} social account${acc === 1 ? "" : "s"}`] : []),
+    ...(seo
+      ? [
+          `Scanning Google Maps for ${kw} keywords`,
+          `Checking Google search for ${kw} keywords`,
+          `Asking ${engines.map((e) => e.name).join(", ")} ${questions} questions`,
+          `Comparing you with ${comp} competitors`,
+          "Writing the first suggestions",
+        ]
+      : [`Benchmarking ${comp} competitors`]),
+    ...(social ? ["Scanning for conversations to join", "Finding trends that fit"] : []),
+    ...(!seo ? ["Writing the first to-dos"] : []),
   ];
   const [done, setDone] = useState(0);
   useEffect(() => {
@@ -861,11 +1069,12 @@ function Launch({
         <Card className="anim-fade mt-8">
           <div className="text-[13px] text-muted">First look</div>
           <div className="mt-2 font-serif text-[20px]">
-            South Congress is in the top 3 at 31% of nearby searches, Mueller at 18%. We found 7 changes to make, 3 conversations to join
-            and 5 trends that fit.
+            {seo
+              ? `You're in the map's top 3 at 17% of nearby spots, on Google's first page for 3 of ${kw} keywords, and named in 4 of 15 AI answers. We have 7 suggestions to start with${social ? ", 3 conversations to join and 5 trends that fit" : ""}.`
+              : "South Congress is in the top 3 at 31% of nearby searches, Mueller at 18%. We found 7 changes to make, 3 conversations to join and 5 trends that fit."}
           </div>
           <Button className="mt-5" variant="primary" onClick={onDone}>
-            Open {name} <ArrowRight size={14} />
+            {seo ? "See your suggestions" : `Open ${name}`} <ArrowRight size={14} />
           </Button>
         </Card>
       )}

@@ -54,7 +54,7 @@ export const actions: Action[] = [
   {
     id: "gbp_posts",
     feature: "seo",
-    section: "Local SEO",
+    section: "SEO",
     label: `Publish Business Profile posts ${assistant()} wrote`,
     hint: "Weekly updates and offers on Google",
     risk: "low",
@@ -64,7 +64,7 @@ export const actions: Action[] = [
   {
     id: "review_replies_good",
     feature: "reviews",
-    section: "Local SEO",
+    section: "SEO",
     label: "Reply to 4–5★ reviews",
     hint: "Thank-you replies in your voice, never confirming they're a patient",
     risk: "medium",
@@ -74,7 +74,7 @@ export const actions: Action[] = [
   {
     id: "review_replies_bad",
     feature: "reviews",
-    section: "Local SEO",
+    section: "SEO",
     label: "Reply to 1–3★ reviews",
     hint: "Always seen by a person first",
     risk: "high",
@@ -84,7 +84,7 @@ export const actions: Action[] = [
   {
     id: "gbp_details",
     feature: "seo",
-    section: "Local SEO",
+    section: "SEO",
     label: "Change Business Profile categories or description",
     hint: "Can make Google re-verify the profile",
     risk: "high",
@@ -94,7 +94,7 @@ export const actions: Action[] = [
   {
     id: "alt_text",
     feature: "site_health",
-    section: "Local SEO",
+    section: "SEO",
     label: "Write image alt text on your site",
     hint: "",
     risk: "low",
@@ -104,7 +104,7 @@ export const actions: Action[] = [
   {
     id: "schema",
     feature: "site_health",
-    section: "Local SEO",
+    section: "SEO",
     label: "Add or update structured data",
     hint: "Business details search engines read",
     risk: "medium",
@@ -114,7 +114,7 @@ export const actions: Action[] = [
   {
     id: "citations_fix",
     feature: "citations",
-    section: "Local SEO",
+    section: "SEO",
     label: "Correct directory listings",
     hint: "Fix a wrong name, address, phone or hours",
     risk: "medium",
@@ -124,7 +124,7 @@ export const actions: Action[] = [
   {
     id: "articles",
     feature: "content",
-    section: "Local SEO",
+    section: "SEO",
     label: "Publish articles to your site",
     hint: "",
     risk: "medium",

@@ -1,11 +1,11 @@
-// Adding AI questions and competitors by hand, in the small Local SEO section. Keywords have their own dialog
-// (LocalAddKeywords.tsx). Both say what happens next: a question is asked on the next check; a competitor is
+// Adding AI questions and competitors by hand, in the SEO section. Keywords have their own dialog
+// (AddKeywords.tsx). Both say what happens next: a question is asked on the next check; a competitor is
 // read from the map, Google and AI results already collected, so adding one costs one profile lookup.
 
 import { useState } from "react";
 import { Check, MapPin, Plus, Star } from "lucide-react";
-import { Button, cn, fmt, Modal, SearchInput, Textarea } from "../components/ui";
-import { candidates, engines, questionIdeas, type Candidate, type TrackedPrompt } from "../mock/local";
+import { Button, cn, fmt, Modal, SearchInput, Textarea } from "../../components/ui";
+import { candidates, engines, questionIdeas, type Candidate, type TrackedPrompt } from "../../mock/seo";
 
 const clean = (s: string) => s.trim().replace(/\s+/g, " ");
 

@@ -15,7 +15,7 @@ const r = (module: string, id: string, group: string, actions: ResourceEntry["ac
 const access: AccessCatalog = {
   groups: [
     { module: "identity", id: "organization", label: "Organization" },
-    { module: "seo", id: "seo", label: "Local SEO" },
+    { module: "seo", id: "seo", label: "SEO" },
   ],
   resources: [
     r("identity", "organization", "organization", [

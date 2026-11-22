@@ -30,7 +30,7 @@ import Contacts from "./pages/Contacts";
 import Inbox from "./pages/Inbox";
 import Campaigns from "./pages/Campaigns";
 import Workflows from "./pages/Workflows";
-import Local from "./pages/Local";
+import Seo from "./pages/seo/Seo";
 import { useWhitelabel } from "./lib/whitelabel";
 
 // Rank pack now lives inside Rankings (Map pack view); keep old links working.
@@ -38,6 +38,11 @@ function GridRedirect() {
   const [params] = useSearchParams();
   const kw = params.get("kw");
   return <Navigate replace to={`/rankings?view=local${kw ? `&kw=${kw}` : ""}`} />;
+}
+
+function LocalRedirect() {
+  const { tab } = useParams();
+  return <Navigate replace to={tab ? `/seo/${tab}` : "/seo"} />;
 }
 
 // The Action plan merged into To-do; keep old links working.
@@ -63,8 +68,10 @@ export default function App() {
         <Route path="/a/:token" element={<PublicAudit />} />
         <Route element={<Layout />}>
           <Route index element={<CommandCenter />} />
-          {/* Local SEO: the overview and one page per check. */}
-          <Route path="local/:tab?" element={<Local />} />
+          {/* SEO: the overview and one page per check. */}
+          <Route path="seo/:tab?" element={<Seo />} />
+          {/* The SEO pages were at #/local; keep old links working. */}
+          <Route path="local/:tab?" element={<LocalRedirect />} />
           <Route path="rankings" element={<Rankings />} />
           <Route path="rankings/:id" element={<Rankings />} />
           <Route path="grid" element={<GridRedirect />} />

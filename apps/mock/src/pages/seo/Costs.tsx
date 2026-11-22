@@ -1,10 +1,10 @@
-// What the Local SEO section costs in DataForSEO calls (#/local/costs). Change any setting or price on the left;
+// What the SEO section costs in DataForSEO calls (#/seo/costs). Change any setting or price on the left;
 // the table on the right shows every call a Location makes in a month and what it costs. For the people building
 // and pricing the product, not for business owners. The settings stay in this browser.
 
 import { useEffect, useState, type ReactNode } from "react";
 import { RotateCcw } from "lucide-react";
-import { Button, Card, Checkbox, cn, fmt, Input, Select } from "../components/ui";
+import { Button, Card, Checkbox, cn, fmt, Input, Select } from "../../components/ui";
 import {
   aiEngines,
   areas,
@@ -17,13 +17,15 @@ import {
   type Frequency,
   type Prices,
   type Settings,
-} from "../mock/costs";
+} from "../../mock/costs";
 
-const KEY = "gw-local-costs";
+const KEY = "gw-seo-costs";
+/** Where these were saved before the section was renamed to SEO; read once so nothing is lost. */
+const OLD_KEY = "gw-local-costs";
 
 function load(): { s: Settings; p: Prices } {
   try {
-    const saved = JSON.parse(localStorage.getItem(KEY) ?? "null");
+    const saved = JSON.parse(localStorage.getItem(KEY) ?? localStorage.getItem(OLD_KEY) ?? "null");
     if (saved)
       return {
         s: { ...defaultSettings, ...saved.s },

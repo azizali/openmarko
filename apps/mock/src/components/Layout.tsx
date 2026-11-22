@@ -62,26 +62,27 @@ type Nav = Leaf & {
 };
 
 // Every page is one click from the sidebar, under a section per kind of marketing
-// (SEO, SEO legacy, Social, Ads, Customers, Sales). Groups list their pages as sub-items; the group holding
+// (SEO / AEO / GEO, SEO legacy, Social, Ads, Customers, Sales). Groups list their pages as sub-items; the group holding
 // the current page is open, the rest open with their chevron. Marko's setup
 // (Brand voice, Skills) and Activity live in Settings.
 const nav: Nav[] = [
   { to: "/", label: "Home", icon: LayoutGrid },
   { to: "/todo", label: "To-do", icon: ListChecks },
   { to: "/reports", label: "Reports", icon: FileText },
-  // Local SEO: four weekly checks and what to do about them. The pages it replaces sit under SEO legacy.
+  // SEO: four weekly checks (Google Maps, Google search, AI answers, competitors) and what to do about them.
+  // Search engines, answer engines and generative engines, hence the section name. The pages it replaces sit under SEO legacy.
   {
-    to: "/local",
-    label: "Local SEO",
+    to: "/seo",
+    label: "SEO",
     icon: MapPin,
-    section: "SEO",
+    section: "SEO / AEO / GEO",
     children: [
-      { to: "/local", label: "Overview" },
-      { to: "/local/maps", label: "Google Maps ranking" },
-      { to: "/local/keywords", label: "Keywords" },
-      { to: "/local/ai", label: "AI answers" },
-      { to: "/local/competitors", label: "Competitors" },
-      { to: "/local/costs", label: "API costs" },
+      { to: "/seo", label: "Overview" },
+      { to: "/seo/maps", label: "Google Maps ranking" },
+      { to: "/seo/keywords", label: "Keywords" },
+      { to: "/seo/ai", label: "AI answers" },
+      { to: "/seo/competitors", label: "Competitors" },
+      { to: "/seo/costs", label: "API costs" },
     ],
   },
   {
@@ -624,7 +625,7 @@ export default function Layout() {
         >
           <div className="mb-5 flex min-h-9 flex-wrap items-center justify-between gap-3 print:hidden">
             {/* Detail pages one level down (an audit issue, a competitor) get a way back. */}
-            {loc.pathname.split("/").length > 2 && !/^\/(prospects|social|settings|local)\//.test(loc.pathname) ? (
+            {loc.pathname.split("/").length > 2 && !/^\/(prospects|social|settings|seo)\//.test(loc.pathname) ? (
               <NavLink
                 to={`/${loc.pathname.split("/")[1]}`}
                 className="inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-fg"

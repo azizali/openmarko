@@ -143,7 +143,7 @@ export type GroupId = "seo" | "social" | "ads" | "customers" | "sales" | "marko"
 export const groups: { id: GroupId; label: string; resources: { id: Resource; label: string }[] }[] = [
   {
     id: "seo",
-    label: "Local SEO",
+    label: "SEO",
     resources: [
       { id: "seo", label: "Business Profile" },
       { id: "rankings", label: "Rankings & competitors" },

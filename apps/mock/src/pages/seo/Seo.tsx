@@ -1,19 +1,19 @@
-// Local SEO (#/local), the SEO section of the sidebar. The overview is two columns: what we check (left) and what to do about
-// it (right). Each check opens its own page (#/local/maps, /keywords, /ai, /competitors) with what is behind the
+// SEO (#/seo), under SEO / AEO / GEO in the sidebar. The overview is two columns: what we check (left) and what to do about
+// it (right). Each check opens its own page (#/seo/maps, /keywords, /ai, /competitors) with what is behind the
 // number. Every suggestion says which check it should move and what it was based on; applying it changes the
 // check. The sidebar lists the overview and each check; the older SEO pages sit under SEO legacy.
 
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { Check, ChevronRight, Plus, MapPin, Search, Sparkles, Users } from "lucide-react";
-import { Button, Card, cn, Badge, Segmented, Textarea } from "../components/ui";
-import { GridThumb } from "../components/GridMap";
-import { AiPage, Change, CompetitorsPage, KeywordsPage } from "./LocalDetail";
-import { MapsPage } from "./LocalMaps";
-import { AddKeywords } from "./LocalAddKeywords";
-import { CostsPage } from "./LocalCosts";
-import { AddCompetitor, AddQuestions } from "./LocalAdd";
-import type { Candidate } from "../mock/local";
+import { Button, Card, cn, Badge, Segmented, Textarea } from "../../components/ui";
+import { GridThumb } from "../../components/GridMap";
+import { AiPage, Change, CompetitorsPage, KeywordsPage } from "./Detail";
+import { MapsPage } from "./Maps";
+import { AddKeywords } from "./AddKeywords";
+import { CostsPage } from "./Costs";
+import { AddCompetitor, AddQuestions } from "./Add";
+import type { Candidate } from "../../mock/seo";
 import {
   aiNamed,
   baseKeywords,
@@ -33,7 +33,7 @@ import {
   type Suggestion,
   type TrackedKeyword,
   type TrackedPrompt,
-} from "../mock/local";
+} from "../../mock/seo";
 
 type Filter = "all" | Suggestion["helps"];
 
@@ -53,7 +53,7 @@ const checkIds = Object.keys(checkNames) as CheckId[];
 
 type Row = { label: ReactNode; value: ReactNode };
 
-export default function Local() {
+export default function Seo() {
   const { tab } = useParams();
   const navigate = useNavigate();
   const page = checkIds.find((c) => c === tab) ?? null;
@@ -132,7 +132,7 @@ export default function Local() {
   const openCount = (id: CheckId) => (id === "competitors" ? 0 : todo.filter((s) => s.helps === id).length);
   const showFor = (id: Suggestion["helps"]) => {
     setFilter(id);
-    navigate("/local");
+    navigate("/seo");
   };
 
   // Each check: one number, then the three rows that say the most. The rest is on its page.
@@ -270,7 +270,7 @@ export default function Local() {
         </div>
       ) : (
         <div>
-          <h1 className="font-serif text-[32px] leading-[1.1] tracking-[-0.02em]">Local SEO</h1>
+          <h1 className="font-serif text-[32px] leading-[1.1] tracking-[-0.02em]">SEO</h1>
           <p className="mt-1.5 max-w-2xl text-[14px] text-muted">
             We check four things every week. Each suggestion on the right comes from one of them, and says what it was based on.
           </p>
@@ -288,7 +288,7 @@ export default function Local() {
                   return (
                     <Link
                       key={c.id}
-                      to={`/local/${c.id}`}
+                      to={`/seo/${c.id}`}
                       className="group block rounded-xl border border-line bg-surface p-4 shadow-card transition-colors hover:border-line-strong"
                     >
                       <p className="flex items-center gap-1.5 text-[13px] text-muted">

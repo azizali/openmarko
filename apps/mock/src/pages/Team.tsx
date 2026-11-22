@@ -277,7 +277,7 @@ export default function Team() {
   );
 }
 
-/** One line per group the role reaches, e.g. "Social media: Publish · Local SEO: View". */
+/** One line per group the role reaches, e.g. "Social media: Publish · SEO: View". */
 function RoleSummary({ spec }: { spec: RoleSpec }) {
   const parts = groups
     .map((g) => {

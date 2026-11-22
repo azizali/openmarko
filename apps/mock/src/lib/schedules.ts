@@ -52,7 +52,7 @@ export const jobs: Job[] = [
   {
     id: "profile",
     feature: "seo",
-    section: "Local SEO",
+    section: "SEO",
     label: "Business Profile sync",
     what: "New reviews, posts and insights from Google",
     options: ["hourly", "6h", "daily"],
@@ -62,7 +62,7 @@ export const jobs: Job[] = [
   {
     id: "rank",
     feature: "rankings",
-    section: "Local SEO",
+    section: "SEO",
     label: "Rank scan",
     what: "Every keyword across the map grid",
     options: ["daily", "3d", "weekly", "paused"],
@@ -73,7 +73,7 @@ export const jobs: Job[] = [
   {
     id: "competitors",
     feature: "rankings",
-    section: "Local SEO",
+    section: "SEO",
     label: "Competitor refresh",
     what: "Competitors' profiles, reviews and links",
     options: ["weekly", "monthly", "paused"],
@@ -84,7 +84,7 @@ export const jobs: Job[] = [
   {
     id: "ai",
     feature: "ai_answers",
-    section: "Local SEO",
+    section: "SEO",
     label: "AI answer check",
     what: "Asks ChatGPT, Gemini and others who they recommend",
     options: ["weekly", "monthly", "paused"],
@@ -95,7 +95,7 @@ export const jobs: Job[] = [
   {
     id: "citations",
     feature: "citations",
-    section: "Local SEO",
+    section: "SEO",
     label: "Citation check",
     what: "Your listings on 18 directories",
     options: ["weekly", "monthly", "paused"],
@@ -106,7 +106,7 @@ export const jobs: Job[] = [
   {
     id: "links",
     feature: "citations",
-    section: "Local SEO",
+    section: "SEO",
     label: "Backlink refresh",
     what: "Links to you and to competitors",
     options: ["weekly", "monthly", "paused"],
@@ -117,7 +117,7 @@ export const jobs: Job[] = [
   {
     id: "audit",
     feature: "site_health",
-    section: "Local SEO",
+    section: "SEO",
     label: "Site crawl",
     what: "Every page on your site, mobile and desktop",
     options: ["daily", "weekly", "monthly", "paused"],

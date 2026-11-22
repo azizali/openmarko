@@ -1,5 +1,5 @@
-// What the Local SEO section costs to run in DataForSEO calls, per Location per month. Pure functions over two
-// editable inputs: the settings (how much is tracked, how often) and the unit prices. #/local/costs shows it.
+// What the SEO section costs to run in DataForSEO calls, per Location per month. Pure functions over two
+// editable inputs: the settings (how much is tracked, how often) and the unit prices. #/seo/costs shows it.
 //
 // Prices are raw DataForSEO USD, before any markup, as OpenSEO's metering uses them
 // (open-seo src/server/lib/dataforseo/pricing.ts and src/shared/{rank-tracking,ai-visibility}.ts,

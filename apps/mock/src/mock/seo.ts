@@ -1,4 +1,4 @@
-// Data for the small Local SEO section (#/local): four things we check, and the suggestions that come out of them.
+// Data for the SEO section (#/seo): four things we check, and the suggestions that come out of them.
 // Competitors are not one list: who is ahead depends on the keyword and on where the person searched (the map,
 // Google's normal results, or an AI assistant), so everything here is worked out per keyword and per channel.
 // Each check and each kind of suggestion names where its data would come from, so the page doubles as a build list.

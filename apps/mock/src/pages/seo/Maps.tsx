@@ -1,4 +1,4 @@
-// Google Maps ranking, in the small Local SEO section (#/local/maps). Same detail as the full Rankings page
+// Google Maps ranking, in the SEO section (#/seo/maps). Same detail as the full Rankings page
 // (average position, each spot's top 3, competitors' profiles, history), but one question at a time:
 // three numbers for everything, a keyword list, and for the chosen keyword a sentence that says what is going
 // on, then Map / Why they're ahead / Over time. Only one of the three is on screen.
@@ -6,11 +6,11 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { X } from "lucide-react";
-import { Card, cn, fmt, LineChart, Segmented } from "../components/ui";
-import { GridLegend, GridMap, GridThumb } from "../components/GridMap";
-import { estimateGridCost } from "../lib/api";
-import { business, type Competitor, type GridPoint } from "../mock/mock";
-import { Bar, Change, Source } from "./LocalDetail";
+import { Card, cn, fmt, LineChart, Segmented } from "../../components/ui";
+import { GridLegend, GridMap, GridThumb } from "../../components/GridMap";
+import { estimateGridCost } from "../../lib/api";
+import { business, type Competitor, type GridPoint } from "../../mock/mock";
+import { Bar, Change, Source } from "./Detail";
 import {
   avgPosition,
   baseKeywords,
@@ -26,7 +26,7 @@ import {
   weekLabels,
   you,
   type TrackedKeyword,
-} from "../mock/local";
+} from "../../mock/seo";
 
 type View = "map" | "why" | "time";
 
