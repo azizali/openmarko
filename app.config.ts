@@ -16,7 +16,7 @@ export const appConfig = {
   modules: {
     /** Plans, Entitlements, metering and Stripe. Off: every Organization has every feature, unlimited. */
     billing: true,
-    /** Partners managing Client Organizations, consent and whitelabel brand. */
+    /** Partners creating and managing Client Organizations, and their whitelabel brand. */
     partners: true,
     /** Models by name through many vendors, conversations, assistants and the embeddable chat widget. */
     ai: true,

@@ -1,6 +1,6 @@
 # Glossary
 
-The words the code, the docs and the screens use. Each Project built on the boilerplate adds its own below these.
+The words the code, the docs and the screens use. Each app forked from the boilerplate adds its own below these.
 
 **App**:
 The product this repository is: one deploy, one database. In the Admin area, "the app's own" means something that belongs to the app rather than to an Organization: its email provider, its default model key.

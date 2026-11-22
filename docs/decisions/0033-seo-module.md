@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-22
-- Affects: modules/seo, modules/integrations, app.config.ts
+- Affects: seo, integrations, app.config.ts
 
 ## Context
 

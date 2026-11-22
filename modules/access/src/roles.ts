@@ -7,7 +7,7 @@ import { z } from "zod";
 
 const levels = ["none", "view", "edit", "publish", "manage"] as const;
 
-/** The spec the editor sends. Resources, groups and actions are checked against the Project's catalog. */
+/** The spec the editor sends. Resources, groups and actions are checked against the app's catalog. */
 export const roleSpecSchema = z.object({
   name: z.string().min(1).max(40),
   description: z.string().max(200).default(""),

@@ -2,11 +2,11 @@
 
 - Status: Accepted
 - Date: 2026-10-31
-- Affects: platform/backend, everything that moves off the mock
+- Affects: kernel, api, worker
 
 ## Context
 
-The mock ([ADR 0001](0001-mock-first.md)) is ready to be backed by a real service. The backend must be API-first and headless: the UI is one client of it, not part of it. Several choices were already made in earlier ADRs: Better Auth for roles ([0003](0003-roles-compile-to-better-auth.md)), credentials kept server-side, and `data/*.ts` files the server can import.
+The mock is ready to be backed by a real service. The backend must be API-first and headless: the UI is one client of it, not part of it. Several choices were already made in earlier ADRs: Better Auth for roles ([0003](0003-roles-compile-to-better-auth.md)), credentials kept server-side, and `data/*.ts` files the server can import.
 
 ## Decision
 
@@ -22,7 +22,7 @@ The mock ([ADR 0001](0001-mock-first.md)) is ready to be backed by a real servic
 | Jobs, schedules | pg-boss (queue tables live in Postgres, schema `pgboss`) |
 | Events between modules | Typed in-process bus plus an outbox table ([0009](0009-events-through-an-outbox.md)) |
 | Secrets | Envelope-encrypted credentials table ([0010](0010-envelope-encrypted-credentials.md)) |
-| Tests | `bun test` against a throwaway database per test file (`platform/packages/testkit`) |
+| Tests | `bun test` against a throwaway database per test file (`packages/testkit`) |
 | Deploy | One Docker image (`oven/bun`) with two processes: `api` and `worker` |
 
 Three services: the frontend on Vercel, the backend on Fly.io or a VPS, and the database on Neon. Vercel forwards `/api/*` to the backend, so the browser always calls its own domain. This keeps login cookies working on whitelabel domains ([0004](0004-whitelabel-per-partner.md)). The backend reads the original host to pick the Partner.

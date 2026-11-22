@@ -74,16 +74,3 @@ export function safeEqual(a: string | null | undefined, b: string | null | undef
 export function hmacHex(secret: string, body: string): string {
   return createHmac("sha256", secret).update(body).digest("hex");
 }
-
-/**
- * Standard Webhooks signing (standardwebhooks.com), for what the platform sends to a Project's backend. The secret
- * is `whsec_<base64 key>`; the signature is `v1,<base64 HMAC-SHA256 of "<id>.<timestamp>.<body>">`. Projects check
- * it with @app/sdk's verifyWebhook.
- */
-export function signWebhook(secret: string, id: string, timestamp: number, body: string): string {
-  const key = Buffer.from(secret.replace(/^whsec_/, ""), "base64");
-  return `v1,${createHmac("sha256", key).update(`${id}.${timestamp}.${body}`).digest("base64")}`;
-}
-
-/** A new Standard Webhooks secret: 24 random bytes. */
-export const newWebhookSecret = () => `whsec_${randomBytes(24).toString("base64")}`;

@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-31
-- Affects: platform/organizations-partners, platform/access-roles, platform/backend
+- Affects: organizations, partners, access
 
 ## Context
 

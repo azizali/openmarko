@@ -2,7 +2,7 @@
 
 - Status: Partly superseded by [0024](0024-partners-have-no-hosts-of-their-own.md) (hosts)
 - Date: 2026-10-31 (recorded)
-- Affects: platform/whitelabel, platform/organizations-partners, features/marko, features/sales
+- Affects: partners, web
 
 ## Context
 

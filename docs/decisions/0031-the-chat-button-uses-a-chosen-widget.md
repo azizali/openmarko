@@ -24,4 +24,4 @@ The chat button inside the app was a plain chat with the default model: no instr
 - The owner's Plan limit is the help bot's budget. When it runs out, the bot stops for everyone who uses it.
 - A Partner can't stop a Client from choosing its own widget.
 - A chat belongs to the assistant it started with, so changing the chosen widget starts a fresh list of past chats in the app. The earlier ones are kept.
-- An assistant has no tools yet, only instructions, a model and knowledge ([0014](0014-llms-are-integrations-with-a-platform-default.md)). Tools will arrive in the same place.
+- An assistant has no tools yet, only instructions, a model and knowledge ([0014](0014-llms-are-integrations-with-an-app-default.md)). Tools will arrive in the same place.

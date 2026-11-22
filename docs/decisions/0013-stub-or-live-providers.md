@@ -2,7 +2,7 @@
 
 - Status: Accepted, how a mode is chosen amended by [0029](0029-stub-or-live-is-set-on-the-connection.md)
 - Date: 2026-10-31
-- Affects: platform/integrations, platform/backend, every module that calls a provider
+- Affects: integrations, every module that calls a provider
 
 ## Context
 

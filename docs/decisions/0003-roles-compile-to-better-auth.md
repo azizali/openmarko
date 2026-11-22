@@ -1,8 +1,8 @@
 # 0003. Roles are levels that compile to Better Auth permissions
 
-- Status: Accepted. Amended by [0021](0021-roles-are-built-from-each-projects-modules.md): the Actions come from each Project's modules.
+- Status: Accepted
 - Date: 2026-10-31 (recorded)
-- Affects: platform/access-roles, every feature
+- Affects: access, every module
 
 ## Context
 
