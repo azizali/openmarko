@@ -1,7 +1,18 @@
 # SEO: data model
 
-Status: **agreed, not built**. Q1 to Q12 refer to the planning questions; every one is decided below. When the
-module is built this file moves into the module's docs and the diagrams follow `modules/seo/src/schema.ts`.
+Status: **built** (`modules/seo/src/schema.ts`, migration `0004_seo`). Q1 to Q12 refer to the planning questions; every one
+is decided below. ADR 0033 records the decisions.
+
+What changed while building (2026-11-22):
+
+- Locations are checked on **automation's schedule** (one `automation.schedules` row per Location, job `seo.check`), so there
+  is no `next_check_at`. Each cycle of checks is one automation Run; its cost is the sum of its provider calls.
+- `locations` also keeps `city`, `country_code`, `services` (keyword and question ideas come from them) and `engines` (the
+  AI assistants its questions are asked of). `check_every` is `daily`, `weekly` or `monthly`.
+- `keyword_metrics` is keyed by `country_code` (two letters) rather than a provider location code.
+- `checks` also keeps `queue`, `calls` and `error`; its status is `running`, `filing` (claimed by the one collection that
+  files it), `done` or `failed`. `provider_tasks.raw` holds the normalised result and `error` why a task failed.
+- `suggestions.score` orders the list (higher first).
 
 Decided (2026-11-21):
 
@@ -104,7 +115,7 @@ erDiagram
     keyword_metrics {
         uuid id PK
         text term
-        int location_code "DataForSEO / Google Ads location"
+        text country_code "two letters"
         text language_code
         int monthly_searches
         numeric cpc
@@ -118,7 +129,7 @@ erDiagram
   not a list somebody types.
 - `place_snapshots` keeps at most one row per place per day. Maps results already carry rating, review count,
   categories and claimed, so most snapshots cost nothing. New reviews a month is the change between two snapshots.
-- `keyword_metrics` is unique on `(term, location_code, language_code)` and refreshed monthly, once, however many
+- `keyword_metrics` is unique on `(term, country_code, language_code)` and refreshed monthly, once, however many
   Organizations track the term.
 
 ## 2. What an Organization tracks
@@ -146,13 +157,15 @@ erDiagram
         float lat
         float lng
         text timezone
-        int search_location_code
+        text city
+        text country_code
         text language_code
+        text_array services
+        text_array engines
         text status "draft | active | paused | archived"
         smallint grid_size "5, 7 or 9"
         int grid_radius_m
-        text check_every "weekly | biweekly | monthly"
-        timestamptz next_check_at "the scheduler's index"
+        text check_every "daily | weekly | monthly"
         uuid gbp_connection_id FK "integrations.connections"
         text gbp_location_name "locations/123..."
         text created_by
@@ -210,7 +223,10 @@ erDiagram
         text organization_id FK
         uuid location_id FK
         text kind "maps | organic | ai"
-        text status "queued | running | done | failed"
+        text status "running | filing | done | failed"
+        text queue "standard | priority"
+        int calls
+        text error
         uuid run_id FK "automation.runs, Q4"
         int calls
         bigint cost_micros
@@ -379,6 +395,7 @@ erDiagram
         jsonb evidence "list of sentences"
         jsonb payload "typed per kind"
         text fingerprint "unique per Location"
+        float score
         text status "open | applied | dismissed | expired"
         uuid check_id FK
         uuid task_id FK "automation.tasks, Q4"

@@ -24,6 +24,8 @@ modules/             one folder per module: schema.ts (its tables), module.ts (i
   ai *               models by name, conversations, streaming chat, assistants, the chat widget
   knowledge *        knowledge bases, documents, ingesting, hybrid search (pgvector)
   automation *       runs, schedules, Tasks with Apply and Undo, Autopilot, the Activity log's routes
+  seo *              Locations, Google Maps grids, Google search, AI answers, competitors, suggestions, SEO onboarding;
+                     search data through integrations (`search.*`, `places.find`, `profile.manage`). Needs automation.
 packages/
   kernel             config (env + app.config), db, ids, errors, crypto, events (outbox), module contract,
                      activity log, Better Auth table references, the hooks optional modules fill (billing, knowledge),
@@ -57,7 +59,8 @@ The same modules, composed without routes. pg-boss runs each module's jobs (one 
 
 ## Data
 
-- Postgres, one schema per module (`ai`, `billing`, `integrations`, `knowledge`, `partners`, `automation`, `core`), plus `auth` (Better Auth's) and `pgboss`.
+- Postgres, one schema per module (`ai`, `billing`, `integrations`, `knowledge`, `partners`, `automation`, `seo`, `core`), plus `auth` (Better Auth's) and `pgboss`.
+- `seo` also keeps a public catalog shared by every Organization (`places`, `place_snapshots`, `keyword_metrics`): public Google facts with no `organization_id` ([data model](features/seo/data-model.md), ADR 0033).
 - UUIDv7 ids made in the app. Rows that belong to an Organization reference `auth.organization` and cascade on delete.
 - Better Auth's tables are created by its own migration; ours by Drizzle (`packages/kernel/drizzle`). `scripts/migrate.ts` runs both, in that order.
 - Secrets (provider keys) are envelope-encrypted with `MASTER_KEY_V<n>` and stored apart from their Connection.

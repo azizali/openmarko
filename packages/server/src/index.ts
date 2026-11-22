@@ -29,6 +29,7 @@ import { partnersModule, partnerRoutes } from "@app/partners";
 import { billingModule, billingRoutes } from "@app/billing";
 import { integrationsModule, integrationRoutes } from "@app/integrations";
 import { automationModule, automationRoutes } from "@app/automation";
+import { seoModule, seoRoutes } from "@app/seo";
 import { cors } from "./cors";
 
 export const registry: Record<ModuleId, ModuleDefinition> = {
@@ -44,6 +45,7 @@ export const registry: Record<ModuleId, ModuleDefinition> = {
   ai: aiModule,
   knowledge: knowledgeModule,
   partners: partnersModule,
+  seo: seoModule,
 };
 
 export type Composed = { parts: (ModuleParts & { id: string })[]; modules: ModuleDefinition[] };
@@ -186,7 +188,8 @@ export function apiShape(ctx: AppContext) {
     .use(messagingRoutes(ctx))
     .use(aiRoutes(ctx))
     .use(knowledgeRoutes(ctx))
-    .use(partnerRoutes(ctx));
+    .use(partnerRoutes(ctx))
+    .use(seoRoutes(ctx));
 }
 
 /** The type the frontend hands to Eden: `treaty<Api>(url)`. */

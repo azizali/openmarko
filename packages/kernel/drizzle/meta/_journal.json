@@ -29,6 +29,13 @@
       "when": 1794253406373,
       "tag": "0003_builtin_assistant",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795328797207,
+      "tag": "0004_seo",
+      "breakpoints": true
     }
   ]
 }

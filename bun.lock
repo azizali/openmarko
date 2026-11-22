@@ -20,6 +20,7 @@
         "@app/messaging": "workspace:*",
         "@app/organizations": "workspace:*",
         "@app/partners": "workspace:*",
+        "@app/seo": "workspace:*",
         "@app/server": "workspace:*",
         "@app/settings": "workspace:*",
         "@app/shared": "workspace:*",
@@ -154,6 +155,9 @@
     "modules/partners": {
       "name": "@app/partners",
     },
+    "modules/seo": {
+      "name": "@app/seo",
+    },
     "modules/settings": {
       "name": "@app/settings",
     },
@@ -215,6 +219,8 @@
     "@app/organizations": ["@app/organizations@workspace:modules/organizations"],
 
     "@app/partners": ["@app/partners@workspace:modules/partners"],
+
+    "@app/seo": ["@app/seo@workspace:modules/seo"],
 
     "@app/server": ["@app/server@workspace:packages/server"],
 

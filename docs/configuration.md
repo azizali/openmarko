@@ -12,6 +12,7 @@
 | `modules.ai` | Models by name, conversations, assistants, the chat widget. |
 | `modules.knowledge` | Knowledge bases and hybrid search. Needs `ai`. |
 | `modules.automation` | Runs, schedules, Tasks, Autopilot, the Activity page. |
+| `modules.seo` | Local SEO: Locations, Google Maps grids, Google search, AI answers, competitors, suggestions, SEO onboarding. Needs `automation`. Plans sell it with `limit.seo_locations`, `limit.seo_keywords` and `limit.seo_questions` (per Location), `limit.seo_grid_size` (5, 7 or 9) and `limit.seo_checks_per_month` (daily 30, weekly 4, monthly 1); a missing limit is unlimited. |
 | `auth.magicLink` | Passwordless sign-in links. Needs the app to send email. |
 | `auth.openSignUp` | Off: people join only by invitation, or an admin creates them. |
 | `auth.verifyEmail` | Send a confirmation after sign-up (when the app can send email). Not required to sign in. |

@@ -39,6 +39,11 @@ export async function startRun(
   return id;
 }
 
+/** Names a Run the way people read it in Activity (a schedule's Run starts with its job's name). */
+export async function labelRun(ctx: AppContext, runId: string, label: string): Promise<void> {
+  await ctx.db.update(runs).set({ label }).where(eq(runs.id, runId));
+}
+
 export async function setRunProgress(ctx: AppContext, runId: string, progress: number): Promise<void> {
   await ctx.db
     .update(runs)

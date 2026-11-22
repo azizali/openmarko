@@ -64,7 +64,19 @@ if (moduleOn(ctx, "billing")) {
     name: "Pro",
     description: "Higher limits and overage billing.",
     sort: 1,
-    entitlements: Object.fromEntries(appConfig.features.map((f) => [`feature.${f.id}`, 1])),
+    entitlements: {
+      ...Object.fromEntries(appConfig.features.map((f) => [`feature.${f.id}`, 1])),
+      // SEO is sold by limits: Locations, keywords and questions per Location, grid size, checks a month.
+      ...(moduleOn(ctx, "seo")
+        ? {
+            "limit.seo_locations": 3,
+            "limit.seo_keywords": 20,
+            "limit.seo_questions": 10,
+            "limit.seo_grid_size": 7,
+            "limit.seo_checks_per_month": 4,
+          }
+        : {}),
+    },
     meters: [
       { meter: "llm.tokens", included: 2_000_000, overage: "charge", unitPriceMicros: 3 },
       { meter: "email.sent", included: 5000, overage: "charge", unitPriceMicros: 500 },
@@ -135,6 +147,14 @@ if (!have.has("openai")) {
     createdBy: adminId,
   });
 }
+// SEO's search data and business lookup, as stubs: every Location set up in development lives in the stub market.
+if (moduleOn(ctx, "seo"))
+  for (const [providerId, label, secrets] of [
+    ["dataforseo", "DataForSEO (stub)", { password: "stub" }],
+    ["google_places", "Google Places (stub)", { apiKey: "stub" }],
+  ] as const)
+    if (!have.has(providerId))
+      await connect(ctx, { organizationId: null, providerId, target: { type: "app", id: null }, label, secrets, createdBy: adminId });
 // Only when unset, so running this again keeps what you've chosen since (a real default model, say).
 if (!(await readAppSetting(ctx, "messaging")))
   await writeAppSetting(ctx, "messaging", { fromEmail: "hello@example.test", fromName: appConfig.name, replyTo: "" }, { by: adminId });

@@ -86,3 +86,30 @@ What a Partner calls an Organization it manages. It is an Organization, not a se
 
 **Whitelabel**:
 A Partner's name, logo, colour and assistant name in place of ours, on everything its Clients and its own people see.
+
+## SEO
+
+**Location**:
+A business an Organization tracks in SEO: a place customers visit, with at most one Google Business Profile. An Organization can have several. A draft until it's launched.
+_Avoid_: business (in code), store, branch
+
+**Website**:
+A domain one or more Locations use. Google search positions are read for it.
+
+**Check**:
+One look at where a Location shows: Google Maps (a grid of searches around it), Google search, or AI answers. A cycle of checks runs on the Location's schedule and is one Run.
+_Avoid_: scan (except for one keyword's map grid), audit
+
+**Grid**:
+The spots around a Location that Google Maps is searched from, 5, 7 or 9 a side. "Top 3 in 31 of 49 spots" counts them.
+
+**Competitor**:
+A business or site that shows up for a Location's keywords or questions. Found, not typed in; a Member can add one by hand or hide one. Different per channel (Maps, Google search, AI answers) and per keyword.
+
+**Question**:
+What a Location asks the AI assistants, the way a customer would ask it.
+_Avoid_: prompt (in what people read)
+
+**Suggestion**:
+Something to do next for a Location, made from what the checks found, saying what it was based on. Applying one is a Task, so it can be undone.
+_Avoid_: recommendation, insight, action item

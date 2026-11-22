@@ -43,7 +43,7 @@ describe("custom Roles compile to permissions (ADR 0003)", () => {
     expect(() => toRoleSpec(access, "x", { name: "x", base: "none", groups: {}, resources: { reviews: ["view"] } })).toThrow(
       "Unknown resource reviews",
     );
-    expect(() => toRoleSpec(access, "x", { name: "x", base: "none", groups: { seo: "view" }, resources: {} })).toThrow("Unknown group seo");
+    expect(() => toRoleSpec(access, "x", { name: "x", base: "none", groups: { crm: "view" }, resources: {} })).toThrow("Unknown group crm");
   });
 
   test("a built-in role name can't be reused", async () => {

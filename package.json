@@ -58,6 +58,7 @@
     "@app/messaging": "workspace:*",
     "@app/organizations": "workspace:*",
     "@app/partners": "workspace:*",
+    "@app/seo": "workspace:*",
     "@app/server": "workspace:*",
     "@app/settings": "workspace:*",
     "@app/shared": "workspace:*",

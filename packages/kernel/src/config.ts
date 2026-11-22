@@ -108,6 +108,7 @@ export function loadConfig(rawEnv: Record<string, string | undefined> = process.
 
   const enabled = configuredModules();
   if (appConfig.modules.knowledge && !appConfig.modules.ai) problems.push("app.config.ts: modules.knowledge needs modules.ai");
+  if (appConfig.modules.seo && !appConfig.modules.automation) problems.push("app.config.ts: modules.seo needs modules.automation");
 
   const masterKeys: Record<string, string> = {};
   for (const [k, v] of Object.entries(env)) {
