@@ -133,14 +133,25 @@ export function LocationSwitcher() {
 }
 
 /** A page's header: its name, one line on what it answers, the Location switcher, and its own actions. */
-export function SeoHeader({ tab, sub, actions }: { tab: SeoTab; sub: string; actions?: ReactNode }) {
+export function SeoHeader({
+  tab,
+  sub,
+  actions,
+  switcher = true,
+}: {
+  tab: SeoTab;
+  sub: string;
+  actions?: ReactNode;
+  /** False where the page lists the Locations itself (settings), so there's one way to choose, not two. */
+  switcher?: boolean;
+}) {
   return (
     <PageHeader
       title={tabNames[tab]}
       sub={sub}
       actions={
         <>
-          <LocationSwitcher />
+          {switcher && <LocationSwitcher />}
           {actions}
         </>
       }

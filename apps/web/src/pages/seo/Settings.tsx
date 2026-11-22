@@ -2,8 +2,8 @@
 // Change opens the side panel. Only people who manage SEO change anything; checks stay within the Plan's limits.
 // The fields for services and for checks are shared with setup (fields.tsx).
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router";
-import { Badge, Button, Card, CardHeader, Drawer, Field, Input, NewButton, Select, cn } from "../../components/ui";
+import { useNavigate, useSearchParams } from "react-router";
+import { Badge, Button, Card, CardHeader, Checkbox, Drawer, Field, Input, NewButton, Select, cn } from "../../components/ui";
 import { Feedback, LoadError, useFeedback, useToast } from "../../components/Feedback";
 import { Row } from "../../components/Table";
 import { messageOf } from "../../lib/api";
@@ -15,7 +15,7 @@ import { ChecksFields, ServicesField, connectGoogle, everyLabel, useOAuthError, 
 // ---------- The page ----------
 
 export default function Settings() {
-  const { orgId, location, can, reload } = useSeo();
+  const { orgId, location, locations, can, reload } = useSeo();
   const manage = can("manage");
   const limits = useLoad(() => seoApi(orgId).limits.get(), [orgId]);
   const [open, setOpen] = useState<"business" | "checks" | "profile" | null>(null);
@@ -38,52 +38,63 @@ export default function Settings() {
     <>
       <SeoHeader
         tab="settings"
-        sub="How this location is checked, and its Google profile."
+        switcher={false}
+        sub={`Your locations, and how ${location.name} is checked.`}
         actions={manage && <NewButton onClick={() => navigate("/seo/setup")}>Add location</NewButton>}
       />
       {!manage && (
         <p className="mb-4 text-[13.5px] text-muted">Only people who manage SEO can change these. Ask an admin of this organization.</p>
       )}
-      <div className="grid max-w-3xl gap-4">
-        <Card>
-          <CardHeader title="Business" right={change("business")} />
-          <Row label="Name">{location.name}</Row>
-          <Row label="Address">{location.address ?? "—"}</Row>
-          <Row label="Website">{location.website ?? "None"}</Row>
-          <Row label="Services">{location.services.length ? location.services.join(", ") : "None yet"}</Row>
-        </Card>
-        <Card>
-          <CardHeader title="Checks" sub={everyLabel[location.checkEvery as Every]} right={change("checks")} />
-          <Row label="Map grid">
-            {location.gridSize} × {location.gridSize} spots
-          </Row>
-          <Row label="AI assistants">{location.engines.map((e) => engineNames[e] ?? e).join(", ")}</Row>
-          <Row label="Status">
-            <Badge tone={location.status === "active" ? "good" : "neutral"}>{location.status === "active" ? "Checking" : "Paused"}</Badge>
-          </Row>
-          {manage && (
-            <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-4">
-              {location.status === "active" ? (
-                <Button onClick={() => void setStatus("paused")}>Pause checks</Button>
-              ) : (
-                <Button onClick={() => void setStatus("active")}>Resume checks</Button>
-              )}
-              <Button variant="danger" onClick={() => void setStatus("archived")}>
-                Remove location
-              </Button>
-            </div>
+      {/* With several Locations the list sits beside what it chooses, so a click shows its effect at once. */}
+      <div className={cn("grid items-start gap-6", locations.length > 1 ? "max-w-5xl lg:grid-cols-[17rem_minmax(0,1fr)]" : "max-w-3xl")}>
+        {locations.length > 1 && <LocationsList />}
+        <div className="grid gap-4">
+          {locations.length > 1 && (
+            <h2 className="flex items-center gap-2 text-[15px] font-semibold">
+              <span className="truncate">{location.name}</span>
+              <Badge tone={location.status === "active" ? "good" : "neutral"}>{location.status === "active" ? "Checking" : "Paused"}</Badge>
+            </h2>
           )}
-        </Card>
-        <Card>
-          <CardHeader
-            title="Google profile"
-            sub="Linking it lets suggestions be applied with one click, and shows calls and clicks from Google."
-            right={change("profile")}
-          />
-          <Row label="Status">
-            {location.profileLinked ? <Badge tone="good">Linked</Badge> : <span className="text-muted">Not linked</span>}
-          </Row>
-        </Card>
+          <Card>
+            <CardHeader title="Business" right={change("business")} />
+            <Row label="Name">{location.name}</Row>
+            <Row label="Address">{location.address ?? "—"}</Row>
+            <Row label="Website">{location.website ?? "None"}</Row>
+            <Row label="Services">{location.services.length ? location.services.join(", ") : "None yet"}</Row>
+          </Card>
+          <Card>
+            <CardHeader title="Checks" sub={everyLabel[location.checkEvery as Every]} right={change("checks")} />
+            <Row label="Map grid">
+              {location.gridSize} × {location.gridSize} spots
+            </Row>
+            <Row label="AI assistants">{location.engines.map((e) => engineNames[e] ?? e).join(", ")}</Row>
+            <Row label="Status">
+              <Badge tone={location.status === "active" ? "good" : "neutral"}>{location.status === "active" ? "Checking" : "Paused"}</Badge>
+            </Row>
+            {manage && (
+              <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-4">
+                {location.status === "active" ? (
+                  <Button onClick={() => void setStatus("paused")}>Pause checks</Button>
+                ) : (
+                  <Button onClick={() => void setStatus("active")}>Resume checks</Button>
+                )}
+                <Button variant="danger" onClick={() => void setStatus("archived")}>
+                  Remove location
+                </Button>
+              </div>
+            )}
+          </Card>
+          <Card>
+            <CardHeader
+              title="Google profile"
+              sub="Linking it lets suggestions be applied with one click, and shows calls and clicks from Google."
+              right={change("profile")}
+            />
+            <Row label="Status">
+              {location.profileLinked ? <Badge tone="good">Linked</Badge> : <span className="text-muted">Not linked</span>}
+            </Row>
+          </Card>
+        </div>
       </div>
 
       {/* Mounted only while open, so each opening starts from what's saved. */}
@@ -91,6 +102,132 @@ export default function Settings() {
       {open === "checks" && <ChecksDrawer open onClose={() => setOpen(null)} limits={limits.data} />}
       {open === "profile" && <ProfileDrawer open onClose={() => setOpen(null)} />}
     </>
+  );
+}
+
+/**
+ * The Locations, beside the settings of the one being viewed. Click a row to view it. "Select" turns the rows into
+ * checkboxes to pause, resume or remove several at once, so choosing one and acting on many never share a gesture.
+ */
+function LocationsList() {
+  const { orgId, location, locations, can, reload } = useSeo();
+  const manage = can("manage");
+  const [, setParams] = useSearchParams();
+  const toast = useToast();
+  const [selecting, setSelecting] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
+  const chosen = locations.filter((l) => picked.has(l.id));
+  const all = chosen.length === locations.length;
+  const stop = () => {
+    setSelecting(false);
+    setPicked(new Set());
+  };
+  const toggle = (id: string, on: boolean) =>
+    setPicked((p) => {
+      const next = new Set(p);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  const view = (id: string) =>
+    setParams(
+      (p) => {
+        p.set("location", id);
+        return p;
+      },
+      { replace: true },
+    );
+
+  const apply = async (status: "active" | "paused" | "archived") => {
+    const names = chosen.map((l) => l.name);
+    if (status === "archived") {
+      const what = names.length === 1 ? names[0] : `these ${names.length} locations`;
+      if (!confirm(`Remove ${what} from SEO? Checks stop and they leave every page.\n\n${names.join("\n")}`)) return;
+    }
+    setBusy(true);
+    const results = await Promise.all(chosen.map((l) => locationApi(orgId, l.id).status.post({ status })));
+    setBusy(false);
+    const failed = results.map((r, i) => (r.error ? chosen[i]! : null)).filter((l) => l !== null);
+    const done = chosen.length - failed.length;
+    const verb = status === "active" ? "resumed" : status === "paused" ? "paused" : "removed";
+    if (done) toast.success(`${done} ${done === 1 ? "location" : "locations"} ${verb}`);
+    if (failed.length) {
+      const first = results.find((r) => r.error)!.error;
+      toast.error(`${failed.map((l) => l.name).join(", ")}: ${messageOf(first)}`, "Could not change");
+    }
+    setPicked(new Set(failed.map((l) => l.id)));
+    await reload();
+  };
+
+  return (
+    <nav aria-label="Locations" className="lg:sticky lg:top-4">
+      <Card pad={false}>
+        <div className="flex min-h-12 items-center gap-2 border-b border-line px-4 py-2">
+          {selecting ? (
+            <label className="flex cursor-pointer items-center gap-2 text-[13px]">
+              <Checkbox
+                checked={all}
+                label="Select all locations"
+                onChange={(on) => setPicked(on ? new Set(locations.map((l) => l.id)) : new Set())}
+              />
+              {chosen.length ? `${chosen.length} selected` : "Select all"}
+            </label>
+          ) : (
+            <span className="text-[13.5px] font-semibold">Locations</span>
+          )}
+          {manage && (
+            <Button size="sm" variant="ghost" className="ml-auto" onClick={selecting ? stop : () => setSelecting(true)}>
+              {selecting ? "Done" : "Select"}
+            </Button>
+          )}
+        </div>
+        <ul className="divide-y divide-line">
+          {locations.map((l) => {
+            const viewing = !selecting && l.id === location.id;
+            const body = (
+              <>
+                <span className="block truncate text-[13.5px] font-medium">{l.name}</span>
+                <span className="block truncate text-[12.5px] text-muted">{l.address ?? l.city ?? "No address"}</span>
+              </>
+            );
+            return (
+              <li key={l.id} className={cn("flex items-center gap-3 px-4 py-2.5", viewing && "bg-hover")}>
+                {selecting ? (
+                  <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+                    <Checkbox checked={picked.has(l.id)} label={`Select ${l.name}`} onChange={(on) => toggle(l.id, on)} />
+                    <span className="min-w-0 flex-1">{body}</span>
+                  </label>
+                ) : (
+                  <button
+                    type="button"
+                    aria-current={viewing ? "true" : undefined}
+                    onClick={() => view(l.id)}
+                    className="min-w-0 flex-1 cursor-pointer text-left"
+                  >
+                    {body}
+                  </button>
+                )}
+                {l.status !== "active" && <Badge tone="neutral">Paused</Badge>}
+              </li>
+            );
+          })}
+        </ul>
+        {selecting && (
+          <div className="flex flex-wrap gap-2 border-t border-line px-4 py-3">
+            <Button size="sm" disabled={busy || !chosen.length} onClick={() => void apply("paused")}>
+              Pause
+            </Button>
+            <Button size="sm" disabled={busy || !chosen.length} onClick={() => void apply("active")}>
+              Resume
+            </Button>
+            <Button size="sm" variant="danger" disabled={busy || !chosen.length} onClick={() => void apply("archived")}>
+              Remove
+            </Button>
+          </div>
+        )}
+      </Card>
+    </nav>
   );
 }
 
@@ -109,7 +246,11 @@ function SaveFooter({ busy, onClose }: { busy: boolean; onClose: () => void }) {
 
 function BusinessDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { orgId, location, reload } = useSeo();
-  const [form, setForm] = useState({ name: location.name, website: location.website ?? "", services: location.services });
+  const [form, setForm] = useState({
+    name: location.name,
+    website: location.website ?? "",
+    services: location.services,
+  });
   const [busy, setBusy] = useState(false);
   const fb = useFeedback(open);
   const save = async (e: FormEvent) => {

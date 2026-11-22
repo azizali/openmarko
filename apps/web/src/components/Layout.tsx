@@ -64,6 +64,7 @@ export const nav: NavItem[] = [
           ["/seo/keywords", "Keywords", Search],
           ["/seo/ai", "AI answers", Sparkles],
           ["/seo/competitors", "Competitors", UsersRound],
+          ["/seo/settings", "Settings", Settings],
         ] as const
       ).map(([to, label, icon]): NavItem => ({ to, label, icon, group: seoGroup, feature: "seo", when: (can) => can("seo", "view") }))
     : []),

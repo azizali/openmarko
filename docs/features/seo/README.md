@@ -33,7 +33,8 @@ changes what checks cost and links the Google profile.
 - **Keywords** (`/seo/keywords`): your position on Google per keyword, Google's whole first page, map pack and AI Overview.
 - **AI answers** (`/seo/ai`): per question and assistant, whether you're named and where, what it said, what it cited.
 - **Competitors** (`/seo/competitors`): per channel, who's ahead of you on how many keywords; add or hide one.
-- **Settings** (`/seo/settings`): business details, checks within the Plan, the Google profile link, pause or remove.
+- **Settings** (`/seo/settings`): business details, checks within the Plan, the Google profile link, pause or remove. With two or more Locations, a list beside the settings picks which one you're viewing, and
+  Select pauses, resumes or removes several together.
 - **Suggestions**, each saying what it was based on: add categories competitors ahead of you list; get listed on a site
   AI answers cite; track a keyword your profile is found for or a competitor ranks for; say your services in your
   description; track a "People also ask" question; post on your profile. Applying one is an automation Task, so it shows
