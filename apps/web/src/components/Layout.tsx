@@ -353,6 +353,7 @@ export default function Layout() {
   const [mobileNav, setMobileNav] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const loc = useLocation();
+  const navigate = useNavigate();
   const { loading, me, org, organizations, can, signOut, features, admin } = useSession();
   const brand = useBrand();
 
@@ -369,6 +370,16 @@ export default function Layout() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [loc.pathname]);
+  // Switching Organization leaves what belonged to the old one (a SEO setup in progress, a chosen Location): SEO
+  // starts over from its own entry, which resumes any draft the new Organization has. The narrow-view menu closes too.
+  const orgId = org?.id;
+  const lastOrg = useRef(orgId);
+  useEffect(() => {
+    if (lastOrg.current === orgId) return;
+    lastOrg.current = orgId;
+    setMobileNav(false); // the narrow-view menu was opened for the old Organization
+    if (loc.pathname.startsWith("/seo")) void navigate("/seo", { replace: true });
+  }, [orgId, loc.pathname, navigate]);
 
   if (loading) return null;
   if (!me) return <Navigate to="/sign-in" replace state={{ from: loc.pathname }} />;
