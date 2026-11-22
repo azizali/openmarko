@@ -35,7 +35,11 @@ import { useBrand } from "../lib/brand";
 // The floating chat widget and what the sidebar's Sparkles button opens. Folds away with the ai module (vite.config.ts).
 const AppChat = __MODULE_AI__ ? lazy(() => import("./AppChat")) : null;
 
-type Icon = ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+type Icon = ComponentType<{
+  size?: number;
+  strokeWidth?: number;
+  className?: string;
+}>;
 type NavGroupInfo = { label: string; icon: Icon };
 const aiGroup: NavGroupInfo = { label: "AI", icon: Bot };
 const seoGroup: NavGroupInfo = { label: "SEO", icon: SearchCheck };
@@ -66,7 +70,14 @@ export const nav: NavItem[] = [
           ["/seo/competitors", "Competitors", UsersRound],
           ["/seo/settings", "Settings", Settings],
         ] as const
-      ).map(([to, label, icon]): NavItem => ({ to, label, icon, group: seoGroup, feature: "seo", when: (can) => can("seo", "view") }))
+      ).map(([to, label, icon]): NavItem => ({
+        to,
+        label,
+        icon,
+        group: seoGroup,
+        feature: "seo",
+        when: (can) => can("seo", "view"),
+      }))
     : []),
   ...(modules.automation
     ? [
@@ -200,7 +211,10 @@ function OrgSwitcher() {
   const groups = [
     { label: "Partner", orgs: organizations.filter(isPartner) },
     { label: "Clients", orgs: organizations.filter(isClient) },
-    { label: others.length > 1 ? "Organizations" : "Organization", orgs: others },
+    {
+      label: others.length > 1 ? "Organizations" : "Organization",
+      orgs: others,
+    },
   ].filter((g) => g.orgs.length > 0);
   return (
     <div ref={root} className="relative">
@@ -288,7 +302,15 @@ function CommandPalette({ onClose, items }: { onClose: () => void; items: NavIte
         hint: "Settings",
         to: `/settings/${s}`,
       })),
-      ...(admin ? [{ label: platformAdminLabel, hint: "Settings", to: "/settings/admin-users" }] : []),
+      ...(admin
+        ? [
+            {
+              label: platformAdminLabel,
+              hint: "Settings",
+              to: "/settings/admin-users",
+            },
+          ]
+        : []),
       { label: "New organization", hint: "Setup", to: "/onboarding" },
     ];
     return pages.filter((i) => i.label.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
