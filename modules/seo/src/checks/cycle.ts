@@ -4,7 +4,8 @@
 //   organic  every keyword, on Google search from the business's door
 //   ai       every question, asked of every chosen assistant
 // Queries are posted to the provider here; collect.ts gathers the results as they're ready and files them.
-// A scope narrows a cycle to some keywords or questions: what was just added is checked at once.
+// A scope narrows a cycle to some keywords or questions: what was just added is checked at once. `kinds` narrows it to
+// some kinds of check: Check now on the Keywords page checks Google search only, unless asked for more.
 
 import { and, eq, inArray } from "drizzle-orm";
 import { AppError, hmacHex, newId, type AppContext } from "@app/kernel";
@@ -33,6 +34,8 @@ export type CycleOptions = {
   /** The Run this cycle belongs to (a schedule's); one is started when absent. */
   runId?: string | null;
   scope?: CycleScope;
+  /** Only these kinds (Check now on one page); every kind when absent. */
+  kinds?: readonly CheckKind[];
   trigger?: "scheduled" | "manual" | "event";
   by?: string | null;
 };
@@ -182,6 +185,7 @@ export async function startCycle(
   const checkIds: string[] = [];
   for (const kind of ["maps", "organic", "ai"] as const) {
     if ((kind === "ai" && onlyKeywords) || (kind !== "ai" && onlyQuestions)) continue;
+    if (opts.kinds && !opts.kinds.includes(kind)) continue;
     const id = await postCheck(ctx, l, kind, targetsFor(kind, l, kws, qs), runId, opts.queue);
     if (id) checkIds.push(id);
   }

@@ -8,7 +8,8 @@ import { messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
 import { engineNames, locationApi, seoApi, type AiPage } from "./api";
 import { AddQuestions } from "./AddDrawers";
-import { Headline, Source, useReloadWhilePending } from "./parts";
+import { Headline, Source } from "./parts";
+import { kindsOf, useAfterCheck, useReloadWhilePending } from "./checks";
 import { SeoHeader, useSeo } from "./Seo";
 
 type Question = AiPage["questions"][number];
@@ -56,6 +57,7 @@ export default function Ai() {
   const page = useLoad(() => locationApi(orgId, location.id).results.ai.get(), [orgId, location.id]);
   const limits = useLoad(() => seoApi(orgId).limits.get(), [orgId]);
   useReloadWhilePending(!!page.data?.questions.some((q) => q.pending), page.reload);
+  useAfterCheck(kindsOf.ai, page.reload);
   const [open, setOpen] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const toast = useToast();

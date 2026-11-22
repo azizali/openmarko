@@ -1,14 +1,11 @@
 // The SEO overview: where the Location stands this week (one number per check with its change, and the three rows
-// that say the most), the results card from its Google profile, what's being checked right now, and the Plan's usage.
-// The suggestions beside it come from their own route.
+// that say the most), the results card from its Google profile, and the Plan's usage. The suggestions beside it, and
+// what's being checked right now (checks/status.ts), come from their own routes.
 
-import { and, eq, isNull, sql } from "drizzle-orm";
-import { automationSchema } from "@app/automation";
 import type { AppContext } from "@app/kernel";
 import { planLimits } from "../access";
 import { getLocationView, getLocation } from "../locations/service";
 import { resultsCard } from "../profile/service";
-import { checks } from "../schema";
 import { openCounts } from "../suggestions/service";
 import { aiPage } from "./ai";
 import { competitorCounts } from "./competitors";
@@ -18,7 +15,7 @@ import { mapsSummary } from "./maps";
 
 export async function overview(ctx: AppContext, orgId: string, locationId: string) {
   const l = await getLocation(ctx, orgId, locationId);
-  const [location, maps, kw, ai, competitors, open, profile, checked, limits, running] = await Promise.all([
+  const [location, maps, kw, ai, competitors, open, profile, checked, limits] = await Promise.all([
     getLocationView(ctx, orgId, locationId),
     mapsSummary(ctx, orgId, locationId),
     keywordsPage(ctx, orgId, locationId),
@@ -28,19 +25,12 @@ export async function overview(ctx: AppContext, orgId: string, locationId: strin
     resultsCard(ctx, l).catch(() => null),
     lastCheckedAt(ctx.db, locationId),
     planLimits(ctx, orgId),
-    // Checking until the cycle's Run finishes: that's after its suggestions are written.
-    ctx.db
-      .select({ n: sql<number>`count(*)::int` })
-      .from(checks)
-      .innerJoin(automationSchema.runs, eq(automationSchema.runs.id, checks.runId))
-      .where(and(eq(checks.locationId, locationId), isNull(automationSchema.runs.finishedAt))),
   ]);
   const ready = maps.keywords.filter((k) => !k.pending);
   const ranked = kw.keywords.filter((k) => !k.pending).sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
   return {
     location,
     lastCheckedAt: checked,
-    checking: (running[0]?.n ?? 0) > 0,
     maps: {
       top3: maps.totals.top3,
       spots: maps.totals.spots,

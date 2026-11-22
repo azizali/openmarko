@@ -181,6 +181,33 @@ describe("launching and the first check", () => {
     expect(await t.ctx.db.select().from(mapScans).where(eq(mapScans.locationId, locationId))).toHaveLength(3);
   });
 
+  test("Check now checks the kinds asked for, never one that's already running, and reports where each stands", async () => {
+    const url = `${base(owner)}/locations/${locationId}`;
+    const before = await call("GET", `${url}/checks`, { headers: owner.headers });
+    expect(before.status).toBe(200);
+    expect(before.body.kinds.every((k: { lastCheckedAt: string | null; running: unknown }) => k.lastCheckedAt && !k.running)).toBe(true);
+    expect(before.body).toMatchObject({ keywords: 3, questions: 2, finishing: false });
+
+    const res = await call("POST", `${url}/check`, { headers: owner.headers, body: { kinds: ["organic"] } });
+    expect(res.status).toBe(200);
+    expect(res.body.kinds).toEqual(["organic"]);
+    const made = await t.ctx.db.select().from(checks).where(eq(checks.runId, res.body.runId));
+    expect(made.map((c) => c.kind)).toEqual(["organic"]);
+
+    const during = await call("GET", `${url}/checks`, { headers: owner.headers });
+    const organic = during.body.kinds.find((k: { kind: string }) => k.kind === "organic");
+    expect(organic.running).toMatchObject({ calls: 3 });
+    // Asking again for what's running starts nothing; asking for everything starts only the rest.
+    expect((await call("POST", `${url}/check`, { headers: owner.headers, body: { kinds: ["organic"] } })).status).toBe(409);
+    const rest = await call("POST", `${url}/check`, { headers: owner.headers, body: {} });
+    expect(rest.body.kinds).toEqual(["maps", "ai"]);
+
+    await drain();
+    const after = await call("GET", `${url}/checks`, { headers: owner.headers });
+    expect(after.body.kinds.every((k: { running: unknown }) => !k.running)).toBe(true);
+    expect(after.body.finishing).toBe(false);
+  });
+
   test("every business seen joins the shared catalog with today's numbers", async () => {
     const all = await t.ctx.db.select().from(places);
     expect(all.length).toBeGreaterThanOrEqual(10);
@@ -198,7 +225,6 @@ describe("the pages", () => {
     expect(o.body.ai).toMatchObject({ total: 6, questions: 2 });
     expect(o.body.competitors.count).toBeGreaterThan(3);
     expect(o.body.usage.keywords).toEqual({ used: 3, limit: 8 });
-    expect(o.body.checking).toBe(false);
     expect(o.body.lastCheckedAt).not.toBeNull();
   });
 

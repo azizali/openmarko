@@ -9,7 +9,8 @@ import { LoadError } from "../../components/Feedback";
 import { useLoad } from "../../lib/useLoad";
 import { locationApi, seoApi, type MapsKeyword, type MapsSummary } from "./api";
 import { AddKeywords } from "./AddDrawers";
-import { Bar, Change, GridLegend, GridMap, GridThumb, Source, rankIn, useReloadWhilePending } from "./parts";
+import { Bar, Change, GridLegend, GridMap, GridThumb, Source, rankIn } from "./parts";
+import { kindsOf, useAfterCheck, useReloadWhilePending } from "./checks";
 import { SeoHeader, useSeo } from "./Seo";
 
 type View = "map" | "why" | "time";
@@ -26,6 +27,7 @@ export default function Maps() {
   const limits = useLoad(() => seoApi(orgId).limits.get(), [orgId]);
   const [adding, setAdding] = useState(false);
   useReloadWhilePending(!!summary.data?.keywords.some((k) => k.pending), summary.reload);
+  useAfterCheck(kindsOf.maps, summary.reload);
 
   const ready = (summary.data?.keywords ?? []).filter((k): k is Ready => !k.pending);
   const asked = params.get("keyword");
@@ -194,6 +196,7 @@ function KeywordDetail({ keywordId }: { keywordId: string }) {
   const { orgId, location } = useSeo();
   const [params, setParams] = useSearchParams();
   const detail = useLoad(() => locationApi(orgId, location.id).results.maps({ keywordId }).get(), [orgId, location.id, keywordId]);
+  useAfterCheck(kindsOf.maps, detail.reload);
   const asked = params.get("view");
   const view: View = asked === "why" || asked === "time" ? asked : "map";
   const setView = (v: View) =>

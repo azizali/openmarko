@@ -26,6 +26,10 @@ changes what checks cost and links the Google profile.
 - **Setup** (`/seo/setup`): find the business on Google, confirm it and its services, optionally connect its Google
   Business Profile, pick keywords and questions from ideas (with searches a month), choose the grid and how often, and
   launch. The first check runs on the priority queue and the screen follows it to a first look.
+- **Every page's header** says when its data was last checked and, while a check runs, which kind and since when, with
+  a link to its status (each kind's results in so far). **Check now** checks what the page shows (Google Maps,
+  Google search or AI answers; everything on the overview and competitors) and offers the other kinds in the same
+  drawer. A kind already running is skipped, never run twice.
 - **Overview** (`/seo/overview`): one number per check with its change over 30 days, the results card from the Google
   profile (calls, website clicks, direction requests, views, and the searches that showed it), and **What to do next**.
 - **Google Maps ranking** (`/seo/maps`): every keyword's grid; for one keyword the map now and a month ago, any

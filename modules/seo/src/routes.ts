@@ -11,6 +11,7 @@ import { FEATURE, planLimits, SEO, type SeoAction } from "./access";
 import { costs } from "./admin/costs";
 import { COLLECT_JOB, pingbackSignature, startCycle } from "./checks/cycle";
 import { queueScopedCheck } from "./checks/jobs";
+import { checkKinds, checkStatus, idleKinds } from "./checks/status";
 import { createLocation, getLocation, getLocationView, linkProfile, listLocations, setStatus, updateLocation } from "./locations/service";
 import { findBusiness, ideasFor, launch, progressOf } from "./onboarding/service";
 import { linkLocationProfile, profileLocations, syncProfileMetrics } from "./profile/service";
@@ -53,6 +54,7 @@ const engine = t.Union([t.Literal("chatgpt"), t.Literal("google_ai"), t.Literal(
 const source = t.Union([t.Literal("onboarding"), t.Literal("manual")]);
 const status = t.Union([t.Literal("active"), t.Literal("paused"), t.Literal("archived")]);
 const channel = t.Union([t.Literal("maps"), t.Literal("google"), t.Literal("ai")]);
+const checkKind = t.Union([t.Literal("maps"), t.Literal("organic"), t.Literal("ai")]);
 const overrideAction = t.Union([t.Literal("added"), t.Literal("hidden")]);
 
 export function seoRoutes(ctx: AppContext) {
@@ -147,14 +149,30 @@ export function seoRoutes(ctx: AppContext) {
       )
       .post(
         "/locations/:locationId/check",
-        async ({ caller, params }) => {
+        async ({ caller, params, body }) => {
           await gate(caller, "manage");
           const l = await getLocation(ctx, caller.orgId, params.locationId);
           if (l.status !== "active") throw new AppError(409, "conflict", "Start this location's checks first.");
-          const { runId } = await startCycle(ctx, caller.orgId, l.id, { queue: "standard", trigger: "manual", by: caller.userId });
-          return { runId };
+          const kinds = await idleKinds(ctx, l.id, body.kinds ?? checkKinds);
+          if (!kinds.length) throw new AppError(409, "conflict", "Already checking. Results come in over the next few minutes.");
+          const { runId } = await startCycle(ctx, caller.orgId, l.id, { queue: "standard", kinds, trigger: "manual", by: caller.userId });
+          return { runId, kinds };
         },
-        { params: loc, detail: { summary: "Check a Location now, outside its schedule" } },
+        {
+          params: loc,
+          body: t.Object({ kinds: t.Optional(t.Array(checkKind, { minItems: 1, uniqueItems: true })) }),
+          detail: {
+            summary: "Check a Location now, outside its schedule: some kinds of check, or all (a kind already running is skipped)",
+          },
+        },
+      )
+      .get(
+        "/locations/:locationId/checks",
+        async ({ caller, params }) => {
+          await gate(caller, "view");
+          return checkStatus(ctx, caller.orgId, params.locationId);
+        },
+        { params: loc, detail: { summary: "Each kind of check: when it last finished, and whether one is running" } },
       )
       .get(
         "/locations/:locationId/runs/:runId",

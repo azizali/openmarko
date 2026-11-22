@@ -10,6 +10,7 @@ type L = ReturnType<typeof locationApi>;
 
 export type LocationView = Data<ReturnType<typeof seoApi>["locations"]["get"]>[number];
 export type Overview = Data<L["overview"]["get"]>;
+export type CheckStatus = Data<L["checks"]["get"]>;
 export type MapsSummary = Data<L["results"]["maps"]["get"]>;
 export type MapsKeyword = Data<ReturnType<L["results"]["maps"]>["get"]>;
 export type SearchPage = Data<L["results"]["search"]["get"]>;

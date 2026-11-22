@@ -9,6 +9,7 @@ import { LoadError } from "../../components/Feedback";
 import { useLoad } from "../../lib/useLoad";
 import { useOrg, useSession } from "../../lib/session";
 import { seoApi, type LocationView } from "./api";
+import { CheckLine, CheckNowButton, ChecksProvider } from "./checks";
 
 const pages = {
   overview: lazy(() => import("./Overview")),
@@ -78,7 +79,16 @@ export default function Seo() {
   // Stable between renders, so pages can depend on it (and on `can`) in effects.
   const reload = locations.reload;
   const value = useMemo<SeoContextValue | null>(
-    () => (location ? { orgId: org.id, location, locations: list, reload, can: (action) => can("seo", action) } : null),
+    () =>
+      location
+        ? {
+            orgId: org.id,
+            location,
+            locations: list,
+            reload,
+            can: (action) => can("seo", action),
+          }
+        : null,
     [org.id, location, list, reload, can],
   );
 
@@ -95,7 +105,13 @@ export default function Seo() {
   return (
     <SeoContext value={value}>
       {/* A tab name that isn't a page lands on the overview. */}
-      {tab && !known ? <Navigate replace to="/seo" /> : <Page />}
+      {tab && !known ? (
+        <Navigate replace to="/seo" />
+      ) : (
+        <ChecksProvider>
+          <Page />
+        </ChecksProvider>
+      )}
     </SeoContext>
   );
 }
@@ -133,6 +149,7 @@ export function LocationSwitcher() {
 }
 
 /** A page's header: its name, one line on what it answers, the Location switcher, and its own actions. */
+/** A page's title, with when its data was last checked under it and Check now beside it (checks.tsx). */
 export function SeoHeader({
   tab,
   sub,
@@ -148,11 +165,17 @@ export function SeoHeader({
   return (
     <PageHeader
       title={tabNames[tab]}
-      sub={sub}
+      sub={
+        <>
+          {sub}
+          <CheckLine tab={tab} />
+        </>
+      }
       actions={
         <>
           {switcher && <LocationSwitcher />}
           {actions}
+          <CheckNowButton tab={tab} />
         </>
       }
     />

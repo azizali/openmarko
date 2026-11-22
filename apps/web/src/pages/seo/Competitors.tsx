@@ -11,6 +11,7 @@ import { useLoad } from "../../lib/useLoad";
 import { locationApi, type Channel, type CompetitorsPage } from "./api";
 import { AddCompetitor } from "./AddDrawers";
 import { Source } from "./parts";
+import { kindsOf, useAfterCheck } from "./checks";
 import { SeoHeader, useSeo } from "./Seo";
 
 type Row = CompetitorsPage["rows"][number];
@@ -64,6 +65,7 @@ export default function Competitors() {
     () => locationApi(orgId, location.id).results.competitors.get({ query: { channel } }),
     [orgId, location.id, channel],
   );
+  useAfterCheck(kindsOf.competitors, page.reload);
   const [open, setOpen] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const toast = useToast();

@@ -1,15 +1,16 @@
 // The SEO overview (/seo): where the Location stands this week, one card per check (each opens its page), the results
 // its Google profile brings in, and what to do next. Each suggestion says which check it should move and what it was
 // based on, and is applied with one button; applied ones move to Done, where they can be undone.
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
-import { Check, ChevronRight, MapPin, RefreshCw, Search, Settings, Sparkles, Users } from "lucide-react";
+import { Check, ChevronRight, MapPin, Search, Settings, Sparkles, Users } from "lucide-react";
 import { Badge, Button, Card, Segmented, Textarea, cn, fmt } from "../../components/ui";
 import { Feedback, LoadError, useFeedback, useToast } from "../../components/Feedback";
 import { fmtDate, messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
 import { engineNames, locationApi, seoApi, type Overview as OverviewData, type Suggestion } from "./api";
 import { Change, GridThumb } from "./parts";
+import { kindsOf, useAfterCheck } from "./checks";
 import { SeoHeader, useSeo, useSeoNavigate } from "./Seo";
 
 type Helps = "maps" | "keywords" | "ai";
@@ -39,60 +40,18 @@ const diff = (now: number, before: number | null) => (before === null ? null : n
 
 export default function Overview() {
   const { orgId, location, can } = useSeo();
-  const toast = useToast();
   const overview = useLoad(() => locationApi(orgId, location.id).overview.get(), [orgId, location.id]);
   const suggestions = useLoad(() => locationApi(orgId, location.id).suggestions.get(), [orgId, location.id]);
-  const checking = !!overview.data?.checking;
-  const [starting, setStarting] = useState(false);
+  // Each kind of check reloads its numbers as it finishes, and the suggestions once the cycle has written them.
+  useAfterCheck(kindsOf.overview, () => Promise.all([overview.reload(), suggestions.reload()]));
 
-  // While a check runs, look again every 10 seconds.
-  const reloadOverview = overview.reload;
-  useEffect(() => {
-    if (!checking) return;
-    const t = setInterval(() => void reloadOverview(), 10_000);
-    return () => clearInterval(t);
-  }, [checking, reloadOverview]);
-  // The suggestions are written when a check finishes: load them again then, for this Location only.
-  const reloadSuggestions = suggestions.reload;
-  const wasChecking = useRef<{ location: string; checking: boolean } | null>(null);
-  useEffect(() => {
-    const before = wasChecking.current;
-    wasChecking.current = { location: location.id, checking };
-    if (before?.location === location.id && before.checking && !checking) void reloadSuggestions();
-  }, [checking, location.id, reloadSuggestions]);
-
-  const checkNow = async () => {
-    setStarting(true);
-    const r = await locationApi(orgId, location.id).check.post();
-    if (r.error) {
-      setStarting(false);
-      return toast.error(messageOf(r.error), "Could not start the check");
-    }
-    toast.success("Checking now", "Results come in over the next few minutes.");
-    // Stays disabled until the overview says a check is running, so a second click can't start a second cycle.
-    await overview.reload();
-    setStarting(false);
-  };
   const reload = async () => {
     await Promise.all([overview.reload(), suggestions.reload()]);
   };
 
   return (
     <>
-      <SeoHeader
-        tab="overview"
-        sub="Where you show up this week, and what to do next."
-        actions={
-          can("manage") && (
-            <>
-              <SettingsLink />
-              <Button icon={<RefreshCw size={14} />} onClick={() => void checkNow()} disabled={checking || starting}>
-                {checking ? "Checking…" : "Check now"}
-              </Button>
-            </>
-          )
-        }
-      />
+      <SeoHeader tab="overview" sub="Where you show up this week, and what to do next." actions={can("manage") && <SettingsLink />} />
       {overview.error ? (
         <LoadError what="where you stand">{overview.error}</LoadError>
       ) : (
@@ -197,12 +156,9 @@ function Standing({ data }: { data: OverviewData }) {
 
   return (
     <section aria-labelledby="stand">
-      <h2 id="stand" className="text-[15px] font-medium">
+      <h2 id="stand" className="mb-3 text-[15px] font-medium">
         Where you stand
       </h2>
-      <p className="mb-3 text-[12.5px] text-muted">
-        {data.checking ? "Checking now…" : data.lastCheckedAt ? `Checked ${fmtDate(data.lastCheckedAt)}` : "Not checked yet"}
-      </p>
       <div className="space-y-3">
         {cards.map((c) => (
           <CheckCard key={c.id} {...c} />
