@@ -1,7 +1,7 @@
 // Pieces every SEO page shares: the map grid (and its thumbnail and legend), a change over 30 days, the one-line
 // "Data source" note, a rank's tone, and a bar in a leaderboard. Grids come from the API as the order of businesses
 // at each spot, so any business's map can be drawn from the same data.
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, Info } from "lucide-react";
 import { Card, LineChart, cn } from "../../components/ui";
 
@@ -221,4 +221,13 @@ export function Headline({
       />
     </Card>
   );
+}
+
+/** Looks again every 15 seconds while something is waiting for its first result, and stops once nothing is. */
+export function useReloadWhilePending(pending: boolean, reload: () => Promise<void>) {
+  useEffect(() => {
+    if (!pending) return;
+    const t = setInterval(() => void reload(), 15_000);
+    return () => clearInterval(t);
+  }, [pending, reload]);
 }

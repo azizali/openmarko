@@ -8,7 +8,7 @@ import { messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
 import { engineNames, locationApi, seoApi, type AiPage } from "./api";
 import { AddQuestions } from "./AddDrawers";
-import { Headline, Source } from "./parts";
+import { Headline, Source, useReloadWhilePending } from "./parts";
 import { SeoHeader, useSeo } from "./Seo";
 
 type Question = AiPage["questions"][number];
@@ -22,7 +22,7 @@ function Cell({ answer }: { answer: Answer | null | undefined }) {
 
 function AnswerCard({ engine, answer }: { engine: string; answer: Answer | null | undefined }) {
   return (
-    <div className="min-w-0 rounded-lg border border-line p-3">
+    <div className="min-w-0 border-t border-line pt-3">
       <p className="flex items-center justify-between gap-2 text-[13px] font-medium">
         {engineNames[engine] ?? engine}
         {answer && <Badge tone={answer.namedYou ? "good" : "neutral"}>{answer.namedYou ? "Names you" : "Doesn't name you"}</Badge>}
@@ -55,6 +55,7 @@ export default function Ai() {
   const { orgId, location, can } = useSeo();
   const page = useLoad(() => locationApi(orgId, location.id).results.ai.get(), [orgId, location.id]);
   const limits = useLoad(() => seoApi(orgId).limits.get(), [orgId]);
+  useReloadWhilePending(!!page.data?.questions.some((q) => q.pending), page.reload);
   const [open, setOpen] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const toast = useToast();

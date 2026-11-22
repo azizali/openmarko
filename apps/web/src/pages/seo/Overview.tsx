@@ -1,7 +1,7 @@
 // The SEO overview (/seo): where the Location stands this week, one card per check (each opens its page), the results
 // its Google profile brings in, and what to do next. Each suggestion says which check it should move and what it was
 // based on, and is applied with one button; applied ones move to Done, where they can be undone.
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
 import { Check, ChevronRight, MapPin, RefreshCw, Search, Settings, Sparkles, Users } from "lucide-react";
 import { Badge, Button, Card, Segmented, Textarea, cn, fmt } from "../../components/ui";
@@ -45,24 +45,33 @@ export default function Overview() {
   const checking = !!overview.data?.checking;
   const [starting, setStarting] = useState(false);
 
-  // While a check runs, look again every 10 seconds; the suggestions arrive when it finishes.
+  // While a check runs, look again every 10 seconds.
+  const reloadOverview = overview.reload;
   useEffect(() => {
     if (!checking) return;
-    const t = setInterval(() => void overview.reload(), 10_000);
-    return () => {
-      clearInterval(t);
-      void suggestions.reload();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checking]);
+    const t = setInterval(() => void reloadOverview(), 10_000);
+    return () => clearInterval(t);
+  }, [checking, reloadOverview]);
+  // The suggestions are written when a check finishes: load them again then, for this Location only.
+  const reloadSuggestions = suggestions.reload;
+  const wasChecking = useRef<{ location: string; checking: boolean } | null>(null);
+  useEffect(() => {
+    const before = wasChecking.current;
+    wasChecking.current = { location: location.id, checking };
+    if (before?.location === location.id && before.checking && !checking) void reloadSuggestions();
+  }, [checking, location.id, reloadSuggestions]);
 
   const checkNow = async () => {
     setStarting(true);
     const r = await locationApi(orgId, location.id).check.post();
-    setStarting(false);
-    if (r.error) return toast.error(messageOf(r.error), "Could not start the check");
+    if (r.error) {
+      setStarting(false);
+      return toast.error(messageOf(r.error), "Could not start the check");
+    }
     toast.success("Checking now", "Results come in over the next few minutes.");
+    // Stays disabled until the overview says a check is running, so a second click can't start a second cycle.
     await overview.reload();
+    setStarting(false);
   };
   const reload = async () => {
     await Promise.all([overview.reload(), suggestions.reload()]);
@@ -246,11 +255,7 @@ function CheckCard({
       <p className="flex items-center gap-1.5 text-[13px] text-muted">
         <Icon size={14} aria-hidden />
         {checkNames[id]}
-        {todo > 0 && (
-          <Badge tone="accent" className="ml-1">
-            {todo} to do
-          </Badge>
-        )}
+        {todo > 0 && <Badge className="ml-1">{todo} to do</Badge>}
       </p>
       <p className="num mt-1.5 text-[20px] leading-tight font-medium">{value}</p>
       {change && <p className="mt-1">{change}</p>}
@@ -436,7 +441,7 @@ function SuggestionCard({
           <p className="text-[15px] font-medium">{s.title}</p>
           <p className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <Badge>{k.label}</Badge>
-            <Badge tone="accent">
+            <Badge>
               <HelpsIcon helps={s.helps} /> {checkNames[s.helps as Helps] ?? s.helps}
             </Badge>
           </p>
@@ -468,9 +473,9 @@ function SuggestionCard({
               />
             </label>
           )}
-          {allowed && (
+          {(allowed || can("track")) && (
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              {blocked ? (
+              {!allowed ? null : blocked ? (
                 <>
                   <span className="text-[13px] text-muted">Needs your Google profile linked.</span>
                   {can("manage") && (
@@ -484,9 +489,11 @@ function SuggestionCard({
                   {k.action}
                 </Button>
               )}
-              <Button variant="ghost" onClick={() => void act("dismiss")} disabled={busy}>
-                Not now
-              </Button>
+              {can("track") && (
+                <Button variant="ghost" onClick={() => void act("dismiss")} disabled={busy}>
+                  Not now
+                </Button>
+              )}
               <Feedback {...fb.props} />
             </div>
           )}
@@ -503,12 +510,12 @@ const shown = (v: string | string[]) => (Array.isArray(v) ? v.join(", ") : v) ||
 function BeforeAfter({ payload }: { payload: ProfileChange }) {
   const label = payload.field === "categories" ? "Categories" : "Description";
   return (
-    <div className="mt-4 grid gap-2 sm:grid-cols-2">
-      <div className="rounded-lg border border-line p-3">
+    <div className="mt-4 grid gap-3 border-t border-line pt-3 sm:grid-cols-2">
+      <div>
         <p className="text-[12.5px] text-muted">{label} now</p>
         <p className="mt-1 text-[13.5px]">{shown(payload.before)}</p>
       </div>
-      <div className="rounded-lg border border-good/40 p-3">
+      <div>
         <p className="text-[12.5px] text-good">{label} after</p>
         <p className="mt-1 text-[13.5px]">{shown(payload.after)}</p>
       </div>

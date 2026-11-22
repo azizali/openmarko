@@ -178,11 +178,17 @@ export async function resultsCard(ctx: AppContext, l: LocationRow): Promise<Resu
   };
   const now = sum(cut(28), last);
   const prev = sum(cut(56), cut(28));
+  // The latest month only: the same search appears once a month.
   const top = await ctx.db
     .select({ term: profileSearchTerms.term, impressions: profileSearchTerms.impressions })
     .from(profileSearchTerms)
-    .where(eq(profileSearchTerms.locationId, l.id))
-    .orderBy(sql`${profileSearchTerms.month} desc, ${profileSearchTerms.impressions} desc`)
+    .where(
+      and(
+        eq(profileSearchTerms.locationId, l.id),
+        sql`${profileSearchTerms.month} = (select max(month) from seo.profile_search_terms where location_id = ${l.id})`,
+      ),
+    )
+    .orderBy(sql`${profileSearchTerms.impressions} desc`)
     .limit(5);
   return {
     days: now.n,

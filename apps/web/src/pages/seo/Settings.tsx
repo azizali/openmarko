@@ -4,13 +4,13 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { Badge, Button, Card, CardHeader, Drawer, Field, Input, NewButton, Select, cn } from "../../components/ui";
-import { Feedback, useFeedback, useToast } from "../../components/Feedback";
+import { Feedback, LoadError, useFeedback, useToast } from "../../components/Feedback";
 import { Row } from "../../components/Table";
 import { messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
 import { engineNames, locationApi, seoApi, type Engine, type Limits } from "./api";
 import { SeoHeader, useSeo } from "./Seo";
-import { ChecksFields, ServicesField, connectGoogle, everyLabel, type Checks, type Every } from "./fields";
+import { ChecksFields, ServicesField, connectGoogle, everyLabel, useOAuthError, type Checks, type Every } from "./fields";
 
 // ---------- The page ----------
 
@@ -22,6 +22,7 @@ export default function Settings() {
   const toast = useToast();
   const navigate = useNavigate();
   const here = locationApi(orgId, location.id);
+  useOAuthError((text) => toast.error(text, "Could not connect Google"));
 
   const setStatus = async (status: "active" | "paused" | "archived") => {
     if (status === "archived" && !confirm(`Remove ${location.name} from SEO? Its checks stop and it leaves every page.`)) return;
@@ -161,7 +162,12 @@ function ChecksDrawer({ open, onClose, limits }: { open: boolean; onClose: () =>
     e.preventDefault();
     if (!value.engines.length) return fb.fail("Pick at least one assistant.");
     setBusy(true);
-    const r = await locationApi(orgId, location.id).patch(value);
+    // Only what changed: after a Plan downgrade, changing the assistants alone must not be refused for the grid.
+    const r = await locationApi(orgId, location.id).patch({
+      ...(value.gridSize !== location.gridSize ? { gridSize: value.gridSize } : {}),
+      ...(value.checkEvery !== location.checkEvery ? { checkEvery: value.checkEvery } : {}),
+      ...(value.engines.join() !== location.engines.join() ? { engines: value.engines } : {}),
+    });
     setBusy(false);
     if (r.error) return fb.fail(messageOf(r.error));
     await reload();
@@ -209,7 +215,7 @@ function ProfileDrawer({ open, onClose }: { open: boolean; onClose: () => void }
   return (
     <Drawer open={open} onClose={onClose} title="Google profile" onSubmit={submit} feedback={<Feedback {...fb.props} />}>
       {profiles.error ? (
-        <p className="text-[13.5px] text-muted">{profiles.error}</p>
+        <LoadError what="your Google profiles">{profiles.error}</LoadError>
       ) : !profiles.data ? null : !profiles.data.connected ? (
         <div className="space-y-4">
           <p className="text-[13.5px] text-muted">

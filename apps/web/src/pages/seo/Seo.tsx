@@ -75,27 +75,27 @@ export default function Seo() {
   useEffect(() => {
     if (location) remember(org.id, location.id);
   }, [org.id, location]);
+  // Stable between renders, so pages can depend on it (and on `can`) in effects.
+  const reload = locations.reload;
+  const value = useMemo<SeoContextValue | null>(
+    () => (location ? { orgId: org.id, location, locations: list, reload, can: (action) => can("seo", action) } : null),
+    [org.id, location, list, reload, can],
+  );
 
-  const page = (tab && tab in pages ? tab : "overview") as SeoTab;
+  const known = !!tab && Object.hasOwn(pages, tab);
+  const page = (known ? tab : "overview") as SeoTab;
   if (locations.error) return <LoadError what="SEO">{locations.error}</LoadError>;
   if (!locations.data) return null;
   // Nothing launched yet: a draft goes back to where setup left off.
-  if (!location) {
+  if (!location || !value) {
     const draft = locations.data.find((l) => l.status === "draft");
     return <Navigate replace to={draft ? `/seo/setup?location=${draft.id}` : "/seo/setup"} />;
   }
   const Page = pages[page];
-  const value: SeoContextValue = {
-    orgId: org.id,
-    location,
-    locations: list,
-    reload: locations.reload,
-    can: (action) => can("seo", action),
-  };
   return (
     <SeoContext value={value}>
       {/* A tab name that isn't a page lands on the overview. */}
-      {tab && !(tab in pages) ? <Navigate replace to="/seo" /> : <Page />}
+      {tab && !known ? <Navigate replace to="/seo" /> : <Page />}
     </SeoContext>
   );
 }

@@ -7,7 +7,7 @@ import type { AppContext } from "@app/kernel";
 import { getLocation } from "../locations/service";
 import { keywordMetrics, keywords, serpResults } from "../schema";
 import { itemsOf, latestSerps } from "./latest";
-import { sum, weekly } from "./series";
+import { baseline, sum, weekly } from "./series";
 
 export async function keywordsPage(ctx: AppContext, orgId: string, locationId: string) {
   const l = await getLocation(ctx, orgId, locationId);
@@ -53,7 +53,9 @@ export async function keywordsPage(ctx: AppContext, orgId: string, locationId: s
       page,
     };
   });
-  const firstPage = (xs: { yourPosition: number | null }[]) => xs.filter((x) => x.yourPosition !== null && x.yourPosition <= 10).length;
+  const onFirstPage = (x: { yourPosition: number | null }) => (x.yourPosition !== null && x.yourPosition <= 10 ? 1 : 0);
+  const firstPage = (xs: { yourPosition: number | null }[]) => sum(xs.map(onFirstPage));
+  const firstPageThen = baseline(now, before, (r) => r.keywordId, onFirstPage);
   const history = await ctx.db
     .select({ at: serpResults.checkedAt, key: serpResults.keywordId, position: serpResults.yourPosition })
     .from(serpResults)
@@ -67,7 +69,7 @@ export async function keywordsPage(ctx: AppContext, orgId: string, locationId: s
   return {
     keywords: rows,
     firstPage: firstPage(now),
-    firstPageBefore: before.length ? firstPage(before.filter((b) => now.some((n) => n.keywordId === b.keywordId))) : null,
+    firstPageBefore: firstPageThen && sum(firstPageThen),
     history: weekly(
       history.map((h) => ({ at: h.at, key: h.key, value: h.position !== null && h.position <= 10 ? 1 : 0 })),
       sum,

@@ -2,7 +2,8 @@
 // that say the most), the results card from its Google profile, what's being checked right now, and the Plan's usage.
 // The suggestions beside it come from their own route.
 
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
+import { automationSchema } from "@app/automation";
 import type { AppContext } from "@app/kernel";
 import { planLimits } from "../access";
 import { getLocationView, getLocation } from "../locations/service";
@@ -27,10 +28,12 @@ export async function overview(ctx: AppContext, orgId: string, locationId: strin
     resultsCard(ctx, l).catch(() => null),
     lastCheckedAt(ctx.db, locationId),
     planLimits(ctx, orgId),
+    // Checking until the cycle's Run finishes: that's after its suggestions are written.
     ctx.db
       .select({ n: sql<number>`count(*)::int` })
       .from(checks)
-      .where(and(eq(checks.locationId, locationId), inArray(checks.status, ["running", "filing"]))),
+      .innerJoin(automationSchema.runs, eq(automationSchema.runs.id, checks.runId))
+      .where(and(eq(checks.locationId, locationId), isNull(automationSchema.runs.finishedAt))),
   ]);
   const ready = maps.keywords.filter((k) => !k.pending);
   const ranked = kw.keywords.filter((k) => !k.pending).sort((a, b) => (a.position ?? 999) - (b.position ?? 999));

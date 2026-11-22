@@ -8,7 +8,7 @@ import { numbersOf } from "../catalog/places";
 import { getLocation } from "../locations/service";
 import { keywords, mapPoints, mapScans, mapStandings, places } from "../schema";
 import { activeKeywords, latestScans, standingsOf, type ScanRow } from "./latest";
-import { mean, sum, weekly } from "./series";
+import { baseline, mean, sum, weekly } from "./series";
 
 export async function mapsSummary(ctx: AppContext, orgId: string, locationId: string) {
   const l = await getLocation(ctx, orgId, locationId);
@@ -52,15 +52,26 @@ export async function mapsSummary(ctx: AppContext, orgId: string, locationId: st
     };
   });
   const spots = (s: ScanRow[]) => sum(s.map((x) => x.gridSize * x.gridSize));
-  const comparable = before.filter((b) => now.some((n) => n.keywordId === b.keywordId));
+  const top3Then = baseline(
+    now,
+    before,
+    (s) => s.keywordId,
+    (s) => s.yourTop3Spots,
+  );
+  const avgThen = baseline(
+    now,
+    before,
+    (s) => s.keywordId,
+    (s) => s.yourAvgPosition,
+  );
   return {
     keywords: rows,
     totals: {
       top3: sum(now.map((s) => s.yourTop3Spots)),
       spots: spots(now),
-      top3Before: comparable.length ? sum(comparable.map((s) => s.yourTop3Spots)) : null,
+      top3Before: top3Then && sum(top3Then),
       avg: now.length ? mean(now.map((s) => s.yourAvgPosition)) : null,
-      avgBefore: comparable.length ? mean(comparable.map((s) => s.yourAvgPosition)) : null,
+      avgBefore: avgThen && mean(avgThen),
       leading: rows.filter((r) => !r.pending && !r.leader).length,
     },
   };

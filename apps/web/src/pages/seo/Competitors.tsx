@@ -149,7 +149,7 @@ export default function Competitors() {
                           <span className="flex flex-wrap items-center gap-1.5">
                             <span className="truncate text-[14px] font-medium">{row.name}</span>
                             {row.kind === "directory" && <Badge>Directory</Badge>}
-                            {row.addedByYou && <Badge tone="accent">Added by you</Badge>}
+                            {row.addedByYou && <Badge>Added by you</Badge>}
                           </span>
                           <span className={cn("block text-[12.5px]", row.ahead ? "text-bad" : "text-muted")}>
                             Ahead of you on {row.ahead} of {data.columns.length} {noun}

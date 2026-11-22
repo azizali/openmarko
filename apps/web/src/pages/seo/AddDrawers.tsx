@@ -1,7 +1,7 @@
 // The side panels for adding to what a Location tracks: keywords (Maps and Keywords pages), questions (AI answers)
 // and a competitor (Competitors). Keywords and questions are typed one per line; each line says if it's already
 // tracked, and the count stays within the Plan. A competitor is picked from a Google search near the Location.
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Plus, Search } from "lucide-react";
 import { Badge, Button, Drawer, Field, Input, Textarea, cn, fmt } from "../../components/ui";
 import { Feedback, useFeedback } from "../../components/Feedback";
@@ -141,12 +141,20 @@ function LinesDrawer({
 function useIdeas(open: boolean) {
   const { orgId, location, can } = useSeo();
   const [ideas, setIdeas] = useState<{ keywords: { term: string; monthlySearches: number | null }[]; questions: string[] } | null>(null);
+  // Asked once per Location: the request costs money, and `can` changes identity on every render.
+  const asked = useRef<string | null>(null);
+  const manage = can("manage");
   useEffect(() => {
-    if (!open || ideas || !can("manage")) return;
+    if (!open || !manage || asked.current === location.id) return;
+    asked.current = location.id;
+    setIdeas(null);
     void locationApi(orgId, location.id)
       .ideas.get()
-      .then((r) => r.data && setIdeas(r.data));
-  }, [open, ideas, can, orgId, location.id]);
+      .then((r) => {
+        if (r.data) setIdeas(r.data);
+        else asked.current = null; // a failed request may be asked again on the next opening
+      });
+  }, [open, manage, orgId, location.id]);
   return ideas;
 }
 

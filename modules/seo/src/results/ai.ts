@@ -7,7 +7,7 @@ import type { AppContext } from "@app/kernel";
 import { getLocation } from "../locations/service";
 import { aiAnswers } from "../schema";
 import { activeQuestions, citationsOf, latestAnswers, mentionsOf } from "./latest";
-import { sum, weekly } from "./series";
+import { baseline, sum, weekly } from "./series";
 
 export async function aiPage(ctx: AppContext, orgId: string, locationId: string) {
   const l = await getLocation(ctx, orgId, locationId);
@@ -47,13 +47,18 @@ export async function aiPage(ctx: AppContext, orgId: string, locationId: string)
     .select({ at: aiAnswers.checkedAt, q: aiAnswers.questionId, engine: aiAnswers.engine, named: aiAnswers.namedYou })
     .from(aiAnswers)
     .where(and(eq(aiAnswers.locationId, l.id), gte(aiAnswers.checkedAt, sql`now() - interval '100 days'`)));
-  const comparable = before.filter((b) => now.some((n) => n.questionId === b.questionId && n.engine === b.engine));
+  const namedThen = baseline(
+    now,
+    before,
+    (a) => `${a.questionId}|${a.engine}`,
+    (a) => (a.namedYou ? 1 : 0),
+  );
   return {
     engines,
     questions,
     named: now.filter((a) => a.namedYou).length,
     total: now.length,
-    namedBefore: comparable.length ? comparable.filter((a) => a.namedYou).length : null,
+    namedBefore: namedThen && sum(namedThen),
     byEngine: engines.map((e) => ({
       engine: e,
       named: now.filter((a) => a.engine === e && a.namedYou).length,

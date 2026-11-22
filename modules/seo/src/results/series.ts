@@ -43,5 +43,16 @@ export function weekly(rows: { at: Date; key: string; value: number }[], combine
   return { labels, values };
 }
 
+/**
+ * The month-ago side of a change, comparable with now: each item now counts with its value a month ago, or with its
+ * value now when it's newer than that (so adding a keyword never shows as a gain). Null when nothing is a month old.
+ */
+export function baseline<T>(now: T[], before: T[], key: (x: T) => string, value: (x: T) => number): number[] | null {
+  if (!before.length) return null;
+  const old = new Map(before.map((b) => [key(b), value(b)]));
+  if (!now.some((n) => old.has(key(n)))) return null;
+  return now.map((n) => old.get(key(n)) ?? value(n));
+}
+
 export const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
 export const mean = (xs: number[]) => (xs.length ? Math.round((sum(xs) / xs.length) * 10) / 10 : 0);

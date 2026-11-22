@@ -8,7 +8,7 @@ import { messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
 import { locationApi, seoApi, type SearchPage } from "./api";
 import { AddKeywords } from "./AddDrawers";
-import { Headline, Source, rankTone } from "./parts";
+import { Headline, Source, rankTone, useReloadWhilePending } from "./parts";
 import { SeoHeader, useSeo } from "./Seo";
 
 type Row = SearchPage["keywords"][number];
@@ -79,6 +79,7 @@ export default function Keywords() {
   const { orgId, location, can } = useSeo();
   const page = useLoad(() => locationApi(orgId, location.id).results.search.get(), [orgId, location.id]);
   const limits = useLoad(() => seoApi(orgId).limits.get(), [orgId]);
+  useReloadWhilePending(!!page.data?.keywords.some((k) => k.pending), page.reload);
   const [open, setOpen] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const toast = useToast();

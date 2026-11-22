@@ -1,6 +1,7 @@
 // Form fields SEO setup and SEO settings share: the business's services, and how its checks run (within the Plan),
 // plus connecting Google and a sentence saying what the checks cover.
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router";
 import { Plus, X } from "lucide-react";
 import { Button, Checkbox, Field, Input, Segmented } from "../../components/ui";
 import { api, messageOf } from "../../lib/api";
@@ -10,6 +11,19 @@ export const engines: Engine[] = ["chatgpt", "google_ai", "perplexity"];
 export type Every = "daily" | "weekly" | "monthly";
 export const everyLabel: Record<Every, string> = { daily: "Every day", weekly: "Every week", monthly: "Every month" };
 const perMonth: Record<Every, number> = { daily: 30, weekly: 4, monthly: 1 };
+
+/** Says why Google's sign-in came back without connecting (`?oauth_error=` on the address it returned to). */
+export function useOAuthError(say: (text: string) => void) {
+  const [params] = useSearchParams();
+  const error = params.get("oauth_error");
+  // Said once per error, however often `say` changes.
+  const said = useRef<string | null>(null);
+  useEffect(() => {
+    if (!error || said.current === error) return;
+    said.current = error;
+    say(error === "cancelled" || error === "access_denied" ? "Google sign-in was cancelled." : error);
+  }, [error, say]);
+}
 
 /** Sends the browser to sign in to Google; it comes back to `returnTo` (at once, when the app has no Google client). */
 export async function connectGoogle(orgId: string, returnTo: string): Promise<string | null> {
@@ -70,7 +84,10 @@ export type Checks = { gridSize: number; checkEvery: Every; engines: Engine[] };
 
 /** Grid size, how often, and which assistants: only what the Plan allows is offered. */
 export function ChecksFields({ value, onChange, limits }: { value: Checks; onChange: (v: Checks) => void; limits: Limits | null }) {
-  const grids = [5, 7, 9].filter((n) => limits?.gridSize == null || n <= limits.gridSize);
+  // A Plan smaller than the smallest grid still gets the smallest: the API takes 5, 7 or 9.
+  const allowed = [5, 7, 9].filter((n) => limits?.gridSize == null || n <= limits.gridSize);
+  const grids = allowed.length ? allowed : [5];
+  const top = grids[grids.length - 1]!;
   const everies = (["daily", "weekly", "monthly"] as Every[]).filter(
     (e) => limits?.checksPerMonth == null || perMonth[e] <= limits.checksPerMonth,
   );
@@ -109,8 +126,7 @@ export function ChecksFields({ value, onChange, limits }: { value: Checks; onCha
       </fieldset>
       {capped && (
         <p className="text-[12.5px] text-muted">
-          Your plan allows up to a {Math.max(...grids)} × {Math.max(...grids)} grid, checked{" "}
-          {everyLabel[everies[0] ?? "monthly"].toLowerCase()} at most.
+          Your plan allows up to a {top} × {top} grid, checked {everyLabel[everies[0] ?? "monthly"].toLowerCase()} at most.
         </p>
       )}
     </div>

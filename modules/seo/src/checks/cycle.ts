@@ -189,6 +189,12 @@ export async function startCycle(
     await finishRun(ctx, runId, {});
     return { runId, checkIds };
   }
+  // Every check failed to post (no provider connected, say): nothing will come back, so the Run ends here.
+  const posted = await ctx.db.select({ status: checks.status, error: checks.error }).from(checks).where(eq(checks.runId, runId));
+  if (posted.every((c) => c.status === "failed")) {
+    await finishRun(ctx, runId, { error: posted[0]?.error ?? "No check could be started." });
+    return { runId, checkIds };
+  }
   for (const checkId of checkIds) await ctx.enqueue?.(COLLECT_JOB, { checkId }, { organizationId: orgId });
   return { runId, checkIds };
 }

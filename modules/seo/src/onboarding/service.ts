@@ -10,6 +10,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { invalid, type AppContext } from "@app/kernel";
 import { invoke, type Coordinates, type KeywordIdea, type PlaceCandidate } from "@app/integrations";
+import { automationSchema } from "@app/automation";
 import { checks, places, websites } from "../schema";
 import { startCycle } from "../checks/cycle";
 import { getLocation, setStatus } from "../locations/service";
@@ -100,7 +101,7 @@ export type Progress = {
   checks: { kind: string; status: string; calls: number; received: number }[];
 };
 
-/** How far a Run's checks have got: for the Launch screen's progress. */
+/** How far a Run's checks have got, and whether it's done (suggestions included): for the Launch screen. */
 export async function progressOf(ctx: AppContext, orgId: string, locationId: string, runId: string): Promise<Progress> {
   await getLocation(ctx, orgId, locationId);
   const rows = await ctx.db
@@ -112,5 +113,10 @@ export async function progressOf(ctx: AppContext, orgId: string, locationId: str
     })
     .from(checks)
     .where(and(eq(checks.runId, runId), eq(checks.locationId, locationId)));
-  return { finished: rows.length > 0 && rows.every((r) => r.status === "done" || r.status === "failed"), checks: rows };
+  // Finished when the Run is: that's after the last check is filed and the suggestions are written.
+  const [run] = await ctx.db
+    .select({ finishedAt: automationSchema.runs.finishedAt })
+    .from(automationSchema.runs)
+    .where(eq(automationSchema.runs.id, runId));
+  return { finished: !!run?.finishedAt, checks: rows };
 }

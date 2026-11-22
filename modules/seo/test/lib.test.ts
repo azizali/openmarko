@@ -2,6 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import { spotsOf, standingOf, standingsOf, zoomFor } from "../src/lib/grid";
 import { excerptOf, mentionsIn, nameForms, normalizeQuestion, normalizeTerm } from "../src/lib/text";
+import { baseline, weekly } from "../src/results/series";
 
 describe("the grid", () => {
   test("spots spread evenly, north edge first, with the door in the middle", () => {
@@ -54,5 +55,46 @@ describe("words", () => {
     expect(excerptOf("Short.")).toBe("Short.");
     const long = `${"word ".repeat(80)}end.`;
     expect(excerptOf(long, 50).endsWith("…")).toBe(true);
+  });
+});
+
+describe("changes over 30 days", () => {
+  test("a month ago counts what's new as unchanged, so adding a keyword isn't a gain", () => {
+    const now = [
+      { k: "a", v: 10 },
+      { k: "b", v: 7 },
+    ];
+    expect(
+      baseline(
+        now,
+        [{ k: "a", v: 4 }],
+        (x) => x.k,
+        (x) => x.v,
+      ),
+    ).toEqual([4, 7]);
+    expect(
+      baseline(
+        now,
+        [],
+        (x) => x.k,
+        (x) => x.v,
+      ),
+    ).toBeNull();
+    expect(
+      baseline(
+        now,
+        [{ k: "z", v: 1 }],
+        (x) => x.k,
+        (x) => x.v,
+      ),
+    ).toBeNull();
+  });
+
+  test("weekly series carry the last reading forward and start empty", () => {
+    const now = Date.UTC(2026, 10, 20);
+    const s = weekly([{ at: new Date(Date.UTC(2026, 10, 3)), key: "a", value: 5 }], (xs) => xs[0]!, now);
+    expect(s.values).toHaveLength(13);
+    expect(s.values.at(-1)).toBe(5);
+    expect(s.values[0]).toBeNull();
   });
 });

@@ -9,7 +9,7 @@ import { LoadError } from "../../components/Feedback";
 import { useLoad } from "../../lib/useLoad";
 import { locationApi, seoApi, type MapsKeyword, type MapsSummary } from "./api";
 import { AddKeywords } from "./AddDrawers";
-import { Bar, Change, GridLegend, GridMap, GridThumb, Source, rankIn } from "./parts";
+import { Bar, Change, GridLegend, GridMap, GridThumb, Source, rankIn, useReloadWhilePending } from "./parts";
 import { SeoHeader, useSeo } from "./Seo";
 
 type View = "map" | "why" | "time";
@@ -25,6 +25,7 @@ export default function Maps() {
   const summary = useLoad(() => locationApi(orgId, location.id).results.maps.get(), [orgId, location.id]);
   const limits = useLoad(() => seoApi(orgId).limits.get(), [orgId]);
   const [adding, setAdding] = useState(false);
+  useReloadWhilePending(!!summary.data?.keywords.some((k) => k.pending), summary.reload);
 
   const ready = (summary.data?.keywords ?? []).filter((k): k is Ready => !k.pending);
   const asked = params.get("keyword");
@@ -299,7 +300,7 @@ function MapView({ d }: { d: MapsKeyword }) {
           <Stat label="At your door" value={door ?? "20+"} hint="position" />
         </div>
         {atSpot ? (
-          <div className="mt-5 rounded-lg border border-line p-3">
+          <div className="mt-5 border-t border-line pt-3">
             <div className="flex items-center justify-between gap-2">
               <p className="text-[13px] font-medium">
                 Searching from this spot: {chosen ? nameOf(chosen) : "they"}{" "}

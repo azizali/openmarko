@@ -2,15 +2,15 @@
 // profile, pick what to track, and launch the first check. The draft Location and the step are in the address
 // (?location=…&step=…), so a reload or the round trip through Google's sign-in carries on where it was.
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { ArrowLeft, ArrowRight, Check, CircleAlert, Loader2, Plus, Search, Store } from "lucide-react";
 import { Badge, Button, Card, Checkbox, Field, Input, Progress, cn, fmt } from "../../components/ui";
-import { Feedback, LoadError, useFeedback } from "../../components/Feedback";
+import { Feedback, LoadError, useFeedback, useToast } from "../../components/Feedback";
 import { messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
 import { useOrg, useSession } from "../../lib/session";
 import { locationApi, seoApi, type Ideas, type Place } from "./api";
-import { ChecksFields, ServicesField, checkSummary, connectGoogle, engines, type Checks, type Every } from "./fields";
+import { ChecksFields, ServicesField, checkSummary, connectGoogle, engines, useOAuthError, type Checks, type Every } from "./fields";
 
 type Step = "start" | "found" | "connect" | "track" | "launch";
 const steps: { id: Step; name: string }[] = [
@@ -21,22 +21,38 @@ const steps: { id: Step; name: string }[] = [
   { id: "launch", name: "Launch" },
 ];
 
-/** Ideas cost a request: asked once per draft while this page is open, shared by the steps that use them. */
+/**
+ * Ideas cost a request: asked once per draft while this page is open, shared by the steps that use them. A failed
+ * request isn't kept, and changing the services asks again (questions are built from them).
+ */
 const ideasCache = new Map<string, Promise<{ data: Ideas | null; error: unknown }>>();
 const ideasFor = (orgId: string, locationId: string) => {
-  if (!ideasCache.has(locationId)) ideasCache.set(locationId, locationApi(orgId, locationId).ideas.get());
+  if (!ideasCache.has(locationId))
+    ideasCache.set(
+      locationId,
+      locationApi(orgId, locationId)
+        .ideas.get()
+        .then((r) => {
+          if (r.error) ideasCache.delete(locationId);
+          return r;
+        }),
+    );
   return ideasCache.get(locationId)!;
 };
 
 export default function Setup() {
-  const { can } = useSession();
+  const { can, caller, features } = useSession();
   const [params, setParams] = useSearchParams();
   const locationId = params.get("location");
-  const step = (params.get("step") as Step | null) ?? (locationId ? "found" : "start");
+  const asked = params.get("step");
+  const step: Step = steps.some((s) => s.id === asked) ? (asked as Step) : locationId ? "found" : "start";
   const at = steps.findIndex((s) => s.id === step);
   const go = (next: Step, extra: Record<string, string> = {}) =>
     setParams(Object.fromEntries(Object.entries({ location: locationId ?? "", ...extra, step: next }).filter(([, v]) => v)));
 
+  // Permissions load after the Organization is chosen: wait for them rather than refuse on a stale answer.
+  if (!caller) return null;
+  if (features.seo && !features.seo.on) return <Navigate replace to="/" />;
   if (!can("seo", "manage"))
     return (
       <Card className="max-w-xl">
@@ -114,6 +130,7 @@ function Actions({ fb, children }: { fb: ReturnType<typeof useFeedback>; childre
 function StartStep({ onMade }: { onMade: (id: string) => void }) {
   const org = useOrg();
   const navigate = useNavigate();
+  const toast = useToast();
   const [query, setQuery] = useState("");
   const [found, setFound] = useState<Place[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -132,7 +149,16 @@ function StartStep({ onMade }: { onMade: (id: string) => void }) {
     setBusy(p.placeId);
     const r = await seoApi(org.id).locations.post({ place: p, name: p.name, lat: p.lat, lng: p.lng });
     setBusy(null);
-    if (r.error) return fb.fail(messageOf(r.error), "Could not add it");
+    if (r.error) {
+      // Already set up: carry on with its draft, or open it.
+      const existing = (r.error.value as { details?: { locationId?: string; status?: string } } | undefined)?.details;
+      if ((r.error as { status: number }).status === 409 && existing?.locationId) {
+        if (existing.status === "draft") return onMade(existing.locationId);
+        toast.success(`${p.name} is already set up`, "Here's where it stands.");
+        return navigate(`/seo/overview?location=${existing.locationId}`);
+      }
+      return fb.fail(messageOf(r.error), "Could not add it");
+    }
     onMade(r.data.id);
   };
 
@@ -224,6 +250,7 @@ function FoundStep({ locationId, onNext, onRestart }: { locationId: string; onNe
     });
     setBusy(false);
     if (r.error) return fb.fail(messageOf(r.error));
+    if (form.services.join("|") !== (ideas.data?.services ?? loc.data?.services ?? []).join("|")) ideasCache.delete(locationId);
     onNext();
   };
   // Not this business: the draft goes, and setup starts again.
@@ -275,6 +302,7 @@ function ConnectStep({ locationId, onBack, onNext }: { locationId: string; onBac
   const [busy, setBusy] = useState(false);
   const fb = useFeedback();
   const connected = !!profile.data?.connected;
+  useOAuthError((text) => fb.fail(text, "Could not connect"));
 
   const connect = async () => {
     setBusy(true);
@@ -420,7 +448,9 @@ function TrackStep({ locationId, onBack, onLaunched }: { locationId: string; onB
     setKwSel(new Set(ideas.data.keywords.slice(0, Math.min(8, l.keywords ?? 8)).map((k) => k.term)));
     setQSel(new Set(ideas.data.questions.slice(0, l.questions ?? undefined)));
     const every: Every = l.checksPerMonth === null || l.checksPerMonth >= 4 ? "weekly" : "monthly";
-    setChecks({ gridSize: Math.min(loc.data.gridSize, l.gridSize ?? 9), checkEvery: every, engines: [...engines] });
+    // The largest grid allowed: the API takes 5, 7 or 9.
+    const gridSize = [9, 7, 5].find((n) => n <= Math.min(loc.data!.gridSize, l.gridSize ?? 9)) ?? 5;
+    setChecks({ gridSize, checkEvery: every, engines: [...engines] });
   }, [checks, loc.data, ideas.data, limits.data]);
 
   const error = loc.error ?? ideas.error ?? limits.error;
@@ -523,6 +553,7 @@ function LaunchStep({ locationId, runId }: { locationId: string; runId: string |
   const navigate = useNavigate();
   const loc = useLoad(() => locationApi(org.id, locationId).get(), [org.id, locationId]);
   const [progress, setProgress] = useState<RunProgress | null>(null);
+  const [pollError, setPollError] = useState<string | null>(null);
   const finished = !!progress?.finished;
   const overview = useLoad(
     () => (finished ? locationApi(org.id, locationId).overview.get() : Promise.resolve({ data: null, error: null })),
@@ -534,7 +565,12 @@ function LaunchStep({ locationId, runId }: { locationId: string; runId: string |
     let live = true;
     const poll = async () => {
       const r = await locationApi(org.id, locationId).runs({ runId }).get();
-      if (live && r.data) setProgress(r.data);
+      if (!live) return;
+      if (r.error) {
+        // A run that isn't this Location's, or one that can't be read: stop asking.
+        clearInterval(t);
+        setPollError(messageOf(r.error));
+      } else setProgress(r.data);
     };
     void poll();
     const t = setInterval(() => void poll(), 2000);
@@ -545,6 +581,7 @@ function LaunchStep({ locationId, runId }: { locationId: string; runId: string |
   }, [org.id, locationId, runId, finished]);
 
   const open = () => navigate(`/seo/overview?location=${locationId}`);
+  if (pollError) return <LoadError what="the first check">{pollError}</LoadError>;
   if (!runId) {
     return (
       <>
@@ -585,7 +622,7 @@ function LaunchStep({ locationId, runId }: { locationId: string; runId: string |
               </span>
             </div>
             <Progress
-              value={c.calls ? (c.received / c.calls) * 100 : 100}
+              value={c.calls ? (c.received / c.calls) * 100 : c.status === "running" ? 0 : 100}
               tone={c.status === "failed" ? "bad" : "ink"}
               className="mt-2 ml-8"
             />
