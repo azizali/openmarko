@@ -3,7 +3,7 @@
 // Every function here takes the Organization's id and never reads another's rows.
 
 import { and, eq, ne, sql } from "drizzle-orm";
-import { invalid, logActivity, newId, notFound, type AppContext, type Tx } from "@app/kernel";
+import { conflict, invalid, logActivity, newId, notFound, type AppContext, type Tx } from "@app/kernel";
 import { setSchedule } from "@app/automation";
 import { aiEngines, domainOf, type AiEngine, type PlaceCandidate } from "@app/integrations";
 import { assertUnderLimit, assertWithinCeiling, checksPerMonth, gridSizes, type CheckEvery } from "../access";
@@ -123,6 +123,14 @@ export async function createLocation(ctx: AppContext, orgId: string, by: string 
     .from(locations)
     .where(and(eq(locations.organizationId, orgId), ne(locations.status, "archived")))) as [{ n: number }];
   await assertUnderLimit(ctx, orgId, "locations", n);
+  if (input.place) {
+    const [same] = await ctx.db
+      .select({ id: locations.id, status: locations.status })
+      .from(locations)
+      .innerJoin(places, eq(places.id, locations.placeId))
+      .where(and(eq(locations.organizationId, orgId), eq(places.googlePlaceId, input.place.placeId), ne(locations.status, "archived")));
+    if (same) throw conflict(`${input.place.name} is already set up.`, { locationId: same.id, status: same.status });
+  }
   const id = newId();
   await ctx.db.transaction(async (tx) => {
     const placeIds = input.place ? await upsertPlaces(tx, [factsFromCandidate(input.place)], "lookup") : new Map<string, string>();

@@ -108,7 +108,7 @@ export async function progressOf(ctx: AppContext, orgId: string, locationId: str
       kind: checks.kind,
       status: checks.status,
       calls: checks.calls,
-      received: sql<number>`(select count(*)::int from seo.provider_tasks t where t.check_id = ${checks.id} and t.status <> 'posted')`,
+      received: sql<number>`(select count(*)::int from seo.provider_tasks t where t.check_id = "checks"."id" and t.status <> 'posted')`,
     })
     .from(checks)
     .where(and(eq(checks.runId, runId), eq(checks.locationId, locationId)));

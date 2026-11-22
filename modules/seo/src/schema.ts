@@ -156,7 +156,13 @@ export const locations = seo.table(
       .notNull()
       .default(sql`now()`),
   },
-  (t) => [index("locations_org").on(t.organizationId, t.status)],
+  (t) => [
+    index("locations_org").on(t.organizationId, t.status),
+    // A business is tracked once per Organization (a removed one can be added again).
+    uniqueIndex("locations_place")
+      .on(t.organizationId, t.placeId)
+      .where(sql`status <> 'archived' and place_id is not null`),
+  ],
 );
 
 /** A keyword tracked for a Location, on Google Maps and Google search. */

@@ -46,8 +46,8 @@ export async function costs(ctx: AppContext) {
       gridSize: locations.gridSize,
       checkEvery: locations.checkEvery,
       engines: locations.engines,
-      keywords: sql<number>`(select count(*)::int from ${keywords} k where k.location_id = ${locations.id} and k.active)`,
-      questions: sql<number>`(select count(*)::int from ${questions} q where q.location_id = ${locations.id} and q.active)`,
+      keywords: sql<number>`(select count(*)::int from ${keywords} k where k.location_id = "locations"."id" and k.active)`,
+      questions: sql<number>`(select count(*)::int from ${questions} q where q.location_id = "locations"."id" and q.active)`,
     })
     .from(locations)
     .innerJoin(authOrganization, eq(authOrganization.id, locations.organizationId))

@@ -127,7 +127,7 @@ export async function dueChecks(ctx: AppContext): Promise<string[]> {
       and(
         eq(checks.status, "running"),
         lt(checks.queuedAt, sql`now() - interval '2 minutes'`),
-        sql`not exists (select 1 from seo.provider_tasks t where t.check_id = ${checks.id} and t.status = 'posted')`,
+        sql`not exists (select 1 from seo.provider_tasks t where t.check_id = "checks"."id" and t.status = 'posted')`,
       ),
     )
     .limit(200);

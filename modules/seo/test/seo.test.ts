@@ -6,8 +6,8 @@ import { and, eq } from "drizzle-orm";
 import { assignPlanManually, upsertPlan } from "@app/billing";
 import { connect } from "@app/integrations";
 import { addMember } from "@app/organizations";
-import { composedApp, createTestDb, ownerSession, requester, userSession, type Session, type TestDb } from "@app/testkit";
-import { collectCheck, COLLECT_JOB, CHECK_JOB, startCycle, generateSuggestions } from "../src";
+import { adminSession, composedApp, createTestDb, ownerSession, requester, userSession, type Session, type TestDb } from "@app/testkit";
+import { collectCheck, COLLECT_JOB, CHECK_JOB, dueChecks, startCycle, generateSuggestions } from "../src";
 import { checks, keywords, mapPoints, mapScans, places, suggestions } from "../src/schema";
 
 let t: TestDb;
@@ -78,6 +78,12 @@ describe("setting up a Location (onboarding)", () => {
     });
     expect(made.status).toBe(200);
     locationId = made.body.id;
+    const again = await call("POST", `${base(owner)}/locations`, {
+      headers: owner.headers,
+      body: { place, name: place.name, lat: place.lat, lng: place.lng },
+    });
+    expect(again.status).toBe(409);
+    expect(again.body.details.locationId).toBe(locationId);
     const got = await call("GET", `${base(owner)}/locations/${locationId}`, { headers: owner.headers });
     expect(got.body).toMatchObject({
       status: "draft",
@@ -158,7 +164,9 @@ describe("launching and the first check", () => {
     await drain();
     const progress = await call("GET", `${base(owner)}/locations/${locationId}/runs/${runId}`, { headers: owner.headers });
     expect(progress.body.finished).toBe(true);
-    expect(progress.body.checks.every((c: { status: string }) => c.status === "done")).toBe(true);
+    expect(
+      progress.body.checks.every((c: { status: string; calls: number; received: number }) => c.status === "done" && c.received === c.calls),
+    ).toBe(true);
     const scans = await t.ctx.db.select().from(mapScans).where(eq(mapScans.locationId, locationId));
     expect(scans).toHaveLength(3);
     const points = await t.ctx.db.select().from(mapPoints).where(eq(mapPoints.scanId, scans[0]!.id));
@@ -326,6 +334,34 @@ describe("suggestions", () => {
     await generateSuggestions(t.ctx, owner.orgId, locationId);
     const again = await call("GET", `${base(owner)}/locations/${locationId}/suggestions`, { headers: owner.headers });
     expect(again.body.open.map((x: { id: string }) => x.id)).not.toContain(one.id);
+  });
+});
+
+describe("the worker's fallback and the costs page", () => {
+  test("a check left running with nothing waiting is found and filed", async () => {
+    const [c] = await t.ctx.db.select().from(checks).where(eq(checks.locationId, locationId)).limit(1);
+    await t.ctx.db
+      .update(checks)
+      .set({ status: "running", queuedAt: new Date(Date.now() - 10 * 60_000) })
+      .where(eq(checks.id, c!.id));
+    expect(await dueChecks(t.ctx)).toContain(c!.id);
+    await t.ctx.db.update(checks).set({ status: "done" }).where(eq(checks.id, c!.id));
+    expect(await dueChecks(t.ctx)).not.toContain(c!.id);
+  });
+
+  test("app admins see each Location's monthly cost from what it tracks", async () => {
+    const admin = await adminSession(t.ctx);
+    const res = await call("GET", "/api/v1/admin/seo/costs", { headers: admin.headers });
+    expect(res.status).toBe(200);
+    const loc = res.body.locations.find((l: { id: string }) => l.id === locationId);
+    const kws = await t.ctx.db
+      .select()
+      .from(keywords)
+      .where(and(eq(keywords.locationId, locationId), eq(keywords.active, true)));
+    expect(loc.keywords).toBe(kws.length);
+    expect(loc.estimate.total).toBeGreaterThan(0);
+    expect(res.body.thisMonth.find((o: { organizationId: string }) => o.organizationId === owner.orgId).costMicros).toBeGreaterThan(0);
+    expect((await call("GET", "/api/v1/admin/seo/costs", { headers: owner.headers })).status).toBe(403);
   });
 });
 

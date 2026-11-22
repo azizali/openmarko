@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "locations_place" ON "seo"."locations" USING btree ("organization_id","place_id") WHERE status <> 'archived' and place_id is not null;

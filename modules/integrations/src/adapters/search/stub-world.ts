@@ -358,10 +358,20 @@ export function stubAi(q: AiQuery, now = Date.now()): AiResult {
 }
 
 export function stubPlaces(query: string, near?: Coordinates | null): PlaceCandidate[] {
+  // Best match first: words of the name count most, then the website and the address.
   const w = words(query).filter((x) => x.length > 2);
-  const matches = stubBusinesses.filter((b) => w.some((x) => words(`${b.name} ${b.domain ?? ""} ${b.address}`).includes(x)));
-  const list = (matches.length ? matches : stubBusinesses).slice();
-  if (near) list.sort((a, b) => km(near, a) - km(near, b));
+  const score = (b: Biz) =>
+    w.reduce(
+      (n, x) =>
+        n + (words(b.name).includes(x) ? 3 : 0) + (words(b.domain ?? "").includes(x) ? 2 : 0) + (words(b.address).includes(x) ? 1 : 0),
+      0,
+    );
+  const list = stubBusinesses
+    .map((b) => ({ b, s: score(b), d: near ? km(near, b) : 0 }))
+    .filter((x) => x.s > 0 || !w.length)
+    .sort((x, y) => y.s - x.s || x.d - y.d)
+    .map((x) => x.b);
+  if (!list.length) list.push(...stubBusinesses);
   return list.slice(0, 5).map((b) => ({
     placeId: stubPlaceId(b),
     name: b.name,
