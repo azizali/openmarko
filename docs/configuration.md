@@ -46,7 +46,7 @@ Everything is checked at boot (`packages/kernel/src/config.ts`): a bad value lis
 | `TRUSTED_ORIGINS` | | Extra browser origins that may call with cookies. |
 | `PORT` | | API port (default 3000). |
 | `ADMIN_EMAILS` | | People who are app admins at sign-up, and existing accounts promoted at boot. |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | | Google sign-in. Both, or neither. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | | Google sign-in, and the OAuth client Organizations connect their Google Business Profile with. Both, or neither. Add `APP_URL/api/v1/oauth/google_business/callback` to the client's redirect URIs. Without them, connecting a Google profile makes a stub Connection. |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | | Stripe for the billing module. Checkout needs the key; webhooks need the webhook secret. |
 | `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | | Cloudflare Turnstile before the chat widget starts a conversation. Both, or neither. |
 | `TEST_DATABASE_URL` | | Where `bun test` creates and drops databases (default: the local Docker server). |
@@ -63,5 +63,7 @@ Which widget the chat button inside the app answers as is not an environment var
 Every provider adapter has a stub that answers with made-up data and no network call, so the app works end to end with no vendor account (ADR 0013). Each Connection has its own mode (ADR 0029). An app admin chooses it in Admin → Connections when connecting, and can switch it later. A key an Organization adds in Settings → Integrations is live. A Connection made in code is a stub unless the code says otherwise, so tests never reach a vendor. The seed connects SMTP live (Mailpit, on this machine), and Anthropic and OpenAI as stubs; to use real models, disconnect a seeded one and connect it again with a real key.
 
 ## Where provider accounts live
+
+Search data for the SEO module (**DataForSEO**: login and password) and finding a business (**Google Places**: an API key) are the app's own Connections only, in Admin → Connections: Organizations can't bring their own, and pay for SEO through their Plan's limits. Their usage is recorded as cost-only meters (`seo.requests`, `places.requests`): Admin → SEO costs reads them, Plans never block them. Both are stubs until connected live; the stub answers from a made-up market of dental practices in Austin, so every Location set up in stub mode lives there.
 
 Keys for email, models and Slack are **Connections** (Settings → Integrations for an Organization, Admin → Connections for the app's own), encrypted at rest. Admin → Models shows the model vendors from the same Connections with everything else about models: the models each connected vendor offers (asked of the vendor's own API, kept ten minutes), the app's model names and its default. Stripe, Google sign-in and Turnstile are the app's own services and come from `.env`, because Better Auth and the billing routes need them at boot.

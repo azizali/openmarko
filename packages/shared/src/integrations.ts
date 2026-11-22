@@ -22,7 +22,17 @@ import type { Resource } from "./access";
 export type Attach = "app" | "partner" | "organization";
 export const attachLabel: Record<Attach, string> = { app: "App", partner: "Partner", organization: "Organization" };
 
-export type CapabilityId = "email.send" | "notify.send" | "llm.complete" | "llm.embed";
+export type CapabilityId =
+  | "email.send"
+  | "notify.send"
+  | "llm.complete"
+  | "llm.embed"
+  | "search.maps"
+  | "search.organic"
+  | "search.ai"
+  | "search.keywords"
+  | "places.find"
+  | "profile.manage";
 
 export type Capability = {
   id: CapabilityId;
@@ -70,11 +80,61 @@ export const capabilities: Capability[] = [
     permission: ["setup", "connect"],
     ops: ["embed(text)"],
   },
+  // Search data for the SEO module: asked asynchronously (post, then collect), because the provider's cheap queue
+  // answers in minutes. Contracts in modules/integrations/src/adapters/search/contract.ts.
+  {
+    id: "search.maps",
+    label: "Google Maps results",
+    does: "The businesses Google Maps lists for a keyword, searched from one spot.",
+    max: "one",
+    permission: ["setup", "connect"],
+    ops: ["post(queries)", "collect(tasks)"],
+  },
+  {
+    id: "search.organic",
+    label: "Google search results",
+    does: "Google's first page for a keyword, with its map pack, AI Overview and related questions.",
+    max: "one",
+    permission: ["setup", "connect"],
+    ops: ["post(queries)", "collect(tasks)"],
+  },
+  {
+    id: "search.ai",
+    label: "AI answers",
+    does: "What ChatGPT, Google's AI Overview and Perplexity answer to a question, and the sites they cite.",
+    max: "one",
+    permission: ["setup", "connect"],
+    ops: ["post(queries)", "collect(tasks)"],
+  },
+  {
+    id: "search.keywords",
+    label: "Keyword data",
+    does: "Searches a month for a keyword, and keywords a website ranks for.",
+    max: "one",
+    permission: ["setup", "connect"],
+    ops: ["volume(terms)", "ideas(domain, seeds)"],
+  },
+  {
+    id: "places.find",
+    label: "Find a business",
+    does: "Looks a business up on Google by its name or address.",
+    max: "one",
+    permission: ["setup", "connect"],
+    ops: ["find(query)"],
+  },
+  {
+    id: "profile.manage",
+    label: "Google Business Profile",
+    does: "Reads and changes a business's Google profile, publishes posts, and reads calls and clicks.",
+    max: "one",
+    permission: ["setup", "connect"],
+    ops: ["locations()", "read(location)", "update(location, change)", "post(location, text)", "performance(location, range)"],
+  },
 ];
 export const capabilityOf = (id: CapabilityId) => capabilities.find((c) => c.id === id)!;
 
-export type Category = "Email" | "AI models" | "Notifications";
-export const categories: Category[] = ["Email", "AI models", "Notifications"];
+export type Category = "Email" | "AI models" | "Notifications" | "Search data" | "Google";
+export const categories: Category[] = ["Email", "AI models", "Notifications", "Search data", "Google"];
 
 export type Auth = "oauth" | "api_key";
 /**
@@ -93,7 +153,10 @@ export type ProviderId =
   | "anthropic"
   | "openai"
   | "google_ai"
-  | "openrouter";
+  | "openrouter"
+  | "dataforseo"
+  | "google_places"
+  | "google_business";
 
 export type Provider = {
   id: ProviderId;
@@ -247,6 +310,47 @@ export const providers: Provider[] = [
     blurb: "One key for many models. Pay per token.",
     capabilities: ["llm.complete"],
     fields: [{ key: "apiKey", label: "API key", secret: true }],
+  }),
+  p({
+    id: "dataforseo",
+    name: "DataForSEO",
+    mark: "D4",
+    color: "#2563eb",
+    category: "Search data",
+    auth: "api_key",
+    // The app's own account only: customers pay for SEO through their Plan's limits, not with their own key.
+    attach: "app",
+    blurb: "Google Maps, Google search and AI answers, keyword volumes. Pay per request.",
+    capabilities: ["search.maps", "search.organic", "search.ai", "search.keywords"],
+    fields: [
+      { key: "login", label: "API login", placeholder: "you@example.com" },
+      { key: "password", label: "API password", secret: true },
+    ],
+  }),
+  p({
+    id: "google_places",
+    name: "Google Places",
+    vendor: "Google",
+    mark: "G",
+    color: "#34a853",
+    category: "Google",
+    auth: "api_key",
+    attach: "app",
+    blurb: "Finds a business on Google by name or address, when someone sets up SEO.",
+    capabilities: ["places.find"],
+    fields: [{ key: "apiKey", label: "API key", secret: true }],
+  }),
+  p({
+    id: "google_business",
+    name: "Google Business Profile",
+    vendor: "Google",
+    mark: "G",
+    color: "#4285f4",
+    category: "Google",
+    auth: "oauth",
+    attach: "organization",
+    blurb: "Apply suggestions to your Google profile, publish posts, and see calls and clicks from Google.",
+    capabilities: ["profile.manage"],
   }),
 ];
 export const providerOf = (id: ProviderId) => providers.find((x) => x.id === id);

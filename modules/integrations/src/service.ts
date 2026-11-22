@@ -16,6 +16,7 @@ import {
 import { capabilityOf, meterOf, providerOf, type CapabilityId, type ProviderId } from "@app/shared";
 import { connections, credentials, webhookEvents } from "./schema";
 import { adapterFor } from "./adapters";
+import { accessTokenFor } from "./oauth";
 import type { Mode } from "./mode";
 
 /** What a Connection belongs to: the app itself, or an Organization (as itself, or as a Partner for its Clients). */
@@ -304,7 +305,7 @@ export async function invoke<T = unknown>(
   const meter = meterOf(conn.providerId);
   const byok = conn.organizationId !== null;
   const estimate = adapter.estimate?.(capability, input) ?? 1;
-  if (meter && organizationId) await billing.assertMeterAllowed(organizationId, meter.meter, estimate, { byok });
+  if (meter && organizationId && !meter.costOnly) await billing.assertMeterAllowed(organizationId, meter.meter, estimate, { byok });
 
   const result = await adapter.call(capability, input, {
     mode: conn.mode,
@@ -312,9 +313,11 @@ export async function invoke<T = unknown>(
     externalId: conn.externalId,
     secrets: () => readSecrets(ctx, conn.id),
     settings: conn.settings,
+    accessToken: () => accessTokenFor(ctx, conn.id, conn.providerId),
   });
 
-  if (meter && organizationId) {
+  // A call that cost nothing and used nothing (collecting results already paid for) leaves no usage row.
+  if (meter && organizationId && (result.quantity > 0 || result.costMicros > 0)) {
     await billing.recordUsage(ctx.db, {
       organizationId,
       meter: meter.meter,

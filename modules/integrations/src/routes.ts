@@ -4,6 +4,7 @@ import { permissionsFor, providerOf, providers, requireAllowed, type ProviderId,
 import { connect, disconnect, disconnectAppConnection, listAppConnections, listConnections, setAppConnectionMode } from "./service";
 import { receiveWebhook, WEBHOOK_SECRET_FIELD } from "./webhooks";
 import { splitFieldValues } from "./fields";
+import { finishOAuth, oauthProviderOf, startOAuth } from "./oauth";
 
 const connectBody = t.Object({
   providerId: t.String({ minLength: 1 }),
@@ -21,19 +22,25 @@ function knownProvider(id: string) {
   return p;
 }
 
-/** The catalog as the web app renders it: each provider with its fields, for the connect forms. */
-const catalog = (extraFields = false) =>
-  providers.map((p) => ({
-    id: p.id,
-    name: p.name,
-    vendor: p.vendor ?? null,
-    mark: p.mark,
-    color: p.color,
-    category: p.category,
-    blurb: p.blurb,
-    capabilities: p.capabilities,
-    fields: [...(p.fields ?? []), ...(extraFields ? [WEBHOOK_SECRET_FIELD] : [])],
-  }));
+/**
+ * The catalog as the web app renders it: each provider with its fields, for the connect forms. An Organization sees
+ * what it may connect itself (not the app-only accounts); the app sees what it connects with a key (not OAuth).
+ */
+const catalog = (forApp = false) =>
+  providers
+    .filter((p) => (forApp ? p.auth !== "oauth" : p.attach !== "app"))
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      vendor: p.vendor ?? null,
+      mark: p.mark,
+      color: p.color,
+      category: p.category,
+      blurb: p.blurb,
+      auth: p.auth,
+      capabilities: p.capabilities,
+      fields: [...(p.fields ?? []), ...(forApp ? [WEBHOOK_SECRET_FIELD] : [])],
+    }));
 
 /**
  * Settings → Integrations: list, connect and disconnect. Connecting a provider needs every permission its
@@ -74,6 +81,20 @@ export function integrationRoutes(ctx: AppContext) {
           return { id };
         },
         { detail: { summary: "Connect a provider" }, params: ids(), body: connectBody },
+      )
+      .post(
+        "/oauth/:providerId",
+        async ({ caller, params, body }) => {
+          const provider = knownProvider(params.providerId);
+          oauthProviderOf(provider.id);
+          for (const [resource, action] of permissionsFor(provider)) requireAllowed(caller, resource as Resource, action);
+          return startOAuth(ctx, { organizationId: caller.orgId, userId: caller.userId, providerId: provider.id, returnTo: body.returnTo });
+        },
+        {
+          detail: { summary: "Start connecting a provider by signing in to it (OAuth): returns the address to send the browser to" },
+          params: t.Object({ orgId: t.String({ format: "uuid" }), providerId: t.String() }),
+          body: t.Object({ returnTo: t.String({ maxLength: 500 }) }),
+        },
       )
       .delete(
         "/:connectionId",
@@ -162,5 +183,18 @@ export function integrationRoutes(ctx: AppContext) {
     { detail: { summary: "Receive a signed provider webhook" } },
   );
 
-  return new Elysia({ name: "integrations.all" }).use(orgRoutes).use(adminRoutes).use(webhooks);
+  // Where a provider sends the browser back after signing in. The signed state names the Organization and the Member.
+  const oauthCallback = new Elysia({ name: "integrations.oauth" }).get(
+    "/api/v1/oauth/:providerId/callback",
+    async ({ params, query, redirect }) => {
+      const back = await finishOAuth(ctx, params.providerId, query);
+      return redirect(`${ctx.cfg.appUrl}${back}`, 302);
+    },
+    {
+      detail: { summary: "The provider's sign-in comes back here (OAuth callback)" },
+      query: t.Object({ code: t.Optional(t.String()), state: t.Optional(t.String()), error: t.Optional(t.String()) }),
+    },
+  );
+
+  return new Elysia({ name: "integrations.all" }).use(orgRoutes).use(adminRoutes).use(webhooks).use(oauthCallback);
 }

@@ -105,6 +105,7 @@ const live = (secrets: Record<string, string>, settings: Record<string, string> 
   externalId: null,
   secrets: async () => secrets,
   settings,
+  accessToken: async () => "",
 });
 
 describe("live providers send what they expect", () => {

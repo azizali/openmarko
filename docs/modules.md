@@ -19,7 +19,9 @@ Reach other modules through their `index.ts` only. Reach billing and knowledge t
 1. A catalog entry in `packages/shared/src/integrations.ts`: id, name, category, `attach`, `capabilities`, and the `fields` a person fills in (secret fields are encrypted; the rest become settings). A new capability goes in `capabilities` with the permission connecting it needs.
 2. An adapter in `modules/integrations/src/adapters/`: `{ provider, capabilities, estimate?, call }`. `call` gets `mode` (`stub` or `live`), `secrets()` and `settings`. Always implement the stub.
 3. Register the adapter in `adapters/index.ts`. If it costs money, a meter in `packages/shared/src/metering.ts`.
-4. Call it with `invoke(ctx, orgId, "capability.id", input)`. It picks the Connection, checks the Plan, meters, and records usage.
+4. Call it with `invoke(ctx, orgId, "capability.id", input)`.
+
+A provider people connect by signing in (OAuth) has `auth: "oauth"` and no fields, plus an entry in `oauthProviders` (`modules/integrations/src/oauth.ts`): its consent and token addresses, scopes, and the app's client. The web app starts it with `POST …/connections/oauth/<provider>` and sends the browser to the address it returns; the provider comes back to `/api/v1/oauth/<provider>/callback`, which stores the refresh token as the Connection's secret. Adapters get `accessToken()` in their call context. A cost the app pays but Plans don't sell is a meter with `costOnly: true`: recorded, never checked. It picks the Connection, checks the Plan, meters, and records usage.
 
 ## A feature switch
 

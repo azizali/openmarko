@@ -10,6 +10,8 @@ export type CallContext = {
   secrets: () => Promise<Record<string, string>>;
   /** The connection's non-secret settings (from the provider's fields). */
   settings: Record<string, string>;
+  /** For OAuth providers: a current access token (refreshed as needed). Live calls only. */
+  accessToken: () => Promise<string>;
 };
 
 export type CallResult<T = unknown> = {
