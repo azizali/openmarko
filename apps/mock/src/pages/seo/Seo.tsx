@@ -24,7 +24,6 @@ import {
   GRID_SPOTS,
   gridFor,
   kinds,
-  later,
   suggestions,
   top3Spots,
   volumeOf,
@@ -36,6 +35,17 @@ import {
 } from "../../mock/seo";
 
 type Filter = "all" | Suggestion["helps"];
+
+/** One line under each page's title: what the page answers, not how it works (that is under Data source). */
+const blurbs: Record<CheckId | "overview" | "costs", string> = {
+  overview: "Where you show up this week, and what to do next.",
+  maps: `How often you're in the top 3, from ${GRID_SPOTS} spots around you.`,
+  keywords: "Where your website ranks on Google for each keyword.",
+  ai: "Whether ChatGPT, Google AI and Perplexity recommend you.",
+  competitors: "Who beats you, keyword by keyword. Found for you.",
+  costs: "What each check costs to run, per month.",
+};
+const Blurb = ({ id }: { id: keyof typeof blurbs }) => <p className="mt-1.5 text-[14px] text-muted">{blurbs[id]}</p>;
 
 const checkNames: Record<CheckId, string> = {
   maps: "Google Maps ranking",
@@ -50,6 +60,11 @@ const checkIcons: Record<CheckId, typeof MapPin> = {
   competitors: Users,
 };
 const checkIds = Object.keys(checkNames) as CheckId[];
+
+function HelpsIcon({ id }: { id: CheckId }) {
+  const Icon = checkIcons[id];
+  return <Icon size={11} />;
+}
 
 type Row = { label: ReactNode; value: ReactNode };
 
@@ -162,7 +177,7 @@ export default function Seo() {
           </span>
         ),
       })),
-      more: `All ${baseKeywords.length} keywords, and who leads each`,
+      more: `All ${baseKeywords.length} keywords`,
     },
     {
       id: "keywords",
@@ -176,7 +191,7 @@ export default function Seo() {
         label: k.term,
         value: k.google === null ? "Not found" : `Position ${k.google}`,
       })),
-      more: `All ${keywords.length} keywords, with Google's first page for each`,
+      more: `All ${keywords.length} keywords`,
     },
     {
       id: "ai",
@@ -189,7 +204,7 @@ export default function Seo() {
         const n = aiNamed(prompts, undefined, e.id);
         return { label: e.name, value: `${n.hits} of ${n.total}` };
       }),
-      more: `All ${prompts.length} questions, who gets named and the sites cited`,
+      more: `All ${prompts.length} questions`,
     },
     {
       id: "competitors",
@@ -205,7 +220,7 @@ export default function Seo() {
           value: `${f[0]!.name} leads`,
         };
       }),
-      more: "Everyone, keyword by keyword",
+      more: "Everyone",
     },
   ];
 
@@ -213,13 +228,17 @@ export default function Seo() {
     <>
       {tab === "costs" ? (
         <div>
-          <h1 className="mb-2 font-serif text-[32px] leading-[1.1] tracking-[-0.02em]">API costs</h1>
+          <h1 className="font-serif text-[32px] leading-[1.1] tracking-[-0.02em]">API costs</h1>
+          <Blurb id="costs" />
           <CostsPage />
         </div>
       ) : page ? (
         <div>
           <div className="mb-2 flex flex-wrap items-end justify-between gap-3">
-            <h1 className="font-serif text-[32px] leading-[1.1] tracking-[-0.02em]">{checkNames[page]}</h1>
+            <div>
+              <h1 className="font-serif text-[32px] leading-[1.1] tracking-[-0.02em]">{checkNames[page]}</h1>
+              <Blurb id={page} />
+            </div>
             <div className="flex flex-wrap items-center gap-2">
               {(page === "maps" || page === "keywords") && (
                 <Button icon={<Plus size={14} />} onClick={() => setAdding("keywords")}>
@@ -271,16 +290,14 @@ export default function Seo() {
       ) : (
         <div>
           <h1 className="font-serif text-[32px] leading-[1.1] tracking-[-0.02em]">SEO</h1>
-          <p className="mt-1.5 max-w-2xl text-[14px] text-muted">
-            We check four things every week. Each suggestion on the right comes from one of them, and says what it was based on.
-          </p>
+          <Blurb id="overview" />
 
-          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+          <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
             <section aria-labelledby="stand">
               <h2 id="stand" className="text-[15px] font-medium">
                 Where you stand
               </h2>
-              <p className="mb-3 text-[13px] text-muted">Checked Monday. Open one for every keyword and competitor behind it.</p>
+              <p className="mb-3 text-[12.5px] text-muted">Checked Monday</p>
               <div className="space-y-3">
                 {checks.map((c) => {
                   const Icon = checkIcons[c.id];
@@ -326,9 +343,7 @@ export default function Seo() {
                   <h2 id="next" className="text-[15px] font-medium">
                     What to do next
                   </h2>
-                  <p className="text-[13px] text-muted">
-                    {todo.length} suggestions, most useful first. Nothing changes until you press the button.
-                  </p>
+                  <p className="text-[12.5px] text-muted">{todo.length} suggestions</p>
                 </div>
                 <Segmented<Filter>
                   label="Show suggestions for"
@@ -355,18 +370,21 @@ export default function Seo() {
                         className="flex w-full items-start gap-3 p-4 text-left"
                       >
                         <div className="min-w-0 flex-1">
-                          <p className="text-[12.5px] text-muted">
-                            {k.label} · helps {checkNames[s.helps]}
+                          <p className="text-[15px] font-medium">{s.title}</p>
+                          <p className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                            <Badge>{k.label}</Badge>
+                            <Badge tone="accent">
+                              <HelpsIcon id={s.helps} /> {checkNames[s.helps]}
+                            </Badge>
                           </p>
-                          <p className="mt-0.5 text-[15px] font-medium">{s.title}</p>
-                          <p className="mt-1 text-[13.5px] text-muted">{s.why}</p>
                         </div>
                         <ChevronRight size={16} className={cn("mt-1 shrink-0 text-subtle transition-transform", isOpen && "rotate-90")} />
                       </button>
 
                       {isOpen && (
                         <div className="anim-fade border-t border-line px-4 pt-4 pb-4">
-                          <p className="text-[12.5px] font-medium">Based on</p>
+                          <p className="text-[13.5px]">{s.why}</p>
+                          <p className="mt-3 text-[12.5px] font-medium">Based on</p>
                           <ul className="mt-1.5 space-y-1 text-[13.5px] text-muted">
                             {s.evidence.map((e) => (
                               <li key={e} className="flex gap-2">
@@ -413,7 +431,6 @@ export default function Seo() {
                               Not now
                             </Button>
                           </div>
-                          <p className="mt-3 text-[12.5px] text-muted">{k.source}</p>
                         </div>
                       )}
                     </Card>
@@ -423,7 +440,7 @@ export default function Seo() {
                   <Card className="text-center">
                     <p className="text-[14px] font-medium">Nothing left here</p>
                     <p className="mt-1 text-[13px] text-muted">
-                      New suggestions come after Monday's check.{" "}
+                      More after Monday's check.{" "}
                       {filter !== "all" && (
                         <button onClick={() => setFilter("all")} className="text-fg underline underline-offset-2">
                           Show all
@@ -455,15 +472,6 @@ export default function Seo() {
                   </ul>
                 </div>
               )}
-
-              <div className="mt-8 rounded-xl border border-dashed border-line-strong p-4">
-                <p className="text-[13px] font-medium">Not on this page yet</p>
-                <ul className="mt-1.5 space-y-0.5 text-[13px] text-muted">
-                  {later.map((l) => (
-                    <li key={l}>{l}</li>
-                  ))}
-                </ul>
-              </div>
             </section>
           </div>
         </div>

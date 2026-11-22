@@ -5,6 +5,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { RotateCcw } from "lucide-react";
 import { Button, Card, Checkbox, cn, fmt, Input, Select } from "../../components/ui";
+import { Source } from "./Detail";
 import {
   aiEngines,
   areas,
@@ -111,11 +112,6 @@ export function CostsPage() {
 
   return (
     <>
-      <p className="max-w-2xl text-[13.5px] text-muted">
-        Every DataForSEO call behind these pages, and what it costs. Change a setting or a price and the table follows. Prices are
-        DataForSEO's, before any markup, as OpenSEO meters them (read September 2026).
-      </p>
-
       <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line lg:grid-cols-4">
         {[
           { label: "Per location, per month", value: usd(t.perLocation) },
@@ -341,6 +337,7 @@ export function CostsPage() {
           </Card>
         </div>
       </div>
+      <Source>DataForSEO's prices before any markup, as OpenSEO meters them (read September 2026).</Source>
     </>
   );
 }

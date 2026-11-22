@@ -72,16 +72,10 @@ export function MapsPage({ pending = [] }: { pending?: TrackedKeyword[] }) {
   const board = [you, ...businesses].map((b) => ({ b, spots: top3Spots(kw, b) })).sort((a, b) => b.spots - a.spots);
   const aheadOfYou = board.filter((r) => !r.b.isYou && r.spots > mine);
   const myReach = reach(kw);
-  const leadReach = reach(kw, lead.b);
   const scan = gridFor(kw, who, ago);
 
   return (
     <>
-      <p className="max-w-2xl text-[13.5px] text-muted">
-        Google shows different results depending on where the person stands. For each keyword we search from {GRID_SPOTS} spots around you
-        and note who is in the top 3 at each one.
-      </p>
-
       <div className="mt-6 grid gap-5 rounded-xl border border-line bg-surface p-4 shadow-card sm:grid-cols-3">
         <Stat
           label="In the top 3"
@@ -92,7 +86,7 @@ export function MapsPage({ pending = [] }: { pending?: TrackedKeyword[] }) {
           }
           hint={<Change by={spots - spotsBefore} unit="more spots" />}
         />
-        <Stat label="Average position" value={mean(false).toFixed(1)} hint={`Was ${mean(true).toFixed(1)} 30 days ago. Lower is better.`} />
+        <Stat label="Average position" value={mean(false).toFixed(1)} hint={`was ${mean(true).toFixed(1)}`} />
         <Stat
           label="Keywords you lead"
           value={
@@ -100,7 +94,6 @@ export function MapsPage({ pending = [] }: { pending?: TrackedKeyword[] }) {
               {leading} <span className="text-muted">of {baseKeywords.length}</span>
             </>
           }
-          hint="Where nobody holds more spots than you."
         />
       </div>
 
@@ -227,7 +220,7 @@ export function MapsPage({ pending = [] }: { pending?: TrackedKeyword[] }) {
                 ) : (
                   <div className="mt-5">
                     <p className="text-[13px] font-medium">Who is in the top 3</p>
-                    <p className="mb-1.5 text-[12.5px] text-muted">Spots out of {GRID_SPOTS}. Pick one to see their map.</p>
+                    <p className="mb-1.5 text-[12.5px] text-muted">of {GRID_SPOTS} spots</p>
                     {board.map(({ b, spots: n }) => (
                       <Bar
                         key={b.id}
@@ -289,12 +282,7 @@ export function MapsPage({ pending = [] }: { pending?: TrackedKeyword[] }) {
                   </tbody>
                 </table>
               </div>
-              <p className="mt-2 text-[12.5px] text-muted">
-                Shaded: their Google profile is ahead of yours on that point.{" "}
-                {aheadOfYou.length > 0 &&
-                  board.length - 1 - aheadOfYou.length > 0 &&
-                  `${board.length - 1 - aheadOfYou.length} others hold fewer spots than you and are left out.`}
-              </p>
+              <p className="mt-2 text-[12.5px] text-muted">Red: ahead of yours.</p>
             </div>
           )}
 
@@ -318,10 +306,6 @@ export function MapsPage({ pending = [] }: { pending?: TrackedKeyword[] }) {
                   },
                 ]}
               />
-              <p className="mt-2 text-[12.5px] text-muted">
-                Your best week was {Math.max(...spotsHistory(kw))} spots.{" "}
-                {leadReach && aheadOfYou.length > 0 && `${lead.b.name} is strongest ${leadReach.best} of you.`}
-              </p>
             </div>
           )}
         </Card>

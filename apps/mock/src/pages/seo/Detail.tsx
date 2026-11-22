@@ -3,7 +3,7 @@
 // and who is ahead of you on each one. Competitors differ by keyword and by where the person searched.
 
 import { Fragment, useState, type ReactNode } from "react";
-import { ArrowDown, ArrowUp, ChevronRight, ExternalLink, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, ExternalLink, Info, X } from "lucide-react";
 import { Badge, Button, Card, cn, fmt, LineChart, rankTone, Segmented } from "../../components/ui";
 import {
   ahead,
@@ -42,12 +42,15 @@ export function Change({ by, unit }: { by: number; unit: string }) {
   );
 }
 
+/** Where a page's numbers come from: one quiet line, opened when wanted. */
 export function Source({ children }: { children: ReactNode }) {
   return (
-    <p className="mt-6 rounded-lg bg-hover px-3 py-2.5 text-[12.5px] leading-[1.5] text-muted">
-      <span className="font-medium text-fg">Where this comes from. </span>
-      {children}
-    </p>
+    <details className="mt-6 text-[12.5px] text-muted">
+      <summary className="inline-flex cursor-pointer list-none items-center gap-1 hover:text-fg">
+        <Info size={13} /> Data source
+      </summary>
+      <p className="mt-1.5 max-w-3xl leading-normal">{children}</p>
+    </details>
   );
 }
 
@@ -176,10 +179,6 @@ export function KeywordsPage({ keywords }: { keywords: TrackedKeyword[] }) {
   const before = live.filter((k) => onFirst(k.googlePrev)).length;
   return (
     <>
-      <p className="max-w-2xl text-[13.5px] text-muted">
-        Where your website shows in Google's normal results for each keyword. Open one to see the whole first page: other dentists, and
-        directories like Yelp that often take the top places.
-      </p>
       <Headline
         label="On Google's first page"
         value={
@@ -287,10 +286,6 @@ export function AiPage({ prompts }: { prompts: TrackedPrompt[] }) {
   const pctAgo = me.total ? Math.round((Math.max(0, me.hits - 2) / me.total) * 100) : 0;
   return (
     <>
-      <p className="max-w-2xl text-[13.5px] text-muted">
-        We ask each assistant the question the way a customer would, read who it names, and note the sites it leaned on. Open a question to
-        read each answer.
-      </p>
       <Headline
         label="Named in AI answers"
         value={
@@ -465,13 +460,8 @@ export function CompetitorsPage({
   const rows = field(channel);
   const info = channels.find((c) => c.id === channel)!;
   const what = channel === "ai" ? "questions" : "keywords";
-  const everyone = new Set(channels.flatMap((c) => field(c.id).map((s) => s.id)));
   return (
     <>
-      <p className="max-w-2xl text-[13.5px] text-muted">
-        You didn't have to name these. {everyone.size} businesses and sites show up for your keywords and questions:{" "}
-        {channels.map((c) => `${field(c.id).length} on ${c.name}`).join(", ")}. Open one to see where they beat you.
-      </p>
       <div className="mt-6">
         <Segmented<Channel>
           label="Where people searched"
@@ -546,7 +536,7 @@ export function CompetitorsPage({
                   {isOpen && (
                     <tr className="border-b border-line">
                       <td colSpan={3} className="bg-hover/50 px-4 pt-2 pb-3">
-                        <p className="py-1 text-[12.5px] text-muted">{info.unit}. Red: they beat you.</p>
+                        <p className="py-1 text-[12.5px] text-muted">{info.unit}</p>
                         <div className="grid gap-x-10 md:grid-cols-2">
                           {[0, 1].map((half) => (
                             <ul key={half} className="divide-y divide-line">
@@ -591,11 +581,6 @@ export function CompetitorsPage({
           </tbody>
         </table>
       </Card>
-      {channel === "google" && (
-        <p className="mt-2 text-[12.5px] text-muted">
-          Directories can't be beaten the way another dentist can. The move there is a complete, well-reviewed listing on them.
-        </p>
-      )}
       <Source>{sources.competitors}</Source>
     </>
   );
