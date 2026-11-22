@@ -13,6 +13,9 @@ What changed while building (2026-11-22):
 - `checks` also keeps `queue`, `calls` and `error`; its status is `running`, `filing` (claimed by the one collection that
   files it), `done` or `failed`. `provider_tasks.raw` holds the normalised result and `error` why a task failed.
 - `suggestions.score` orders the list (higher first).
+- A business is set up once per Organization: a partial unique index on `locations (organization_id, place_id)` for
+  Locations that aren't archived (migration `0005`).
+- "Checking" and a cycle's "finished" follow its automation Run, which finishes after the suggestions are written.
 
 Decided (2026-11-21):
 
