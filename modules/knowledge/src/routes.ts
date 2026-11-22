@@ -31,7 +31,7 @@ async function anyBase(ctx: AppContext, baseId: string) {
 }
 
 export function knowledgeRoutes(ctx: AppContext) {
-  // The Admin area: every knowledge base, with its Organization, and a search to try.
+  // The platform admin area: every knowledge base, with its Organization, and a search to try.
   const admin = new Elysia({ name: "knowledge.admin" }).group("/api/v1/admin/knowledge", (g) =>
     g
       .use(ctx.adminGuard!)

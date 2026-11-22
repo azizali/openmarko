@@ -4,6 +4,7 @@
 import { z } from "zod";
 import type { LanguageModel } from "ai";
 import { invalid, type AppContext } from "@app/kernel";
+import { platformAdminLabel } from "@app/shared";
 import { readAppSetting } from "@app/settings";
 import { languageModel, parseModelRef, type ModelScope } from "@app/integrations";
 
@@ -17,7 +18,7 @@ const modelId = z.string().refine((v) => {
   }
 }, "a model is <vendor>/<model>, e.g. anthropic/claude-sonnet-5-5");
 
-/** The app's model settings: edited in Admin → Models. */
+/** The app's model settings: edited in Platform admin → Models. */
 export const aiSettingsSchema = z.object({
   defaultModel: z.string().default("").describe("Used when a request names no model: a custom name below, or <vendor>/<model>"),
   models: z
@@ -56,7 +57,7 @@ export type Chosen = {
 export async function chooseModel(ctx: AppContext, scope: ModelScope, asked?: string | null): Promise<Chosen> {
   const cfg = await aiSettings(ctx);
   const name = asked || cfg.defaultModel;
-  if (!name) throw invalid("Name a model, or set the app's default model (Admin → Models).");
+  if (!name) throw invalid(`Name a model, or set the app's default model (${platformAdminLabel} → Models).`);
   const custom = cfg.models[name];
   const id = custom?.model ?? name;
   if (!custom && !id.includes("/")) throw invalid(`"${name}" isn't one of the app's model names, nor a <vendor>/<model>.`);

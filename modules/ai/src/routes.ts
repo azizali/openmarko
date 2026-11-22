@@ -178,7 +178,7 @@ export function aiRoutes(ctx: AppContext) {
         { params: ids("assistantId"), detail: { summary: "Delete an assistant (its conversations stay, as plain chats)" } },
       ),
   );
-  // The Admin area: every assistant, made for an Organization, and a test chat.
+  // The platform admin area: every assistant, made for an Organization, and a test chat.
   const assistantAdmin = new Elysia({ name: "ai.assistants.admin" }).group("/api/v1/admin/ai/assistants", (g) =>
     g
       .use(ctx.adminGuard!)

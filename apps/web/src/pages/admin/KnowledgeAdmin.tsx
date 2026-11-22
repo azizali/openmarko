@@ -1,4 +1,4 @@
-// Admin → Knowledge: every knowledge base across Organizations, with counts, and a search to try.
+// Platform admin → Knowledge: every knowledge base across Organizations, with counts, and a search to try.
 import { useState, type FormEvent } from "react";
 import { Badge, Button, Card, CardHeader, Field, Input, Select } from "../../components/ui";
 import { Table } from "../../components/Table";

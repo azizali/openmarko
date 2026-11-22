@@ -26,7 +26,7 @@ export const metering: Partial<Record<ProviderId, Meter>> = {
   google_places: { meter: "places.requests", unit: "request", costOnly: true },
 };
 
-/** Every meter a Plan can sell, for the admin area's Plan editor. */
+/** Every meter a Plan can sell, for the platform admin area's Plan editor. */
 export const meters = [
   ...new Set(
     Object.values(metering)

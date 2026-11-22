@@ -1,4 +1,4 @@
-// Admin → SEO costs: what search data really cost this month per Organization (from the checks that ran, at the
+// Platform admin → SEO costs: what search data really cost this month per Organization (from the checks that ran, at the
 // provider's own prices), what each Location will cost a month at its settings, and the unit prices behind the
 // estimate. For whoever prices the product; customers only ever see their Plan's limits.
 import { Card, CardHeader } from "../../components/ui";

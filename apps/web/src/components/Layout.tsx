@@ -27,6 +27,7 @@ import {
 import { Avatar, cn, ModalDialog, navRow } from "./ui";
 import { Logo } from "./Logo";
 import { useTheme } from "../lib/theme";
+import { platformAdminLabel, roleName } from "@app/shared/access";
 import { useSession, type Membership } from "../lib/session";
 import { modules } from "../lib/modules";
 import { useBrand } from "../lib/brand";
@@ -286,7 +287,7 @@ function CommandPalette({ onClose, items }: { onClose: () => void; items: NavIte
         hint: "Settings",
         to: `/settings/${s}`,
       })),
-      ...(admin ? [{ label: "Admin", hint: "Settings", to: "/settings/admin-users" }] : []),
+      ...(admin ? [{ label: platformAdminLabel, hint: "Settings", to: "/settings/admin-users" }] : []),
       { label: "New organization", hint: "Setup", to: "/onboarding" },
     ];
     return pages.filter((i) => i.label.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
@@ -352,7 +353,7 @@ export default function Layout() {
   const [mobileNav, setMobileNav] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const loc = useLocation();
-  const { loading, me, org, organizations, can, signOut, features } = useSession();
+  const { loading, me, org, organizations, can, signOut, features, admin } = useSession();
   const brand = useBrand();
 
   useEffect(() => {
@@ -425,8 +426,12 @@ export default function Layout() {
             <Avatar name={me.name} className="size-7 text-[11px]" />
             <div className="min-w-0 flex-1 leading-tight">
               <div className="truncate text-[12.5px] font-medium">{me.name}</div>
-              <div className="truncate text-[12px] text-muted capitalize" title={`Your role in ${org.name}`}>
-                {org.role}
+              <div
+                className="truncate text-[12px] text-muted"
+                title={`Your role in ${org.name}${admin ? `, and ${platformAdminLabel.toLowerCase()} of the whole app` : ""}`}
+              >
+                {roleName(org.role)}
+                {admin && ` · ${platformAdminLabel}`}
               </div>
             </div>
           </div>

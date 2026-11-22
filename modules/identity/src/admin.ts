@@ -5,6 +5,7 @@ import { Elysia, t } from "elysia";
 import { randomBytes } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import { authUser, conflict, logActivity, notFound, unauthorized, forbidden, type Admin, type AppContext } from "@app/kernel";
+import { platformAdminLabel } from "@app/shared";
 import { authOf } from "./instance";
 import { getSession } from "./session";
 
@@ -19,7 +20,7 @@ export async function adminOf(ctx: AppContext, headers: Headers): Promise<Admin 
 export async function requireAdmin(ctx: AppContext, headers: Headers): Promise<Admin> {
   const s = await getSession(ctx, headers);
   if (!s) throw unauthorized();
-  if (s.role !== "admin") throw forbidden("Only an app admin can do that.");
+  if (s.role !== "admin") throw forbidden(`Only a ${platformAdminLabel.toLowerCase()} can do that.`);
   return { userId: s.userId, email: s.email, name: s.name };
 }
 

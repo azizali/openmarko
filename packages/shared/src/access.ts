@@ -88,6 +88,12 @@ export const reach = (access: AccessCatalog, p: Permission, r: Resource): Level 
     "none",
   );
 
+/** What the app calls a person with the user-level `admin` role. Never "Admin" alone: that reads as an Organization Role. */
+export const platformAdminLabel = "Platform admin";
+
+/** A Role's name for people: a built-in's own name, else the id (a custom Role's id is its name). */
+export const roleName = (id: string) => presets.find((r) => r.id === id)?.name ?? id;
+
 /** The built-in Roles every Organization has. Names they use that the app lacks (a module switched off) are ignored. */
 export const presets: RoleSpec[] = [
   {
@@ -100,8 +106,8 @@ export const presets: RoleSpec[] = [
     resources: {},
   },
   {
-    id: "admin",
-    name: "Admin",
+    id: "admin", // the stored id stays `admin`; only the name changed, so it isn't confused with the Platform admin
+    name: "Manager",
     description: "Everything except billing and deleting the organization.",
     preset: true,
     base: "manage",

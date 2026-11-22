@@ -3,12 +3,12 @@
 The words the code, the docs and the screens use. Each app forked from the boilerplate adds its own below these.
 
 **App**:
-The product this repository is: one deploy, one database. In the Admin area, "the app's own" means something that belongs to the app rather than to an Organization: its email provider, its default model key.
-_Avoid_: platform, project, tenant
+The product this repository is: one deploy, one database. In the platform admin area, "the app's own" means something that belongs to the app rather than to an Organization: its email provider, its default model key.
+_Avoid_: project, tenant
 
-**Admin**:
-A person with the `admin` role on their user: they see the Admin area (users, Organizations, the app's connections and settings). Made by `ADMIN_EMAILS` or by another admin. Independent of any Organization Role.
-_Avoid_: operator, superuser
+**Platform admin**:
+A person with the `admin` role on their user: they see the platform admin area (users, Organizations, the app's connections and settings). Made by `ADMIN_EMAILS` or by another platform admin. Independent of any Organization Role. The sidebar shows it beside their Role.
+_Avoid_: admin (alone, it is easily taken for the Organization Role), operator, superuser
 
 **Organization**:
 The space a customer works in: its people, Roles, settings, connections and data. A person can belong to several.
@@ -19,7 +19,7 @@ A person with access to an Organization, with a Role in it.
 _Avoid_: user (for a member), seat
 
 **Role**:
-What a Member may do in an Organization: a level (None, View, Edit, Publish or Full) for everything, per group and per resource, or a hand-picked list of actions. Owner, Admin, Editor and Viewer are built in; each Organization can add its own. One Role per Member, no exceptions.
+What a Member may do in an Organization: a level (None, View, Edit, Publish or Full) for everything, per group and per resource, or a hand-picked list of actions. Owner, Manager, Editor and Viewer are built in (Manager is stored as `admin`; it is not the Platform admin); each Organization can add its own. One Role per Member, no exceptions.
 _Avoid_: permission set, access level
 
 **Action**:

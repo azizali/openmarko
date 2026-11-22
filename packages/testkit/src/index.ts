@@ -92,7 +92,7 @@ export async function ownerSession(ctx: AppContext, opts: { orgName?: string; em
   return { userId: u.userId, orgId: (org as { id: string }).id, headers: u.headers, email: u.email };
 }
 
-/** An app admin's session: the one email ADMIN_EMAILS lists in tests. */
+/** A platform admin's session: the one email ADMIN_EMAILS lists in tests. */
 export async function adminSession(ctx: AppContext) {
   return userSession(ctx, { email: "admin@app.test", name: "Admin" });
 }

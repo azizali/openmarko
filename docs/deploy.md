@@ -21,7 +21,7 @@ You need `gh` and `vercel` signed in, SSH access to a VPS, an A record for the A
 
 To add Google sign-in, Stripe or Turnstile in production, put their variables in `.env.production` and run it again.
 
-After a deploy, connect an email provider in Admin → Connections. Until then, no verification, reset or invitation emails go out.
+After a deploy, connect an email provider in Platform admin → Connections. Until then, no verification, reset or invitation emails go out.
 
 To make another admin later: `DATABASE_URL=... bun run admin:create someone@example.com`, with the other variables from `.env.production` set.
 
@@ -35,7 +35,7 @@ The rest of this page is what that command does, for doing a part by hand.
 ## API and worker (Kamal on a VPS)
 
 1. A server with SSH as root and Docker (Kamal installs it on `kamal setup`). Point `api.example.com` at it.
-2. `config/deploy.yml`: set `image` (your GitHub user and repository), the server's address, `proxy.host`, `BETTER_AUTH_URL`, `APP_URL`, `SITE_URL` and `ADMIN_EMAILS`. Provider keys go in Admin → Connections after the first deploy. `.kamal/hooks/pre-deploy`: the same image name.
+2. `config/deploy.yml`: set `image` (your GitHub user and repository), the server's address, `proxy.host`, `BETTER_AUTH_URL`, `APP_URL`, `SITE_URL` and `ADMIN_EMAILS`. Provider keys go in Platform admin → Connections after the first deploy. `.kamal/hooks/pre-deploy`: the same image name.
 3. Secrets, as GitHub Actions repository secrets: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `MASTER_KEY_V1`, `SSH_PRIVATE_KEY`, and the optional `GOOGLE_*`, `STRIPE_*`, `TURNSTILE_*`. Set the repository variable `DEPLOY=true` to turn the deploy job on.
 4. Push to `main`. `.github/workflows/ci.yml` runs the checks, builds the image, runs migrations and `scripts/bootstrap.ts` from the deploy machine (the pre-deploy hook), then starts the new containers behind kamal-proxy with a Let's Encrypt certificate.
 
@@ -53,11 +53,11 @@ A second Vercel project with root directory `apps/site`. Set `VITE_APP_URL` to t
 
 ## Email
 
-Until the app can send, sign-up works but no verification, reset or invitation emails go out. Connect an email provider in Admin → Connections and set the sender in Admin → Settings; Admin → Email says when it's ready and sends a test.
+Until the app can send, sign-up works but no verification, reset or invitation emails go out. Connect an email provider in Platform admin → Connections and set the sender in Platform admin → Settings; Platform admin → Email says when it's ready and sends a test.
 
 ## Checklist before going live
 
 - `NODE_ENV=production` and https for every URL (the config refuses otherwise).
 - An admin exists: `bun run admin:create`, or `ADMIN_EMAILS` names you and you sign up.
-- The first Plan comes from the deploy. Set your real limits in Admin → Plans & usage.
+- The first Plan comes from the deploy. Set your real limits in Platform admin → Plans & usage.
 - Stripe's webhook endpoint at `https://api.example.com/api/v1/webhooks/stripe` with `STRIPE_WEBHOOK_SECRET`.

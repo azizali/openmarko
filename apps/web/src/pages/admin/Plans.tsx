@@ -1,4 +1,4 @@
-// Admin → Plans & usage: the Plans as data (what each grants and meters), and what Organizations used.
+// Platform admin → Plans & usage: the Plans as data (what each grants and meters), and what Organizations used.
 import { useState } from "react";
 import { Badge, Button, Card, CardHeader, Drawer, NewButton, Textarea } from "../../components/ui";
 import { Table } from "../../components/Table";

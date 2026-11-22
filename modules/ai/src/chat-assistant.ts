@@ -120,7 +120,7 @@ export async function setAppChatAssistant(ctx: AppContext, assistantId: string |
   await writeAppSetting<Chosen>(ctx, NAMESPACE, { assistantId }, { by });
 }
 
-/** The app's choice, with the Organization that owns the widget, for the Admin area. */
+/** The app's choice, with the Organization that owns the widget, for the platform admin area. */
 export async function appChatAssistant(ctx: AppContext) {
   const a = await chosenBy(ctx, (await readAppSetting<Chosen>(ctx, NAMESPACE))?.value.assistantId);
   if (!a) return { assistantId: null, name: null, organization: null };

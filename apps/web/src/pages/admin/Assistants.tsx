@@ -1,4 +1,4 @@
-// Admin → Assistants: every assistant across Organizations, and a test chat with any of them.
+// Platform admin → Assistants: every assistant across Organizations, and a test chat with any of them.
 import { useState, type FormEvent } from "react";
 import { Badge, Button, Card, CardHeader, Field, Input } from "../../components/ui";
 import { Table } from "../../components/Table";

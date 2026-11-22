@@ -2,7 +2,7 @@ import { defineModule, type AppContext, type JobDefinition, type OutgoingEmail }
 import { queueEmail, SEND_JOB, senderSchema, sendNow } from "./service";
 import { messagingRoutes } from "./routes";
 
-// Messaging: the app's email. It owns the `messaging` setting (the sender), the send job, and Admin → Email.
+// Messaging: the app's email. It owns the `messaging` setting (the sender), the send job, and Platform admin → Email.
 // It sets ctx.email, through which identity sends sign-in emails.
 export const messagingModule = defineModule({
   id: "messaging",

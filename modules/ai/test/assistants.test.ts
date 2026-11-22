@@ -114,7 +114,7 @@ describe("assistants", () => {
   });
 });
 
-describe("setting one up from the Admin area", () => {
+describe("setting one up from the platform admin area", () => {
   test("an admin picks an Organization, builds its knowledge, makes an assistant and tries it", async () => {
     const admin = await adminSession(t.ctx);
     const orgs = (await call("GET", "/api/v1/admin/organizations", { headers: admin.headers })).body as {

@@ -320,7 +320,7 @@ export async function listModels(
   return models;
 }
 
-/** For the Admin area: which vendors the app can reach with its own key, and in what mode. */
+/** For the platform admin area: which vendors the app can reach with its own key, and in what mode. */
 export async function vendorKeys(ctx: AppContext): Promise<{ vendor: Vendor; connected: boolean; mode: Mode | null }[]> {
   return Promise.all(
     vendors.map(async (vendor) => {

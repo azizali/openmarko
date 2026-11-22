@@ -3,7 +3,7 @@ import { organizationRoutes } from "./routes";
 
 export const organizationsModule = defineModule({
   id: "organizations",
-  apiGroup: { name: "Organizations", description: "Organizations, members and invitations; the Admin area's list." },
+  apiGroup: { name: "Organizations", description: "Organizations, members and invitations; the platform admin area's list." },
   dependsOn: ["identity", "access", "features"],
   permissions: [
     {

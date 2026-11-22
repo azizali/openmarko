@@ -80,7 +80,7 @@ describe("the API: who may call what", () => {
   });
 });
 
-describe("the Admin area", () => {
+describe("the platform admin area", () => {
   test("admin routes need an app admin: a member is 403, nobody is 401", async () => {
     expect((await call("GET", "/api/v1/admin/users")).status).toBe(401);
     expect((await call("GET", "/api/v1/admin/users", { headers: owner.headers })).status).toBe(403);

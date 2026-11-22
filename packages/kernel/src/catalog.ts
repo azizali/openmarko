@@ -104,7 +104,7 @@ export function buildCatalog(modules: ModuleDefinition[]): Catalog {
   return catalog;
 }
 
-/** The catalog as JSON, for the admin area and docs: each setting's schema becomes a JSON Schema. */
+/** The catalog as JSON, for the platform admin area and docs: each setting's schema becomes a JSON Schema. */
 export function describeCatalog(catalog: Catalog) {
   return {
     ...catalog,

@@ -1,4 +1,4 @@
-// Admin → Models: everything about the app's models in one place. The vendors and their keys (connect, live or stub,
+// Platform admin → Models: everything about the app's models in one place. The vendors and their keys (connect, live or stub,
 // disconnect), the models each connected vendor offers as its own API lists them, the app's model names and default,
 // and a prompt to try one.
 import { useEffect, useMemo, useState, type FormEvent } from "react";

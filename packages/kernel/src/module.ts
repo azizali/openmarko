@@ -82,7 +82,7 @@ export type ModuleParts = {
 
 /**
  * A module's manifest: what it is and what it offers, readable without booting it. The composition root gathers
- * manifests into the catalog; settings, Roles, the admin area and the API docs read from it, so adding a module
+ * manifests into the catalog; settings, Roles, the platform admin area and the API docs read from it, so adding a module
  * changes none of those by hand.
  */
 export type ModuleDefinition = {

@@ -13,7 +13,7 @@ apps/
   site/              the marketing site (React, Vite, Tailwind). Static.
 modules/             one folder per module: schema.ts (its tables), module.ts (its manifest), routes.ts, services, test/
   identity           Better Auth: sign-in, sessions, Organizations, invitations; app admins
-  organizations      Organizations, members, archive and delete; the Admin area's list
+  organizations      Organizations, members, archive and delete; the platform admin area's list
   access             Roles and permissions; the caller guard
   features           feature switches per Organization
   settings           core.settings: namespaces modules declare, checked on read and write
@@ -74,7 +74,7 @@ The same modules, composed without routes. pg-boss runs each module's jobs (one 
 - `src/lib/session.tsx`: the person, their Organizations, and whether the open Organization is a Partner they work at. The Partner group in Settings (Clients, Whitelabel) shows only then.
 - `src/lib/brand.ts`: the brand on screen (ours or a Partner's, by the Organization being worked in), loaded before the first paint and again when the Organization changes.
 - `src/components/AppChat.tsx`: the floating chat widget, opened by its button or the sidebar's Sparkles, answering as the widget its Organization is offered: its own choice, its Partner's, the app's, or the built-in one (ADR 0031). The UI is `packages/chat-widget`, reading the member's conversations over HTTP (`src/lib/memberChat.ts`); the button can be dragged anywhere on the page. Loads behind `__MODULE_AI__`.
-- `src/pages/Widgets.tsx`: where an Organization makes its chat widgets (each one an Assistant) and embeds them. Its preview is that same UI, laid out inside the page. **Use in the app** on a widget's page chooses it for the chat button (an app admin can also choose it for everyone; Admin → Models shows that choice).
+- `src/pages/Widgets.tsx`: where an Organization makes its chat widgets (each one an Assistant) and embeds them. Its preview is that same UI, laid out inside the page. **Use in the app** on a widget's page chooses it for the chat button (an app admin can also choose it for everyone; Platform admin → Models shows that choice).
 - `src/components/ui.tsx`: the shared controls. Every form opens in its `Drawer`, a side panel built on a native modal `<dialog>` (ADR 0026). It also holds the shared list and navigation pieces: `Avatar`, `ItemRow`, `ItemCard`, `Disclosure`, `ChoiceCards` and `RailGroup`.
 - `src/components/Feedback.tsx`: every success and failure, beside the action that caused it (`Feedback` + `useFeedback()`) or as a toast (`useToast()`), and `LoadError` for a page that couldn't load (ADR 0030). `feedback.rules.test.ts` fails a page that builds its own. `FileInput` in `ui.tsx` is the only file picker.
 - `src/components/Can.tsx`: guards a control by permission, disabling it with the reason or hiding it. `src/components/RoleEditor.tsx` also exports `RoleSelect` and `AccessSummary` for showing Roles elsewhere.

@@ -107,7 +107,7 @@ export function integrationRoutes(ctx: AppContext) {
       ),
   );
 
-  // The Admin area: the app's own accounts (its default model key, its email provider), used by every Organization
+  // The platform admin area: the app's own accounts (its default model key, its email provider), used by every Organization
   // without its own. Each may also hold the secret that signs the provider's webhooks to this app.
   const adminRoutes = new Elysia({ name: "integrations.admin" }).group("/api/v1/admin/connections", (g) =>
     g

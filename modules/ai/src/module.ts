@@ -3,7 +3,7 @@ import { aiSettingsSchema } from "./models";
 import { chatAssistantSchema, NAMESPACE as CHAT_ASSISTANT } from "./chat-assistant";
 import { aiRoutes } from "./routes";
 
-// AI: models by name through the AI SDK, Admin → Models, members' conversations with streaming chat, assistants
+// AI: models by name through the AI SDK, Platform admin → Models, members' conversations with streaming chat, assistants
 // and the chat widget. Knowledge bases are optional (the knowledge module).
 export const aiModule = defineModule({
   id: "ai",
