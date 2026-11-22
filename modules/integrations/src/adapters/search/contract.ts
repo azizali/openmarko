@@ -70,6 +70,8 @@ export type AiQuery = {
   question: string;
   /** Where the person asking is. Engines that take a place get it; the rest read the city from the question. */
   at: Coordinates;
+  /** Two letters: engines that only take a country (ChatGPT) are asked from it. */
+  countryCode: string;
   languageCode: string;
 };
 export type AiResult = {

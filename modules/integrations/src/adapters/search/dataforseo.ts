@@ -107,14 +107,15 @@ function taskFor(kind: Kind, query: any, priority: boolean): { path: string; bod
     };
   return {
     path: "ai_optimization/chat_gpt/llm_scraper",
-    body: { language_code: q.languageCode, keyword: q.question, location_coordinate: coordinate(q, "1000") },
+    // ChatGPT's scraper takes a country, not coordinates: the question names the city.
+    body: { language_code: q.languageCode, keyword: q.question, location_code: locationCode(q.countryCode) },
   };
 }
 
 /** Live-only engines are answered as they're posted; their id is ours, their result comes back with it. */
 async function postLive(c: CallContext, kind: Kind, tag: string, query: AiQuery): Promise<Posted<AiResult>> {
   const json = await request(c, "POST", "ai_optimization/perplexity/llm_responses/live", [
-    { user_prompt: query.question, model_name: "sonar", web_search: true },
+    { user_prompt: query.question.slice(0, 500), model_name: "sonar" },
   ]);
   const task = json.tasks?.[0];
   if (!task || task.status_code !== 20000) throw new AppError(502, "provider_failed", `DataForSEO: ${task?.status_message ?? "no task"}`);
@@ -200,7 +201,10 @@ function stubAnswer(kind: Kind, query: unknown) {
 
 // ---------- Parsing (defensive: DataForSEO adds fields often) ----------
 
-const items = (task: Task): any[] => (task.result?.[0]?.items as any[] | null | undefined) ?? [];
+/** Every item of a task's result blocks (some endpoints put the seed in the first block and the items in the next). */
+const items = (task: Task): any[] => (task.result ?? []).flatMap((r) => (r?.items as any[] | null | undefined) ?? []);
+/** The AI Overview block of a Google search: its type name varies between result formats. */
+const isOverview = (i: any) => typeof i?.type === "string" && i.type.includes("ai_overview") && !i.type.endsWith("_element");
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
 
@@ -227,7 +231,7 @@ function parseMaps(task: Task): MapsItem[] {
 
 function parseOrganic(task: Task): OrganicResult {
   const all = items(task);
-  const overview = all.find((i) => i.type === "ai_overview");
+  const overview = all.find(isOverview);
   return {
     items: all
       .filter((i) => i.type === "organic")
@@ -271,7 +275,7 @@ function textOf(node: any): string {
 
 function parseAi(engine: AiQuery["engine"], task: Task): AiResult {
   const result = task.result?.[0] ?? {};
-  const node = engine === "google_ai" ? items(task).find((i) => i.type === "ai_overview") : result;
+  const node = engine === "google_ai" ? items(task).find(isOverview) : result;
   const text = textOf(node)
     .replace(/[*_#>`]/g, "")
     .replace(/\[(.*?)\]\([^)]*\)/g, "$1")

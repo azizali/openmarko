@@ -33,7 +33,8 @@ export default function Onboarding() {
     if (r.error) return fb.fail(authError(r, "Try again."), "Could not create the organization");
     await refresh();
     await switchOrg((r.data as { id: string }).id);
-    navigate("/", { replace: true });
+    // With SEO in this app, a new Organization starts by setting it up (it can be skipped from there).
+    navigate(__MODULE_SEO__ ? "/seo/setup" : "/", { replace: true });
   };
 
   return (

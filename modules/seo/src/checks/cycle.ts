@@ -83,7 +83,7 @@ function targetsFor(
       kind: "ai" as const,
       questionId: q.id,
       engine,
-      query: { engine, question: q.text, at: door, languageCode: l.languageCode },
+      query: { engine, question: q.text, at: door, countryCode: l.countryCode, languageCode: l.languageCode },
     })),
   );
 }

@@ -16,10 +16,13 @@ import {
   MessagesSquare,
   Moon,
   Plus,
+  MapPin,
   Search,
+  SearchCheck,
   Settings,
   Sparkles,
   Sun,
+  UsersRound,
 } from "lucide-react";
 import { Avatar, cn, ModalDialog, navRow } from "./ui";
 import { Logo } from "./Logo";
@@ -34,6 +37,7 @@ const AppChat = __MODULE_AI__ ? lazy(() => import("./AppChat")) : null;
 type Icon = ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
 type NavGroupInfo = { label: string; icon: Icon };
 const aiGroup: NavGroupInfo = { label: "AI", icon: Bot };
+const seoGroup: NavGroupInfo = { label: "SEO", icon: SearchCheck };
 export type NavItem = {
   /** The feature switch (app.config.ts) that shows or hides this entry. */
   feature?: string;
@@ -50,6 +54,18 @@ export type NavItem = {
 /** Every page in the app. Optional modules add theirs only when the build has them. */
 export const nav: NavItem[] = [
   { to: "/", label: "Home", icon: LayoutGrid },
+  // SEO: the overview and one page per check, for the Location chosen on the page.
+  ...(modules.seo
+    ? (
+        [
+          ["/seo/overview", "Overview", SearchCheck],
+          ["/seo/maps", "Google Maps", MapPin],
+          ["/seo/keywords", "Keywords", Search],
+          ["/seo/ai", "AI answers", Sparkles],
+          ["/seo/competitors", "Competitors", UsersRound],
+        ] as const
+      ).map(([to, label, icon]): NavItem => ({ to, label, icon, group: seoGroup, feature: "seo", when: (can) => can("seo", "view") }))
+    : []),
   ...(modules.automation
     ? [
         {

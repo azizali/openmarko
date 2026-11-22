@@ -18,6 +18,7 @@ import {
   Paintbrush,
   Palette,
   Plug,
+  SearchCheck,
   SlidersHorizontal,
   ToggleRight,
   UserRound,
@@ -169,6 +170,17 @@ const adminSections: Section[] = [
           icon: Bot,
           page: lazy(() => import("./admin/Assistants")),
           sub: "Every assistant across organizations.",
+        },
+      ]
+    : []),
+  ...(__MODULE_SEO__
+    ? [
+        {
+          id: "admin-seo",
+          label: "SEO costs",
+          icon: SearchCheck,
+          page: lazy(() => import("./admin/SeoCosts")),
+          sub: "What search data costs: this month per organization, and per location at its settings.",
         },
       ]
     : []),
