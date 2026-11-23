@@ -215,6 +215,29 @@ const isOverview = (i: any) => typeof i?.type === "string" && i.type.includes("a
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
 
+/** Google's own wrappers for a result: a redirect (`/goto`, `/url`) or its viewer for a business profile. */
+const isGoogleLink = (url: string | null) => !!url && /^https?:\/\/(www\.)?google\.[a-z.]+\/(goto|url|searchviewer)\b/i.test(url);
+const looksLikeDomain = (s: string | null) => !!s && /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(s);
+
+/**
+ * The site a result or citation really points at. Google now wraps links in its own redirect, and DataForSEO passes
+ * that on as both `url` and `domain` (google.com); the real site is then only in the breadcrumb ("https://site.com ›
+ * path") or, for an AI Overview citation, a `source` that is sometimes a domain. Null when it can't be told.
+ */
+function siteOf(i: any): { domain: string; url: string } | null {
+  const url = str(i.url);
+  if (!isGoogleLink(url)) {
+    const domain = domainOf(str(i.domain) ?? url);
+    return domain ? { domain, url: url ?? "" } : null;
+  }
+  const crumb = str(i.breadcrumb)?.split("›")[0]?.trim() ?? null;
+  const fromCrumb = domainOf(crumb);
+  if (fromCrumb) return { domain: fromCrumb, url: /^https?:\/\//.test(crumb!) ? crumb! : `https://${fromCrumb}` };
+  const source = str(i.source);
+  if (looksLikeDomain(source)) return { domain: domainOf(source)!, url: `https://${domainOf(source)}` };
+  return null;
+}
+
 function parseMaps(task: Task): MapsItem[] {
   return items(task)
     .filter((i) => i.type === "maps_search")
@@ -242,13 +265,10 @@ function parseOrganic(task: Task): OrganicResult {
   return {
     items: all
       .filter((i) => i.type === "organic")
-      .map((i, n) => ({
-        position: num(i.rank_group) ?? n + 1,
-        domain: domainOf(str(i.domain) ?? str(i.url)) ?? "",
-        url: str(i.url) ?? "",
-        title: str(i.title) ?? "",
-      }))
-      .filter((i) => i.domain),
+      .flatMap((i, n) => {
+        const site = siteOf(i);
+        return site ? [{ position: num(i.rank_group) ?? n + 1, ...site, title: str(i.title) ?? "" }] : [];
+      }),
     mapPack: all.some((i) => i.type === "local_pack" || i.type === "map"),
     aiOverview: { shown: !!overview, citedDomains: referencesOf(overview).map((r) => r.domain) },
     peopleAlsoAsk: all
@@ -264,9 +284,8 @@ function referencesOf(node: any): { domain: string; url: string }[] {
   const walk = (n: any) => {
     if (!n || typeof n !== "object") return;
     if (Array.isArray(n)) return n.forEach(walk);
-    const url = str(n.url);
-    const domain = domainOf(str(n.domain) ?? url);
-    if (url && domain && !out.has(domain)) out.set(domain, { domain, url });
+    const site = n.url ? siteOf(n) : null;
+    if (site && !out.has(site.domain)) out.set(site.domain, site);
     for (const k of ["references", "sources", "annotations", "items", "sections"]) walk(n[k]);
   };
   walk(node);

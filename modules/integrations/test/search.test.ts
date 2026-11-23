@@ -415,6 +415,52 @@ describe("DataForSEO, live", () => {
       },
     });
   });
+
+  test("reads the real site behind Google's redirect links, not google.com", async () => {
+    const goto = "https://google.com/goto?url=CAES&gsessionid=x";
+    fakeFetch({
+      status_code: 20000,
+      tasks: [
+        {
+          id: "t",
+          status_code: 20000,
+          result: [
+            {
+              items: [
+                {
+                  type: "ai_overview",
+                  references: [
+                    { domain: "google.com", url: goto, source: "WildlifeRemoval.com" },
+                    { domain: "google.com", url: goto, source: "Yelp" },
+                    { domain: "www.google.com", url: "https://www.google.com/searchviewer/10?svid=C", source: "Google" },
+                  ],
+                },
+                {
+                  type: "organic",
+                  rank_group: 1,
+                  domain: "google.com",
+                  url: goto,
+                  breadcrumb: "https://www.pestrol.com › middletown-ny",
+                  title: "Pestrol",
+                },
+                { type: "organic", rank_group: 2, domain: "google.com", url: goto, title: "No breadcrumb" },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const out = (
+      await adapterFor("dataforseo")!.call(
+        "search.organic",
+        { op: "collect", tasks: [{ externalId: "serp/google/organic|t", query: { ...query, depth: 10 } }] },
+        liveCtx("dataforseo", { password: "p" }, { login: "l" }),
+      )
+    ).output as CollectOutput<unknown>;
+    const result = (out.collected[0] as { result: { items: unknown[]; aiOverview: unknown } }).result;
+    expect(result.items).toEqual([{ position: 1, domain: "pestrol.com", url: "https://www.pestrol.com", title: "Pestrol" }]);
+    expect(result.aiOverview).toEqual({ shown: true, citedDomains: ["wildliferemoval.com"] });
+  });
 });
 
 describe("Google Places", () => {
