@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { Menu, Moon, Sun, X } from "lucide-react";
 import { Logo } from "./Logo";
-import { FontPicker } from "./FontPicker";
 import { Button, Container, cn } from "./ui";
 import { APP_NAME, APP_URL, CONTACT_EMAIL } from "../data/site";
 
@@ -232,7 +231,6 @@ export default function Layout() {
         <Outlet />
       </main>
       <Footer />
-      {import.meta.env.DEV && <FontPicker />}
     </div>
   );
 }
