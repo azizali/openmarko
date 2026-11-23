@@ -275,6 +275,8 @@ Controls are exact and unfussy: small, tight and high in contrast, with precise 
 - **Secondary:** Clean Sheet with a hairline border; hover firms the border and adds Hover Wash.
 - **Ghost, Accent, Danger:** Ghost for row actions, Accent used sparingly, Danger a bordered button with red text.
 - **New:** anything that starts something new ("New role", "Add document", "Invite") is a `NewButton`: primary with a plus in front. A form's own submit ("Create", "Save") has no plus.
+- **Which variant:** primary for the page's own action (its `NewButton`, a suggestion's Apply) and a form's submit; secondary for everything else that does something (Check now, Change, Pause); danger only for what removes; ghost for row actions and for backing out of something done (Not now, Undo, Stop tracking). Cancel is always secondary.
+- **Form footer:** a side panel's or form's closing pair is `FormFooter`: Cancel (secondary) then the action (primary), with an optional note on the left.
 - **Press / Focus / Disabled:** presses scale to 97% over 150ms. Focus is a 2px Focus Pink outline at a 2px offset. Disabled drops to 50% opacity.
 
 ### Inputs / Fields
@@ -313,6 +315,10 @@ Every success or failure message is one `Feedback` (ADR 0030), a soft Good or Ba
 - **Menu list (phones):** a `MenuGroup` per group, with its Section Label and hint above a bordered card of `MenuLink` rows: icon, name and a chevron, at least 44px tall. Sideways-scrolling strips of links are not used for navigation.
 - **Tabs:** text with a 2px ink underline on the current tab. Arrow keys move between them.
 - **Segmented control:** a Hover Wash track with the current option lifted on a Clean Sheet.
+
+### Settings sections
+
+A settings page is one card of `SettingsSection`s divided by hairlines. Each has its title, a line on why it matters and its one action (secondary `Change`, or danger to remove) on the left, and what's set on the right as `Facts`: a muted label beside each value, left-aligned so the eye doesn't cross the page. A setting with nothing in it says so in Pencil Gray. On a phone the action sits beside the title and the facts follow.
 
 ### Side Panel
 

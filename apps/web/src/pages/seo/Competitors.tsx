@@ -4,8 +4,8 @@
 // linking to that keyword's page. Found for you; one can be added by hand or hidden.
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
-import { ArrowUp, ChevronRight, Plus } from "lucide-react";
-import { Badge, Button, Card, Segmented, cn } from "../../components/ui";
+import { ArrowUp, ChevronRight } from "lucide-react";
+import { Badge, Button, Card, NewButton, Segmented, cn } from "../../components/ui";
 import { LoadError, useToast } from "../../components/Feedback";
 import { messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
@@ -101,13 +101,7 @@ function CompetitorList() {
       <SeoHeader
         tab="competitors"
         sub={data && total ? `${beating} ahead of you on at least one of ${total} ${noun}.` : "Who beats you, keyword by keyword."}
-        actions={
-          can("track") && (
-            <Button icon={<Plus size={14} />} onClick={() => setAdding(true)}>
-              Add competitor
-            </Button>
-          )
-        }
+        actions={can("track") && <NewButton onClick={() => setAdding(true)}>Add competitor</NewButton>}
       />
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <Segmented<Channel>

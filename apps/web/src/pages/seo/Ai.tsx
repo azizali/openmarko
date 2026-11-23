@@ -3,8 +3,8 @@
 // who it named in order, and what it cited, with breadcrumbs back up.
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { ChevronRight, Plus } from "lucide-react";
-import { Badge, Button, Card, cn } from "../../components/ui";
+import { ChevronRight } from "lucide-react";
+import { Badge, Button, Card, NewButton, cn } from "../../components/ui";
 import { LoadError, useToast } from "../../components/Feedback";
 import { messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
@@ -79,13 +79,7 @@ function QuestionList() {
             "Whether ChatGPT, Google AI and Perplexity recommend you."
           )
         }
-        actions={
-          can("track") && (
-            <Button icon={<Plus size={14} />} onClick={() => setAdding(true)}>
-              Add questions
-            </Button>
-          )
-        }
+        actions={can("track") && <NewButton onClick={() => setAdding(true)}>Add questions</NewButton>}
       />
       <LoadError what="AI answers">{page.error}</LoadError>
       {data && (

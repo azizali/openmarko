@@ -71,7 +71,7 @@ changes what checks cost and links the Google profile.
   and where they beat you most; add one by hand, or hide or unhide one. A competitor (`/seo/competitors/:id`) shows all
   three channels at once, their result beside yours for every keyword or question, each linking to that keyword's page
   (on Maps, drawn for them), and their business page when they have one.
-- **Settings** (`/seo/settings`): business details, checks within the Plan (grid size and reach with the same map preview as setup), the Google profile link, pause or remove. With two or more Locations, a list beside the settings picks which one you're viewing, and
+- **Settings** (`/seo/settings`): one card of sections (business details; checks within the Plan, with the grid's shape and each assistant's mark; the Google profile link; pause; remove), each with its one action, and the grid size and reach edited with the same map preview as setup. With two or more Locations, a list beside the settings picks which one you're viewing, and
   Select pauses, resumes or removes several together.
 - **Suggestions**, each saying what it was based on: add categories competitors ahead of you list; get listed on a site
   AI answers cite; track a keyword your profile is found for or a competitor ranks for; say your services in your

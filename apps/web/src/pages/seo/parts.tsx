@@ -41,15 +41,40 @@ export function GridLegend() {
   );
 }
 
-/** A grid at a glance, for a row in a list. */
-export function GridThumb({ size, ranks, gap = 6 }: { size: number; ranks: (number | null)[]; gap?: number }) {
+/** A grid at a glance, for a row in a list. With no ranks it's the grid's shape alone: `label` then says what it shows. */
+export function GridThumb({
+  size,
+  ranks,
+  gap = 6,
+  label,
+  empty = "var(--border-strong)",
+}: {
+  size: number;
+  ranks: (number | null)[];
+  gap?: number;
+  label?: string;
+  /** The colour of a spot without a rank. */
+  empty?: string;
+}) {
   const pad = 4;
   const px = pad * 2 + gap * (size - 1);
   const top3 = ranks.filter((r) => r !== null && r <= 3).length;
   return (
-    <svg width={px} height={px} className="shrink-0 rounded bg-hover" role="img" aria-label={`Top 3 at ${top3} of ${size * size} spots`}>
+    <svg
+      width={px}
+      height={px}
+      className="shrink-0 rounded bg-hover"
+      role="img"
+      aria-label={label ?? `Top 3 at ${top3} of ${size * size} spots`}
+    >
       {ranks.map((r, idx) => (
-        <circle key={idx} cx={pad + (idx % size) * gap} cy={pad + Math.floor(idx / size) * gap} r={gap / 3} fill={dot(r)} />
+        <circle
+          key={idx}
+          cx={pad + (idx % size) * gap}
+          cy={pad + Math.floor(idx / size) * gap}
+          r={gap / 3}
+          fill={r === null ? empty : dot(r)}
+        />
       ))}
     </svg>
   );

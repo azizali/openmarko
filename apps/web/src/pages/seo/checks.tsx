@@ -4,7 +4,7 @@
 // something is running, so every page agrees and reloads its own data when its kind of check finishes.
 import { createContext, use, useEffect, useRef, useState, type ReactNode } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
-import { Button, Checkbox, Drawer, cn } from "../../components/ui";
+import { Button, Checkbox, Drawer, cn, FormFooter } from "../../components/ui";
 import { Feedback, useFeedback, useToast } from "../../components/Feedback";
 import { fmtTime, messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
@@ -213,18 +213,19 @@ function ChecksDrawer({ open, onClose, preselect }: { open: boolean; onClose: ()
       feedback={<Feedback {...fb.props} />}
       footer={
         manage ? (
-          <>
-            <Button variant="ghost" onClick={onClose}>
-              Close
-            </Button>
-            <Button variant="primary" onClick={() => void start()} disabled={!chosen.length || starting}>
-              {starting
+          <FormFooter
+            cancel="Close"
+            onCancel={onClose}
+            onAction={() => void start()}
+            disabled={!chosen.length || starting}
+            action={
+              starting
                 ? "Starting…"
                 : chosen.length
                   ? `Check ${chosen.length === 3 ? "everything" : list(chosen.map((k) => kindNames[k]))}`
-                  : "Check"}
-            </Button>
-          </>
+                  : "Check"
+            }
+          />
         ) : (
           <Button onClick={onClose}>Close</Button>
         )

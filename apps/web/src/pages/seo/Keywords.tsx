@@ -5,9 +5,9 @@
 // Google's whole first page, with breadcrumbs back up.
 import type { ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { Check, ChevronRight, ExternalLink, Minus, Plus } from "lucide-react";
+import { Check, ChevronRight, ExternalLink, Minus } from "lucide-react";
 import { useState } from "react";
-import { Badge, Button, Card, LineChart, cn, fmt } from "../../components/ui";
+import { Badge, Button, Card, LineChart, NewButton, cn, fmt } from "../../components/ui";
 import { LoadError, useToast } from "../../components/Feedback";
 import { messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
@@ -114,13 +114,7 @@ function KeywordList() {
             "Where your website ranks on Google."
           )
         }
-        actions={
-          can("track") && (
-            <Button icon={<Plus size={14} />} onClick={() => setAdding(true)}>
-              Add keywords
-            </Button>
-          )
-        }
+        actions={can("track") && <NewButton onClick={() => setAdding(true)}>Add keywords</NewButton>}
       />
       <LoadError what="keywords">{page.error}</LoadError>
       {data && (

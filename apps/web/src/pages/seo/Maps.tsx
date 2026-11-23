@@ -3,8 +3,8 @@
 // (/seo/maps/<keywordId>, MapsKeyword.tsx) and a business (/seo/maps/places/<placeId>, Place.tsx).
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { ChevronRight, Plus } from "lucide-react";
-import { Button, Card, cn } from "../../components/ui";
+import { ChevronRight } from "lucide-react";
+import { Card, NewButton, cn } from "../../components/ui";
 import { LoadError } from "../../components/Feedback";
 import { useLoad } from "../../lib/useLoad";
 import { locationApi, seoApi, type MapsSummary } from "./api";
@@ -43,13 +43,7 @@ function MapsList() {
         tab="maps"
         sub={`Your rank from ${location.gridSize * location.gridSize} spots within ${miles(location.gridRadiusM)}.`}
         suggestions="maps"
-        actions={
-          can("track") && (
-            <Button icon={<Plus size={14} />} onClick={() => setAdding(true)}>
-              Add keywords
-            </Button>
-          )
-        }
+        actions={can("track") && <NewButton onClick={() => setAdding(true)}>Add keywords</NewButton>}
       />
       {summary.error ? (
         <LoadError what="your map rankings">{summary.error}</LoadError>

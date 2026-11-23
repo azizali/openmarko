@@ -56,6 +56,39 @@ export function NewButton({ size = "md", ...rest }: Omit<BtnProps, "icon">) {
   return <Button variant="primary" size={size} icon={<Plus size={size === "sm" ? 13 : 14} />} {...rest} />;
 }
 
+/**
+ * A side panel's or form's closing pair: Cancel (secondary) beside the one action that does the work (primary), with an
+ * optional note on the left ("6 of 20 on your plan"). The action submits the form around it, or calls `onAction` when
+ * there's no form.
+ */
+export function FormFooter({
+  action,
+  onCancel,
+  onAction,
+  disabled,
+  note,
+  cancel = "Cancel",
+}: {
+  action: ReactNode;
+  onCancel: () => void;
+  onAction?: () => void;
+  disabled?: boolean;
+  note?: ReactNode;
+  cancel?: string;
+}) {
+  return (
+    <>
+      {note && <span className="mr-auto text-[12.5px] text-muted">{note}</span>}
+      <Button type="button" onClick={onCancel}>
+        {cancel}
+      </Button>
+      <Button type={onAction ? "button" : "submit"} variant="primary" onClick={onAction} disabled={disabled}>
+        {action}
+      </Button>
+    </>
+  );
+}
+
 export function Card({ className, children, pad = true }: { className?: string; children: ReactNode; pad?: boolean }) {
   return <div className={cn("rounded-xl border border-line bg-surface shadow-card", pad && "p-5", className)}>{children}</div>;
 }
@@ -69,6 +102,65 @@ export function CardHeader({ title, sub, right }: { title: ReactNode; sub?: Reac
       </div>
       {right}
     </div>
+  );
+}
+
+// ---------- Settings ----------
+
+/** A settings page's sections, in one card divided by hairlines. */
+export function SettingsSections({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <Card pad={false} className={cn("divide-y divide-line", className)}>
+      {children}
+    </Card>
+  );
+}
+
+/**
+ * One section of a settings page: what it is and why on the left with its one action under that, what's set on the
+ * right. On a phone the action sits beside the title and what's set follows. Its action is secondary (`Change`), or
+ * `danger` when it removes something; primary is kept for the page's own action and a form's submit.
+ */
+export function SettingsSection({
+  title,
+  sub,
+  action,
+  children,
+}: {
+  title: ReactNode;
+  sub?: ReactNode;
+  action?: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <section className="grid gap-x-10 gap-y-4 p-5 md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]">
+      <div className="flex items-start justify-between gap-4 md:flex-col md:justify-start">
+        <div className="min-w-0">
+          <h2 className="text-[14px] font-medium">{title}</h2>
+          {sub && <p className="mt-1 text-[12.5px] leading-normal text-muted">{sub}</p>}
+        </div>
+        {action && <div className="flex shrink-0 flex-wrap gap-2">{action}</div>}
+      </div>
+      {children && <div className="min-w-0">{children}</div>}
+    </section>
+  );
+}
+
+/** What's set, a label beside each value. Use `Fact` for each pair. */
+export function Facts({ children }: { children: ReactNode }) {
+  return (
+    <dl className="grid grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)] gap-x-5 gap-y-3 text-[13.5px] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)]">
+      {children}
+    </dl>
+  );
+}
+
+export function Fact({ label, children }: { label: ReactNode; children: ReactNode }) {
+  return (
+    <>
+      <dt className="text-muted">{label}</dt>
+      <dd className="min-w-0 wrap-break-word">{children}</dd>
+    </>
   );
 }
 

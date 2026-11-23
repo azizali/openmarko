@@ -3,7 +3,7 @@
 // tracked, and the count stays within the Plan. A competitor is picked from a Google search near the Location.
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Plus, Search } from "lucide-react";
-import { Badge, Button, Drawer, Field, Input, Textarea, cn, fmt } from "../../components/ui";
+import { Badge, Button, Drawer, Field, Input, Textarea, cn, fmt, FormFooter } from "../../components/ui";
 import { Feedback, useFeedback } from "../../components/Feedback";
 import { messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
@@ -90,17 +90,16 @@ function LinesDrawer({
       onSubmit={save}
       feedback={<Feedback {...fb.props} />}
       footer={
-        <>
-          <span className={cn("mr-auto text-[12.5px]", over ? "text-bad" : "text-muted")}>
-            {limit === null ? `${name(tracked.length)} tracked` : `${used + counted} of ${limit} on your plan`}
-          </span>
-          <Button type="button" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary" disabled={busy || !fresh.length || over}>
-            {busy ? "Adding…" : fresh.length ? `Add ${name(fresh.length)}` : "Add"}
-          </Button>
-        </>
+        <FormFooter
+          note={
+            <span className={cn(over && "text-bad")}>
+              {limit === null ? `${name(tracked.length)} tracked` : `${used + counted} of ${limit} on your plan`}
+            </span>
+          }
+          onCancel={onClose}
+          disabled={busy || !fresh.length || over}
+          action={busy ? "Adding…" : fresh.length ? `Add ${name(fresh.length)}` : "Add"}
+        />
       }
     >
       <Field
