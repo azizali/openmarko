@@ -422,8 +422,10 @@ export default function Layout() {
   const orgId = org?.id;
   const lastOrg = useRef(orgId);
   useEffect(() => {
-    if (lastOrg.current === orgId) return;
+    const was = lastOrg.current;
     lastOrg.current = orgId;
+    // The first Organization arriving as the page loads isn't a switch: a reload or a shared link stays where it was.
+    if (!was || was === orgId) return;
     setMobileNav(false); // the narrow-view menu was opened for the old Organization
     if (loc.pathname.startsWith("/seo")) void navigate("/seo", { replace: true });
   }, [orgId, loc.pathname, navigate]);
