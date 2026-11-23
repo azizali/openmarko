@@ -6,7 +6,7 @@ import { Plus, Search } from "lucide-react";
 import { Badge, Button, Drawer, Field, Input, Textarea, cn, fmt } from "../../components/ui";
 import { Feedback, useFeedback } from "../../components/Feedback";
 import { messageOf } from "../../lib/api";
-import { locationApi, type Place } from "./api";
+import { locationApi, type Ideas, type Place } from "./api";
 import { useSeo } from "./Seo";
 
 const lines = (s: string) => [
@@ -140,7 +140,7 @@ function LinesDrawer({
 /** Ideas for what to track, from the business (asks the API once per opening; only for people who manage SEO). */
 function useIdeas(open: boolean) {
   const { orgId, location, can } = useSeo();
-  const [ideas, setIdeas] = useState<{ keywords: { term: string; monthlySearches: number | null }[]; questions: string[] } | null>(null);
+  const [ideas, setIdeas] = useState<Ideas | null>(null);
   // Asked once per Location: the request costs money, and `can` changes identity on every render.
   const asked = useRef<string | null>(null);
   const manage = can("manage");
@@ -158,13 +158,26 @@ function useIdeas(open: boolean) {
   return ideas;
 }
 
+/** Where keywords are searched: each page adds its own, typed the way people search there. */
+const surfaces = {
+  maps: { title: "Add Google Maps keywords", placeholder: "emergency dentist\ninvisalign", flags: { maps: true, organic: false } },
+  organic: {
+    title: "Add Google search keywords",
+    placeholder: "emergency dentist austin\ninvisalign cost austin",
+    flags: { maps: false, organic: true },
+  },
+} as const;
+
 export function AddKeywords({
+  on,
   open,
   onClose,
   tracked,
   limit,
   onAdded,
 }: {
+  /** Google Maps (searched from every spot of the grid) or Google search. */
+  on: "maps" | "organic";
   open: boolean;
   onClose: () => void;
   tracked: string[];
@@ -177,15 +190,15 @@ export function AddKeywords({
     <LinesDrawer
       open={open}
       onClose={onClose}
-      title="Add keywords"
+      title={surfaces[on].title}
       label="Keywords"
-      placeholder={"emergency dentist austin\ninvisalign austin"}
+      placeholder={surfaces[on].placeholder}
       tracked={tracked}
       limit={limit}
       noun={["keyword", "keywords"]}
-      ideas={(ideas?.keywords ?? []).map((k) => ({ text: k.term, note: k.monthlySearches ? `${fmt(k.monthlySearches)}/mo` : undefined }))}
+      ideas={(ideas?.[on] ?? []).map((k) => ({ text: k.term, note: k.monthlySearches ? `${fmt(k.monthlySearches)}/mo` : undefined }))}
       submit={async (terms) => {
-        const r = await locationApi(orgId, location.id).keywords.post({ terms });
+        const r = await locationApi(orgId, location.id).keywords.post({ terms, ...surfaces[on].flags });
         if (r.error) return { error: messageOf(r.error) };
         onAdded();
         return {};

@@ -78,7 +78,11 @@ export const googlePlaces: Adapter = {
         ...(near ? { locationBias: { circle: { center: { latitude: near.lat, longitude: near.lng }, radius: 50_000 } } } : {}),
       }),
     });
-    if (!res.ok) throw new AppError(502, "provider_failed", `Google Places answered ${res.status}.`);
+    if (!res.ok) {
+      // Google explains a refusal (key restricted, API not enabled, billing off) in `error.message`.
+      const reason = ((await res.json().catch(() => null)) as { error?: { message?: string } } | null)?.error?.message;
+      throw new AppError(502, "provider_failed", `Google Places answered ${res.status}${reason ? `: ${reason}` : "."}`);
+    }
     const json = (await res.json()) as { places?: ApiPlace[] };
     const places = (json.places ?? []).map(toCandidate).filter((p): p is PlaceCandidate => !!p);
     return { output: { places }, quantity: 1, costMicros: COST_MICROS };

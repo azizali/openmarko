@@ -39,6 +39,41 @@ const at = (name: string) => timestamp(name, { withTimezone: true });
 
 // ==================== 1. Public catalog ====================
 
+/**
+ * Google's own list of business categories ("Pest control service"), fetched from the details provider and refreshed
+ * monthly. Setup offers from it, and only a name in it is accepted as a category to track. Shared by everyone.
+ */
+export const placeCategories = seo.table("place_categories", {
+  name: text("name").primaryKey(),
+  /** How many businesses Google lists under it: the order categories are offered in. */
+  businesses: integer("businesses").notNull().default(0),
+  fetchedAt: at("fetched_at")
+    .notNull()
+    .default(sql`now()`),
+});
+
+/**
+ * The places Google can search from (cities, towns, boroughs, neighbourhoods), per country, fetched from the details
+ * provider and refreshed monthly. `code` is the provider's id for the place; `label` is how it's shown and picked
+ * ("Springfield, IL"), unique within a country; `city` is the bare name people type in a search ("springfield").
+ */
+export const placeCities = seo.table(
+  "place_cities",
+  {
+    code: integer("code").primaryKey(),
+    countryCode: text("country_code").notNull(),
+    label: text("label").notNull(),
+    city: text("city").notNull(),
+    /** The state or region the place is in (full name), for ranking places near the business first. */
+    region: text("region"),
+    type: text("type").notNull(),
+    fetchedAt: at("fetched_at")
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => [uniqueIndex("place_cities_label").on(t.countryCode, t.label)],
+);
+
 /** One Google business, seen in any result or looked up. Competitors are rows here, never typed in. */
 export const places = seo.table(
   "places",
@@ -177,6 +212,12 @@ export const keywords = seo.table(
     term: text("term").notNull(),
     metricId: uuid("metric_id").references(() => keywordMetrics.id, { onDelete: "set null" }),
     active: boolean("active").notNull().default(true),
+    /**
+     * Where it's searched: on Google Maps from every spot of the grid, and on Google search once. People search the two
+     * differently ("exterminator" on the map, "exterminator austin tx" on Google), so a keyword can be on one or both.
+     */
+    maps: boolean("maps").notNull().default(true),
+    organic: boolean("organic").notNull().default(true),
     source: text("source").notNull(), // 'onboarding' | 'suggestion' | 'manual'
     createdBy: text("created_by"),
     createdAt: createdAt(),

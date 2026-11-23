@@ -10,7 +10,17 @@ import { messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
 import { engineNames, locationApi, seoApi, type Engine, type Limits } from "./api";
 import { SeoHeader, useSeo } from "./Seo";
-import { ChecksFields, ServicesField, connectGoogle, everyLabel, useOAuthError, type Checks, type Every } from "./fields";
+import {
+  ChecksFields,
+  GRID_SIZE,
+  ServicesField,
+  gridCoverage,
+  connectGoogle,
+  everyLabel,
+  useOAuthError,
+  type Checks,
+  type Every,
+} from "./fields";
 
 // ---------- The page ----------
 
@@ -65,7 +75,7 @@ export default function Settings() {
           <Card>
             <CardHeader title="Checks" sub={everyLabel[location.checkEvery as Every]} right={change("checks")} />
             <Row label="Map grid">
-              {location.gridSize} × {location.gridSize} spots
+              {location.gridSize} × {location.gridSize} spots. {gridCoverage(location.gridRadiusM)}
             </Row>
             <Row label="AI assistants">{location.engines.map((e) => engineNames[e] ?? e).join(", ")}</Row>
             <Row label="Status">
@@ -293,7 +303,8 @@ function BusinessDrawer({ open, onClose }: { open: boolean; onClose: () => void 
 function ChecksDrawer({ open, onClose, limits }: { open: boolean; onClose: () => void; limits: Limits | null }) {
   const { orgId, location, reload } = useSeo();
   const [value, setValue] = useState<Checks>({
-    gridSize: location.gridSize,
+    gridSize: GRID_SIZE,
+    gridRadiusM: location.gridRadiusM,
     checkEvery: location.checkEvery as Every,
     engines: location.engines as Engine[],
   });
@@ -306,6 +317,7 @@ function ChecksDrawer({ open, onClose, limits }: { open: boolean; onClose: () =>
     // Only what changed: after a Plan downgrade, changing the assistants alone must not be refused for the grid.
     const r = await locationApi(orgId, location.id).patch({
       ...(value.gridSize !== location.gridSize ? { gridSize: value.gridSize } : {}),
+      ...(value.gridRadiusM !== location.gridRadiusM ? { gridRadiusM: value.gridRadiusM } : {}),
       ...(value.checkEvery !== location.checkEvery ? { checkEvery: value.checkEvery } : {}),
       ...(value.engines.join() !== location.engines.join() ? { engines: value.engines } : {}),
     });

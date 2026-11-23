@@ -56,31 +56,35 @@ export const pingbackSignature = (ctx: AppContext, checkId: string) => hmacHex(c
 function targetsFor(
   kind: CheckKind,
   l: LocationRow,
-  kws: { id: string; term: string }[],
+  kws: { id: string; term: string; maps: boolean; organic: boolean }[],
   qs: { id: string; text: string }[],
 ): TaskTarget[] {
   const door = { lat: l.lat, lng: l.lng };
   if (kind === "maps") {
     const spots = spotsOf(door, l.gridSize, l.gridRadiusM);
     const zoom = zoomFor(l.gridSize, l.gridRadiusM);
-    return kws.flatMap((k) =>
-      spots.map((s) => ({
-        kind: "maps" as const,
-        keywordId: k.id,
-        idx: s.idx,
-        size: l.gridSize,
-        radiusM: l.gridRadiusM,
-        center: door,
-        query: { keyword: k.term, at: { lat: s.lat, lng: s.lng }, zoom, languageCode: l.languageCode, depth: MAPS_DEPTH },
-      })),
-    );
+    return kws
+      .filter((k) => k.maps)
+      .flatMap((k) =>
+        spots.map((s) => ({
+          kind: "maps" as const,
+          keywordId: k.id,
+          idx: s.idx,
+          size: l.gridSize,
+          radiusM: l.gridRadiusM,
+          center: door,
+          query: { keyword: k.term, at: { lat: s.lat, lng: s.lng }, zoom, languageCode: l.languageCode, depth: MAPS_DEPTH },
+        })),
+      );
   }
   if (kind === "organic")
-    return kws.map((k) => ({
-      kind: "organic" as const,
-      keywordId: k.id,
-      query: { keyword: k.term, at: door, languageCode: l.languageCode, depth: ORGANIC_DEPTH },
-    }));
+    return kws
+      .filter((k) => k.organic)
+      .map((k) => ({
+        kind: "organic" as const,
+        keywordId: k.id,
+        query: { keyword: k.term, at: door, languageCode: l.languageCode, depth: ORGANIC_DEPTH },
+      }));
   return qs.flatMap((q) =>
     (l.engines as AiEngine[]).map((engine) => ({
       kind: "ai" as const,
@@ -163,7 +167,7 @@ export async function startCycle(
 
   const scope = opts.scope;
   const kws = await ctx.db
-    .select({ id: keywords.id, term: keywords.term })
+    .select({ id: keywords.id, term: keywords.term, maps: keywords.maps, organic: keywords.organic })
     .from(keywords)
     .where(
       and(eq(keywords.locationId, l.id), eq(keywords.active, true), scope?.keywordIds ? inArray(keywords.id, scope.keywordIds) : undefined),

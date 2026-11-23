@@ -144,6 +144,47 @@ export type PlaceCandidate = {
 export type PlacesInput = { query: string; near?: Coordinates | null };
 export type PlacesOutput = { places: PlaceCandidate[] };
 
+// ---------- A business's full Google profile ----------
+
+/** What Google's business profile says about one business: the categories it lists and what customers talk about. */
+export type BusinessDetails = {
+  primaryCategory: string | null;
+  /** Every category the profile lists, the primary one first. */
+  categories: string[];
+  description: string | null;
+  /** What the profile says it offers (its attributes), as short names. */
+  attributes: string[];
+  /** What customers mention in reviews: services and qualities, most mentioned first. */
+  topics: { term: string; mentions: number }[];
+  /** Questions people ask about this kind of business. */
+  questions: string[];
+  /** Nearby places people also search for with this business: cities and neighbourhoods to track. */
+  nearby: string[];
+};
+export type DetailsInput = {
+  placeId: string;
+  name: string;
+  address?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  languageCode: string;
+  countryCode: string;
+};
+export type DetailsOutput = { details: BusinessDetails | null };
+/** Google's whole list of business categories: the finite set a profile's category is chosen from. */
+export type CategoriesInput = { op: "categories" };
+/** Each with how many businesses Google lists under it, so the common ones can come first. */
+export type CategoriesOutput = { categories: { name: string; businesses: number }[] };
+
+/**
+ * Every place Google can search from in one country (cities, towns, neighbourhoods, counties, states, postcodes):
+ * what a person picks a city from. `name` is the provider's full path, comma-separated, the country last
+ * ("Austin,Texas,United States"); `code` identifies the place, so two towns of one name can't be mistaken.
+ */
+export type LocationsInput = { op: "locations"; countryCode: string };
+export type PlaceLocation = { code: number; name: string; type: string };
+export type LocationsOutput = { locations: PlaceLocation[] };
+
 /** A website's domain, without scheme, `www.` or path: what results are matched on. */
 export function domainOf(url: string | null | undefined): string | null {
   if (!url) return null;

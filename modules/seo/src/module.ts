@@ -14,7 +14,7 @@ import { registerExecutors } from "./suggestions/executors";
 //   profile/      the Google Business Profile: linking, reading, changing, and its calls and clicks
 //   onboarding/   finding the business, ideas for what to track, launch and its progress
 //   admin/        what search data costs, for app admins
-// Search data comes through integrations (`search.*`, `places.find`, `profile.manage`), never directly.
+// Search data comes through integrations (`search.*`, `places.find`, `places.details`, `profile.manage`), never directly.
 export const seoModule = defineModule({
   id: "seo",
   apiGroup: {

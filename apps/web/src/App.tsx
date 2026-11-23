@@ -42,6 +42,7 @@ export default function App() {
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/accept-invitation/:id" element={<AcceptInvitation />} />
               <Route path="/onboarding" element={<Onboarding />} />
+              {SeoSetup && <Route path="/seo/setup" element={<SeoSetup />} />}
               <Route element={<Layout />}>
                 <Route index element={<Home />} />
                 {Widgets && <Route path="widgets" element={<Widgets />} />}
@@ -50,7 +51,6 @@ export default function App() {
                 {Knowledge && <Route path="knowledge" element={<Knowledge />} />}
                 {Knowledge && <Route path="knowledge/:baseId" element={<Knowledge />} />}
                 {Automation && <Route path="automation" element={<Automation />} />}
-                {SeoSetup && <Route path="seo/setup" element={<SeoSetup />} />}
                 {Seo && <Route path="seo/:tab?" element={<Seo />} />}
                 <Route path="team" element={<Navigate replace to="/settings/team" />} />
                 <Route path="clients" element={<Navigate replace to="/settings/clients" />} />

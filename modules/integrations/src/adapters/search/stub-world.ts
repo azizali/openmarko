@@ -8,7 +8,9 @@
 import type {
   AiQuery,
   AiResult,
+  BusinessDetails,
   Coordinates,
+  DetailsInput,
   KeywordIdea,
   KeywordMetric,
   MapsItem,
@@ -16,6 +18,7 @@ import type {
   OrganicQuery,
   OrganicResult,
   PlaceCandidate,
+  PlaceLocation,
 } from "./contract";
 
 type Biz = {
@@ -425,3 +428,131 @@ export function stubIdeas(domain: string | null, seeds: string[], limit: number)
     position: domain ? (hash(`pos|${domain}|${term}`) > 0.3 ? 1 + Math.floor(hash(`p|${domain}|${term}`) * 40) : null) : null,
   }));
 }
+
+// ---------- A business's full profile ----------
+
+/** Categories a dental practice might list beyond its first two, and the places people search with them. */
+const moreCategories = [
+  "Emergency dental service",
+  "Teeth whitening service",
+  "Orthodontist",
+  "Dental implants provider",
+  "Family dentist",
+];
+const nearbyPlaces = ["Round Rock", "Cedar Park", "Zilker", "Hyde Park", "Westlake", "Pflugerville"];
+
+/** What a business's Google profile would say. Known stub businesses get their own; any other place gets the basics. */
+export function stubDetails(input: DetailsInput): BusinessDetails {
+  const biz = stubBusinesses.find((b) => stubPlaceId(b) === input.placeId);
+  if (!biz) return { primaryCategory: null, categories: [], description: null, attributes: [], topics: [], questions: [], nearby: [] };
+  const extra = moreCategories.filter((c) => !biz.categories.includes(c) && hash(`cat|${biz.slug}|${c}`) > 0.45);
+  const categories = [...biz.categories, ...extra];
+  const lower = biz.category.toLowerCase();
+  return {
+    primaryCategory: biz.category,
+    categories,
+    description: `${biz.name} is a ${lower} on ${biz.address.split(",")[0]}. ${biz.services.slice(0, 3).join(", ")}.`,
+    attributes: ["Wheelchair accessible entrance", "Online appointments", ...(biz.services.includes("saturday") ? ["Open Saturdays"] : [])],
+    topics: biz.services
+      .map((term) => ({ term, mentions: 4 + Math.floor(hash(`topic|${biz.slug}|${term}`) * 60) }))
+      .sort((a, b) => b.mentions - a.mentions),
+    questions: [
+      `How much does a ${lower} visit cost in ${CITY.name} without insurance?`,
+      `Is there a ${lower} in ${CITY.name} open on weekends?`,
+      ...biz.services.slice(0, 2).map((x) => `Who does ${x} in ${CITY.name}?`),
+    ],
+    nearby: nearbyPlaces.filter((c) => hash(`near|${biz.slug}|${c}`) > 0.3).slice(0, 4),
+  };
+}
+
+/** A slice of Google's category list: enough to try autocomplete and related categories in the stub. */
+const stubCategoryNames = [
+  "Services",
+  "Store",
+  "Dentist",
+  "Cosmetic dentist",
+  "Pediatric dentist",
+  "Emergency dental service",
+  "Orthodontist",
+  "Periodontist",
+  "Endodontist",
+  "Oral surgeon",
+  "Dental implants provider",
+  "Teeth whitening service",
+  "Dental clinic",
+  "Family dentist",
+  "Pest control service",
+  "Termite control service",
+  "Rodent control service",
+  "Wildlife removal service",
+  "Bird control service",
+  "Mosquito control service",
+  "Exterminator",
+  "Lawn care service",
+  "Tree service",
+  "Plumber",
+  "Emergency plumber",
+  "Water heater installation service",
+  "Drain cleaner",
+  "Electrician",
+  "HVAC contractor",
+  "Air conditioning contractor",
+  "Heating contractor",
+  "Roofing contractor",
+  "General contractor",
+  "Painter",
+  "House cleaning service",
+  "Carpet cleaning service",
+  "Window cleaning service",
+  "Pressure washing service",
+  "Locksmith",
+  "Moving company",
+  "Storage facility",
+  "Auto repair shop",
+  "Car detailing service",
+  "Tire shop",
+  "Personal injury attorney",
+  "Family law attorney",
+  "Criminal justice attorney",
+  "Accountant",
+  "Tax preparation service",
+  "Real estate agency",
+  "Property management company",
+  "Hair salon",
+  "Barber shop",
+  "Nail salon",
+  "Day spa",
+  "Massage therapist",
+  "Chiropractor",
+  "Physical therapist",
+  "Veterinarian",
+  "Dog trainer",
+  "Pet groomer",
+];
+/** Most listed first, as the provider answers: the order is the list's, with the catch-alls on top to prove they're left out. */
+export const stubCategories = stubCategoryNames.map((name, i) => ({ name, businesses: 1_000_000 - i * 10_000 }));
+
+/**
+ * A slice of Google's places for the US, as the provider names them ("Austin,Texas,United States"): the same city name
+ * in several states, a neighbourhood, and the counties and states that must not be offered as cities.
+ */
+const stubUs: [number, string, string][] = [
+  [1026201, "Austin,Texas,United States", "City"],
+  [1020347, "Austin,Minnesota,United States", "City"],
+  [1026213, "Round Rock,Texas,United States", "City"],
+  [1026249, "Cedar Park,Texas,United States", "City"],
+  [1026303, "Pflugerville,Texas,United States", "City"],
+  [1026406, "Westlake,Texas,United States", "City"],
+  [1026500, "Zilker,Austin,Texas,United States", "Neighborhood"],
+  [1026501, "Hyde Park,Austin,Texas,United States", "Neighborhood"],
+  [1023001, "Hyde Park,New York,United States", "Town"],
+  [1016154, "Springfield,Illinois,United States", "City"],
+  [1018511, "Springfield,Missouri,United States", "City"],
+  [1018512, "Springfield,Massachusetts,United States", "City"],
+  [1014221, "Brooklyn,New York,United States", "Borough"],
+  [1026300, "Travis County,Texas,United States", "County"],
+  [21176, "Texas,United States", "State"],
+  [9004001, "78701,Texas,United States", "Postal Code"],
+];
+export const stubLocations = (countryCode: string): PlaceLocation[] =>
+  countryCode.toUpperCase() === "US" ? stubUs.map(([code, name, type]) => ({ code, name, type })) : [];

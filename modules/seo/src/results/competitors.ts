@@ -57,7 +57,7 @@ export async function competitorsPage(ctx: AppContext, orgId: string, locationId
   const put = (rowId: string, col: string, v: number | null) => theirs.set(rowId, (theirs.get(rowId) ?? new Map()).set(col, v));
 
   if (channel === "maps") {
-    const kws = await activeKeywords(ctx.db, l.id);
+    const kws = await activeKeywords(ctx.db, l.id, "maps");
     const scans = await latestScans(ctx.db, l.id);
     columns = kws.filter((k) => scans.some((s) => s.keywordId === k.id)).map((k) => ({ id: k.id, label: k.term }));
     const st = await standingsOf(
@@ -72,7 +72,7 @@ export async function competitorsPage(ctx: AppContext, orgId: string, locationId
       put(s.placeId, kw, s.top3Spots);
     }
   } else if (channel === "google") {
-    const kws = await activeKeywords(ctx.db, l.id);
+    const kws = await activeKeywords(ctx.db, l.id, "organic");
     const serps = await latestSerps(ctx.db, l.id);
     columns = kws.filter((k) => serps.some((s) => s.keywordId === k.id)).map((k) => ({ id: k.id, label: k.term }));
     const items = await itemsOf(

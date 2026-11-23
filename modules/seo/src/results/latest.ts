@@ -108,11 +108,12 @@ export async function citationsOf(db: Db, answerIds: string[]) {
   return db.select().from(aiCitations).where(inArray(aiCitations.answerId, answerIds)).orderBy(aiCitations.position);
 }
 
-export async function activeKeywords(db: Db, locationId: string) {
+/** The keywords a Location tracks; with `on`, only those searched there (Google Maps or Google search). */
+export async function activeKeywords(db: Db, locationId: string, on?: "maps" | "organic") {
   return db
     .select({ id: keywords.id, term: keywords.term, metricId: keywords.metricId, createdAt: keywords.createdAt })
     .from(keywords)
-    .where(and(eq(keywords.locationId, locationId), eq(keywords.active, true)))
+    .where(and(eq(keywords.locationId, locationId), eq(keywords.active, true), on ? eq(keywords[on], true) : undefined))
     .orderBy(keywords.createdAt);
 }
 

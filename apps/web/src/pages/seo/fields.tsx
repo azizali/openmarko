@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { Plus, X } from "lucide-react";
 import { Button, Checkbox, Field, Input, Segmented } from "../../components/ui";
+import { Feedback, useFeedback } from "../../components/Feedback";
 import { api, messageOf } from "../../lib/api";
 import { engineNames, type Engine, type Limits } from "./api";
 
@@ -33,14 +34,55 @@ export async function connectGoogle(orgId: string, returnTo: string): Promise<st
   return null;
 }
 
-/** What the business offers: removable chips and a row to add one. Ideas and suggestions come from these. */
-export function ServicesField({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+/**
+ * What the business offers (or, with other words, the categories and cities to track): removable chips and a row to
+ * add one. Ideas and suggestions come from these. `suggestions` are offered as one-click additions.
+ */
+export function ServicesField({
+  value,
+  onChange,
+  noun = "service",
+  nouns = `${noun}s`,
+  suggestions = [],
+  lookup,
+}: {
+  value: string[];
+  onChange: (v: string[]) => void;
+  noun?: string;
+  /** The plural, for the message when text isn't in the list. */
+  nouns?: string;
+  suggestions?: string[];
+  /**
+   * For a fixed list (Google's categories, its cities): what matches the typed text, or null when the list isn't available (then
+   * anything is accepted). With it, only a name from the list can be added.
+   */
+  lookup?: (typed: string) => Promise<string[] | null>;
+}) {
   const [draft, setDraft] = useState("");
-  const add = () => {
-    const v = draft.trim();
-    if (v && !value.some((s) => s.toLowerCase() === v.toLowerCase())) onChange([...value, v]);
+  const has = (v: string) => value.some((s) => s.toLowerCase() === v.toLowerCase());
+  // What the list says matches the typed text (null: no list, anything goes), and why the last add was refused.
+  const [matches, setMatches] = useState<string[] | null>(null);
+  const fb = useFeedback();
+  useEffect(() => {
+    if (!lookup || !draft.trim()) return setMatches(null);
+    let current = true;
+    const timer = setTimeout(() => void lookup(draft).then((m) => current && setMatches(m)), 200);
+    return () => {
+      current = false;
+      clearTimeout(timer);
+    };
+  }, [draft, lookup]);
+  const add = (text = draft) => {
+    const typed = text.trim();
+    if (!typed) return;
+    // From a fixed list, the name as the list spells it; text the list doesn't have is refused.
+    const v = matches ? (matches.find((m) => m.toLowerCase() === typed.toLowerCase()) ?? null) : typed;
+    if (v === null) return fb.fail(`That isn't in Google's list of ${nouns}. Pick one from the suggestions.`);
+    if (!has(v)) onChange([...value, v]);
+    fb.clear();
     setDraft("");
   };
+  const offered = (draft.trim() && matches ? matches : suggestions).filter((x) => !has(x)).slice(0, 12);
   return (
     <div>
       <ul className="flex flex-wrap gap-1.5">
@@ -62,44 +104,102 @@ export function ServicesField({ value, onChange }: { value: string[]; onChange: 
         <Input
           size="sm"
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            fb.clear();
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
               add();
             }
           }}
-          placeholder="Add a service"
-          aria-label="Add a service"
+          placeholder={`Add a ${noun}`}
+          aria-label={`Add a ${noun}`}
         />
-        <Button type="button" size="sm" icon={<Plus size={14} />} onClick={add} disabled={!draft.trim()}>
+        <Button type="button" size="sm" icon={<Plus size={14} />} onClick={() => add()} disabled={!draft.trim()}>
           Add
         </Button>
       </div>
+      <Feedback {...fb.props} />
+      {offered.length > 0 && (
+        <ul className="mt-2 flex flex-wrap gap-1.5" aria-label={`Suggested ${noun}s`}>
+          {offered.map((x) => (
+            <li key={x}>
+              <button
+                type="button"
+                onClick={() => add(x)}
+                className="inline-flex items-center gap-1 rounded-full border border-dashed border-line px-2.5 py-0.5 text-[13px] text-muted hover:bg-hover hover:text-fg"
+              >
+                <Plus size={12} aria-hidden /> {x}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
 
-export type Checks = { gridSize: number; checkEvery: Every; engines: Engine[] };
+export type Checks = { gridSize: number; gridRadiusM: number; checkEvery: Every; engines: Engine[] };
 
-/** Grid size, how often, and which assistants: only what the Plan allows is offered. */
-export function ChecksFields({ value, onChange, limits }: { value: Checks; onChange: (v: Checks) => void; limits: Limits | null }) {
-  // A Plan smaller than the smallest grid still gets the smallest: the API takes 5, 7 or 9.
-  const allowed = [5, 7, 9].filter((n) => limits?.gridSize == null || n <= limits.gridSize);
-  const grids = allowed.length ? allowed : [5];
-  const top = grids[grids.length - 1]!;
+/** Google Maps is searched from a 7 × 7 grid: one spot on the business's door, three rings around it. */
+export const GRID_SIZE = 7;
+export const GRID_SPOTS = GRID_SIZE * GRID_SIZE;
+const M_PER_MILE = 1609.344;
+/** How far the grid reaches, in miles: a dense city wants it tight, a business that drives to customers wants it wide. */
+const reaches = [0.5, 1, 2, 3, 5, 10];
+const metres = (miles: number) => Math.round(miles * M_PER_MILE);
+const miles = (m: number) => {
+  const mi = m / M_PER_MILE;
+  return `${mi < 1 ? mi.toFixed(1).replace(/^0/, "") : mi.toFixed(mi < 10 ? 1 : 0).replace(/\.0$/, "")} mi`;
+};
+/** The preset nearest a stored reach, so one set elsewhere still shows as picked. */
+export const nearestReach = (m: number) => metres(reaches.reduce((a, b) => (Math.abs(metres(b) - m) < Math.abs(metres(a) - m) ? b : a)));
+
+/** What the grid covers, in a sentence: "Reaches 2 mi from the business each way (a 4 mi square); spots are 0.7 mi apart." */
+export function gridCoverage(radiusM: number): string {
+  return `Reaches ${miles(radiusM)} from the business each way (a ${miles(radiusM * 2)} square); spots are ${miles(radiusM / ((GRID_SIZE - 1) / 2))} apart.`;
+}
+
+/** The 7 × 7 grid and how far it reaches, how often, and which assistants: only what the Plan allows is offered. */
+export function ChecksFields({
+  value,
+  onChange,
+  limits,
+  mapsKeywords,
+}: {
+  value: Checks;
+  onChange: (v: Checks) => void;
+  limits: Limits | null;
+  /** How many keywords are searched on Maps, to say what one check costs in searches; left out where unknown. */
+  mapsKeywords?: number;
+}) {
   const everies = (["daily", "weekly", "monthly"] as Every[]).filter(
     (e) => limits?.checksPerMonth == null || perMonth[e] <= limits.checksPerMonth,
   );
-  const capped = grids.length < 3 || everies.length < 3;
   return (
     <div className="space-y-5">
-      <Field label="Map grid" hint={`Google Maps is searched from ${value.gridSize * value.gridSize} spots around the business.`}>
+      <Field
+        label="Map grid: 7 × 7, how far it reaches"
+        hint={
+          <>
+            {gridCoverage(value.gridRadiusM)} Google Maps is searched from each of the {GRID_SPOTS} spots
+            {mapsKeywords !== undefined && (
+              <>
+                , for each keyword: {n(mapsKeywords, "keyword", "keywords")} × {GRID_SPOTS} = {fmtN(mapsKeywords * GRID_SPOTS)} searches a
+                check
+              </>
+            )}
+            .
+          </>
+        }
+      >
         <Segmented
-          label="Map grid"
-          value={String(value.gridSize)}
-          onChange={(v) => onChange({ ...value, gridSize: Number(v) })}
-          options={grids.map((n) => ({ id: String(n), label: `${n} × ${n}` }))}
+          label="How far the grid reaches"
+          value={String(nearestReach(value.gridRadiusM))}
+          onChange={(v) => onChange({ ...value, gridSize: GRID_SIZE, gridRadiusM: Number(v) })}
+          options={reaches.map((mi) => ({ id: String(metres(mi)), label: `${mi} mi` }))}
         />
       </Field>
       <Field label="How often">
@@ -124,18 +224,17 @@ export function ChecksFields({ value, onChange, limits }: { value: Checks; onCha
           ))}
         </div>
       </fieldset>
-      {capped && (
-        <p className="text-[12.5px] text-muted">
-          Your plan allows up to a {top} × {top} grid, checked {everyLabel[everies[0] ?? "monthly"].toLowerCase()} at most.
-        </p>
+      {everies.length < 3 && (
+        <p className="text-[12.5px] text-muted">Your plan allows checks {everyLabel[everies[0] ?? "monthly"].toLowerCase()} at most.</p>
       )}
     </div>
   );
 }
 
+const fmtN = (k: number) => k.toLocaleString("en-US");
 const n = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
 
-/** What each check covers, in a sentence: "Every week: 8 keywords from 49 spots on Google Maps, …". */
-export function checkSummary(c: Checks, keywords: number, questions: number): string {
-  return `${everyLabel[c.checkEvery]}: ${n(keywords, "keyword", "keywords")} from ${c.gridSize * c.gridSize} spots on Google Maps, ${keywords} on Google search, and ${n(questions, "question", "questions")} to ${n(c.engines.length, "assistant", "assistants")}.`;
+/** What each check covers, in a sentence: "Every week: 6 keywords from 49 spots on Google Maps, 20 on Google search, …". */
+export function checkSummary(c: Checks, counts: { maps: number; organic: number; questions: number }): string {
+  return `${everyLabel[c.checkEvery]}: ${n(counts.maps, "keyword", "keywords")} from ${GRID_SPOTS} spots on Google Maps (${fmtN(counts.maps * GRID_SPOTS)} searches), ${n(counts.organic, "keyword", "keywords")} on Google search, and ${n(counts.questions, "question", "questions")} to ${n(c.engines.length, "assistant", "assistants")}.`;
 }

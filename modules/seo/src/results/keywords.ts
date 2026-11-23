@@ -15,7 +15,7 @@ export async function keywordsPage(ctx: AppContext, orgId: string, locationId: s
     .select({ id: keywords.id, term: keywords.term, monthlySearches: keywordMetrics.monthlySearches, trend: keywordMetrics.trend })
     .from(keywords)
     .leftJoin(keywordMetrics, eq(keywordMetrics.id, keywords.metricId))
-    .where(and(eq(keywords.locationId, l.id), eq(keywords.active, true)))
+    .where(and(eq(keywords.locationId, l.id), eq(keywords.active, true), eq(keywords.organic, true)))
     .orderBy(keywords.createdAt);
   const [now, before] = await Promise.all([latestSerps(ctx.db, l.id), latestSerps(ctx.db, l.id, true)]);
   const items = await itemsOf(

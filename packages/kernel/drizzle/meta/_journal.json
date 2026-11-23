@@ -43,6 +43,41 @@
       "when": 1795330313324,
       "tag": "0005_seo_one_location_per_place",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795392475635,
+      "tag": "0006_seo_place_categories",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795394621049,
+      "tag": "0007_dataforseo_places_details",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795451476890,
+      "tag": "0008_brief_cargill",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795451618454,
+      "tag": "0009_outgoing_spencer_smythe",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795453884553,
+      "tag": "0010_broad_thundra",
+      "breakpoints": true
     }
   ]
 }

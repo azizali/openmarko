@@ -16,6 +16,9 @@ import { competitorOverrides, keywordMetrics, keywords, places, questions, sugge
 export type Source = "onboarding" | "suggestion" | "manual";
 
 /** Throws plan_limit when `adding` more would pass the Plan's limit for this Location. */
+/** Where a keyword is searched: Google Maps (every spot of the grid), Google search, or both. */
+export type Surfaces = { maps: boolean; organic: boolean };
+
 async function assertRoom(ctx: AppContext, orgId: string, key: "keywords" | "questions", active: number, adding: number) {
   const ent = await billingOf(ctx).entitlementsFor(orgId);
   const limit = ent.get(`limit.${limits[key]}`);
@@ -40,6 +43,8 @@ export async function listKeywords(ctx: AppContext, orgId: string, locationId: s
       id: keywords.id,
       term: keywords.term,
       source: keywords.source,
+      maps: keywords.maps,
+      organic: keywords.organic,
       monthlySearches: keywordMetrics.monthlySearches,
       createdAt: keywords.createdAt,
     })
@@ -61,17 +66,26 @@ export async function addKeywords(
   raw: string[],
   source: Source,
   runId: string | null = null,
+  /** Where they're searched; both when not said. A keyword tracked already is turned on where it wasn't. */
+  where: Surfaces = { maps: true, organic: true },
 ): Promise<string[]> {
   const l = await getLocation(ctx, orgId, locationId);
   const terms = [...new Set(raw.map(normalizeTerm).filter((t) => t.length > 1 && t.length <= 80))];
   if (!terms.length) throw invalid("Type at least one keyword.");
   const existing = await ctx.db
-    .select({ id: keywords.id, term: keywords.term, active: keywords.active })
+    .select({ id: keywords.id, term: keywords.term, active: keywords.active, maps: keywords.maps, organic: keywords.organic })
     .from(keywords)
     .where(eq(keywords.locationId, l.id));
   const active = existing.filter((k) => k.active);
+  // Tracked already, but not where it's now asked for: turned on there too, and checked there.
+  const widened = active.filter((k) => terms.includes(k.term) && ((where.maps && !k.maps) || (where.organic && !k.organic)));
+  for (const k of widened)
+    await ctx.db
+      .update(keywords)
+      .set({ maps: k.maps || where.maps, organic: k.organic || where.organic })
+      .where(eq(keywords.id, k.id));
   const fresh = terms.filter((t) => !active.some((k) => k.term === t));
-  if (!fresh.length) return [];
+  if (!fresh.length) return widened.map((k) => k.id);
   await assertRoom(ctx, orgId, "keywords", active.length, fresh.length);
 
   const metrics = await metricsFor(ctx, orgId, fresh, l, runId);
@@ -80,13 +94,23 @@ export async function addKeywords(
     for (const term of fresh) {
       const before = existing.find((k) => k.term === term);
       if (before) {
-        await tx.update(keywords).set({ active: true }).where(eq(keywords.id, before.id));
+        await tx
+          .update(keywords)
+          .set({ active: true, ...where })
+          .where(eq(keywords.id, before.id));
         ids.push(before.id);
       } else {
         const id = newId();
-        await tx
-          .insert(keywords)
-          .values({ id, organizationId: orgId, locationId: l.id, term, metricId: metrics.get(term)?.id ?? null, source, createdBy: by });
+        await tx.insert(keywords).values({
+          id,
+          organizationId: orgId,
+          locationId: l.id,
+          term,
+          metricId: metrics.get(term)?.id ?? null,
+          source,
+          createdBy: by,
+          ...where,
+        });
         ids.push(id);
       }
     }
@@ -105,7 +129,7 @@ export async function addKeywords(
     l.id,
     fresh.map((t) => `track_keyword:${t}`),
   );
-  return ids;
+  return [...ids, ...widened.map((k) => k.id)];
 }
 
 export async function removeKeyword(ctx: AppContext, orgId: string, by: string | null, locationId: string, keywordId: string) {

@@ -12,7 +12,11 @@ import { baseline, mean, sum, weekly } from "./series";
 
 export async function mapsSummary(ctx: AppContext, orgId: string, locationId: string) {
   const l = await getLocation(ctx, orgId, locationId);
-  const [kws, now, before] = await Promise.all([activeKeywords(ctx.db, l.id), latestScans(ctx.db, l.id), latestScans(ctx.db, l.id, true)]);
+  const [kws, now, before] = await Promise.all([
+    activeKeywords(ctx.db, l.id, "maps"),
+    latestScans(ctx.db, l.id),
+    latestScans(ctx.db, l.id, true),
+  ]);
   const standings = await standingsOf(
     ctx.db,
     now.map((s) => s.id),

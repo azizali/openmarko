@@ -188,6 +188,7 @@ export default function Keywords() {
         Google Ads data, refreshed monthly.
       </Source>
       <AddKeywords
+        on="organic"
         open={adding}
         onClose={() => setAdding(false)}
         tracked={data?.keywords.map((k) => k.term) ?? []}

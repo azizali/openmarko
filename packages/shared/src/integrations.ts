@@ -32,6 +32,7 @@ export type CapabilityId =
   | "search.ai"
   | "search.keywords"
   | "places.find"
+  | "places.details"
   | "profile.manage";
 
 export type Capability = {
@@ -121,6 +122,14 @@ export const capabilities: Capability[] = [
     max: "one",
     permission: ["setup", "connect"],
     ops: ["find(query)"],
+  },
+  {
+    id: "places.details",
+    label: "Business details",
+    does: "A business's full Google profile (every category it lists, what customers mention), and Google's list of categories.",
+    max: "one",
+    permission: ["setup", "connect"],
+    ops: ["details(business)", "categories()"],
   },
   {
     id: "profile.manage",
@@ -320,8 +329,8 @@ export const providers: Provider[] = [
     auth: "api_key",
     // The app's own account only: customers pay for SEO through their Plan's limits, not with their own key.
     attach: "app",
-    blurb: "Google Maps, Google search and AI answers, keyword volumes. Pay per request.",
-    capabilities: ["search.maps", "search.organic", "search.ai", "search.keywords"],
+    blurb: "Google Maps, Google search and AI answers, keyword volumes, business details. Pay per request.",
+    capabilities: ["search.maps", "search.organic", "search.ai", "search.keywords", "places.details"],
     fields: [
       { key: "login", label: "API login", placeholder: "you@example.com" },
       { key: "password", label: "API password", secret: true },

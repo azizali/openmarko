@@ -2,7 +2,7 @@
 // Location, launching it, the worker collecting and filing results, every page's numbers, suggestions with Apply and
 // Undo through automation Tasks, and who may do what.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { assignPlanManually, upsertPlan } from "@app/billing";
 import { connect } from "@app/integrations";
 import { addMember } from "@app/organizations";
@@ -97,10 +97,91 @@ describe("setting up a Location (onboarding)", () => {
   test("suggests services, local keywords with their searches, and questions", async () => {
     const ideas = await call("GET", `${base(owner)}/locations/${locationId}/ideas`, { headers: owner.headers });
     expect(ideas.status).toBe(200);
-    expect(ideas.body.keywords.length).toBeGreaterThan(3);
-    expect(ideas.body.keywords.every((k: { term: string }) => /austin|near me/.test(k.term))).toBe(true);
+    // Three lists, each searched differently. Maps: short, no place (the grid says where). Google search: with the place.
+    const mapsTerms = ideas.body.maps.map((k: { term: string }) => k.term);
+    const organicTerms = ideas.body.organic.map((k: { term: string }) => k.term);
+    expect(mapsTerms.length).toBeGreaterThan(3);
+    expect(mapsTerms).toContain("dentist");
+    expect(mapsTerms.filter((t: string) => t.includes("austin"))).toEqual([]);
+    expect(organicTerms.length).toBeGreaterThan(mapsTerms.length / 2);
+    expect(organicTerms).toContain("dentist austin");
+    expect(organicTerms.every((t: string) => /austin|near me|dentist/.test(t))).toBe(true);
+    // Every one with its searches a month, most searched first.
+    const volumes = ideas.body.organic.map((k: { monthlySearches: number | null }) => k.monthlySearches ?? -1);
+    expect(volumes).toEqual(volumes.toSorted((a: number, b: number) => b - a));
+    expect(ideas.body.problem).toBeNull();
     expect(ideas.body.questions[0]).toBe("Who is the best dentist in Austin?");
     expect(ideas.body.services.length).toBeGreaterThan(0);
+    // Services say what the business does, not where.
+    expect(ideas.body.services.filter((x: string) => /austin|\btx\b/.test(x))).toEqual([]);
+  });
+
+  test("offers the business's full profile: every category, nearby cities, what customers mention", async () => {
+    const d = await call("GET", `${base(owner)}/locations/${locationId}/details`, { headers: owner.headers });
+    expect(d.status).toBe(200);
+    expect(d.body.enriched).toBe(true);
+    expect(d.body.categories.slice(0, 2)).toEqual(["Dentist", "Cosmetic dentist"]);
+    expect(d.body.cities[0]).toBe("Austin, TX"); // the profile's "Austin" is the one in the business's own state
+    expect(d.body.cities.length).toBeGreaterThan(1);
+    expect(d.body.topics.length).toBeGreaterThan(0);
+    expect(d.body.questions.length).toBeGreaterThan(0);
+  });
+
+  test("offers Google's categories: related ones to add, and a lookup that only knows real ones", async () => {
+    const d = await call("GET", `${base(owner)}/locations/${locationId}/details`, { headers: owner.headers });
+    // Close by a shared word, and never one the business already lists.
+    expect(d.body.related.length).toBeGreaterThan(0);
+    expect(d.body.related.some((c: string) => /dent/i.test(c))).toBe(true);
+    expect(d.body.related.filter((c: string) => d.body.categories.includes(c))).toEqual([]);
+    const found = await call("GET", `${base(owner)}/categories?q=pest`, { headers: owner.headers });
+    expect(found.body.ready).toBe(true);
+    expect(found.body.categories[0]).toBe("Pest control service");
+    const none = await call("GET", `${base(owner)}/categories?q=zzzz`, { headers: owner.headers });
+    expect(none.body).toEqual({ categories: [], ready: true });
+    // Catch-all entries in Google's list ("Services", "Store") name no kind of business: never offered.
+    const vague = await call("GET", `${base(owner)}/categories?q=s`, { headers: owner.headers });
+    expect(vague.body.categories.map((c: string) => c.toLowerCase())).not.toContain("services");
+    expect(vague.body.categories.map((c: string) => c.toLowerCase())).not.toContain("store");
+  });
+
+  test("cities are Google's places: one name in several states is told apart, and only cities and towns are offered", async () => {
+    const spring = await call("GET", `${base(owner)}/locations/${locationId}/cities?q=springfield`, { headers: owner.headers });
+    expect(spring.body.ready).toBe(true);
+    expect(spring.body.cities.toSorted()).toEqual(["Springfield, IL", "Springfield, MA", "Springfield, MO"]);
+    // The business is in Texas: Austin, TX comes before Austin, MN.
+    const austin = await call("GET", `${base(owner)}/locations/${locationId}/cities?q=austin`, { headers: owner.headers });
+    expect(austin.body.cities.slice(0, 2)).toEqual(["Austin, TX", "Austin, MN"]);
+    // Typing the state narrows it; counties, states and postcodes are never offered.
+    const narrow = await call("GET", `${base(owner)}/locations/${locationId}/cities?q=springfield mo`, { headers: owner.headers });
+    expect(narrow.body.cities).toEqual(["Springfield, MO"]);
+    const texas = await call("GET", `${base(owner)}/locations/${locationId}/cities?q=texas`, { headers: owner.headers });
+    expect(texas.body.cities.filter((c: string) => /county|^TX$|78701/i.test(c))).toEqual([]);
+    // A neighbourhood and a town of the same name in another state stay distinct.
+    const hyde = await call("GET", `${base(owner)}/locations/${locationId}/cities?q=hyde park`, { headers: owner.headers });
+    expect(hyde.body.cities.toSorted()).toEqual(["Hyde Park, Austin, TX", "Hyde Park, NY"]);
+  });
+
+  test("a picked place is searched by the name people type, not its label", async () => {
+    const r = await call(
+      "GET",
+      `${base(owner)}/locations/${locationId}/ideas?categories=${encodeURIComponent("dentist")}&cities=${encodeURIComponent("Austin, TX")}`,
+      { headers: owner.headers },
+    );
+    expect(r.status).toBe(200);
+    expect(r.body.organic.every((k: { term: string }) => /austin|near me|dentist/.test(k.term) && !k.term.includes(","))).toBe(true);
+  });
+
+  test("ideas follow the categories and cities picked: each category searched in each city", async () => {
+    const picked = await call(
+      "GET",
+      `${base(owner)}/locations/${locationId}/ideas?categories=${encodeURIComponent("cosmetic dentist")}&cities=${encodeURIComponent("round rock|austin")}`,
+      { headers: owner.headers },
+    );
+    expect(picked.status).toBe(200);
+    const terms = picked.body.organic.map((k: { term: string }) => k.term);
+    expect(terms).toContain("cosmetic dentist round rock");
+    expect(terms).toContain("cosmetic dentist austin");
+    expect(picked.body.questions[0]).toBe("Who is the best cosmetic dentist in round rock?");
   });
 
   test("tracks keywords and questions within the Plan, and nothing is checked while it's a draft", async () => {
@@ -179,6 +260,33 @@ describe("launching and the first check", () => {
       .where(and(eq(checks.runId, runId), eq(checks.kind, "maps")));
     await collectCheck(t.ctx, maps!.id);
     expect(await t.ctx.db.select().from(mapScans).where(eq(mapScans.locationId, locationId))).toHaveLength(3);
+  });
+
+  test("a keyword is searched only where it's tracked: Google Maps, Google search, or both", async () => {
+    const add = await call("POST", `${base(owner)}/locations/${locationId}/keywords`, {
+      headers: owner.headers,
+      body: { terms: ["dentist prices austin"], maps: false, organic: true },
+    });
+    expect(add.status).toBe(200);
+    const { checkIds } = await startCycle(t.ctx, owner.orgId, locationId, { queue: "standard", scope: { keywordIds: add.body.added } });
+    const made = await t.ctx.db.select().from(checks).where(inArray(checks.id, checkIds));
+    expect(made.map((c) => [c.kind, c.calls])).toEqual([["organic", 1]]);
+    // Asked for on Maps too, it's turned on there, not added twice.
+    const widen = await call("POST", `${base(owner)}/locations/${locationId}/keywords`, {
+      headers: owner.headers,
+      body: { terms: ["dentist prices austin"], maps: true, organic: false },
+    });
+    expect(widen.body.added).toEqual(add.body.added);
+    const [row] = await t.ctx.db.select().from(keywords).where(eq(keywords.id, add.body.added[0]));
+    expect(row).toMatchObject({ maps: true, organic: true });
+    // Neither isn't a place to search.
+    const nowhere = await call("POST", `${base(owner)}/locations/${locationId}/keywords`, {
+      headers: owner.headers,
+      body: { terms: ["x dentist"], maps: false, organic: false },
+    });
+    expect(nowhere.status).toBe(422);
+    await call("DELETE", `${base(owner)}/locations/${locationId}/keywords/${add.body.added[0]}`, { headers: owner.headers });
+    await drain();
   });
 
   test("Check now checks the kinds asked for, never one that's already running, and reports where each stands", async () => {

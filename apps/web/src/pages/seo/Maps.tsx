@@ -80,6 +80,7 @@ export default function Maps() {
         spot, so competitors and their ratings come with it.
       </Source>
       <AddKeywords
+        on="maps"
         open={adding}
         onClose={() => setAdding(false)}
         tracked={(summary.data?.keywords ?? []).map((k) => k.term)}

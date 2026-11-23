@@ -19,6 +19,7 @@ export type CompetitorsPage = Data<L["results"]["competitors"]["get"]>;
 export type Suggestions = Data<L["suggestions"]["get"]>;
 export type Suggestion = Suggestions["open"][number];
 export type Ideas = Data<L["ideas"]["get"]>;
+export type Details = Data<L["details"]["get"]>;
 export type Place = Data<ReturnType<typeof seoApi>["find"]["post"]>[number];
 export type Limits = Data<ReturnType<typeof seoApi>["limits"]["get"]>;
 export type Channel = "maps" | "google" | "ai";

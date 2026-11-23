@@ -4,7 +4,7 @@
 //   GET /api/v1/admin/seo/costs             what search data costs, for app admins
 
 import { Elysia, t } from "elysia";
-import { AppError, ids, safeEqual, type AppContext } from "@app/kernel";
+import { AppError, ids, invalid, safeEqual, type AppContext } from "@app/kernel";
 import { requireAllowed, type Caller } from "@app/shared";
 import { assertFeatureOn } from "@app/features";
 import { FEATURE, planLimits, SEO, type SeoAction } from "./access";
@@ -13,7 +13,7 @@ import { COLLECT_JOB, pingbackSignature, startCycle } from "./checks/cycle";
 import { queueScopedCheck } from "./checks/jobs";
 import { checkKinds, checkStatus, idleKinds } from "./checks/status";
 import { createLocation, getLocation, getLocationView, linkProfile, listLocations, setStatus, updateLocation } from "./locations/service";
-import { findBusiness, ideasFor, launch, progressOf } from "./onboarding/service";
+import { detailsFor, findBusiness, ideasFor, launch, progressOf, searchCategories, searchCityList } from "./onboarding/service";
 import { linkLocationProfile, profileLocations, syncProfileMetrics } from "./profile/service";
 import { aiPage } from "./results/ai";
 import { competitorsPage } from "./results/competitors";
@@ -204,12 +204,49 @@ export function seoRoutes(ctx: AppContext) {
         },
       )
       .get(
-        "/locations/:locationId/ideas",
+        "/categories",
+        async ({ caller, query }) => {
+          await gate(caller, "manage");
+          return searchCategories(ctx, caller.orgId, query.q ?? "");
+        },
+        {
+          query: t.Object({ q: t.Optional(t.String({ maxLength: 100 })) }),
+          detail: { summary: "Google's business categories matching what's typed" },
+        },
+      )
+      .get(
+        "/locations/:locationId/cities",
+        async ({ caller, params, query }) => {
+          await gate(caller, "manage");
+          return searchCityList(ctx, caller.orgId, params.locationId, query.q ?? "");
+        },
+        {
+          params: loc,
+          query: t.Object({ q: t.Optional(t.String({ maxLength: 100 })) }),
+          detail: { summary: "Google's cities and towns matching what's typed, the business's own state first" },
+        },
+      )
+      .get(
+        "/locations/:locationId/details",
         async ({ caller, params }) => {
           await gate(caller, "manage");
-          return ideasFor(ctx, caller.orgId, params.locationId);
+          return detailsFor(ctx, caller.orgId, params.locationId);
         },
-        { params: loc, detail: { summary: "What to track, suggested from the business (services, keywords, questions)" } },
+        { params: loc, detail: { summary: "The business's full Google profile: categories and cities to pick from" } },
+      )
+      .get(
+        "/locations/:locationId/ideas",
+        async ({ caller, params, query }) => {
+          await gate(caller, "manage");
+          const list = (v?: string) => (v ? v.split("|").slice(0, 10) : []);
+          return ideasFor(ctx, caller.orgId, params.locationId, { categories: list(query.categories), cities: list(query.cities) });
+        },
+        {
+          params: loc,
+          // Lists are joined with "|": a name can hold a comma, never a bar.
+          query: t.Object({ categories: t.Optional(t.String({ maxLength: 1000 })), cities: t.Optional(t.String({ maxLength: 1000 })) }),
+          detail: { summary: "What to track, suggested from the business and the categories and cities picked" },
+        },
       )
       // ---------- Tracking ----------
       .get(
@@ -224,13 +261,30 @@ export function seoRoutes(ctx: AppContext) {
         "/locations/:locationId/keywords",
         async ({ caller, params, body }) => {
           await gate(caller, "track");
-          const added = await addKeywords(ctx, caller.orgId, caller.userId, params.locationId, body.terms, body.source ?? "manual");
+          const where = { maps: body.maps ?? true, organic: body.organic ?? true };
+          if (!where.maps && !where.organic) throw invalid("Say where to search the keywords: Google Maps, Google search or both.");
+          const added = await addKeywords(
+            ctx,
+            caller.orgId,
+            caller.userId,
+            params.locationId,
+            body.terms,
+            body.source ?? "manual",
+            null,
+            where,
+          );
           await queueScopedCheck(ctx, caller.orgId, params.locationId, { keywordIds: added });
           return { added };
         },
         {
           params: loc,
-          body: t.Object({ terms: t.Array(t.String({ maxLength: 120 }), { minItems: 1, maxItems: 100 }), source: t.Optional(source) }),
+          body: t.Object({
+            terms: t.Array(t.String({ maxLength: 120 }), { minItems: 1, maxItems: 100 }),
+            source: t.Optional(source),
+            /** Searched on Google Maps from the grid, and on Google search; both when left out. */
+            maps: t.Optional(t.Boolean()),
+            organic: t.Optional(t.Boolean()),
+          }),
           detail: { summary: "Track keywords (checked straight away when the Location is active)" },
         },
       )

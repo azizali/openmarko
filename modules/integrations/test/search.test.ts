@@ -157,6 +157,165 @@ describe("DataForSEO, live", () => {
     });
   });
 
+  test("reads a business's profile: every category, attributes, and what customers mention", async () => {
+    fakeFetch({
+      status_code: 20000,
+      cost: 0.0054,
+      tasks: [
+        {
+          id: "t-1",
+          status_code: 20000,
+          result: [
+            {
+              items: [
+                {
+                  category: "Dentist",
+                  additional_categories: ["Cosmetic dentist", "Emergency dental service"],
+                  description: "A family practice.",
+                  attributes: { available_attributes: { accessibility: ["Wheelchair accessible entrance"] } },
+                  place_topics: { whitening: 12, "front desk": 40 },
+                  people_also_search: [{ title: "Bright Smile Austin" }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const out = await adapterFor("dataforseo")!.call(
+      "places.details",
+      { placeId: "ChIJ9", name: "Maple & Main Dental", languageCode: "en", countryCode: "US" },
+      liveCtx("dataforseo", { password: "p" }, { login: "l" }),
+    );
+    expect(seen[0]!.url).toBe("https://api.dataforseo.com/v3/business_data/google/my_business_info/live");
+    expect(JSON.parse(String(seen[0]!.init.body))[0].keyword).toBe("place_id:ChIJ9");
+    expect(out.costMicros).toBe(5400);
+    expect(out.output.details).toMatchObject({
+      primaryCategory: "Dentist",
+      categories: ["Dentist", "Cosmetic dentist", "Emergency dental service"],
+      attributes: ["Wheelchair accessible entrance"],
+      topics: [
+        { term: "front desk", mentions: 40 },
+        { term: "whitening", mentions: 12 },
+      ],
+    });
+  });
+
+  test("reads a real My Business Info response: no additional categories, attributes or neighbours", async () => {
+    // Recorded from DataForSEO (trimmed): a profile with one category and nulls where it lists nothing.
+    fakeFetch({
+      status_code: 20000,
+      cost: 0.0054,
+      tasks: [
+        {
+          id: "t",
+          status_code: 20000,
+          result: [
+            {
+              items_count: 1,
+              items: [
+                {
+                  type: "google_business_info",
+                  title: "United States Pest Service, LLC",
+                  description: "Family-owned pest control in Middletown, NY.",
+                  category: "Pest control service",
+                  category_ids: null,
+                  additional_categories: null,
+                  attributes: null,
+                  people_also_search: null,
+                  place_topics: { "wasp nest removal": 10, "knowledgeable staff": 59, "mice issues": 2 },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const out = await adapterFor("dataforseo")!.call(
+      "places.details",
+      { placeId: "ChIJ4Q__zxAzw4kRFzlUmIncf3g", name: "United States Pest Service, LLC", languageCode: "en", countryCode: "US" },
+      liveCtx("dataforseo", { password: "p" }, { login: "l" }),
+    );
+    expect(out.output.details).toEqual({
+      primaryCategory: "Pest control service",
+      categories: ["Pest control service"],
+      description: "Family-owned pest control in Middletown, NY.",
+      attributes: [],
+      topics: [
+        { term: "knowledgeable staff", mentions: 59 },
+        { term: "wasp nest removal", mentions: 10 },
+        { term: "mice issues", mentions: 2 },
+      ],
+      questions: [],
+      nearby: [],
+    });
+  });
+
+  test("reads Google's category list: ids shown as Google shows them", async () => {
+    // Recorded from DataForSEO (trimmed): one entry per category, named by id.
+    fakeFetch({
+      status_code: 20000,
+      cost: 0,
+      tasks: [
+        {
+          id: "t",
+          status_code: 20000,
+          result: [
+            { category_name: "restaurant", business_count: 6591762 },
+            { category_name: "pest_control_service", business_count: 120000 },
+            { category_name: "pest_control_service", business_count: 1 },
+          ],
+        },
+      ],
+    });
+    const out = await adapterFor("dataforseo")!.call(
+      "places.details",
+      { op: "categories" },
+      liveCtx("dataforseo", { password: "p" }, { login: "l" }),
+    );
+    expect(seen[0]!.url).toBe("https://api.dataforseo.com/v3/business_data/business_listings/categories");
+    expect(out.output).toEqual({
+      categories: [
+        { name: "Restaurant", businesses: 6591762 },
+        { name: "Pest control service", businesses: 120000 },
+      ],
+    });
+    expect(out.costMicros).toBe(0);
+  });
+
+  test("reads the places Google can search from in a country, each with its own code", async () => {
+    // Recorded from DataForSEO (trimmed): two towns of one name, told apart by the code and the state in the path.
+    fakeFetch({
+      status_code: 20000,
+      cost: 0,
+      tasks: [
+        {
+          id: "t",
+          status_code: 20000,
+          result: [
+            { location_code: 1016154, location_name: "Springfield,Illinois,United States", location_type: "City" },
+            { location_code: 1018511, location_name: "Springfield,Missouri,United States", location_type: "City" },
+            { location_code: 21176, location_name: "Texas,United States", location_type: "State" },
+          ],
+        },
+      ],
+    });
+    const out = await adapterFor("dataforseo")!.call(
+      "places.details",
+      { op: "locations", countryCode: "US" },
+      liveCtx("dataforseo", { password: "p" }, { login: "l" }),
+    );
+    expect(seen[0]!.url).toBe("https://api.dataforseo.com/v3/serp/google/locations/us");
+    expect(out.output).toEqual({
+      locations: [
+        { code: 1016154, name: "Springfield,Illinois,United States", type: "City" },
+        { code: 1018511, name: "Springfield,Missouri,United States", type: "City" },
+        { code: 21176, name: "Texas,United States", type: "State" },
+      ],
+    });
+    expect(out.costMicros).toBe(0);
+  });
+
   test("collects a Maps result, a pending task and a failed one", async () => {
     fakeFetch(
       {
@@ -293,6 +452,38 @@ describe("Google Places", () => {
       ],
     });
     expect((seen[0]!.init.headers as Record<string, string>)["x-goog-api-key"]).toBe("k");
+  });
+
+  test("live: keeps a multi-word category and a multi-word city whole, and shows the category Google gives", async () => {
+    fakeFetch({
+      places: [
+        {
+          id: "ChIJ1",
+          displayName: { text: "Bay Pest Control" },
+          location: { latitude: 37.77, longitude: -122.41 },
+          primaryTypeDisplayName: { text: "Pest control service" },
+          addressComponents: [
+            { shortText: "US", types: ["country"] },
+            { longText: "San Francisco", types: ["locality"] },
+          ],
+        },
+        // Google's own type list is short: a business it has no type for comes back as plain "Service".
+        {
+          id: "ChIJ2",
+          displayName: { text: "Other Pest Co" },
+          location: { latitude: 1, longitude: 1 },
+          primaryTypeDisplayName: { text: "Service" },
+        },
+      ],
+    });
+    const out = await adapterFor("google_places")!.call(
+      "places.find",
+      { query: "bay pest control" },
+      liveCtx("google_places", { apiKey: "k" }),
+    );
+    const found = (out.output as { places: { category: string; city: string | null }[] }).places;
+    expect(found[0]).toMatchObject({ category: "Pest control service", city: "San Francisco" });
+    expect(found[1]!.category).toBe("Service");
   });
 
   test("stub: offers the stub market's businesses, matching the name first", async () => {

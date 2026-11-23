@@ -5,7 +5,7 @@
 //
 // Prices (USD per request, standard queue, Sep 2026; check GET /v3/appendix/user_data): Maps 0.0006, organic 0.0006,
 // ChatGPT scraper 0.0012, AI Overview via organic 0.0012, Perplexity ~0.04 (live only), search volume 0.09 per
-// request (up to 1,000 keywords), Labs 0.012 + 0.00012 per row. Priority doubles the SERP price.
+// request (up to 1,000 keywords), Labs 0.012 + 0.00012 per row, business details 0.0054 (an estimate: check it). Priority doubles the SERP price.
 
 import { AppError } from "@app/kernel";
 import type { CapabilityId } from "@app/shared";
@@ -14,8 +14,14 @@ import {
   domainOf,
   type AiQuery,
   type AiResult,
+  type BusinessDetails,
   type Collected,
+  type CategoriesOutput,
+  type LocationsInput,
+  type LocationsOutput,
+  type PlaceLocation,
   type CollectInput,
+  type DetailsInput,
   type KeywordIdea,
   type KeywordMetric,
   type KeywordsInput,
@@ -27,7 +33,7 @@ import {
   type PostInput,
   type SearchInput,
 } from "./contract";
-import { stubAi, stubIdeas, stubMaps, stubOrganic, stubVolume } from "./stub-world";
+import { stubAi, stubCategories, stubDetails, stubLocations, stubIdeas, stubMaps, stubOrganic, stubVolume } from "./stub-world";
 
 const BASE = "https://api.dataforseo.com/v3";
 const micros = (usd: number) => Math.round(usd * 1_000_000);
@@ -40,6 +46,7 @@ export const unitPriceUsd = {
   volume: 0.09,
   labsTask: 0.012,
   labsRow: 0.00012,
+  details: 0.0054,
 } as const;
 
 type Kind = "maps" | "organic" | "ai";
@@ -369,12 +376,96 @@ async function keywords(
   return { output: { ideas: [...ideas.values()].slice(0, input.limit) }, quantity: requests, costMicros: micros(cost) };
 }
 
+/**
+ * A business's full Google profile (Business Data, My Business Info, live): every category, its attributes, and the
+ * topics customers mention. Unverified against a real account, like the rest of this file: a shape we don't
+ * recognise gives no details rather than a failure, and the setup carries on without them.
+ */
+/** "pest_control_service" as Google shows it: "Pest control service". */
+const categoryName = (id: string) => {
+  const t = id.replace(/_/g, " ").trim();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+};
+
+/**
+ * Google's list of business categories (Business Data, Business Listings, categories): one request, free. It answers
+ * one entry per category, `{ category_name: "pest_control_service", business_count }` (about 5,300), with the name as an
+ * id: shown as Google shows it.
+ */
+async function categories(c: CallContext): Promise<CallResult<CategoriesOutput>> {
+  if (c.mode === "stub") return { output: { categories: stubCategories }, quantity: 0, costMicros: 0 };
+  const json = await request(c, "GET", "business_data/business_listings/categories");
+  const byName = new Map<string, number>();
+  for (const r of (json.tasks?.[0]?.result ?? []) as any[]) {
+    const id = str(r?.category_name);
+    if (!id) continue;
+    const name = categoryName(id);
+    byName.set(name, Math.max(byName.get(name) ?? 0, num(r?.business_count) ?? 0));
+  }
+  const list = [...byName].map(([name, businesses]) => ({ name, businesses })).sort((a, b) => b.businesses - a.businesses);
+  return { output: { categories: list }, quantity: 0, costMicros: 0 };
+}
+
+/** The places Google can search from in a country (SERP, locations): one request, free, tens of thousands of rows. */
+async function locations(input: LocationsInput, c: CallContext): Promise<CallResult<LocationsOutput>> {
+  if (c.mode === "stub") return { output: { locations: stubLocations(input.countryCode) }, quantity: 0, costMicros: 0 };
+  const json = await request(c, "GET", `serp/google/locations/${input.countryCode.toLowerCase()}`);
+  const list: PlaceLocation[] = [];
+  for (const r of (json.tasks?.[0]?.result ?? []) as any[]) {
+    const code = num(r?.location_code);
+    const name = str(r?.location_name);
+    if (code !== null && name) list.push({ code, name, type: str(r?.location_type) ?? "" });
+  }
+  return { output: { locations: list }, quantity: 0, costMicros: 0 };
+}
+
+async function details(input: DetailsInput, c: CallContext): Promise<CallResult<{ details: BusinessDetails | null }>> {
+  const price = micros(unitPriceUsd.details);
+  if (c.mode === "stub") return { output: { details: stubDetails(input) }, quantity: 1, costMicros: price };
+  const json = await request(c, "POST", "business_data/google/my_business_info/live", [
+    { keyword: `place_id:${input.placeId}`, language_code: input.languageCode, location_code: locationCode(input.countryCode) },
+  ]);
+  const i = items(json.tasks?.[0] ?? ({} as Task))[0];
+  const cost = micros(json.cost ?? unitPriceUsd.details);
+  if (!i) return { output: { details: null }, quantity: 1, costMicros: cost };
+  const primary = str(i.category);
+  const categories = [primary, ...((i.additional_categories as unknown[] | null) ?? []).map(str)].filter((x): x is string => !!x);
+  const available = (i.attributes?.available_attributes ?? {}) as Record<string, unknown>;
+  const topics = Object.entries((i.place_topics ?? {}) as Record<string, unknown>)
+    .map(([term, mentions]) => ({ term, mentions: num(mentions) ?? 0 }))
+    .sort((a, b) => b.mentions - a.mentions);
+  return {
+    output: {
+      details: {
+        primaryCategory: primary,
+        categories,
+        description: str(i.description),
+        attributes: Object.values(available)
+          .flatMap((v) => (Array.isArray(v) ? v.map(str) : []))
+          .filter((x): x is string => !!x),
+        topics,
+        questions: [],
+        nearby: ((i.people_also_search as unknown[] | null) ?? []).map((p: any) => str(p?.title)).filter((x): x is string => !!x),
+      },
+    },
+    quantity: 1,
+    costMicros: cost,
+  };
+}
+
 export const dataforseo: Adapter = {
   provider: "dataforseo",
-  capabilities: ["search.maps", "search.organic", "search.ai", "search.keywords"],
-  estimate: (capability, input) => (capability === "search.keywords" ? 1 : input?.op === "post" ? (input.queries?.length ?? 1) : 0),
+  capabilities: ["search.maps", "search.organic", "search.ai", "search.keywords", "places.details"],
+  estimate: (capability, input) =>
+    capability === "search.keywords" || capability === "places.details" ? 1 : input?.op === "post" ? (input.queries?.length ?? 1) : 0,
   call: async (capability, input, c) => {
     if (capability === "search.keywords") return keywords(input as KeywordsInput, c);
+    if (capability === "places.details") {
+      const op = (input as { op?: string }).op;
+      if (op === "categories") return categories(c);
+      if (op === "locations") return locations(input as LocationsInput, c);
+      return details(input as DetailsInput, c);
+    }
     const kind = kindOf[capability];
     if (!kind) throw new AppError(501, "not_implemented", `DataForSEO doesn't do ${capability}.`);
     const i = input as SearchInput<unknown>;

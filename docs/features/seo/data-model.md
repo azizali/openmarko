@@ -181,6 +181,8 @@ erDiagram
         text term "unique per Location"
         uuid metric_id FK "keyword_metrics"
         bool active
+        bool maps "searched on Google Maps from every grid spot"
+        bool organic "searched on Google search"
         text source "onboarding | suggestion | manual"
         text created_by
         timestamptz created_at
