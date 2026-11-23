@@ -139,7 +139,7 @@ export function GridMap({
       el.setAttribute("aria-pressed", String(selected === idx));
       el.setAttribute(
         "aria-label",
-        `Row ${row + 1}, column ${col + 1}${isDoor ? " (your door)" : ""}${r === undefined ? "" : `: ${r === null ? "not in the top 20" : `position ${r}`}`}`,
+        `Row ${row + 1}, column ${col + 1}${isDoor ? " (your business)" : ""}${r === undefined ? "" : `: ${r === null ? "not in the top 20" : `position ${r}`}`}`,
       );
       // MapLibre places a marker with its own classes and moves it with `transform`: keep those, and leave `transform`
       // alone (no transition, no scale), or the dots drift, lag or jump as the map moves.
@@ -233,8 +233,8 @@ export function GridMap({
       </div>
       {radiusM !== undefined && (
         <figcaption className="num mt-2 text-[12.5px] text-muted">
-          {size} × {size} spots {miles(spacingM(radiusM, size))} apart, covering {gridArea(radiusM)}: {miles(radiusM)} from your door each
-          way.
+          {size} × {size} spots {miles(spacingM(radiusM, size))} apart, covering {gridArea(radiusM)}: {miles(radiusM)} from your business
+          each way.
         </figcaption>
       )}
     </figure>

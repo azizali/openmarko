@@ -1,5 +1,5 @@
-// Google Maps ranking (/seo/maps): one table of every Maps keyword with its grid, its numbers and who's #1, and a
-// totals row for all of them together. Deeper pages, read from the rest of the path: a keyword
+// Google Maps ranking (/seo/maps): one table of every Maps keyword with its top-3 spots (and their change in 30 days),
+// average rank, grid and who's #1, and a totals row for all of them together. Deeper pages, read from the rest of the path: a keyword
 // (/seo/maps/<keywordId>, MapsKeyword.tsx) and a business (/seo/maps/places/<placeId>, Place.tsx).
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
@@ -69,9 +69,7 @@ function MapsList() {
                   <tr className="border-b border-line text-left text-[12.5px] text-muted">
                     <th className={cn(th, "pl-4")}>Keyword</th>
                     <th className={cn(th, "text-right")}>Top 3 spots</th>
-                    <th className={th}>30 days</th>
                     <th className={cn(th, "text-right")}>Avg rank</th>
-                    <th className={cn(th, "text-right")}>At your door</th>
                     <th className={th}>Grid</th>
                     <th className={th}>#1 here</th>
                     <th className="w-8" />
@@ -80,7 +78,7 @@ function MapsList() {
                 <tbody role="rowgroup" className={stack.body}>
                   {data.keywords.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="px-4 py-6 text-center text-muted">
+                      <td colSpan={6} className="px-4 py-6 text-center text-muted">
                         No keywords yet.
                       </td>
                     </tr>
@@ -93,7 +91,7 @@ function MapsList() {
                           <td role="cell" className={cn(th, "pl-4 font-medium", stack.first)}>
                             {k.term}
                           </td>
-                          <td role="cell" colSpan={7} className={cn(th, "text-[12.5px] text-muted", stack.first)}>
+                          <td role="cell" colSpan={5} className={cn(th, "text-[12.5px] text-muted", stack.first)}>
                             First scan running…
                           </td>
                         </tr>
@@ -114,15 +112,10 @@ function MapsList() {
                         <td role="cell" data-label="Top 3 spots" className={cn(th, "num text-right", stack.cell)}>
                           {k.top3}
                           <span className="text-muted">/{spots}</span>
-                        </td>
-                        <td role="cell" data-label="30 days" className={cn(th, stack.cell)}>
-                          {k.top3Before === null ? <span className="text-muted">—</span> : <Diff by={k.top3 - k.top3Before} />}
+                          {k.top3Before !== null && <Diff by={k.top3 - k.top3Before} />}
                         </td>
                         <td role="cell" data-label="Avg rank" className={cn(th, "num text-right", stack.cell)}>
                           {k.avg.toFixed(1)}
-                        </td>
-                        <td role="cell" data-label="At your door" className={cn(th, "num text-right", stack.cell)}>
-                          {k.door === null ? "20+" : `#${k.door}`}
                         </td>
                         <td role="cell" data-label="Grid" className={cn(th, stack.cell)}>
                           <GridThumb size={k.size} ranks={k.grid} />
@@ -159,11 +152,11 @@ function MapsList() {
   );
 }
 
-/** Top-3 spots gained (+) or lost since a month ago, in a table cell. */
+/** Top-3 spots gained (+) or lost since a month ago, beside the top-3 count; nothing when unchanged. */
 function Diff({ by }: { by: number }) {
-  if (by === 0) return <span className="num font-normal text-muted">0</span>;
+  if (by === 0) return null;
   return (
-    <span className={cn("num", by > 0 ? "text-good" : "text-bad")}>
+    <span className={cn("num ml-1.5 text-[12px] font-normal", by > 0 ? "text-good" : "text-bad")}>
       {by > 0 ? `+${by}` : `−${Math.abs(by)}`}
       <span className="sr-only"> spots in 30 days</span>
     </span>
@@ -184,15 +177,12 @@ function Totals({ data }: { data: MapsSummary }) {
         </td>
         <td role="cell" data-label="Top 3 spots" className={cn(th, "num text-right", stack.cell)}>
           {share}%<span className="font-normal text-muted"> of {totals.spots}</span>
-        </td>
-        <td role="cell" data-label="30 days" className={cn(th, stack.cell)}>
-          {totals.top3Before === null ? <span className="font-normal text-muted">—</span> : <Diff by={totals.top3 - totals.top3Before} />}
+          {totals.top3Before !== null && <Diff by={totals.top3 - totals.top3Before} />}
         </td>
         <td role="cell" data-label="Avg rank" className={cn(th, "num text-right", stack.cell)}>
           {totals.avg === null ? "—" : totals.avg.toFixed(1)}
           {totals.avgBefore !== null && <span className="block text-[12px] font-normal text-muted">was {totals.avgBefore.toFixed(1)}</span>}
         </td>
-        <td role="cell" className={cn(th, stack.hide)} />
         <td role="cell" className={cn(th, stack.hide)} />
         <td role="cell" data-label="#1 here" className={cn(th, stack.cell)}>
           <span className="font-normal">

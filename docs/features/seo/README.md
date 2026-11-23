@@ -44,8 +44,8 @@ changes what checks cost and links the Google profile.
 - **Pages are a list, then deep pages.** A section page is its header (one short line) and one table with everything
   known per row; a row opens a full page for that item, with breadcrumbs back up (SEO › section › item). No drawers
   or view switches hide detail: a deep page shows all of it, top to bottom.
-- **Google Maps ranking** (`/seo/maps`): one table of every keyword with its top-3 spots, the change in 30 days, average
-  rank, rank at your door, its grid and who's #1, and a last row for all keywords together. A keyword
+- **Google Maps ranking** (`/seo/maps`): one table of every keyword with its top-3 spots (with their change in 30 days beside
+  them), average rank, its grid and who's #1, and a last row for all keywords together. A keyword
   (`/seo/maps/:keywordId`) shows its map (a real map, MapLibre on OpenFreeMap tiles, no key: zoom with the buttons or
   ctrl/⌘ + scroll, drag to move) beside a ranked leaderboard with each business's rating and reviews; then **How you
   compare** (your numbers against the median of the ones ahead, main category, website); then **Over time** (the last

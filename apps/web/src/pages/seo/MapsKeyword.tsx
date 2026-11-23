@@ -255,7 +255,7 @@ function MapView({
         <div className="mt-4 grid grid-cols-2 gap-3 border-t border-line pt-3 sm:grid-cols-4">
           <Stat label="Top 3" value={top3} hint={`of ${spots} spots`} />
           <Stat label="Avg rank" value={avg.toFixed(1)} />
-          <Stat label="At the door" value={door === null ? "20+" : `#${door}`} />
+          <Stat label="At your business" value={door === null ? "20+" : `#${door}`} />
           <Stat label="Strongest / weakest" value={<span className="text-[15px]">{sides}</span>} />
         </div>
       </div>
