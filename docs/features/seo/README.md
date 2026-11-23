@@ -41,16 +41,29 @@ changes what checks cost and links the Google profile.
   drawer. A kind already running is skipped, never run twice.
 - **Overview** (`/seo/overview`): one number per check with its change over 30 days, the results card from the Google
   profile (calls, website clicks, direction requests, views, and the searches that showed it), and **What to do next**.
-- **Google Maps ranking** (`/seo/maps`): every keyword's grid; for one keyword the map (a real map, MapLibre on
-  OpenFreeMap tiles, no key: zoom with the buttons or ctrl/⌘ + scroll, drag to move) beside a ranked leaderboard
-  with each business's rating and reviews; **Compare profiles** (your numbers against the median of the ones ahead,
-  main category, website); and **Over time** (the last 90 days, and your grid now beside a month ago once one is a
-  month old). Any business on a leaderboard opens a drawer (`GET …/locations/:id/places/:placeId`): its profile,
-  new reviews per week and rating over 90 days from `place_snapshots`, the categories it lists that you don't, and
-  where it stands on each of your Maps keywords. Competitors' posts aren't tracked.
-- **Keywords** (`/seo/keywords`): your position on Google per keyword, Google's whole first page, map pack and AI Overview.
-- **AI answers** (`/seo/ai`): per question and assistant, whether you're named and where, what it said, what it cited.
-- **Competitors** (`/seo/competitors`): per channel, who's ahead of you on how many keywords; add or hide one.
+- **Pages are a list, then deep pages.** A section page is its header (one short line) and one table with everything
+  known per row; a row opens a full page for that item, with breadcrumbs back up (SEO › section › item). No drawers
+  or view switches hide detail: a deep page shows all of it, top to bottom.
+- **Google Maps ranking** (`/seo/maps`): one table of every keyword with its top-3 spots, the change in 30 days, average
+  rank, rank at your door, its grid and who's #1, and a last row for all keywords together. A keyword
+  (`/seo/maps/:keywordId`) shows its map (a real map, MapLibre on OpenFreeMap tiles, no key: zoom with the buttons or
+  ctrl/⌘ + scroll, drag to move) beside a ranked leaderboard with each business's rating and reviews; then **How you
+  compare** (your numbers against the median of the ones ahead, main category, website); then **Over time** (the last
+  90 days, and your grid now beside a month ago once one is a month old). `?who=<placeId>` draws another business's
+  map. Any business opens its own page (`/seo/maps/places/:placeId`, from `GET …/locations/:id/places/:placeId`): its
+  profile, new reviews per week and rating over 90 days from `place_snapshots`, the categories it lists that you don't,
+  and where it stands on each of your Maps keywords, each opening that keyword's map drawn for it. Competitors' posts
+  aren't tracked.
+- **Keywords** (`/seo/keywords`): one table with, per keyword, searches a month, your position, its change in 30 days,
+  map pack, AI Overview (and whether it cites you) and who's first. A keyword (`/seo/keywords/:keywordId`) shows those
+  facts, your ranking page, your position by week over 90 days and Google's whole first page.
+- **AI answers** (`/seo/ai`): one table of question × assistant (whether you're named and where, and the sites cited),
+  a last row with each assistant's total, and the sites answers lean on most. A question (`/seo/ai/:questionId`) shows
+  every assistant's answer, who it named in order and what it cited.
+- **Competitors** (`/seo/competitors`): per channel (a filter above the table), who's ahead of you on how many keywords
+  and where they beat you most; add one by hand, or hide or unhide one. A competitor (`/seo/competitors/:id`) shows all
+  three channels at once, their result beside yours for every keyword or question, each linking to that keyword's page
+  (on Maps, drawn for them), and their business page when they have one.
 - **Settings** (`/seo/settings`): business details, checks within the Plan (grid size and reach with the same map preview as setup), the Google profile link, pause or remove. With two or more Locations, a list beside the settings picks which one you're viewing, and
   Select pauses, resumes or removes several together.
 - **Suggestions**, each saying what it was based on: add categories competitors ahead of you list; get listed on a site

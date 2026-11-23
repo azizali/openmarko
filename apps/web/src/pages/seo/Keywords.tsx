@@ -1,18 +1,41 @@
-// Keywords (/seo/keywords): where the website ranks on Google for each keyword. A headline (how many are on the
-// first page, over 90 days), then one row per keyword that opens to Google's whole first page.
-import { Fragment, useState, type ReactNode } from "react";
-import { ChevronRight, ExternalLink, Plus } from "lucide-react";
-import { Badge, Button, Card, cn, fmt } from "../../components/ui";
+// Keywords (/seo/keywords): where the website ranks on Google for each keyword, as one table with everything we know
+// per keyword. A row opens the keyword's own page (/seo/keywords/<id>): its facts, its position over 90 days and
+// Google's whole first page, with breadcrumbs back up.
+import type { ReactNode } from "react";
+import { Link, useNavigate, useParams } from "react-router";
+import { Check, ChevronRight, ExternalLink, Minus, Plus } from "lucide-react";
+import { useState } from "react";
+import { Badge, Button, Card, LineChart, cn, fmt } from "../../components/ui";
 import { LoadError, useToast } from "../../components/Feedback";
 import { messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
 import { locationApi, seoApi, type SearchPage } from "./api";
 import { AddKeywords } from "./AddDrawers";
-import { Headline, Source, rankTone, stack } from "./parts";
+import { Change, Source, rankTone, stack } from "./parts";
 import { kindsOf, useAfterCheck, useReloadWhilePending } from "./checks";
-import { SeoHeader, useSeo } from "./Seo";
+import { SeoHeader, useSeo, useSeoHref } from "./Seo";
 
 type Row = SearchPage["keywords"][number];
+
+const source = (
+  <Source>
+    Google search from the business's own address, the top 100 results per keyword, through DataForSEO. Searches a month come from Google
+    Ads data, refreshed monthly.
+  </Source>
+);
+
+export default function Keywords() {
+  const id = useParams()["*"];
+  return id ? <KeywordPage key={id} id={id} /> : <KeywordList />;
+}
+
+function useSearchPage() {
+  const { orgId, location } = useSeo();
+  const page = useLoad(() => locationApi(orgId, location.id).results.search.get(), [orgId, location.id]);
+  useReloadWhilePending(!!page.data?.keywords.some((k) => k.pending), page.reload);
+  useAfterCheck(kindsOf.keywords, page.reload);
+  return page;
+}
 
 function Position({ row }: { row: Row }) {
   if (row.pending) return <span className="text-[12.5px] text-muted">First check running</span>;
@@ -30,85 +53,64 @@ function Moved({ row }: { row: Row }) {
   return by === 0 ? none : <span className={cn("num", by > 0 ? "text-good" : "text-bad")}>{by > 0 ? `+${by}` : by}</span>;
 }
 
-function Markers({ row }: { row: Row }) {
-  const marks: ReactNode[] = [];
-  if (row.hasMapPack) marks.push("Map pack");
-  if (row.hasAiOverview) marks.push(row.aiOverviewCitesYou ? "AI Overview cites you" : "AI Overview");
-  if (!marks.length) return null;
-  return <span className="block text-[12px] text-muted">{marks.join(" · ")}</span>;
-}
-
-function FirstPage({ row, onStop }: { row: Row; onStop?: () => void }) {
-  return (
-    <div className="px-4 pt-1 pb-4">
-      {row.page.length === 0 ? (
-        <p className="text-[13px] text-muted">The first page comes with the first check.</p>
-      ) : (
-        <ol className="divide-y divide-line">
-          {row.page.map((p) => (
-            <li key={p.position} className={cn("flex items-start gap-3 py-2", p.isYou && "font-medium")}>
-              <span className="num w-6 shrink-0 text-right text-muted">{p.position}</span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate">{p.isYou ? `You: ${p.title}` : p.title || p.domain}</p>
-                <a
-                  href={p.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[12.5px] font-normal text-muted hover:text-fg"
-                >
-                  {p.name ?? p.domain}
-                  <ExternalLink size={11} aria-hidden />
-                </a>
-              </div>
-              {p.kind === "directory" && <Badge>Directory</Badge>}
-            </li>
-          ))}
-        </ol>
-      )}
-      {onStop && (
-        <Button variant="ghost" size="sm" className="mt-2" onClick={onStop}>
-          Stop tracking
-        </Button>
-      )}
-    </div>
+/** Yes or no, in words as well as the mark. */
+function YesNo({ yes, label }: { yes: boolean; label?: string }) {
+  return yes ? (
+    <span className="inline-flex items-center gap-1 text-good">
+      <Check size={14} aria-hidden />
+      <span className={label ? "text-[12.5px]" : "sr-only"}>{label ?? "Yes"}</span>
+    </span>
+  ) : (
+    <span className="inline-flex items-center text-subtle">
+      <Minus size={14} aria-hidden />
+      <span className="sr-only">No</span>
+    </span>
   );
 }
 
+function AiOverview({ row }: { row: Row }) {
+  if (!row.hasAiOverview) return <YesNo yes={false} />;
+  return row.aiOverviewCitesYou ? <YesNo yes label="Cites you" /> : <span className="text-[12.5px] text-muted">Shown, not you</span>;
+}
+
+const firstName = (row: Row) => (row.first ? (row.first.isYou ? "You" : (row.first.name ?? row.first.domain)) : "—");
+
 const th = "px-3 py-2 font-normal";
 
-export default function Keywords() {
-  const { orgId, location, can } = useSeo();
-  const page = useLoad(() => locationApi(orgId, location.id).results.search.get(), [orgId, location.id]);
-  const limits = useLoad(() => seoApi(orgId).limits.get(), [orgId]);
-  useReloadWhilePending(!!page.data?.keywords.some((k) => k.pending), page.reload);
-  useAfterCheck(kindsOf.keywords, page.reload);
-  const [open, setOpen] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
-  const toast = useToast();
+// ---------- All keywords ----------
 
-  // Stops it on Google search only (on Maps it carries on, if tracked there); Undo puts it back.
-  const stop = async (row: Row) => {
-    const here = locationApi(orgId, location.id);
-    const r = await here.keywords({ keywordId: row.id }).delete({ query: { from: "organic" } });
-    if (r.error) return toast.error(messageOf(r.error), "Could not stop tracking");
-    toast.success(`Stopped tracking “${row.term}” on Google search`, "Its history is kept.", {
-      label: "Undo",
-      run: () =>
-        void here.keywords.post({ terms: [row.term], maps: false, organic: true }).then((u) => {
-          if (u.error) toast.error(messageOf(u.error), "Could not undo");
-          void page.reload();
-        }),
-    });
-    void page.reload();
-  };
+function KeywordList() {
+  const { orgId, can } = useSeo();
+  const page = useSearchPage();
+  const limits = useLoad(() => seoApi(orgId).limits.get(), [orgId]);
+  const [adding, setAdding] = useState(false);
+  const href = useSeoHref();
+  const navigate = useNavigate();
 
   const data = page.data;
   const ready = data?.keywords.filter((k) => !k.pending).length ?? 0;
+  const change = data && data.firstPageBefore !== null ? data.firstPage - data.firstPageBefore : null;
   return (
     <>
       <SeoHeader
         tab="keywords"
-        sub="Where your website ranks on Google for each keyword."
+        sub={
+          data && ready ? (
+            <>
+              <span className="text-fg">
+                {data.firstPage} of {ready} on Google's first page
+              </span>
+              {change !== null && (
+                <>
+                  {" · "}
+                  <Change by={change} unit="more" none="no change in 30 days" />
+                </>
+              )}
+            </>
+          ) : (
+            "Where your website ranks on Google."
+          )
+        }
         actions={
           can("track") && (
             <Button icon={<Plus size={14} />} onClick={() => setAdding(true)}>
@@ -119,89 +121,75 @@ export default function Keywords() {
       />
       <LoadError what="keywords">{page.error}</LoadError>
       {data && (
-        <>
-          <Headline
-            label="On Google's first page"
-            value={data.firstPage}
-            of={ready}
-            change={data.firstPageBefore === null ? null : data.firstPage - data.firstPageBefore}
-            unit="more"
-            history={data.history}
-          />
-          <Card pad={false} className="mt-4 overflow-x-auto">
-            <table role="table" className={stack.table}>
-              <thead role="rowgroup" className={stack.head}>
-                <tr className="border-b border-line text-left text-[12.5px] text-muted">
-                  <th className={cn(th, "pl-4")}>Keyword</th>
-                  <th className={cn(th, "text-right")}>Searches / mo</th>
-                  <th className={th}>Your position</th>
-                  <th className={cn(th, "text-right")}>30 days</th>
-                  <th className={th}>First on Google</th>
-                  <th className="w-8" />
+        <Card pad={false} className="overflow-x-auto">
+          <table role="table" className={stack.table}>
+            <thead role="rowgroup" className={stack.head}>
+              <tr className="border-b border-line text-left text-[12.5px] text-muted">
+                <th className={cn(th, "pl-4")}>Keyword</th>
+                <th className={cn(th, "text-right")}>Searches / mo</th>
+                <th className={th}>Position</th>
+                <th className={cn(th, "text-right")}>30 days</th>
+                <th className={th}>Map pack</th>
+                <th className={th}>AI Overview</th>
+                <th className={th}>First on Google</th>
+                <th className="w-8" />
+              </tr>
+            </thead>
+            <tbody role="rowgroup" className={stack.body}>
+              {data.keywords.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="px-4 py-6 text-center text-muted">
+                    No keywords yet.
+                  </td>
                 </tr>
-              </thead>
-              <tbody role="rowgroup" className={stack.body}>
-                {data.keywords.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-6 text-center text-muted">
-                      No keywords yet.
+              )}
+              {data.keywords.map((k) => {
+                const to = href(`/seo/keywords/${k.id}`);
+                return (
+                  <tr
+                    key={k.id}
+                    role="row"
+                    className={cn("cursor-pointer border-b border-line last:border-0 hover:bg-hover", stack.row)}
+                    onClick={() => navigate(to)}
+                  >
+                    <td role="cell" className={cn(th, "pl-4 font-medium", stack.first)}>
+                      <Link to={to} onClick={(e) => e.stopPropagation()} className="underline-offset-2 hover:underline">
+                        {k.term}
+                      </Link>
+                    </td>
+                    <td role="cell" data-label="Searches / mo" className={cn(th, "num text-right", stack.cell)}>
+                      {k.monthlySearches === null ? "—" : fmt(k.monthlySearches)}
+                    </td>
+                    <td role="cell" data-label="Position" className={cn(th, stack.cell)}>
+                      <Position row={k} />
+                    </td>
+                    <td role="cell" data-label="30 days" className={cn(th, "text-right", stack.cell)}>
+                      <Moved row={k} />
+                    </td>
+                    <td role="cell" data-label="Map pack" className={cn(th, stack.cell)}>
+                      {k.pending ? <span className="text-muted">—</span> : <YesNo yes={k.hasMapPack} />}
+                    </td>
+                    <td role="cell" data-label="AI Overview" className={cn(th, stack.cell)}>
+                      {k.pending ? <span className="text-muted">—</span> : <AiOverview row={k} />}
+                    </td>
+                    <td
+                      role="cell"
+                      data-label="First on Google"
+                      className={cn(th, "max-w-48 truncate text-muted", stack.cell, "max-sm:max-w-none")}
+                    >
+                      {firstName(k)}
+                    </td>
+                    <td role="cell" className={cn("pr-3", stack.hide)}>
+                      <ChevronRight size={15} className="text-subtle" aria-hidden />
                     </td>
                   </tr>
-                )}
-                {data.keywords.map((k) => {
-                  const isOpen = open === k.id;
-                  return (
-                    <Fragment key={k.id}>
-                      <tr
-                        role="row"
-                        className={cn("cursor-pointer border-b border-line last:border-0 hover:bg-hover", stack.row, isOpen && "bg-hover")}
-                        onClick={() => setOpen(isOpen ? null : k.id)}
-                      >
-                        <td role="cell" className={cn(th, "pl-4", stack.first)}>
-                          <button type="button" aria-expanded={isOpen} className="text-left font-medium">
-                            {k.term}
-                          </button>
-                          <Markers row={k} />
-                        </td>
-                        <td role="cell" data-label="Searches / mo" className={cn(th, "num text-right", stack.cell)}>
-                          {k.monthlySearches === null ? "—" : fmt(k.monthlySearches)}
-                        </td>
-                        <td role="cell" data-label="Your position" className={cn(th, stack.cell)}>
-                          <Position row={k} />
-                        </td>
-                        <td role="cell" data-label="30 days" className={cn(th, "text-right", stack.cell)}>
-                          <Moved row={k} />
-                        </td>
-                        <td
-                          role="cell"
-                          data-label="First on Google"
-                          className={cn(th, "max-w-48 truncate text-muted", stack.cell, "max-sm:max-w-none")}
-                        >
-                          {k.first ? (k.first.isYou ? "You" : (k.first.name ?? k.first.domain)) : "—"}
-                        </td>
-                        <td role="cell" className={cn("pr-3", stack.hide)}>
-                          <ChevronRight size={15} className={cn("text-subtle transition-transform", isOpen && "rotate-90")} aria-hidden />
-                        </td>
-                      </tr>
-                      {isOpen && (
-                        <tr role="row" className={cn("border-b border-line last:border-0", stack.detail)}>
-                          <td role="cell" colSpan={6} className={stack.detail}>
-                            <FirstPage row={k} onStop={can("track") ? () => void stop(k) : undefined} />
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </Card>
-        </>
+                );
+              })}
+            </tbody>
+          </table>
+        </Card>
       )}
-      <Source>
-        Google search from the business's own address, the top 100 results per keyword, through DataForSEO. Searches a month come from
-        Google Ads data, refreshed monthly.
-      </Source>
+      {source}
       <AddKeywords
         on="organic"
         open={adding}
@@ -211,5 +199,152 @@ export default function Keywords() {
         onAdded={() => void page.reload()}
       />
     </>
+  );
+}
+
+// ---------- One keyword ----------
+
+function KeywordPage({ id }: { id: string }) {
+  const { orgId, location, can } = useSeo();
+  const page = useSearchPage();
+  const toast = useToast();
+  const href = useSeoHref();
+  const navigate = useNavigate();
+  const row = page.data?.keywords.find((k) => k.id === id);
+
+  if (page.error) return <LoadError what="this keyword">{page.error}</LoadError>;
+  if (!page.data) return null;
+  if (!row)
+    return (
+      <>
+        <SeoHeader tab="keywords" title="Keyword not found" trail={[{ label: "Not found" }]} sub="" switcher={false} />
+        <Card>
+          <p className="text-[13.5px]">This keyword isn't tracked on Google search for {location.name}.</p>
+          <Link to={href("/seo/keywords")} className="mt-2 inline-block text-[13px] underline underline-offset-2">
+            All keywords
+          </Link>
+        </Card>
+      </>
+    );
+
+  // Stops it on Google search only (on Maps it carries on, if tracked there); Undo puts it back.
+  const stop = async () => {
+    const here = locationApi(orgId, location.id);
+    const r = await here.keywords({ keywordId: row.id }).delete({ query: { from: "organic" } });
+    if (r.error) return toast.error(messageOf(r.error), "Could not stop tracking");
+    toast.success(`Stopped tracking “${row.term}” on Google search`, "Its history is kept.", {
+      label: "Undo",
+      run: () =>
+        void here.keywords.post({ terms: [row.term], maps: false, organic: true }).then((u) => {
+          if (u.error) toast.error(messageOf(u.error), "Could not undo");
+        }),
+    });
+    navigate(href("/seo/keywords"));
+  };
+
+  const known = row.history.values.filter((v): v is number => v !== null);
+  return (
+    <>
+      <SeoHeader
+        tab="keywords"
+        title={row.term}
+        trail={[{ label: row.term }]}
+        switcher={false}
+        sub={row.monthlySearches === null ? "Searches a month not known yet." : `${fmt(row.monthlySearches)} searches a month.`}
+        actions={
+          can("track") && (
+            <Button variant="ghost" onClick={() => void stop()}>
+              Stop tracking
+            </Button>
+          )
+        }
+      />
+      <div className="space-y-6">
+        <Card className="grid grid-cols-2 gap-5 sm:grid-cols-5">
+          <Fact label="Your position">
+            <Position row={row} />
+          </Fact>
+          <Fact label="30 days">
+            <Moved row={row} />
+          </Fact>
+          <Fact label="Map pack">{row.pending ? "—" : <YesNo yes={row.hasMapPack} label="Shown" />}</Fact>
+          <Fact label="AI Overview">{row.pending ? "—" : <AiOverview row={row} />}</Fact>
+          <Fact label="Your page">
+            {row.url ? (
+              <a
+                href={row.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex max-w-full items-center gap-1 text-[13px] hover:underline"
+              >
+                <span className="truncate">{row.url.replace(/^https?:\/\/(www\.)?/, "")}</span>
+                <ExternalLink size={11} className="shrink-0" aria-hidden />
+              </a>
+            ) : (
+              <span className="text-[13px] text-muted">Not ranking</span>
+            )}
+          </Fact>
+        </Card>
+
+        <Card>
+          <h2 className="mb-2 text-[14px] font-medium">Position, 90 days</h2>
+          {known.length < 2 ? (
+            <p className="text-[13px] text-muted">Shows after two weeks of checks. A gap means not in the top 100.</p>
+          ) : (
+            <>
+              <LineChart
+                height={200}
+                invert
+                yMax={Math.max(10, ...known) + 1}
+                labels={row.history.labels}
+                series={[{ name: "Your position", color: "var(--accent)", values: row.history.values }]}
+              />
+              <p className="mt-1 text-[12.5px] text-muted">Higher is better. A gap means not in the top 100 that week.</p>
+            </>
+          )}
+        </Card>
+
+        <Card pad={false}>
+          <h2 className="px-4 pt-4 text-[14px] font-medium">Google's first page</h2>
+          <FirstPage row={row} />
+        </Card>
+      </div>
+      {source}
+    </>
+  );
+}
+
+function Fact({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <p className="mb-1 text-[12.5px] text-muted">{label}</p>
+      <div className="min-w-0">{children}</div>
+    </div>
+  );
+}
+
+function FirstPage({ row }: { row: Row }) {
+  if (row.page.length === 0) return <p className="px-4 pt-1 pb-4 text-[13px] text-muted">The first page comes with the first check.</p>;
+  return (
+    <ol className="divide-y divide-line px-4 pb-2">
+      {row.page.map((p) => (
+        <li key={p.position} className={cn("flex items-start gap-3 py-2.5", p.isYou && "font-medium")}>
+          <span className="num w-6 shrink-0 text-right text-muted">{p.position}</span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate">{p.isYou ? `You: ${p.title}` : p.title || p.domain}</p>
+            <a
+              href={p.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[12.5px] font-normal text-muted hover:text-fg"
+            >
+              {p.name ?? p.domain}
+              <ExternalLink size={11} aria-hidden />
+            </a>
+          </div>
+          {p.kind === "directory" && <Badge>Directory</Badge>}
+        </li>
+      ))}
+    </ol>
   );
 }

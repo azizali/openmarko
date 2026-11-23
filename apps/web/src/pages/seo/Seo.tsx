@@ -1,10 +1,11 @@
-// SEO (/seo): the overview and one page per check, for one Location at a time. The Location comes from `?location=`,
+// SEO (/seo): the overview and one page per check, for one Location at a time. A page may have deeper pages under
+// it (/seo/maps/<keyword>, /seo/maps/places/<business>), read from the rest of the path by the page itself. The Location comes from `?location=`,
 // else the one last opened in this Organization, else the first; a switcher shows only when there's more than one.
 // With no Location yet, SEO starts with setup (/seo/setup). Each page lives in its own file beside this one.
 import { createContext, lazy, use, useEffect, useMemo, type ReactNode } from "react";
 import { Navigate, useNavigate, useParams, useSearchParams } from "react-router";
 import { MapPin } from "lucide-react";
-import { PageHeader, Select } from "../../components/ui";
+import { Breadcrumbs, PageHeader, Select, type Crumb } from "../../components/ui";
 import { LoadError } from "../../components/Feedback";
 import { useLoad } from "../../lib/useLoad";
 import { useOrg, useSession } from "../../lib/session";
@@ -148,23 +149,40 @@ export function LocationSwitcher() {
   );
 }
 
-/** A page's header: its name, one line on what it answers, the Location switcher, and its own actions. */
-/** A page's title, with when its data was last checked under it and Check now beside it (checks.tsx). */
+/**
+ * A page's header: its name, one line on what it answers, when its data was last checked and Check now beside it
+ * (checks.tsx), the Location switcher, and its own actions. A deep page (one keyword, one business) passes its own
+ * `title` and the `trail` below its section, and gets breadcrumbs back up: SEO › its section › … › itself.
+ */
 export function SeoHeader({
   tab,
+  title,
+  trail,
   sub,
   actions,
   switcher = true,
 }: {
   tab: SeoTab;
-  sub: string;
+  title?: ReactNode;
+  /** The steps between the section and this page, ending with this page. */
+  trail?: Crumb[];
+  sub: ReactNode;
   actions?: ReactNode;
   /** False where the page lists the Locations itself (settings), so there's one way to choose, not two. */
   switcher?: boolean;
 }) {
+  const href = useSeoHref();
+  const crumbs: Crumb[] | null = trail
+    ? [
+        { label: tabNames.overview, to: href("/seo") },
+        ...(tab === "overview" ? [] : [{ label: tabNames[tab], to: href(`/seo/${tab}`) }]),
+        ...trail,
+      ]
+    : null;
   return (
     <PageHeader
-      title={tabNames[tab]}
+      crumbs={crumbs && <Breadcrumbs items={crumbs} />}
+      title={title ?? tabNames[tab]}
       sub={
         <>
           {sub}
@@ -180,6 +198,12 @@ export function SeoHeader({
       }
     />
   );
+}
+
+/** A link to another SEO page that keeps the Location: `href("/seo/maps/abc")` → `/seo/maps/abc?location=…`. */
+export function useSeoHref() {
+  const { location } = useSeo();
+  return (to: string) => `${to}${to.includes("?") ? "&" : "?"}location=${location.id}`;
 }
 
 /** Goes to another SEO page, keeping the Location. */

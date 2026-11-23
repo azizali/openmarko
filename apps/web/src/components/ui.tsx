@@ -234,6 +234,36 @@ export function Stat({ label, value, delta, hint }: { label: string; value: Reac
   );
 }
 
+/** One step back up from a deep page; the last step is the page itself, so it has no link. */
+export type Crumb = { label: ReactNode; to?: string };
+
+/** The way back up from a deep page: Section › Item › This page. */
+export function Breadcrumbs({ items }: { items: Crumb[] }) {
+  return (
+    <nav aria-label="Breadcrumb">
+      <ol className="flex flex-wrap items-center gap-1">
+        {items.map((c, i) => {
+          const last = i === items.length - 1;
+          return (
+            <li key={i} className="flex min-w-0 items-center gap-1">
+              {c.to && !last ? (
+                <Link to={c.to} className="truncate underline-offset-2 hover:text-fg hover:underline">
+                  {c.label}
+                </Link>
+              ) : (
+                <span aria-current={last ? "page" : undefined} className={cn("truncate", last && "text-fg")}>
+                  {c.label}
+                </span>
+              )}
+              {!last && <ChevronRight size={13} className="shrink-0 text-subtle" aria-hidden />}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
 export function PageHeader({
   title,
   sub,

@@ -1,6 +1,6 @@
 // The Keywords page (Google search): per keyword its searches a month, your position now and a month ago, what the
 // page shows, who's first, and Google's whole first page with directories marked; plus how many keywords are on the
-// first page, over the last 90 days.
+// first page, over the last 90 days; and each keyword's own position by week over the same 90 days.
 
 import { and, eq, gte, sql } from "drizzle-orm";
 import type { AppContext } from "@app/kernel";
@@ -66,8 +66,17 @@ export async function keywordsPage(ctx: AppContext, orgId: string, locationId: s
         sql`${serpResults.keywordId} in (select id from seo.keywords where location_id = ${l.id} and active)`,
       ),
     );
+  // Each keyword's own position by week. "Not in the top 100" goes in as 0 so it carries forward like any reading,
+  // then comes back out as null.
+  const positions = (keywordId: string) => {
+    const s = weekly(
+      history.filter((h) => h.key === keywordId).map((h) => ({ at: h.at, key: "p", value: h.position ?? 0 })),
+      (xs) => xs[0]!,
+    );
+    return { labels: s.labels, values: s.values.map((v) => (v === 0 ? null : v)) };
+  };
   return {
-    keywords: rows,
+    keywords: rows.map((r) => ({ ...r, history: positions(r.id) })),
     firstPage: firstPage(now),
     firstPageBefore: firstPageThen && sum(firstPageThen),
     history: weekly(

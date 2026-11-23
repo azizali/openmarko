@@ -52,6 +52,7 @@ export default function App() {
                 {Knowledge && <Route path="knowledge/:baseId" element={<Knowledge />} />}
                 {Automation && <Route path="automation" element={<Automation />} />}
                 {Seo && <Route path="seo/:tab?" element={<Seo />} />}
+                {Seo && <Route path="seo/:tab/*" element={<Seo />} />}
                 <Route path="team" element={<Navigate replace to="/settings/team" />} />
                 <Route path="clients" element={<Navigate replace to="/settings/clients" />} />
                 <Route path="whitelabel" element={<Navigate replace to="/settings/whitelabel" />} />

@@ -1,4 +1,4 @@
-// The Google Maps ranking page: for every keyword its newest grid, spots in the top 3, average and who leads; and for
+// The Google Maps ranking page: for every keyword its newest grid, spots in the top 3 now and a month ago, average and who leads; and for
 // one keyword the whole grid now and a month ago, every business's standing with its Google profile numbers, and
 // the last 90 days against the leader. Grids are sent as the order at each spot, so the page can draw anyone's map.
 
@@ -42,12 +42,15 @@ export async function mapsSummary(ctx: AppContext, orgId: string, locationId: st
         : null;
     const grid = Array.from<number | null>({ length: scan.gridSize * scan.gridSize }).fill(null);
     for (const p of points) if (p.scanId === scan.id) grid[p.idx] = p.yourRank;
+    const then = before.find((s) => s.keywordId === k.id);
     return {
       id: k.id,
       term: k.term,
       pending: false as const,
       size: scan.gridSize,
       top3: scan.yourTop3Spots,
+      /** Top-3 spots a month ago, on the same grid size; null in the first month or after the grid changed. */
+      top3Before: then && then.gridSize === scan.gridSize ? then.yourTop3Spots : null,
       avg: scan.yourAvgPosition,
       door: scan.yourDoorPosition,
       leader,
