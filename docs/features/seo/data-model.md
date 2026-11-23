@@ -305,7 +305,7 @@ erDiagram
 
 - `map_points.ranking` keeps the whole order at a spot in one row: 49 rows per scan rather than about 980. Anyone's
   map (yours or a competitor's) is rebuilt from it, and tapping a spot shows its top 3.
-- `map_standings` is the summary the pages read: who holds how many spots, who leads, **Why they're ahead**, and the
+- `map_standings` is the summary the pages read: who holds how many spots, who leads, **Compare profiles**, and the
   90-day chart (one row per business per weekly scan). Your own Location's place has a row too.
 
 ### Keywords check (Google search)

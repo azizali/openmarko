@@ -20,6 +20,7 @@ import { competitorsPage } from "./results/competitors";
 import { keywordsPage } from "./results/keywords";
 import { mapsKeyword, mapsSummary } from "./results/maps";
 import { overview } from "./results/overview";
+import { placeInsight } from "./results/place";
 import { actionFor, applySuggestion, dismissSuggestion, listSuggestions, undoSuggestion } from "./suggestions/service";
 import {
   addKeywords,
@@ -410,6 +411,17 @@ export function seoRoutes(ctx: AppContext) {
         {
           params: ids("locationId", "keywordId"),
           detail: { summary: "One keyword's grid now and a month ago, who's ahead, and the last 90 days" },
+        },
+      )
+      .get(
+        "/locations/:locationId/places/:placeId",
+        async ({ caller, params }) => {
+          await gate(caller, "view");
+          return placeInsight(ctx, caller.orgId, params.locationId, params.placeId);
+        },
+        {
+          params: ids("locationId", "placeId"),
+          detail: { summary: "One business up close: profile, reviews over 90 days, and where it stands on each Maps keyword" },
         },
       )
       .get(

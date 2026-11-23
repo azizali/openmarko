@@ -41,8 +41,13 @@ changes what checks cost and links the Google profile.
   drawer. A kind already running is skipped, never run twice.
 - **Overview** (`/seo/overview`): one number per check with its change over 30 days, the results card from the Google
   profile (calls, website clicks, direction requests, views, and the searches that showed it), and **What to do next**.
-- **Google Maps ranking** (`/seo/maps`): every keyword's grid; for one keyword the map now and a month ago, any
-  business's map, why the ones ahead are ahead (their profile numbers against yours), and the last 90 days.
+- **Google Maps ranking** (`/seo/maps`): every keyword's grid; for one keyword the map (a real map, MapLibre on
+  OpenFreeMap tiles, no key: zoom with the buttons or ctrl/⌘ + scroll, drag to move) beside a ranked leaderboard
+  with each business's rating and reviews; **Compare profiles** (your numbers against the median of the ones ahead,
+  main category, website); and **Over time** (the last 90 days, and your grid now beside a month ago once one is a
+  month old). Any business on a leaderboard opens a drawer (`GET …/locations/:id/places/:placeId`): its profile,
+  new reviews per week and rating over 90 days from `place_snapshots`, the categories it lists that you don't, and
+  where it stands on each of your Maps keywords. Competitors' posts aren't tracked.
 - **Keywords** (`/seo/keywords`): your position on Google per keyword, Google's whole first page, map pack and AI Overview.
 - **AI answers** (`/seo/ai`): per question and assistant, whether you're named and where, what it said, what it cited.
 - **Competitors** (`/seo/competitors`): per channel, who's ahead of you on how many keywords; add or hide one.

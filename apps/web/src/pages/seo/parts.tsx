@@ -1,4 +1,4 @@
-// Pieces every SEO page shares: the map grid (and its thumbnail and legend), a change over 30 days, the one-line
+// Pieces every SEO page shares: the map grid's thumbnail and legend (the map itself is GridMap.tsx), a change over 30 days, the one-line
 // "Data source" note, a rank's tone, and a bar in a leaderboard. Grids come from the API as the order of businesses
 // at each spot, so any business's map can be drawn from the same data.
 import type { ReactNode } from "react";
@@ -12,70 +12,12 @@ export const rankIn = (ranking: string[], placeId: string | null) => {
   return i < 0 ? null : i + 1;
 };
 
-const fill = (r: number | null) => (r === null ? "var(--subtle)" : r <= 3 ? "var(--good)" : r <= 10 ? "var(--warn)" : "var(--bad)");
 const dot = (r: number | null) => (r === null ? "var(--border-strong)" : r <= 3 ? "var(--good)" : r <= 10 ? "var(--warn)" : "var(--bad)");
 
 /** Green top 3, amber the first page of ten, red below, neutral when not found. */
 export function rankTone(rank: number | null | undefined): "good" | "warn" | "bad" | "neutral" {
   if (rank === null || rank === undefined) return "neutral";
   return rank <= 3 ? "good" : rank <= 10 ? "warn" : "bad";
-}
-
-/** The map grid: a pin at each spot with the business's position there. Tap a pin to see that spot's top 3. */
-export function GridMap({
-  size,
-  ranks,
-  selected,
-  onSelect,
-}: {
-  size: number;
-  /** Position at each spot, by index (row * size + col). */
-  ranks: (number | null)[];
-  selected?: number | null;
-  onSelect?: (idx: number) => void;
-}) {
-  const pad = 8;
-  const cell = (100 - pad * 2) / Math.max(1, size - 1);
-  const c = (size - 1) / 2;
-  return (
-    <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-line" style={{ background: "var(--map-land)" }}>
-      <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full" aria-hidden preserveAspectRatio="none">
-        <path d="M-5 72 C 20 64, 34 80, 55 70 S 90 58, 105 66 L105 80 C 85 72, 70 86, 52 82 S 18 78, -5 86 Z" fill="var(--map-water)" />
-        <rect x="58" y="14" width="18" height="14" rx="2" fill="var(--map-park)" />
-        <rect x="12" y="40" width="12" height="16" rx="2" fill="var(--map-park)" />
-        {[18, 36, 54, 88].map((y) => (
-          <line key={y} x1="0" x2="100" y1={y} y2={y + 4} stroke="var(--map-road)" strokeWidth="1.4" />
-        ))}
-        {[22, 47, 70].map((x) => (
-          <line key={x} y1="0" y2="100" x1={x} x2={x - 6} stroke="var(--map-road)" strokeWidth="1.4" />
-        ))}
-      </svg>
-      {ranks.map((r, idx) => {
-        const row = Math.floor(idx / size);
-        const col = idx % size;
-        const door = row === c && col === c;
-        return (
-          <button
-            key={idx}
-            type="button"
-            onClick={() => onSelect?.(idx)}
-            disabled={!onSelect}
-            aria-pressed={selected === idx}
-            aria-label={`Row ${row + 1}, column ${col + 1}${door ? " (your door)" : ""}: ${r === null ? "not in the top 20" : `position ${r}`}`}
-            className={cn(
-              "num absolute grid size-[9.5%] min-h-6 min-w-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[11px] font-semibold text-white shadow-sm transition-transform disabled:cursor-default",
-              onSelect && "hover:scale-110",
-              selected === idx && "ring-2 ring-ink ring-offset-2 ring-offset-[var(--map-land)]",
-              door && "outline-2 outline-offset-2 outline-ink",
-            )}
-            style={{ left: `${pad + col * cell}%`, top: `${pad + row * cell}%`, background: fill(r) }}
-          >
-            {r ?? "20+"}
-          </button>
-        );
-      })}
-    </div>
-  );
 }
 
 export function GridLegend() {

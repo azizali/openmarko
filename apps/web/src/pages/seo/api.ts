@@ -13,6 +13,7 @@ export type Overview = Data<L["overview"]["get"]>;
 export type CheckStatus = Data<L["checks"]["get"]>;
 export type MapsSummary = Data<L["results"]["maps"]["get"]>;
 export type MapsKeyword = Data<ReturnType<L["results"]["maps"]>["get"]>;
+export type PlaceInsight = Data<ReturnType<L["places"]>["get"]>;
 export type SearchPage = Data<L["results"]["search"]["get"]>;
 export type AiPage = Data<L["results"]["ai"]["get"]>;
 export type CompetitorsPage = Data<L["results"]["competitors"]["get"]>;

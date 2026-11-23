@@ -91,10 +91,11 @@ async function gridOf(ctx: AppContext, scan: ScanRow | undefined) {
   return { checkedAt: scan.checkedAt, size: scan.gridSize, radiusM: scan.radiusM, points: pts };
 }
 
-const km = (a: { lat: number; lng: number }, b: { lat: number | null; lng: number | null }) => {
+/** Straight-line miles between two points, to one decimal (69 miles to a degree of latitude). */
+export const milesBetween = (a: { lat: number; lng: number }, b: { lat: number | null; lng: number | null }) => {
   if (b.lat === null || b.lng === null) return null;
-  const dLat = (a.lat - b.lat) * 111;
-  const dLng = (a.lng - b.lng) * 111 * Math.cos((a.lat * Math.PI) / 180);
+  const dLat = (a.lat - b.lat) * 69;
+  const dLng = (a.lng - b.lng) * 69 * Math.cos((a.lat * Math.PI) / 180);
   return Math.round(Math.sqrt(dLat * dLat + dLng * dLng) * 10) / 10;
 };
 
@@ -141,14 +142,18 @@ export async function mapsKeyword(ctx: AppContext, orgId: string, locationId: st
         door: s.doorPosition,
         bestSide: s.bestSide,
         worstSide: s.worstSide,
-        distanceKm: p ? km(l, p) : null,
+        distanceMi: p ? milesBetween(l, p) : null,
         rating: n?.rating ?? null,
         reviews: n?.reviewCount ?? null,
         newReviewsPerMonth: n?.newReviewsPerMonth ?? null,
+        category: s.primaryCategory,
         categories: s.categories.length,
+        website: s.domain,
+        isClaimed: n?.isClaimed ?? null,
       };
     })
-    .sort((a, b) => b.top3 - a.top3 || a.avg - b.avg);
+    .sort((a, b) => b.top3 - a.top3 || a.avg - b.avg)
+    .map((b, i) => ({ ...b, rank: i + 1 }));
 
   const leader = board.find((b) => !b.isYou);
   const series = scans.length
