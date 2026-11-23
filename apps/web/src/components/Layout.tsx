@@ -9,6 +9,7 @@ import {
   ChevronRight,
   ChevronsUpDown,
   CornerDownLeft,
+  Gauge,
   LayoutGrid,
   ListChecks,
   LogOut,
@@ -40,9 +41,17 @@ type Icon = ComponentType<{
   strokeWidth?: number;
   className?: string;
 }>;
-type NavGroupInfo = { label: string; icon: Icon };
+/**
+ * Pages listed together. A group is an expandable parent row by default; a `section` is always open instead, its pages
+ * under a small label, for a group that is most of what the app is.
+ */
+type NavGroupInfo = { label: string; icon: Icon; section?: boolean };
 const aiGroup: NavGroupInfo = { label: "AI", icon: Bot };
-const seoGroup: NavGroupInfo = { label: "SEO", icon: SearchCheck };
+const seoGroup: NavGroupInfo = {
+  label: "SEO / AEO / GEO",
+  icon: SearchCheck,
+  section: true,
+};
 export type NavItem = {
   /** The feature switch (app.config.ts) that shows or hides this entry. */
   feature?: string;
@@ -63,7 +72,7 @@ export const nav: NavItem[] = [
   ...(modules.seo
     ? (
         [
-          ["/seo/overview", "Overview", SearchCheck],
+          ["/seo/overview", "Overview", Gauge],
           ["/seo/maps", "Google Maps", MapPin],
           ["/seo/keywords", "Keywords", Search],
           ["/seo/ai", "AI answers", Sparkles],
@@ -179,6 +188,21 @@ function NavGroup({ info, items, path }: { info: NavGroupInfo; items: NavItem[];
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** An always-open group: a small label, then its pages with their icons. */
+function NavSection({ info, items, path }: { info: NavGroupInfo; items: NavItem[]; path: string }) {
+  const id = `nav-section-${info.label.replace(/\W+/g, "-").toLowerCase()}`;
+  return (
+    <div role="group" aria-labelledby={id} className="my-3 flex flex-col gap-px first:mt-0 last:mb-0">
+      <div id={id} className="px-2 pb-1 text-[11px] font-medium tracking-[0.06em] text-subtle uppercase">
+        {info.label}
+      </div>
+      {items.map((n) => (
+        <SidebarLink key={n.to} item={n} path={path} />
+      ))}
     </div>
   );
 }
@@ -446,6 +470,8 @@ export default function Layout() {
       <nav className="mt-1 flex flex-1 flex-col gap-px overflow-y-auto" aria-label="Main">
         {pages.map((n, i) => {
           if (n.group && pages[i - 1]?.group === n.group) return null; // listed with the first of its group
+          if (n.group?.section)
+            return <NavSection key={n.group.label} info={n.group} items={pages.filter((p) => p.group === n.group)} path={loc.pathname} />;
           if (n.group)
             return <NavGroup key={n.group.label} info={n.group} items={pages.filter((p) => p.group === n.group)} path={loc.pathname} />;
           return <SidebarLink key={n.to} item={n} path={loc.pathname} />;
