@@ -1,12 +1,26 @@
 // Form fields SEO setup and SEO settings share: the business's services, and how its checks run (within the Plan),
 // plus connecting Google and a sentence saying what the checks cover.
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
-import { Plus, X } from "lucide-react";
+import { CircleAlert, Plus, X } from "lucide-react";
 import { Button, Checkbox, Field, Input, Segmented } from "../../components/ui";
 import { Feedback, useFeedback } from "../../components/Feedback";
 import { api, messageOf } from "../../lib/api";
-import { engineNames, type Engine, type Limits } from "./api";
+import { engineNames, locationApi, seoApi, type Engine, type Limits } from "./api";
+import { GRID_SIZE, GRID_SPOTS, gridCoverage, metresOf, nearestReach, reaches } from "./distance";
+import { GridMap, spotsOf } from "./GridMap";
+
+export { GRID_SIZE, GRID_SPOTS, gridCoverage, nearestReach };
+
+/** Spots a side the grid can have (the API takes these); the Plan's grid limit caps it. */
+export const gridSizes = [5, 7, 9];
+/** The sizes the Plan allows: its ceiling, or every size when it has none. */
+export const allowedGridSizes = (limits: Limits | null) => gridSizes.filter((s) => limits?.gridSize == null || s <= limits.gridSize);
+/** A stored size, brought within what the Plan allows now (the largest allowed when it's above). */
+export const allowedGridSize = (size: number, limits: Limits | null) => {
+  const ok = allowedGridSizes(limits);
+  return ok.includes(size) ? size : (ok[ok.length - 1] ?? gridSizes[0]!);
+};
 
 export const engines: Engine[] = ["chatgpt", "google_ai", "perplexity"];
 export type Every = "daily" | "weekly" | "monthly";
@@ -143,65 +157,87 @@ export function ServicesField({
 
 export type Checks = { gridSize: number; gridRadiusM: number; checkEvery: Every; engines: Engine[] };
 
-/** Google Maps is searched from a 7 × 7 grid: one spot on the business's door, three rings around it. */
-export const GRID_SIZE = 7;
-export const GRID_SPOTS = GRID_SIZE * GRID_SIZE;
-const M_PER_MILE = 1609.344;
-/** How far the grid reaches, in miles: a dense city wants it tight, a business that drives to customers wants it wide. */
-const reaches = [0.5, 1, 2, 3, 5, 10];
-const metres = (miles: number) => Math.round(miles * M_PER_MILE);
-const miles = (m: number) => {
-  const mi = m / M_PER_MILE;
-  return `${mi < 1 ? mi.toFixed(1).replace(/^0/, "") : mi.toFixed(mi < 10 ? 1 : 0).replace(/\.0$/, "")} mi`;
-};
-/** The preset nearest a stored reach, so one set elsewhere still shows as picked. */
-export const nearestReach = (m: number) => metres(reaches.reduce((a, b) => (Math.abs(metres(b) - m) < Math.abs(metres(a) - m) ? b : a)));
-
-/** What the grid covers, in a sentence: "Reaches 2 mi from the business each way (a 4 mi square); spots are 0.7 mi apart." */
-export function gridCoverage(radiusM: number): string {
-  return `Reaches ${miles(radiusM)} from the business each way (a ${miles(radiusM * 2)} square); spots are ${miles(radiusM / ((GRID_SIZE - 1) / 2))} apart.`;
-}
-
-/** The 7 × 7 grid and how far it reaches, how often, and which assistants: only what the Plan allows is offered. */
-export function ChecksFields({
+/**
+ * The Maps grid: how many spots a side (within the Plan) and how far it reaches, with what a check costs and, given
+ * where the business is, a map of where it will search.
+ */
+export function GridFields({
   value,
   onChange,
   limits,
   mapsKeywords,
+  center,
 }: {
   value: Checks;
   onChange: (v: Checks) => void;
   limits: Limits | null;
   /** How many keywords are searched on Maps, to say what one check costs in searches; left out where unknown. */
   mapsKeywords?: number;
+  /** Where the business is: the middle spot. Left out, no map. */
+  center?: { lat: number; lng: number } | null;
+}) {
+  const sizes = allowedGridSizes(limits);
+  const spots = value.gridSize * value.gridSize;
+  return (
+    <div className="space-y-5">
+      <Field
+        label="Map grid size"
+        hint={
+          <>
+            Google Maps is searched from each of the {spots} spots
+            {mapsKeywords !== undefined && (
+              <>
+                , for each keyword: {n(mapsKeywords, "keyword", "keywords")} × {spots} = {fmtN(mapsKeywords * spots)} searches a check
+              </>
+            )}
+            . More spots show more detail, and cost more searches.
+            {sizes.length < gridSizes.length && ` Your plan allows up to ${sizes[sizes.length - 1]} × ${sizes[sizes.length - 1]}.`}
+          </>
+        }
+      >
+        <Segmented
+          label="Map grid size"
+          value={String(value.gridSize)}
+          onChange={(v) => onChange({ ...value, gridSize: Number(v) })}
+          options={sizes.map((s) => ({ id: String(s), label: `${s} × ${s}` }))}
+        />
+      </Field>
+      <Field label="How far the grid reaches" hint={gridCoverage(value.gridRadiusM, value.gridSize)}>
+        <Segmented
+          label="How far the grid reaches"
+          value={String(nearestReach(value.gridRadiusM))}
+          onChange={(v) => onChange({ ...value, gridRadiusM: Number(v) })}
+          options={reaches.map((mi) => ({ id: String(metresOf(mi)), label: `${mi} mi` }))}
+        />
+      </Field>
+      {center && <GridMap size={value.gridSize} spots={spotsOf(center, value.gridSize, value.gridRadiusM)} />}
+    </div>
+  );
+}
+
+/** How the checks run: the grid (unless shown elsewhere on the page), how often, and which assistants, within the Plan. */
+export function ChecksFields({
+  value,
+  onChange,
+  limits,
+  mapsKeywords,
+  center,
+  grid = true,
+}: {
+  value: Checks;
+  onChange: (v: Checks) => void;
+  limits: Limits | null;
+  mapsKeywords?: number;
+  center?: { lat: number; lng: number } | null;
+  /** False when the page shows GridFields beside its Maps keywords instead. */
+  grid?: boolean;
 }) {
   const everies = (["daily", "weekly", "monthly"] as Every[]).filter(
     (e) => limits?.checksPerMonth == null || perMonth[e] <= limits.checksPerMonth,
   );
   return (
     <div className="space-y-5">
-      <Field
-        label="Map grid: 7 × 7, how far it reaches"
-        hint={
-          <>
-            {gridCoverage(value.gridRadiusM)} Google Maps is searched from each of the {GRID_SPOTS} spots
-            {mapsKeywords !== undefined && (
-              <>
-                , for each keyword: {n(mapsKeywords, "keyword", "keywords")} × {GRID_SPOTS} = {fmtN(mapsKeywords * GRID_SPOTS)} searches a
-                check
-              </>
-            )}
-            .
-          </>
-        }
-      >
-        <Segmented
-          label="How far the grid reaches"
-          value={String(nearestReach(value.gridRadiusM))}
-          onChange={(v) => onChange({ ...value, gridSize: GRID_SIZE, gridRadiusM: Number(v) })}
-          options={reaches.map((mi) => ({ id: String(metres(mi)), label: `${mi} mi` }))}
-        />
-      </Field>
+      {grid && <GridFields value={value} onChange={onChange} limits={limits} mapsKeywords={mapsKeywords} center={center} />}
       <Field label="How often">
         <Segmented
           label="How often"
@@ -236,5 +272,78 @@ const n = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many
 
 /** What each check covers, in a sentence: "Every week: 6 keywords from 49 spots on Google Maps, 20 on Google search, …". */
 export function checkSummary(c: Checks, counts: { maps: number; organic: number; questions: number }): string {
-  return `${everyLabel[c.checkEvery]}: ${n(counts.maps, "keyword", "keywords")} from ${GRID_SPOTS} spots on Google Maps (${fmtN(counts.maps * GRID_SPOTS)} searches), ${n(counts.organic, "keyword", "keywords")} on Google search, and ${n(counts.questions, "question", "questions")} to ${n(c.engines.length, "assistant", "assistants")}.`;
+  const spots = c.gridSize * c.gridSize;
+  return `${everyLabel[c.checkEvery]}: ${n(counts.maps, "keyword", "keywords")} from ${spots} spots on Google Maps (${fmtN(counts.maps * spots)} searches), ${n(counts.organic, "keyword", "keywords")} on Google search, and ${n(counts.questions, "question", "questions")} to ${n(c.engines.length, "assistant", "assistants")}.`;
+}
+
+/**
+ * The categories to track, from Google's own list: typing searches it and only a name in it is accepted (any text,
+ * when the list can't be read). `suggestions` are offered as one-click additions; `note` says why fewer are offered.
+ */
+export function CategoriesField({
+  orgId,
+  value,
+  onChange,
+  suggestions,
+  note,
+}: {
+  orgId: string;
+  value: string[];
+  onChange: (v: string[]) => void;
+  suggestions?: string[];
+  note?: string | null;
+}) {
+  const lookup = useCallback(
+    async (q: string) => {
+      const r = await seoApi(orgId).categories.get({ query: { q } });
+      return r.data?.ready ? r.data.categories : null;
+    },
+    [orgId],
+  );
+  return (
+    <Field
+      label="Categories to track"
+      hint="Google files every business under categories from a fixed list. Type to find yours; keywords are built from each one kept here."
+    >
+      <ServicesField noun="category" nouns="categories" value={value} onChange={onChange} suggestions={suggestions} lookup={lookup} />
+      {/* Not a failure: a note, by the field it's about, on why fewer categories are offered. */}
+      {note && (
+        <p className="mt-2 flex gap-1.5 text-[12.5px] text-warn">
+          <CircleAlert size={14} className="mt-px shrink-0" aria-hidden />
+          <span>Fewer categories to choose from: {note}</span>
+        </p>
+      )}
+    </Field>
+  );
+}
+
+/**
+ * The places to track, from Google's own list: "Springfield, IL", so a name used in several states is never mistaken.
+ * Places in the business's own state are offered first.
+ */
+export function CitiesField({
+  orgId,
+  locationId,
+  value,
+  onChange,
+  suggestions,
+}: {
+  orgId: string;
+  locationId: string;
+  value: string[];
+  onChange: (v: string[]) => void;
+  suggestions?: string[];
+}) {
+  const lookup = useCallback(
+    async (q: string) => {
+      const r = await locationApi(orgId, locationId).cities.get({ query: { q } });
+      return r.data?.ready ? r.data.cities : null;
+    },
+    [orgId, locationId],
+  );
+  return (
+    <Field label="Cities and towns to track" hint="Where your customers are. Type a name; each comes with its state, like Springfield, IL.">
+      <ServicesField noun="city" nouns="cities and towns" value={value} onChange={onChange} suggestions={suggestions} lookup={lookup} />
+    </Field>
+  );
 }

@@ -174,6 +174,18 @@ export const locations = seo.table(
       .array()
       .notNull()
       .default(sql`'{}'::text[]`),
+    /**
+     * What's tracked, as picked at Setup: Google's categories ("Pest control service") and Google's places
+     * ("Springfield, IL"). Keyword ideas are each category in each place. Empty until picked.
+     */
+    categories: text("categories")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    cities: text("cities")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     status: text("status").notNull(), // 'draft' | 'active' | 'paused' | 'archived'
     gridSize: smallint("grid_size").notNull().default(7), // 5, 7 or 9 spots a side
     gridRadiusM: integer("grid_radius_m").notNull().default(3000),

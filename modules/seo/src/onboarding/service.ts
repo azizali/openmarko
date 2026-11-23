@@ -165,10 +165,13 @@ export async function ideasFor(ctx: AppContext, orgId: string, locationId: strin
   const [site] = l.websiteId ? await ctx.db.select({ domain: websites.domain }).from(websites).where(eq(websites.id, l.websiteId)) : [];
   const [place] = l.placeId ? await ctx.db.select().from(places).where(eq(places.id, l.placeId)) : [];
   const clean = (xs: string[] | undefined) => [...new Set((xs ?? []).map((x) => normalizeTerm(x)).filter(Boolean))];
-  const categories = clean(focus.categories).slice(0, 5);
+  // What was asked for, else what was picked at Setup and saved on the Location.
+  const categories = clean(focus.categories?.length ? focus.categories : l.categories)
+    .filter((c) => !meaningless(c))
+    .slice(0, 5);
   // Picked places are labels ("Springfield, IL"); a search says only the name people type ("springfield").
   const cityList = await cityCatalog(ctx, orgId, l.countryCode).catch((): City[] => []);
-  const cities = clean((focus.cities ?? []).slice(0, 4).map((c) => searchName(cityList, c)));
+  const cities = clean((focus.cities?.length ? focus.cities : l.cities).slice(0, 4).map((c) => searchName(cityList, c)));
   if (!categories.length) {
     // None picked: the business's own Google category when the list knows it, else a generic search.
     const catalog = await categoryCatalog(ctx, orgId).catch(() => []);

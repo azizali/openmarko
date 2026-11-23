@@ -122,6 +122,9 @@ export function seoRoutes(ctx: AppContext) {
             name: t.Optional(t.String({ minLength: 1, maxLength: 200 })),
             website: t.Optional(t.Nullable(t.String())),
             services: t.Optional(t.Array(t.String({ maxLength: 80 }), { maxItems: 40 })),
+            /** Google's categories and places to track, as picked at Setup. */
+            categories: t.Optional(t.Array(t.String({ maxLength: 120 }), { maxItems: 10 })),
+            cities: t.Optional(t.Array(t.String({ maxLength: 120 }), { maxItems: 10 })),
             gridSize: t.Optional(t.Number()),
             gridRadiusM: t.Optional(t.Number()),
             checkEvery: t.Optional(every),

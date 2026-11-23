@@ -9,6 +9,7 @@ import { Feedback, useFeedback, useToast } from "../../components/Feedback";
 import { fmtTime, messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
 import { engineNames, locationApi, type CheckStatus } from "./api";
+import { gridArea } from "./distance";
 import { everyLabel, type Every } from "./fields";
 import { useSeo, type SeoTab } from "./Seo";
 
@@ -175,11 +176,12 @@ function ChecksDrawer({ open, onClose, preselect }: { open: boolean; onClose: ()
   if (!status) return null;
   const manage = can("manage");
   const what: Record<CheckKind, string> = {
-    maps: `${status.keywords} keyword${status.keywords === 1 ? "" : "s"} on a ${location.gridSize}×${location.gridSize} grid`,
-    organic: `${status.keywords} keyword${status.keywords === 1 ? "" : "s"} from your address`,
+    maps: `${status.mapsKeywords} keyword${status.mapsKeywords === 1 ? "" : "s"} across ${gridArea(location.gridRadiusM)}`,
+    organic: `${status.organicKeywords} keyword${status.organicKeywords === 1 ? "" : "s"} from your address`,
     ai: `${status.questions} question${status.questions === 1 ? "" : "s"} asked of ${list(location.engines.map((e) => engineNames[e] ?? e))}`,
   };
-  const empty = (k: CheckKind) => (k === "ai" ? status.questions === 0 : status.keywords === 0);
+  const empty = (k: CheckKind) =>
+    k === "ai" ? status.questions === 0 : k === "maps" ? status.mapsKeywords === 0 : status.organicKeywords === 0;
   const canPick = (k: CheckKind) => manage && !empty(k) && !status.kinds.find((s) => s.kind === k)?.running;
   const chosen = [...picked].filter(canPick);
 

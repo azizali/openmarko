@@ -38,6 +38,11 @@ const kindOf = (s: Suggestion) => kinds[s.kind] ?? kinds.listing!;
 
 const diff = (now: number, before: number | null) => (before === null ? null : now - before);
 
+/** A share of the area, as a whole percentage: what "top 3 across 40% of your area" reads. */
+const pct = (part: number, whole: number) => (whole ? Math.round((part / whole) * 100) : 0);
+/** The header says when its numbers are from, by how often they're checked. */
+const sinceWord: Record<string, string> = { daily: "today", weekly: "this week", monthly: "this month" };
+
 export default function Overview() {
   const { orgId, location, can } = useSeo();
   const overview = useLoad(() => locationApi(orgId, location.id).overview.get(), [orgId, location.id]);
@@ -51,7 +56,11 @@ export default function Overview() {
 
   return (
     <>
-      <SeoHeader tab="overview" sub="Where you show up this week, and what to do next." actions={can("manage") && <SettingsLink />} />
+      <SeoHeader
+        tab="overview"
+        sub={`Where you show up ${sinceWord[location.checkEvery] ?? "now"}, and what to do next.`}
+        actions={can("manage") && <SettingsLink />}
+      />
       {overview.error ? (
         <LoadError what="where you stand">{overview.error}</LoadError>
       ) : (
@@ -93,16 +102,16 @@ function Standing({ data }: { data: OverviewData }) {
       id: "maps",
       value: (
         <>
-          Top 3 in {maps.top3} <span className="text-muted">of {maps.spots} spots</span>
+          Top 3 across {pct(maps.top3, maps.spots)}% <span className="text-muted">of your area</span>
         </>
       ),
-      change: <Change by={diff(maps.top3, maps.top3Before)} unit="more" />,
+      change: <Change by={maps.top3Before === null ? null : pct(maps.top3, maps.spots) - pct(maps.top3Before, maps.spots)} unit="points" />,
       rows: maps.rows.map((r) => ({
         key: r.id,
         label: r.term,
         value: (
           <span className="flex items-center gap-2">
-            {r.top3} of {r.spots}
+            {pct(r.top3, r.spots)}%
             <GridThumb size={r.size} ranks={r.grid} gap={4} />
           </span>
         ),
@@ -291,8 +300,11 @@ function NextSteps({ open, done, onChange }: { open: Suggestion[]; done: Suggest
   const [params] = useSearchParams();
   const asked = params.get("filter") as Filter | null;
   const [filter, setFilter] = useState<Filter>(asked && filters.has(asked) ? asked : "all");
-  const [expanded, setExpanded] = useState<string | null>(open[0]?.id ?? null);
+  // The first one is open until the person opens or closes one; once the open one is applied or dismissed (gone from
+  // the list), the next first one opens, so there's always the next thing to do in view.
+  const [picked, setExpanded] = useState<string | null | undefined>(undefined);
   const shown = open.filter((s) => filter === "all" || s.helps === filter);
+  const expanded = picked === undefined || (picked !== null && !shown.some((s) => s.id === picked)) ? (shown[0]?.id ?? null) : picked;
 
   return (
     <>

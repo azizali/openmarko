@@ -27,8 +27,12 @@ changes what checks cost and links the Google profile.
   track** (offered from its full Google profile; add your own), optionally connect its Google
   Business Profile, pick **what to track** in three lists, because each is searched differently: **Google Maps**
   keywords (short, no place: the grid says where), **Google search** keywords (naming the place, or asked in full), and
-  **questions for the AI assistants**. Then how far the 7 × 7 grid reaches (0.5 to 10 miles; the screen says the spot
-  spacing and the Maps searches a check costs: keywords × 49) and how often, and launch (**Cancel setup** at the top
+  **questions for the AI assistants**. About six of each, the most searched, are picked and shown as a summary;
+  **Change** opens a part's every idea to tick, and a row to add one's own. **How it's checked** is folded to one line
+  (how often, how far the map reaches, how many assistants) and opens to the grid (size up to the Plan's
+  `seo_grid_size`, reach 0.5 to 10 miles, drawn on a map of where it will search) and the rest. What one check covers,
+  what it uses of the Plan and "about 5 minutes" are said once, in a bar kept in view beside **Start first check**,
+  which launches (**Cancel setup** at the top
   leaves for good: a draft is removed). Setup is a full screen without the app menu. The first check runs on the
   priority queue and the screen follows it to a first look; **Leave, we'll keep going** goes to SEO while it runs.
 - **Every page's header** says when its data was last checked and, while a check runs, which kind and since when, with
@@ -42,7 +46,7 @@ changes what checks cost and links the Google profile.
 - **Keywords** (`/seo/keywords`): your position on Google per keyword, Google's whole first page, map pack and AI Overview.
 - **AI answers** (`/seo/ai`): per question and assistant, whether you're named and where, what it said, what it cited.
 - **Competitors** (`/seo/competitors`): per channel, who's ahead of you on how many keywords; add or hide one.
-- **Settings** (`/seo/settings`): business details, checks within the Plan, the Google profile link, pause or remove. With two or more Locations, a list beside the settings picks which one you're viewing, and
+- **Settings** (`/seo/settings`): business details, checks within the Plan (grid size and reach with the same map preview as setup), the Google profile link, pause or remove. With two or more Locations, a list beside the settings picks which one you're viewing, and
   Select pauses, resumes or removes several together.
 - **Suggestions**, each saying what it was based on: add categories competitors ahead of you list; get listed on a site
   AI answers cite; track a keyword your profile is found for or a competitor ranks for; say your services in your
@@ -93,6 +97,15 @@ unlimited: any phrase a customer might search. A category is where a keyword ide
    "Where can I get <service> in <city>?", "How much does <service> cost in <city>?", the other categories and
    cities, then the questions people ask about the business.
 
+**Keeping what was picked.** The categories and cities picked on What we found are saved on the Location
+(`categories`, `cities`) and edited in Settings → Business; ideas are built from what's saved, so a reload or the round
+trip through Google's sign-in asks for the same ones. What's ticked on What to track is kept for the browser tab until
+launch, so Back and on again keeps it.
+
+**Stopping a keyword** is per place: Stop tracking on Google Maps or on Keywords turns it off there only; off in both,
+it's no longer tracked and stops counting against the Plan. Stopping a keyword or a question happens at once with an
+**Undo** in the message, rather than an "Are you sure?".
+
 **After every check** (each suggestion states its evidence and has a fingerprint, so one applied, dismissed or made
 pointless never returns):
 
@@ -112,7 +125,7 @@ pointless never returns):
 - Read Google's category list from the Business Profile API (`categories.list`) instead of DataForSEO, once the Google
   Cloud project has access to it.
 - A model to word questions and services from the full profile (`llm.complete`), and to rank suggestions.
-- Remember the chosen categories and cities on the Location, so Settings and suggestions use them too.
+- Use the saved categories and cities in suggestions (Setup and Settings already do).
 
 ## How it connects
 

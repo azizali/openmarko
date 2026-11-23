@@ -55,6 +55,11 @@ typography:
     fontWeight: 400
     lineHeight: 1
     letterSpacing: "-0.015em"
+  section-title:
+    fontFamily: "Roboto Flex, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "15px"
+    fontWeight: 500
+    lineHeight: 1.4
   title:
     fontFamily: "Roboto Flex, ui-sans-serif, system-ui, sans-serif"
     fontSize: "14px"
@@ -219,6 +224,7 @@ The `night-*` tokens are the same roles in dark mode. Dark mode is designed as i
 - **Display** (page titles only, one per page): the page's name, in the serif.
 - **Headline** (panel titles; the sign-in card goes a step larger): names an overlay or account screen.
 - **Figure** (headline numbers in Stat tiles and plan prices): serif with tabular numerals.
+- **Section Title** (15px, the heading of a part of a long page or form, such as each list on SEO setup's What to track): sans at medium weight, one step above Title so a long page reads in parts.
 - **Title** (card and list-section headings): sans at medium weight, so a card never competes with the page title.
 - **Body** (default text) and **Control** (buttons, fields, tables at 13.5px): the working layer. Descriptions stay under about 42rem wide.
 - **Label** (field labels, table headers from 12px up): medium weight in Pencil Gray.

@@ -14,6 +14,9 @@ const moduleFlags = Object.fromEntries(
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   define: { ...moduleFlags, __APP_NAME__: JSON.stringify(appConfig.name), __FEATURES__: JSON.stringify(appConfig.features) },
+  // MapLibre loads its worker from a file beside it (`new URL(..., import.meta.url)`); pre-bundled, that file goes
+  // missing (an "outdated optimize dep" 504) and the map draws nothing. Served as published, the worker is found.
+  optimizeDeps: { exclude: ["maplibre-gl"] },
   server: {
     port: 5173,
     strictPort: true,

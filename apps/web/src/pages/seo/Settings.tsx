@@ -11,8 +11,9 @@ import { useLoad } from "../../lib/useLoad";
 import { engineNames, locationApi, seoApi, type Engine, type Limits } from "./api";
 import { SeoHeader, useSeo } from "./Seo";
 import {
+  CategoriesField,
   ChecksFields,
-  GRID_SIZE,
+  CitiesField,
   ServicesField,
   gridCoverage,
   connectGoogle,
@@ -71,11 +72,13 @@ export default function Settings() {
             <Row label="Address">{location.address ?? "—"}</Row>
             <Row label="Website">{location.website ?? "None"}</Row>
             <Row label="Services">{location.services.length ? location.services.join(", ") : "None yet"}</Row>
+            <Row label="Categories">{location.categories.length ? location.categories.join(", ") : "None picked"}</Row>
+            <Row label="Cities and towns">{location.cities.length ? location.cities.join("; ") : "None picked"}</Row>
           </Card>
           <Card>
             <CardHeader title="Checks" sub={everyLabel[location.checkEvery as Every]} right={change("checks")} />
             <Row label="Map grid">
-              {location.gridSize} × {location.gridSize} spots. {gridCoverage(location.gridRadiusM)}
+              {location.gridSize} × {location.gridSize} spots. {gridCoverage(location.gridRadiusM, location.gridSize)}
             </Row>
             <Row label="AI assistants">{location.engines.map((e) => engineNames[e] ?? e).join(", ")}</Row>
             <Row label="Status">
@@ -260,6 +263,8 @@ function BusinessDrawer({ open, onClose }: { open: boolean; onClose: () => void 
     name: location.name,
     website: location.website ?? "",
     services: location.services,
+    categories: location.categories,
+    cities: location.cities,
   });
   const [busy, setBusy] = useState(false);
   const fb = useFeedback(open);
@@ -270,6 +275,8 @@ function BusinessDrawer({ open, onClose }: { open: boolean; onClose: () => void 
       name: form.name,
       website: form.website.trim() || null,
       services: form.services,
+      categories: form.categories,
+      cities: form.cities,
     });
     setBusy(false);
     if (r.error) return fb.fail(messageOf(r.error));
@@ -292,6 +299,8 @@ function BusinessDrawer({ open, onClose }: { open: boolean; onClose: () => void 
         <Field label="Website" hint="Google search positions are read for this site.">
           <Input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="example.com" />
         </Field>
+        <CategoriesField orgId={orgId} value={form.categories} onChange={(categories) => setForm({ ...form, categories })} />
+        <CitiesField orgId={orgId} locationId={location.id} value={form.cities} onChange={(cities) => setForm({ ...form, cities })} />
         <Field label="Services" hint="Keyword and question ideas, and suggestions, come from these.">
           <ServicesField value={form.services} onChange={(services) => setForm({ ...form, services })} />
         </Field>
@@ -303,7 +312,7 @@ function BusinessDrawer({ open, onClose }: { open: boolean; onClose: () => void 
 function ChecksDrawer({ open, onClose, limits }: { open: boolean; onClose: () => void; limits: Limits | null }) {
   const { orgId, location, reload } = useSeo();
   const [value, setValue] = useState<Checks>({
-    gridSize: GRID_SIZE,
+    gridSize: location.gridSize,
     gridRadiusM: location.gridRadiusM,
     checkEvery: location.checkEvery as Every,
     engines: location.engines as Engine[],
@@ -335,7 +344,12 @@ function ChecksDrawer({ open, onClose, limits }: { open: boolean; onClose: () =>
       feedback={<Feedback {...fb.props} />}
       footer={<SaveFooter busy={busy} onClose={onClose} />}
     >
-      <ChecksFields value={value} onChange={setValue} limits={limits} />
+      <ChecksFields
+        value={value}
+        onChange={setValue}
+        limits={limits}
+        center={location.lat !== null && location.lng !== null ? { lat: location.lat, lng: location.lng } : null}
+      />
     </Drawer>
   );
 }

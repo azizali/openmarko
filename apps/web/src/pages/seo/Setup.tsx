@@ -1,9 +1,9 @@
 // Setting up SEO for a business (/seo/setup): find it on Google, confirm what we found, optionally connect its Google
 // profile, pick what to track, and launch the first check. The draft Location and the step are in the address
 // (?location=…&step=…), so a reload or the round trip through Google's sign-in carries on where it was.
-import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
-import { ArrowLeft, ArrowRight, Bot, Check, CircleAlert, Loader2, MapPin, Plus, Search, Store } from "lucide-react";
+import { ArrowLeft, ArrowRight, Bot, Check, ChevronRight, CircleAlert, Loader2, MapPin, Plus, Search, Store } from "lucide-react";
 import { Badge, Button, Card, Checkbox, Field, Input, Progress, cn, fmt } from "../../components/ui";
 import { Feedback, LoadError, useFeedback, useToast } from "../../components/Feedback";
 import { messageOf } from "../../lib/api";
@@ -12,19 +12,22 @@ import { useOrg, useSession } from "../../lib/session";
 import { Logo } from "../../components/Logo";
 import { locationApi, seoApi, type Details, type Ideas, type Place } from "./api";
 import {
+  CategoriesField,
   ChecksFields,
-  GRID_SIZE,
-  GRID_SPOTS,
+  CitiesField,
+  GridFields,
   ServicesField,
+  allowedGridSize,
   checkSummary,
   connectGoogle,
   engines,
-  gridCoverage,
+  everyLabel,
   nearestReach,
   useOAuthError,
   type Checks,
   type Every,
 } from "./fields";
+import { miles } from "./distance";
 
 type Step = "start" | "found" | "connect" | "track" | "launch";
 const steps: { id: Step; name: string }[] = [
@@ -57,28 +60,65 @@ const detailsFor = (orgId: string, locationId: string) => {
   return detailsCache.get(locationId)!;
 };
 
-/** The categories and cities to track, per draft: the business's own first three categories and its city, until the person changes them. */
-type Focus = { categories: string[]; cities: string[] };
-const focusOf = new Map<string, Focus>();
-
+/**
+ * Ideas are built from the categories, places and services saved on the Location (What we found saves them), so a
+ * reload or the round trip through Google's sign-in asks for the same ones. Asked again when those change.
+ */
 const ideasCache = new Map<string, Asked<Ideas>>();
 const ideasFor = (orgId: string, locationId: string) => {
   if (!ideasCache.has(locationId))
     ideasCache.set(
       locationId,
-      detailsFor(orgId, locationId).then(async (d) => {
-        if (!focusOf.has(locationId) && d.data)
-          focusOf.set(locationId, { categories: d.data.categories.slice(0, 3), cities: d.data.cities.slice(0, 1) });
-        const focus = focusOf.get(locationId);
-        const r = await locationApi(orgId, locationId).ideas.get({
-          query: { categories: (focus?.categories ?? []).join("|"), cities: (focus?.cities ?? []).join("|") },
-        });
-        if (r.error) ideasCache.delete(locationId);
-        return r;
-      }),
+      locationApi(orgId, locationId)
+        .ideas.get()
+        .then((r) => {
+          if (r.error) ideasCache.delete(locationId);
+          return r;
+        }),
     );
   return ideasCache.get(locationId)!;
 };
+
+/**
+ * What was ticked on What to track, per draft, kept for the browser tab: going Back, connecting Google or reloading
+ * comes back to the same picks. Dropped when the ideas behind them change, and once launched. Storage that's blocked
+ * just means starting from the suggestions again.
+ */
+type TrackPicks = {
+  maps: { text: string; note?: string }[];
+  organic: { text: string; note?: string }[];
+  questions: string[];
+  mapsSel: string[];
+  organicSel: string[];
+  qSel: string[];
+  checks: Checks;
+};
+const picksKey = (locationId: string) => `seo-setup-picks-${locationId}`;
+const trackPicks = {
+  get(locationId: string): TrackPicks | null {
+    try {
+      const raw = sessionStorage.getItem(picksKey(locationId));
+      return raw ? (JSON.parse(raw) as TrackPicks) : null;
+    } catch {
+      return null;
+    }
+  },
+  set(locationId: string, picks: TrackPicks) {
+    try {
+      sessionStorage.setItem(picksKey(locationId), JSON.stringify(picks));
+    } catch {
+      // Blocked: the picks last while the page is open.
+    }
+  },
+  drop(locationId: string) {
+    try {
+      sessionStorage.removeItem(picksKey(locationId));
+    } catch {
+      // Nothing kept to drop.
+    }
+  },
+};
+const sameList = (a: string[], b: string[]) => a.join("|") === b.join("|");
 
 export default function Setup() {
   const { can, caller, features, loading, me, org } = useSession();
@@ -136,6 +176,8 @@ export default function Setup() {
         <div className="mx-auto w-full max-w-2xl">
           <p className="mb-2 text-[12.5px] text-muted">
             Step {at + 1} of {steps.length}
+            {/* The rail beside names the steps; on a phone it's hidden, so the step's name is said here. */}
+            <span className="md:hidden"> · {steps[at]!.name}</span>
           </p>
           {step === "start" || !locationId ? (
             <StartStep onMade={(id) => go("found", { location: id })} />
@@ -197,7 +239,7 @@ function CancelSetup({ locationId }: { locationId: string | null }) {
     }
     ideasCache.delete(locationId ?? "");
     detailsCache.delete(locationId ?? "");
-    focusOf.delete(locationId ?? "");
+    trackPicks.drop(locationId ?? "");
     navigate("/", { replace: true });
   };
   return (
@@ -266,20 +308,23 @@ function StartStep({ onMade }: { onMade: (id: string) => void }) {
   return (
     <>
       <Title sub="We look it up on Google, then suggest what to track. About two minutes.">Set up SEO</Title>
-      <form onSubmit={search} className="flex gap-2">
+      <form onSubmit={search} className="flex flex-col gap-2 sm:flex-row">
         <Input
           size="lg"
           icon={<Search size={16} />}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="mapleandmaindental.com or Maple & Main Dental"
+          placeholder="Website or business name"
           aria-label="Website or business name"
           autoFocus
         />
-        <Button type="submit" variant="primary" disabled={busy === "search" || query.trim().length < 2}>
+        <Button type="submit" variant="primary" className="h-10" disabled={busy === "search" || query.trim().length < 2}>
           {busy === "search" ? "Looking…" : "Find it"}
         </Button>
       </form>
+      <p className="mt-2 text-[12.5px] text-muted">Like mapleandmaindental.com, or Maple & Main Dental.</p>
+      {/* Beside the search it's about; leaving setup is Cancel setup, at the top. */}
+      <Feedback {...fb.props} className="mt-3" />
       {found && (
         <div className="mt-6">
           <p className="mb-2 text-[13px] font-medium">{found.length ? "Which one is it?" : "Nothing found. Try its address or website."}</p>
@@ -309,11 +354,6 @@ function StartStep({ onMade }: { onMade: (id: string) => void }) {
           </ul>
         </div>
       )}
-      <Actions fb={fb}>
-        <Button variant="ghost" icon={<ArrowLeft size={14} />} onClick={() => navigate("/")}>
-          Cancel
-        </Button>
-      </Actions>
     </>
   );
 }
@@ -326,47 +366,27 @@ function FoundStep({ locationId, onNext, onRestart }: { locationId: string; onNe
   const loc = useLoad(() => locationApi(org.id, locationId).get(), [org.id, locationId]);
   const ideas = useLoad(() => ideasFor(org.id, locationId), [org.id, locationId]);
   const details = useLoad(() => detailsFor(org.id, locationId), [org.id, locationId]);
-  const lookupCategories = useCallback(
-    async (q: string) => {
-      const r = await seoApi(org.id).categories.get({ query: { q } });
-      return r.data?.ready ? r.data.categories : null;
-    },
-    [org.id],
-  );
-  const lookupCities = useCallback(
-    async (q: string) => {
-      const r = await locationApi(org.id, locationId).cities.get({ query: { q } });
-      return r.data?.ready ? r.data.cities : null;
-    },
-    [org.id, locationId],
-  );
   const [form, setForm] = useState<{ name: string; website: string; services: string[]; categories: string[]; cities: string[] } | null>(
     null,
   );
   const [busy, setBusy] = useState(false);
   const fb = useFeedback();
-  // Said once beside the form: why the business's categories or Google's list weren't read (a missing or failing connection).
-  useEffect(() => {
-    if (details.data?.problem) fb.fail(details.data.problem, "Categories are limited");
-    // `fb` changes with every message it holds: depending on it would say the message again and again.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [details.data?.problem]);
 
   useEffect(() => {
     if (loc.data && loc.data.status !== "draft") navigate(`/seo/overview?location=${loc.data.id}`, { replace: true });
   }, [loc.data, navigate]);
+  // What was saved, else the business's own: its first three Google categories and its own city.
   useEffect(() => {
-    if (form || !loc.data || ideas.loading) return;
-    const services = loc.data.services.length ? loc.data.services : (ideas.data?.services ?? []);
-    const focus = focusOf.get(locationId);
+    if (form || !loc.data || ideas.loading || details.loading) return;
+    const l = loc.data;
     setForm({
-      name: loc.data.name,
-      website: loc.data.website ?? "",
-      services,
-      categories: focus?.categories ?? [],
-      cities: focus?.cities ?? [],
+      name: l.name,
+      website: l.website ?? "",
+      services: l.services.length ? l.services : (ideas.data?.services ?? []),
+      categories: l.categories.length ? l.categories : (details.data?.categories.slice(0, 3) ?? []),
+      cities: l.cities.length ? l.cities : (details.data?.cities.slice(0, 1) ?? []),
     });
-  }, [form, loc.data, ideas.loading, ideas.data, locationId]);
+  }, [form, loc.data, ideas.loading, ideas.data, details.loading, details.data]);
 
   if (loc.error) return <LoadError what="the business">{loc.error}</LoadError>;
   if (!loc.data || !form) return <Loader2 size={18} className="animate-spin text-muted" aria-label="Loading" />;
@@ -374,23 +394,33 @@ function FoundStep({ locationId, onNext, onRestart }: { locationId: string; onNe
   const save = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
+    const before = loc.data!;
     const r = await locationApi(org.id, locationId).patch({
       name: form.name,
       website: form.website.trim() || null,
       services: form.services,
+      categories: form.categories,
+      cities: form.cities,
     });
     setBusy(false);
     if (r.error) return fb.fail(messageOf(r.error));
-    const before = focusOf.get(locationId);
+    // Ideas come from what's saved: different picks (or a first save) ask again, and what was ticked from the old
+    // ideas no longer applies. The same picks keep both, so going back and on costs nothing.
     const changed =
-      form.categories.join("|") !== (before?.categories ?? []).join("|") || form.cities.join("|") !== (before?.cities ?? []).join("|");
-    focusOf.set(locationId, { categories: form.categories, cities: form.cities });
-    if (changed || form.services.join("|") !== (ideas.data?.services ?? loc.data?.services ?? []).join("|")) ideasCache.delete(locationId);
+      !sameList(form.categories, before.categories) || !sameList(form.cities, before.cities) || !sameList(form.services, before.services);
+    if (changed) {
+      ideasCache.delete(locationId);
+      trackPicks.drop(locationId);
+    }
     onNext();
   };
-  // Not this business: the draft goes, and setup starts again.
+  // Not this business: the draft goes, and setup starts again. If it can't be removed, it says so and stays.
   const restart = async () => {
-    await locationApi(org.id, locationId).status.post({ status: "archived" });
+    const r = await locationApi(org.id, locationId).status.post({ status: "archived" });
+    if (r.error) return fb.fail(messageOf(r.error), "Could not start again");
+    ideasCache.delete(locationId);
+    detailsCache.delete(locationId);
+    trackPicks.drop(locationId);
     onRestart();
   };
 
@@ -416,32 +446,20 @@ function FoundStep({ locationId, onNext, onRestart }: { locationId: string; onNe
         <Field label="Website" hint="Google search positions are read for this site.">
           <Input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="example.com" />
         </Field>
-        <Field
-          label="Categories to track"
-          hint="Google lists a business under a fixed set of categories; type to find one. Keywords are searched for each one you keep here."
-        >
-          <ServicesField
-            noun="category"
-            nouns="categories"
-            value={form.categories}
-            onChange={(categories) => setForm({ ...form, categories })}
-            suggestions={[...(details.data?.categories ?? []), ...(details.data?.related ?? [])]}
-            lookup={lookupCategories}
-          />
-        </Field>
-        <Field
-          label="Cities to track"
-          hint="Pick from Google's places, such as Springfield, IL: a name used in several states is told apart by its state. Each category is searched in each place."
-        >
-          <ServicesField
-            noun="city"
-            nouns="cities and towns"
-            value={form.cities}
-            onChange={(cities) => setForm({ ...form, cities })}
-            suggestions={details.data?.cities}
-            lookup={lookupCities}
-          />
-        </Field>
+        <CategoriesField
+          orgId={org.id}
+          value={form.categories}
+          onChange={(categories) => setForm({ ...form, categories })}
+          suggestions={[...(details.data?.categories ?? []), ...(details.data?.related ?? [])]}
+          note={details.data?.problem}
+        />
+        <CitiesField
+          orgId={org.id}
+          locationId={locationId}
+          value={form.cities}
+          onChange={(cities) => setForm({ ...form, cities })}
+          suggestions={details.data?.cities}
+        />
         <Field label="Services" hint="Keyword and question ideas, and suggestions, come from these.">
           <ServicesField value={form.services} onChange={(services) => setForm({ ...form, services })} suggestions={details.data?.topics} />
         </Field>
@@ -486,7 +504,9 @@ function ConnectStep({ locationId, onBack, onNext }: { locationId: string; onBac
         <div className="min-w-0 flex-1">
           <p className="font-medium">Google Business Profile</p>
           <p className="text-[13px] text-muted">
-            {connected ? "Connected" : "Apply suggestions to your profile: categories, description and posts."}
+            {connected
+              ? "Your Google account is connected. This business's profile is linked when you finish, if it's one that account manages."
+              : "Apply suggestions to your profile: categories, description and posts."}
           </p>
         </div>
         {connected ? (
@@ -512,7 +532,10 @@ function ConnectStep({ locationId, onBack, onNext }: { locationId: string; onBac
 // ---------- What to track ----------
 
 /** A checklist with its count against the Plan, and a row to add your own. */
-/** One list to pick from: what it is, how it's searched, and what the picks use up (of the Plan, or in searches). */
+/**
+ * One part of what to track: what it is, how it's searched, and what the picks use up. It shows what was picked, as
+ * chips; Change opens every idea to tick, and a row to add one's own.
+ */
 function Checklist({
   icon,
   title,
@@ -538,10 +561,12 @@ function Checklist({
   placeholder: string;
 }) {
   const [draft, setDraft] = useState("");
+  const [open, setOpen] = useState(false);
   const add = () => {
     if (draft.trim()) onAdd(draft.trim());
     setDraft("");
   };
+  const picked = items.filter((i) => selected.has(i.text));
   return (
     <section className="mt-8">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
@@ -552,35 +577,68 @@ function Checklist({
         <span className={cn("num text-[12.5px]", over ? "text-bad" : "text-muted")}>{usage}</span>
       </div>
       <p className="mt-0.5 text-[13px] text-muted">{sub}</p>
-      <ul className="mt-3 divide-y divide-line rounded-xl border border-line bg-surface">
-        {items.map((i) => (
-          <li key={i.text}>
-            <label className="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-[14px]">
-              <Checkbox checked={selected.has(i.text)} onChange={() => onToggle(i.text)} label={`Track ${i.text}`} />
-              <span className="min-w-0 flex-1">{i.text}</span>
-              {i.note && <span className="num shrink-0 text-[12.5px] text-muted">{i.note}</span>}
-            </label>
-          </li>
-        ))}
-        <li className="flex gap-2 px-4 py-2.5">
-          <Input
-            size="sm"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                add();
-              }
-            }}
-            placeholder={placeholder}
-            aria-label={placeholder}
-          />
-          <Button type="button" size="sm" icon={<Plus size={14} />} onClick={add} disabled={!draft.trim()}>
-            Add
-          </Button>
-        </li>
-      </ul>
+      <div className="mt-3 rounded-xl border border-line bg-surface">
+        {open ? (
+          <ul className="divide-y divide-line">
+            {items.map((i) => (
+              <li key={i.text}>
+                <label className="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-[14px]">
+                  <Checkbox checked={selected.has(i.text)} onChange={() => onToggle(i.text)} label={`Track ${i.text}`} />
+                  <span className="min-w-0 flex-1">{i.text}</span>
+                  {i.note && <span className="num shrink-0 text-[12.5px] text-muted">{i.note}</span>}
+                </label>
+              </li>
+            ))}
+            <li className="flex gap-2 px-4 py-2.5">
+              <Input
+                size="sm"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    add();
+                  }
+                }}
+                placeholder={placeholder}
+                aria-label={placeholder}
+              />
+              <Button type="button" size="sm" icon={<Plus size={14} />} onClick={add} disabled={!draft.trim()}>
+                Add
+              </Button>
+            </li>
+          </ul>
+        ) : picked.length ? (
+          <ul className="flex flex-wrap gap-1.5 p-3.5" aria-label={`${title}: picked`}>
+            {picked.map((i) => (
+              <li
+                key={i.text}
+                className="inline-flex items-baseline gap-1.5 rounded-full border border-line bg-bg px-2.5 py-0.5 text-[13px]"
+              >
+                {i.text}
+                {i.note && <span className="num text-[12px] text-subtle">{i.note}</span>}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="p-3.5 text-[13px] text-muted">Nothing picked here.</p>
+        )}
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-line px-3.5 py-2.5 text-[12.5px] text-muted">
+          <span>
+            {open
+              ? "Tick what to track; the most searched are first."
+              : "Picked for you: the most searched for your categories and places."}
+          </span>
+          <button
+            type="button"
+            onClick={() => setOpen(!open)}
+            aria-expanded={open}
+            className="font-medium text-fg underline underline-offset-2 hover:text-muted"
+          >
+            {open ? "Done" : `Change${items.length > picked.length ? ` (${items.length} ideas)` : ""}`}
+          </button>
+        </div>
+      </div>
     </section>
   );
 }
@@ -620,9 +678,36 @@ function TrackStep({ locationId, onBack, onLaunched }: { locationId: string; onB
   const [busy, setBusy] = useState(false);
   const fb = useFeedback();
 
-  // Once everything has loaded: the ideas, the most searched pre-ticked within the Plan, and checks the Plan allows.
+  // Picks made here before (Back, connecting Google, a reload) come back as they were.
   useEffect(() => {
-    if (checks || !loc.data || !ideas.data || !limits.data || details.loading) return;
+    if (checks) return;
+    const kept = trackPicks.get(locationId);
+    if (!kept) return;
+    setMapsItems(kept.maps);
+    setOrganicItems(kept.organic);
+    setQuestions(kept.questions);
+    setMapsSel(new Set(kept.mapsSel));
+    setOrganicSel(new Set(kept.organicSel));
+    setQSel(new Set(kept.qSel));
+    setChecks(kept.checks);
+  }, [checks, locationId]);
+  // And are kept as they change.
+  useEffect(() => {
+    if (!checks) return;
+    trackPicks.set(locationId, {
+      maps: mapsItems,
+      organic: organicItems,
+      questions,
+      mapsSel: [...mapsSel],
+      organicSel: [...organicSel],
+      qSel: [...qSel],
+      checks,
+    });
+  }, [locationId, checks, mapsItems, organicItems, questions, mapsSel, organicSel, qSel]);
+
+  // Otherwise, once everything has loaded: the ideas, the most searched pre-ticked within the Plan, and checks the Plan allows.
+  useEffect(() => {
+    if (checks || trackPicks.get(locationId) || !loc.data || !ideas.data || !limits.data || details.loading) return;
     const l = limits.data;
     const i = ideas.data;
     setMapsItems(i.maps.map(ideaItem));
@@ -632,17 +717,23 @@ function TrackStep({ locationId, onBack, onLaunched }: { locationId: string; onB
     // One keyword limit covers both lists (a term on both counts once). Maps costs 49 searches a keyword, so fewer.
     const room = l.keywords ?? Infinity;
     const maps = i.maps.slice(0, Math.min(6, room)).map((k) => k.term);
+    // About six of each: a calm first check, grown later from suggestions.
     const organic: string[] = [];
     for (const k of i.organic) {
-      if (organic.length >= 12 || maps.length + organic.length >= room) break;
+      if (organic.length >= 8 || maps.length + organic.length >= room) break;
       if (!maps.includes(k.term)) organic.push(k.term);
     }
     setMapsSel(new Set(maps));
     setOrganicSel(new Set(organic));
-    setQSel(new Set(i.questions.slice(0, Math.min(8, l.questions ?? 8))));
+    setQSel(new Set(i.questions.slice(0, Math.min(6, l.questions ?? 6))));
     const every: Every = l.checksPerMonth === null || l.checksPerMonth >= 4 ? "weekly" : "monthly";
-    setChecks({ gridSize: GRID_SIZE, gridRadiusM: nearestReach(loc.data.gridRadiusM), checkEvery: every, engines: [...engines] });
-  }, [checks, loc.data, ideas.data, limits.data, details.loading, details.data]);
+    setChecks({
+      gridSize: allowedGridSize(loc.data.gridSize, l),
+      gridRadiusM: nearestReach(loc.data.gridRadiusM),
+      checkEvery: every,
+      engines: [...engines],
+    });
+  }, [checks, locationId, loc.data, ideas.data, limits.data, details.loading, details.data]);
 
   const keywordCount = useMemo(() => new Set([...mapsSel, ...organicSel]).size, [mapsSel, organicSel]);
   const error = loc.error ?? ideas.error ?? limits.error;
@@ -657,6 +748,7 @@ function TrackStep({ locationId, onBack, onLaunched }: { locationId: string; onB
       </p>
     );
 
+  const spots = checks.gridSize * checks.gridSize;
   const keywordUsage = (
     <>
       {keywordCount}
@@ -678,7 +770,8 @@ function TrackStep({ locationId, onBack, onLaunched }: { locationId: string; onB
           gridSize: checks.gridSize,
           gridRadiusM: checks.gridRadiusM,
           checkEvery: checks.checkEvery,
-          engines: checks.engines.length ? checks.engines : [...engines],
+          // None ticked (only allowed with no questions): the assistants stay as they were, rather than all three.
+          ...(checks.engines.length ? { engines: checks.engines } : {}),
         }),
       () => (both.length ? here.keywords.post({ terms: both, source: "onboarding" }) : null),
       () => (mapsOnly.length ? here.keywords.post({ terms: mapsOnly, source: "onboarding", maps: true, organic: false }) : null),
@@ -695,23 +788,23 @@ function TrackStep({ locationId, onBack, onLaunched }: { locationId: string; onB
     const r = await here.launch.post();
     setBusy(false);
     if (r.error) return fb.fail(messageOf(r.error), "Could not launch");
+    trackPicks.drop(locationId);
     onLaunched(r.data.runId);
   };
 
   return (
     <>
-      <Title sub="Built from the categories, services and places you picked. Each is searched differently, so each has its own list. Change any of it later.">
+      <Title sub="We picked the best of each from your categories, places and services. Change any part, or start as it is; you can change it later too.">
         What to track
       </Title>
-      <p className="text-[13.5px]">{checkSummary(checks, { maps: mapsSel.size, organic: organicSel.size, questions: qSel.size })}</p>
-      {ideas.data?.problem && <p className="mt-2 text-[12.5px] text-muted">{ideas.data.problem}</p>}
+      {ideas.data?.problem && <p className="text-[12.5px] text-muted">{ideas.data.problem}</p>}
       <Checklist
         icon={<MapPin size={15} aria-hidden />}
         title="Google Maps"
         sub={
           <>
-            Short searches, the way people type on a map; Maps already knows where they are. Each keyword is searched from all {GRID_SPOTS}{" "}
-            spots of the 7 × 7 grid. {gridCoverage(checks.gridRadiusM)}
+            What people type on a map, without a place: Maps already knows where they are. Each is searched from every spot of the grid
+            around you (see How it's checked).
           </>
         }
         items={mapsItems}
@@ -724,11 +817,13 @@ function TrackStep({ locationId, onBack, onLaunched }: { locationId: string; onB
         }}
         usage={
           <>
-            {mapsSel.size} × {GRID_SPOTS} spots = {fmt(mapsSel.size * GRID_SPOTS)} searches a check
+            {mapsSel.size} × {spots} spots = {fmt(mapsSel.size * spots)} searches a check
           </>
         }
+        over={limits.data.keywords !== null && keywordCount > limits.data.keywords}
         placeholder="Add a Maps keyword, like emergency plumber"
       />
+
       <Checklist
         icon={<Search size={15} aria-hidden />}
         title="Google search"
@@ -771,18 +866,53 @@ function TrackStep({ locationId, onBack, onLaunched }: { locationId: string; onB
           Nothing to pick: everyone who shows up for your keywords and questions is compared with you. Add one later if we missed it.
         </p>
       </section>
-      <section className="mt-8">
-        <h2 className="mb-3 text-[15px] font-medium">How it's checked</h2>
-        <ChecksFields value={checks} onChange={setChecks} limits={limits.data} mapsKeywords={mapsSel.size} />
-      </section>
-      <Actions fb={fb}>
-        <Button variant="ghost" icon={<ArrowLeft size={14} />} onClick={onBack}>
-          Back
-        </Button>
-        <Button variant="primary" disabled={busy || over || (!keywordCount && !qSel.size)} onClick={() => void launch()}>
-          {busy ? "Starting…" : "Finish setup"} <ArrowRight size={14} aria-hidden />
-        </Button>
-      </Actions>
+      {/* Recommended settings, folded to one line: open to change the map's reach, how often, and which assistants. */}
+      <details className="group mt-8 rounded-xl border border-line bg-surface">
+        <summary className="flex cursor-pointer list-none flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-4 py-3 [&::-webkit-details-marker]:hidden">
+          <span className="inline-flex items-center gap-2 text-[15px] font-medium">
+            <ChevronRight size={15} className="text-subtle transition-transform group-open:rotate-90" aria-hidden />
+            How it's checked
+          </span>
+          <span className="text-[13px] text-muted">
+            {everyLabel[checks.checkEvery]} · {miles(checks.gridRadiusM)} around you · {checks.engines.length} AI assistant
+            {checks.engines.length === 1 ? "" : "s"}
+          </span>
+        </summary>
+        <div className="space-y-6 border-t border-line p-4">
+          <GridFields
+            value={checks}
+            onChange={setChecks}
+            limits={limits.data}
+            center={loc.data && loc.data.lat !== null && loc.data.lng !== null ? { lat: loc.data.lat, lng: loc.data.lng } : null}
+          />
+
+          <ChecksFields value={checks} onChange={setChecks} limits={limits.data} grid={false} />
+        </div>
+      </details>
+      {/* What one check covers and what starting costs, said once, beside the button that starts it, and kept in view
+          while the lists are scrolled. */}
+      <div className="sticky bottom-0 z-10 mt-10 -mx-4 border-t border-line bg-bg/95 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:-mx-8 sm:px-8">
+        <p className="text-[13px] text-muted">
+          <span className="text-fg">{checkSummary(checks, { maps: mapsSel.size, organic: organicSel.size, questions: qSel.size })}</span>{" "}
+          <span className={cn("num", over && "text-bad")}>
+            Uses {keywordCount}
+            {limits.data.keywords !== null && ` of ${limits.data.keywords}`} keywords and {qSel.size}
+            {limits.data.questions !== null && ` of ${limits.data.questions}`} questions on your plan.
+          </span>{" "}
+          First results take about 5 minutes; you can leave meanwhile.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <Feedback {...fb.props} />
+          <div className="ml-auto flex flex-wrap gap-2">
+            <Button variant="ghost" icon={<ArrowLeft size={14} />} onClick={onBack}>
+              Back
+            </Button>
+            <Button variant="primary" disabled={busy || over || (!keywordCount && !qSel.size)} onClick={() => void launch()}>
+              {busy ? "Starting…" : "Start first check"} <ArrowRight size={14} aria-hidden />
+            </Button>
+          </div>
+        </div>
+      </div>
     </>
   );
 }
@@ -798,6 +928,15 @@ function LaunchStep({ locationId, runId }: { locationId: string; runId: string |
   const [progress, setProgress] = useState<RunProgress | null>(null);
   const [pollError, setPollError] = useState<string | null>(null);
   const finished = !!progress?.finished;
+  const toast = useToast();
+  const name = loc.data?.name;
+  // Said when it's done (the toast is announced), for anyone not watching the list fill in.
+  const said = useRef(false);
+  useEffect(() => {
+    if (!finished || said.current) return;
+    said.current = true;
+    toast.success(`${name ?? "Your business"} is set up`, "Your first look is ready.");
+  }, [finished, name, toast]);
   const overview = useLoad(
     () => (finished ? locationApi(org.id, locationId).overview.get() : Promise.resolve({ data: null, error: null })),
     [org.id, locationId, finished],
@@ -824,11 +963,18 @@ function LaunchStep({ locationId, runId }: { locationId: string; runId: string |
   }, [org.id, locationId, runId, finished]);
 
   const open = () => navigate(`/seo/overview?location=${locationId}`);
-  if (pollError) return <LoadError what="the first check">{pollError}</LoadError>;
-  if (!runId) {
+  if (!runId || pollError) {
     return (
       <>
-        <Title>Your checks are running</Title>
+        <Title
+          sub={
+            pollError
+              ? `We can't show their progress here (${pollError}), but they carry on; results appear in SEO as they come in.`
+              : undefined
+          }
+        >
+          Your checks are running
+        </Title>
         <Button variant="primary" onClick={open}>
           Open SEO <ArrowRight size={14} aria-hidden />
         </Button>
@@ -865,7 +1011,7 @@ function LaunchStep({ locationId, runId }: { locationId: string; runId: string |
               </span>
             </div>
             <Progress
-              value={c.calls ? (c.received / c.calls) * 100 : c.status === "running" ? 0 : 100}
+              value={c.calls ? (c.received / c.calls) * 100 : c.status === "done" ? 100 : 0}
               tone={c.status === "failed" ? "bad" : "ink"}
               className="mt-2 ml-8"
             />
@@ -883,12 +1029,7 @@ function LaunchStep({ locationId, runId }: { locationId: string; runId: string |
       {finished && o && (
         <Card className="mt-8">
           <p className="text-[13px] text-muted">First look</p>
-          <p className="mt-2 font-serif text-[20px] leading-snug">
-            You're in the map's top 3 at {o.maps.spots ? Math.round((o.maps.top3 / o.maps.spots) * 100) : 0}% of nearby spots, on Google's
-            first page for {o.keywords.firstPage} of {plural(o.keywords.total, "keyword")}, and named in {o.ai.named} of{" "}
-            {plural(o.ai.total, "AI answer")}.{" "}
-            {suggestions ? `We have ${plural(suggestions, "suggestion")} to start with.` : "No suggestions yet; more after the next check."}
-          </p>
+          <p className="mt-2 font-serif text-[22px] leading-snug tracking-[-0.015em]">{firstLook(o, suggestions)}</p>
           <Button className="mt-5" variant="primary" onClick={open}>
             See your suggestions <ArrowRight size={14} aria-hidden />
           </Button>
@@ -900,6 +1041,27 @@ function LaunchStep({ locationId, runId }: { locationId: string; runId: string |
 }
 
 const plural = (n: number, word: string) => `${n} ${n === 1 ? word : `${word}s`}`;
+
+/**
+ * The first look in a few sentences: only what was checked (no Maps line without Maps keywords), and a start near zero
+ * said to be the usual start, with the suggestions as the way up, so setup doesn't end on a row of zeros.
+ */
+function firstLook(
+  o: { maps: { top3: number; spots: number }; keywords: { firstPage: number; total: number }; ai: { named: number; total: number } },
+  suggestions: number,
+) {
+  const parts = [
+    o.maps.spots ? `in the map's top 3 across ${Math.round((o.maps.top3 / o.maps.spots) * 100)}% of your area` : null,
+    o.keywords.total ? `on Google's first page for ${o.keywords.firstPage} of ${plural(o.keywords.total, "keyword")}` : null,
+    o.ai.total ? `named in ${o.ai.named} of ${plural(o.ai.total, "AI answer")}` : null,
+  ].filter((p): p is string => !!p);
+  const said = parts.length ? `You're ${parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}` : parts[0]}.` : "";
+  const nothingYet = o.maps.top3 === 0 && o.keywords.firstPage === 0 && o.ai.named === 0;
+  const next = suggestions
+    ? `${nothingYet ? "That's a usual start. " : ""}We have ${plural(suggestions, "suggestion")} to move it up, the quickest first.`
+    : `${nothingYet ? "That's a usual start. " : ""}Suggestions come after the next check.`;
+  return `${said} ${next}`.trim();
+}
 
 function StatusIcon({ status }: { status: string }) {
   return (

@@ -164,6 +164,8 @@ erDiagram
         text country_code
         text language_code
         text_array services
+        text_array categories "Google's categories picked to track"
+        text_array cities "Google's places picked to track, like Springfield, IL"
         text_array engines
         text status "draft | active | paused | archived"
         smallint grid_size "5, 7 or 9"

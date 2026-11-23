@@ -26,6 +26,8 @@ export type LocationView = {
   countryCode: string;
   languageCode: string;
   services: string[];
+  categories: string[];
+  cities: string[];
   status: string;
   gridSize: number;
   gridRadiusM: number;
@@ -48,6 +50,8 @@ const view = (l: LocationRow, domain: string | null, googlePlaceId: string | nul
   countryCode: l.countryCode,
   languageCode: l.languageCode,
   services: l.services,
+  categories: l.categories,
+  cities: l.cities,
   status: l.status,
   gridSize: l.gridSize,
   gridRadiusM: l.gridRadiusM,
@@ -170,6 +174,8 @@ export type LocationChange = {
   name?: string;
   website?: string | null;
   services?: string[];
+  categories?: string[];
+  cities?: string[];
   gridSize?: number;
   gridRadiusM?: number;
   checkEvery?: CheckEvery;
@@ -184,7 +190,7 @@ export async function updateLocation(ctx: AppContext, orgId: string, by: string 
     await assertWithinCeiling(ctx, orgId, "gridSize", change.gridSize);
   }
   if (change.gridRadiusM !== undefined && (change.gridRadiusM < 500 || change.gridRadiusM > 25_000))
-    throw invalid("The grid reaches between 0.5 and 25 km from the business.");
+    throw invalid("The grid reaches between 0.3 and 15 miles from the business.");
   if (change.checkEvery !== undefined) await assertWithinCeiling(ctx, orgId, "checksPerMonth", checksPerMonth[change.checkEvery]);
   if (change.engines !== undefined && change.engines.some((e) => !aiEngines.includes(e))) throw invalid("Unknown AI assistant.");
   if (change.name !== undefined && !change.name.trim()) throw invalid("A Location needs a name.");
@@ -196,6 +202,8 @@ export async function updateLocation(ctx: AppContext, orgId: string, by: string 
         ...(change.name !== undefined ? { name: change.name.trim() } : {}),
         ...(change.website !== undefined ? { websiteId: await websiteFor(tx, orgId, change.website) } : {}),
         ...(change.services !== undefined ? { services: cleanList(change.services) } : {}),
+        ...(change.categories !== undefined ? { categories: cleanList(change.categories).slice(0, 10) } : {}),
+        ...(change.cities !== undefined ? { cities: cleanList(change.cities).slice(0, 10) } : {}),
         ...(change.gridSize !== undefined ? { gridSize: change.gridSize } : {}),
         ...(change.gridRadiusM !== undefined ? { gridRadiusM: change.gridRadiusM } : {}),
         ...(change.checkEvery !== undefined ? { checkEvery: change.checkEvery } : {}),

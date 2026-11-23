@@ -1,0 +1,2 @@
+ALTER TABLE "seo"."locations" ADD COLUMN "categories" text[] DEFAULT '{}'::text[] NOT NULL;--> statement-breakpoint
+ALTER TABLE "seo"."locations" ADD COLUMN "cities" text[] DEFAULT '{}'::text[] NOT NULL;
