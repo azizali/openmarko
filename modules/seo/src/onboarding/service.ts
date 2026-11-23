@@ -20,7 +20,7 @@ import { linkLocationProfile, profileConnection } from "../profile/service";
 import { normalizeTerm } from "../lib/text";
 import { categoryCatalog, exactCategory, matchCategories, relatedCategories } from "../catalog/categories";
 import { cityCatalog, matchCities, resolveCity, searchName, type City } from "../catalog/cities";
-import { isRelevant, keywordSeeds, mapsTerms, organicTerms, questionsFor, withoutPlace } from "./ideas";
+import { isRelevant, keywordSeeds, mapsTerms, meaningless, organicTerms, questionsFor, withoutPlace } from "./ideas";
 import { metricsFor, type Metric } from "../catalog/keywords";
 import { regionOfAddress } from "../catalog/regions";
 
@@ -89,12 +89,12 @@ export async function detailsFor(ctx: AppContext, orgId: string, locationId: str
   // Only Google Business categories: what the profile lists, as the list spells them. Places' own type names
   // ("Service") are a different vocabulary and aren't offered. With no list to check against, the profile's own stand.
   const listed = unique(found?.categories ?? []);
-  const categories = catalog?.length ? unique(listed.map((c) => exactCategory(catalog, c))) : listed;
+  const categories = (catalog?.length ? unique(listed.map((c) => exactCategory(catalog, c))) : listed).filter((c) => !meaningless(c));
   return {
     categories,
     related: relatedCategories(catalog ?? [], categories),
     cities: await citiesOf(ctx, orgId, l, [l.city, ...(found?.nearby ?? [])], said),
-    topics: (found?.topics ?? []).map((x) => x.term).filter((t) => !praise.test(t)),
+    topics: (found?.topics ?? []).map((x) => x.term).filter((t) => !praise.test(t) && !meaningless(t)),
     questions: found?.questions ?? [],
     enriched: !!found?.categories.length,
     problem: problems.length ? problems.join(" ") : null,
@@ -204,11 +204,15 @@ export async function ideasFor(ctx: AppContext, orgId: string, locationId: strin
   // Services: what the keywords are about without the places; else the profile's categories.
   const fromKeywords = [...fromProvider.keys()]
     .map((t) => withoutPlace(t.replace(/near me/, ""), geo))
-    .filter((t) => t && !categories.includes(t) && t.split(" ").length <= 3);
+    .filter((t) => t && !categories.includes(t) && t.split(" ").length <= 3 && !meaningless(t));
   const services = l.services.length
     ? l.services
-    : [...new Set([...fromKeywords, ...(place?.categories ?? []).map((c) => c.toLowerCase())])].slice(0, 8);
-  const withServices = { ...picked, services: picked.services.length ? picked.services : services.map(normalizeTerm) };
+    : [...new Set([...fromKeywords, ...(place?.categories ?? []).map((c) => c.toLowerCase())])].filter((s) => !meaningless(s)).slice(0, 8);
+  const withServices = {
+    ...picked,
+    categories: picked.categories.filter((c) => !meaningless(c)),
+    services: (picked.services.length ? picked.services : services.map(normalizeTerm)).filter((s) => !meaningless(s)),
+  };
 
   // Each list is built from the picks as well as the provider's ideas, so it's never empty; then every term gets its
   // searches a month (one request for all, shared and kept a month) and the most searched come first.

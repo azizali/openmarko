@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { isRelevant, keywordSeeds, mapsTerms, organicTerms, questionsFor, withoutPlace } from "../src/onboarding/ideas";
+import { isRelevant, keywordSeeds, mapsTerms, meaningless, organicTerms, questionsFor, withoutPlace } from "../src/onboarding/ideas";
 
 const pest = {
   categories: ["pest control service", "exterminator"],
@@ -55,5 +55,16 @@ describe("what Setup suggests", () => {
     expect(organic).toContain("mice removal round rock");
     expect(organic).toContain("best exterminator in austin");
     expect(organic).toContain("how to get rid of mice in walls");
+  });
+
+  test("terms that name nothing are never suggested: 'services', 'service near me', 'best company'", () => {
+    expect(meaningless("services")).toBe(true);
+    expect(meaningless("service near me")).toBe(true);
+    expect(meaningless("best company")).toBe(true);
+    expect(meaningless("pest control services")).toBe(false);
+    const geo = new Set(["austin", "tx"]);
+    const withVague = { ...pest, services: ["services", ...pest.services] };
+    expect(mapsTerms(withVague, ["services austin tx", "services near me"], geo)).not.toContain("services");
+    expect(organicTerms(withVague, ["services austin"]).filter((t) => /^services( |$)/.test(t))).toEqual([]);
   });
 });

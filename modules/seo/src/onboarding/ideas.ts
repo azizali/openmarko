@@ -7,6 +7,32 @@ import { wordsOf } from "../catalog/categories";
 /** What the person picked or the business offers: each one feeds a different kind of search. */
 export type Focus = { categories: string[]; cities: string[]; services: string[] };
 
+/** Words that only qualify a search ("best", "near me"): a term made of these and generic words names nothing. */
+const filler = new Set([
+  "near",
+  "me",
+  "best",
+  "top",
+  "local",
+  "cheap",
+  "affordable",
+  "in",
+  "for",
+  "of",
+  "my",
+  "a",
+  "to",
+  "cost",
+  "price",
+  "prices",
+]);
+
+/**
+ * A term that names no kind of business or service: "services", "service near me", "best company". Never suggested,
+ * as a keyword or a service.
+ */
+export const meaningless = (term: string) => wordsOf(term).every((w) => filler.has(w));
+
 const plural = (s: string) => (/(s|x|ch|sh)$/.test(s) ? `${s}es` : /[^aeiou]y$/.test(s) ? `${s.slice(0, -1)}ies` : `${s}s`);
 
 /**
@@ -76,8 +102,8 @@ export function withoutPlace(term: string, geo: Set<string>): string {
  */
 export function mapsTerms({ categories, services }: Focus, ideas: string[], geo: Set<string>): string[] {
   const own = [...categories, ...services];
-  const fromIdeas = ideas.map((t) => withoutPlace(t, geo)).filter((t) => t && t.split(" ").length <= 4 && !/^(near me|in|best)$/.test(t));
-  return [...new Set([...own, ...own.slice(0, 4).map((x) => `${x} near me`), ...fromIdeas])];
+  const fromIdeas = ideas.map((t) => withoutPlace(t, geo)).filter((t) => t && t.split(" ").length <= 4);
+  return [...new Set([...own, ...own.slice(0, 4).map((x) => `${x} near me`), ...fromIdeas])].filter((t) => !meaningless(t));
 }
 
 /**
@@ -92,5 +118,8 @@ export function organicTerms({ categories, cities, services }: Focus, ideas: str
       ...cities.slice(0, 2).flatMap((city) => categories.slice(0, 2).map((c) => `best ${c} in ${city}`)),
       ...ideas,
     ]),
-  ];
+  ].filter((t) => !meaningless(withoutCities(t, cities)));
 }
+
+/** A term with the chosen cities taken out: "services austin" is "services". */
+const withoutCities = (term: string, cities: string[]) => cities.reduce((t, c) => t.replace(c, " "), term).trim();
