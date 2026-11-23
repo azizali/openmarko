@@ -31,21 +31,6 @@ export function Section({
   );
 }
 
-/** Notched label above a section heading. */
-export function Tag({ icon, children, tone = "ink" }: { icon?: ReactNode; children: ReactNode; tone?: "ink" | "accent" }) {
-  return (
-    <span
-      className={cn(
-        "tag inline-flex w-fit items-center gap-1.5 py-1 pl-2.5 text-[13px] font-medium",
-        tone === "ink" ? "bg-ink text-on-ink" : "bg-accent-soft text-accent",
-      )}
-    >
-      {icon}
-      {children}
-    </span>
-  );
-}
-
 /** A heading with an ink line and a muted second line. */
 export function Heading({
   tag,
@@ -95,7 +80,8 @@ type BtnProps = {
   href?: string;
   onClick?: () => void;
   children: ReactNode;
-  variant?: "primary" | "secondary" | "ghost";
+  /** `inverse`: a light button for the dark band, in either theme. */
+  variant?: "primary" | "secondary" | "ghost" | "inverse";
   size?: "sm" | "md" | "lg";
   arrow?: boolean;
   className?: string;
@@ -104,11 +90,12 @@ type BtnProps = {
 
 export function Button({ to, href, onClick, children, variant = "primary", size = "md", arrow, className, type = "button" }: BtnProps) {
   const cls = cn(
-    "group inline-flex items-center justify-center gap-2 rounded-lg font-medium whitespace-nowrap transition-colors duration-150",
+    "group inline-flex items-center justify-center gap-2 rounded-lg font-medium whitespace-nowrap transition-[color,background-color,border-color,opacity,transform] duration-150 active:scale-[0.97]",
     size === "lg" ? "h-12 px-5 text-[16px]" : size === "sm" ? "h-8 px-3 text-[14px]" : "h-10 px-4 text-[15px]",
     variant === "primary" && "bg-ink text-on-ink shadow-card hover:opacity-85",
     variant === "secondary" && "border border-line bg-surface text-fg shadow-card hover:border-line-strong",
     variant === "ghost" && "text-fg hover:bg-hover",
+    variant === "inverse" && "bg-white text-[#09090b] hover:bg-white/85",
     className,
   );
   const inner = (

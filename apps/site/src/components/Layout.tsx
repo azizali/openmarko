@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { Menu, Moon, Sun, X } from "lucide-react";
 import { Logo } from "./Logo";
+import { FontPicker } from "./FontPicker";
 import { Button, Container, cn } from "./ui";
 import { APP_NAME, APP_URL, CONTACT_EMAIL } from "../data/site";
 
 const links = [
-  { to: "/#features", label: "Product" },
+  { to: "/#app", label: "Product" },
   { to: "/pricing", label: "Pricing" },
   { to: "/blog", label: "Blog" },
   { to: "/about", label: "About" },
@@ -102,61 +103,105 @@ function Header() {
   );
 }
 
+/** Asks an assistant to read the site and sum up the product: the footer's "Ask AI about us" links. */
+const summaryPrompt = () =>
+  `Read ${window.location.origin} and summarise what ${APP_NAME} does for a local business, who it is for, and how it works.`;
+const assistants = [
+  { name: "Perplexity", icon: "/icons/perplexity.svg", url: (q: string) => `https://www.perplexity.ai/search?q=${encodeURIComponent(q)}` },
+  { name: "ChatGPT", icon: "/icons/openai.svg", url: (q: string) => `https://chatgpt.com/?q=${encodeURIComponent(q)}` },
+  { name: "Claude", icon: "/icons/claude.svg", url: (q: string) => `https://claude.ai/new?q=${encodeURIComponent(q)}` },
+];
+
+const footerCols = [
+  {
+    title: "Product",
+    links: [
+      { to: "/#app", label: "The app" },
+      { to: "/#features", label: "Why owners use it" },
+      { to: "/#steps", label: "How it works" },
+      { to: "/pricing", label: "Pricing" },
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
+      { to: "/blog", label: "Blog" },
+      { to: "/#faq", label: "FAQ" },
+    ],
+  },
+  {
+    title: "Company",
+    links: [
+      { to: "/about", label: "About" },
+      { href: `mailto:${CONTACT_EMAIL}`, label: "Contact" },
+      { href: `${APP_URL}/sign-in`, label: "Sign in" },
+    ],
+  },
+];
+
+/** A dark band: the brand and its AI-summary links, then the link columns, then copyright and legal. */
 function Footer() {
-  const cols = [
-    {
-      title: "Product",
-      links: [
-        { to: "/#features", label: "Features" },
-        { to: "/pricing", label: "Pricing" },
-        { to: "/#faq", label: "FAQ" },
-      ],
-    },
-    {
-      title: "Company",
-      links: [
-        { to: "/about", label: "About" },
-        { to: "/blog", label: "Blog" },
-      ],
-    },
-    {
-      title: "Legal",
-      links: [
-        { to: "/privacy", label: "Privacy" },
-        { to: "/terms", label: "Terms" },
-      ],
-    },
-  ];
+  const link = "inline-flex min-h-7 items-center text-[14px] text-white/60 transition-colors hover:text-white";
   return (
-    <footer className="border-t border-line">
-      <Container rails className="grid gap-10 py-14 md:grid-cols-[1.4fr_repeat(3,1fr)]">
-        <div className="flex flex-col gap-3">
-          <Logo size={24} />
-          <p className="max-w-[32ch] text-[14px] text-muted">A short line about what your product does and for whom.</p>
-          <a href={`mailto:${CONTACT_EMAIL}`} className="text-[14px] text-muted hover:text-fg">
-            {CONTACT_EMAIL}
-          </a>
+    <footer className="bg-band text-white">
+      <Container className="grid gap-12 pt-16 pb-12 md:grid-cols-[1.5fr_repeat(3,1fr)]">
+        <div className="flex flex-col gap-4">
+          <Logo size={22} />
+          <p className="max-w-[30ch] text-[14px] text-white/60">See where you rank on Google Maps, street by street.</p>
+          <div className="mt-4 flex flex-col gap-3">
+            <span className="text-[14px] font-medium">Ask AI about {APP_NAME}</span>
+            <div className="flex gap-2">
+              {assistants.map((a) => (
+                <a
+                  key={a.name}
+                  href={a.url(summaryPrompt())}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Ask ${a.name} to summarise ${APP_NAME}`}
+                  title={a.name}
+                  className="grid size-11 place-items-center rounded-lg opacity-70 transition-[opacity,transform] hover:-translate-y-0.5 hover:opacity-100"
+                >
+                  <img src={a.icon} alt="" width={24} height={24} className="size-6 object-contain brightness-0 invert" />
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
-        {cols.map((c) => (
+        {footerCols.map((c) => (
           <div key={c.title}>
-            <div className="mb-3 font-mono text-[11px] tracking-wider text-subtle uppercase">{c.title}</div>
-            <ul className="flex flex-col gap-2">
+            <div className="mb-3 text-[14px] font-medium">{c.title}</div>
+            <ul className="flex flex-col gap-1">
               {c.links.map((l) => (
-                <li key={l.to}>
-                  <Link to={l.to} className="text-[14px] text-muted hover:text-fg">
-                    {l.label}
-                  </Link>
+                <li key={l.label}>
+                  {"to" in l && l.to ? (
+                    <Link to={l.to} className={link}>
+                      {l.label}
+                    </Link>
+                  ) : (
+                    <a href={l.href} className={link}>
+                      {l.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
           </div>
         ))}
       </Container>
-      <Container rails className="flex flex-wrap justify-between gap-2 border-t border-line py-5 text-[13px] text-subtle">
-        <span>
-          © {YEAR} {APP_NAME}
-        </span>
-        <span>Built on the boilerplate.</span>
+      <Container>
+        <div className="flex flex-col gap-3 border-t border-white/10 py-6 text-[13px] text-white/50 sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            © {YEAR} {APP_NAME}. Google, ChatGPT, Perplexity and Claude are trademarks of their owners.
+          </span>
+          <span className="flex gap-5">
+            <Link to="/terms" className="hover:text-white">
+              Terms
+            </Link>
+            <Link to="/privacy" className="hover:text-white">
+              Privacy policy
+            </Link>
+          </span>
+        </div>
       </Container>
     </footer>
   );
@@ -187,6 +232,7 @@ export default function Layout() {
         <Outlet />
       </main>
       <Footer />
+      {import.meta.env.DEV && <FontPicker />}
     </div>
   );
 }

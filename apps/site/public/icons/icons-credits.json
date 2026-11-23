@@ -1,0 +1,74 @@
+[
+  {
+    "file": "claude.svg",
+    "icon": "logos:claude-icon",
+    "name": "Claude",
+    "kind": "colour",
+    "source": "gilbarbara/logos@d6960edc1b7309d392c76e40d3a320df7f9ff85c",
+    "author": "Gil Barbara",
+    "licence": "CC0-1.0",
+    "url": "https://github.com/gilbarbara/logos",
+    "trademark": true,
+    "markUrl": "https://claude.ai/"
+  },
+  {
+    "file": "gemini.svg",
+    "icon": "logos:google-gemini-icon",
+    "name": "Gemini",
+    "kind": "colour",
+    "source": "gilbarbara/logos@d6960edc1b7309d392c76e40d3a320df7f9ff85c",
+    "author": "Gil Barbara",
+    "licence": "CC0-1.0",
+    "url": "https://github.com/gilbarbara/logos",
+    "trademark": true,
+    "markUrl": "https://deepmind.google/technologies/gemini/"
+  },
+  {
+    "file": "google-icon.svg",
+    "icon": "logos:google-icon",
+    "name": "Google",
+    "kind": "colour",
+    "source": "gilbarbara/logos@d6960edc1b7309d392c76e40d3a320df7f9ff85c",
+    "author": "Gil Barbara",
+    "licence": "CC0-1.0",
+    "url": "https://github.com/gilbarbara/logos",
+    "trademark": true,
+    "markUrl": "https://www.google.com/"
+  },
+  {
+    "file": "google-maps.svg",
+    "icon": "logos:google-maps",
+    "name": "Google Maps",
+    "kind": "colour",
+    "source": "gilbarbara/logos@d6960edc1b7309d392c76e40d3a320df7f9ff85c",
+    "author": "Gil Barbara",
+    "licence": "CC0-1.0",
+    "url": "https://github.com/gilbarbara/logos",
+    "trademark": true,
+    "markUrl": "https://cloud.google.com/maps-platform/"
+  },
+  {
+    "file": "openai.svg",
+    "icon": "logos:openai-icon",
+    "name": "OpenAI",
+    "kind": "colour",
+    "source": "gilbarbara/logos@d6960edc1b7309d392c76e40d3a320df7f9ff85c",
+    "author": "Gil Barbara",
+    "licence": "CC0-1.0",
+    "url": "https://github.com/gilbarbara/logos",
+    "trademark": true,
+    "markUrl": "https://openai.com/"
+  },
+  {
+    "file": "perplexity.svg",
+    "icon": "logos:perplexity-icon",
+    "name": "perplexity",
+    "kind": "colour",
+    "source": "gilbarbara/logos@d6960edc1b7309d392c76e40d3a320df7f9ff85c",
+    "author": "Gil Barbara",
+    "licence": "CC0-1.0",
+    "url": "https://github.com/gilbarbara/logos",
+    "trademark": true,
+    "markUrl": "https://www.perplexity.ai/"
+  }
+]

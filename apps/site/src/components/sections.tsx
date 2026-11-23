@@ -93,14 +93,18 @@ export function Faq({ items = defaultFaqs }: { items?: { q: string; a: string }[
 
 export function FinalCta() {
   return (
-    <section className="border-t border-line bg-ink text-on-ink">
-      <Container rails className="flex flex-col items-start gap-6 py-16 sm:py-20 lg:flex-row lg:items-center lg:justify-between">
-        <Heading title="Ready when you are." muted={<span className="text-on-ink/60">Start free, no card needed.</span>} />
+    <section className="relative bg-band text-white">
+      <div aria-hidden className="grid-band absolute inset-0" />
+      <Container className="relative flex flex-col items-start gap-6 pt-20 pb-16 sm:pt-24 lg:flex-row lg:items-center lg:justify-between">
+        <Heading
+          title="See your map this week."
+          muted={<span className="text-white/50">Your first check runs the minute you find your business.</span>}
+        />
         <div className="flex flex-wrap gap-3">
-          <Button href={`${APP_URL}/sign-up`} size="lg" className="bg-surface text-fg hover:opacity-90" arrow>
-            Create an account
+          <Button href={`${APP_URL}/sign-up`} size="lg" variant="inverse" arrow>
+            Check my rankings
           </Button>
-          <Button href={`mailto:${CONTACT_EMAIL}`} size="lg" variant="ghost" className="text-on-ink hover:bg-on-ink/10">
+          <Button href={`mailto:${CONTACT_EMAIL}`} size="lg" variant="ghost" className="text-white hover:bg-white/10">
             Talk to us
           </Button>
         </div>
