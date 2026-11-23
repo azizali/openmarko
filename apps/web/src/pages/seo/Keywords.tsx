@@ -8,7 +8,7 @@ import { messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
 import { locationApi, seoApi, type SearchPage } from "./api";
 import { AddKeywords } from "./AddDrawers";
-import { Headline, Source, rankTone } from "./parts";
+import { Headline, Source, rankTone, stack } from "./parts";
 import { kindsOf, useAfterCheck, useReloadWhilePending } from "./checks";
 import { SeoHeader, useSeo } from "./Seo";
 
@@ -129,8 +129,8 @@ export default function Keywords() {
             history={data.history}
           />
           <Card pad={false} className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-160 text-[13.5px]">
-              <thead>
+            <table role="table" className={stack.table}>
+              <thead role="rowgroup" className={stack.head}>
                 <tr className="border-b border-line text-left text-[12.5px] text-muted">
                   <th className={cn(th, "pl-4")}>Keyword</th>
                   <th className={cn(th, "text-right")}>Searches / mo</th>
@@ -140,7 +140,7 @@ export default function Keywords() {
                   <th className="w-8" />
                 </tr>
               </thead>
-              <tbody>
+              <tbody role="rowgroup" className={stack.body}>
                 {data.keywords.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-4 py-6 text-center text-muted">
@@ -153,32 +153,39 @@ export default function Keywords() {
                   return (
                     <Fragment key={k.id}>
                       <tr
-                        className={cn("cursor-pointer border-b border-line last:border-0 hover:bg-hover", isOpen && "bg-hover")}
+                        role="row"
+                        className={cn("cursor-pointer border-b border-line last:border-0 hover:bg-hover", stack.row, isOpen && "bg-hover")}
                         onClick={() => setOpen(isOpen ? null : k.id)}
                       >
-                        <td className={cn(th, "pl-4")}>
+                        <td role="cell" className={cn(th, "pl-4", stack.first)}>
                           <button type="button" aria-expanded={isOpen} className="text-left font-medium">
                             {k.term}
                           </button>
                           <Markers row={k} />
                         </td>
-                        <td className={cn(th, "num text-right")}>{k.monthlySearches === null ? "—" : fmt(k.monthlySearches)}</td>
-                        <td className={th}>
+                        <td role="cell" data-label="Searches / mo" className={cn(th, "num text-right", stack.cell)}>
+                          {k.monthlySearches === null ? "—" : fmt(k.monthlySearches)}
+                        </td>
+                        <td role="cell" data-label="Your position" className={cn(th, stack.cell)}>
                           <Position row={k} />
                         </td>
-                        <td className={cn(th, "text-right")}>
+                        <td role="cell" data-label="30 days" className={cn(th, "text-right", stack.cell)}>
                           <Moved row={k} />
                         </td>
-                        <td className={cn(th, "max-w-48 truncate text-muted")}>
+                        <td
+                          role="cell"
+                          data-label="First on Google"
+                          className={cn(th, "max-w-48 truncate text-muted", stack.cell, "max-sm:max-w-none")}
+                        >
                           {k.first ? (k.first.isYou ? "You" : (k.first.name ?? k.first.domain)) : "—"}
                         </td>
-                        <td className="pr-3">
+                        <td role="cell" className={cn("pr-3", stack.hide)}>
                           <ChevronRight size={15} className={cn("text-subtle transition-transform", isOpen && "rotate-90")} aria-hidden />
                         </td>
                       </tr>
                       {isOpen && (
-                        <tr className="border-b border-line last:border-0">
-                          <td colSpan={6}>
+                        <tr role="row" className={cn("border-b border-line last:border-0", stack.detail)}>
+                          <td role="cell" colSpan={6} className={stack.detail}>
                             <FirstPage row={k} onStop={can("track") ? () => void stop(k) : undefined} />
                           </td>
                         </tr>

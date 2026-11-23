@@ -8,16 +8,17 @@ import { messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
 import { engineNames, locationApi, seoApi, type AiPage } from "./api";
 import { AddQuestions } from "./AddDrawers";
-import { Headline, Source } from "./parts";
+import { Headline, Source, stack } from "./parts";
 import { kindsOf, useAfterCheck, useReloadWhilePending } from "./checks";
 import { SeoHeader, useSeo } from "./Seo";
 
 type Question = AiPage["questions"][number];
 type Answer = NonNullable<Question["answers"][string]>;
 
+/** One assistant's answer in a word: not asked yet, asked and you're not in it, or where you are in it. */
 function Cell({ answer }: { answer: Answer | null | undefined }) {
-  if (!answer) return <span className="text-muted">—</span>;
-  if (!answer.namedYou) return <span className="text-muted">—</span>;
+  if (!answer) return <span className="text-[12.5px] text-subtle">Waiting</span>;
+  if (!answer.namedYou) return <span className="text-[12.5px] text-muted">Not named</span>;
   return <Badge tone="good">{answer.position ? `#${answer.position}` : "Named"}</Badge>;
 }
 
@@ -103,8 +104,8 @@ export default function Ai() {
             history={data.history}
           />
           <Card pad={false} className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-160 text-[13.5px]">
-              <thead>
+            <table role="table" className={stack.table}>
+              <thead role="rowgroup" className={stack.head}>
                 <tr className="border-b border-line text-left text-[12.5px] text-muted">
                   <th className={cn(th, "pl-4")}>Question</th>
                   {data.byEngine.map((e) => (
@@ -118,7 +119,7 @@ export default function Ai() {
                   <th className="w-8" />
                 </tr>
               </thead>
-              <tbody>
+              <tbody role="rowgroup" className={stack.body}>
                 {data.questions.length === 0 && (
                   <tr>
                     <td colSpan={data.engines.length + 2} className="px-4 py-6 text-center text-muted">
@@ -131,27 +132,28 @@ export default function Ai() {
                   return (
                     <Fragment key={q.id}>
                       <tr
-                        className={cn("cursor-pointer border-b border-line last:border-0 hover:bg-hover", isOpen && "bg-hover")}
+                        role="row"
+                        className={cn("cursor-pointer border-b border-line last:border-0 hover:bg-hover", stack.row, isOpen && "bg-hover")}
                         onClick={() => setOpen(isOpen ? null : q.id)}
                       >
-                        <td className={cn(th, "pl-4")}>
+                        <td role="cell" className={cn(th, "pl-4", stack.first)}>
                           <button type="button" aria-expanded={isOpen} className="text-left font-medium">
                             {q.text}
                           </button>
                           {q.pending && <span className="block text-[12px] text-muted">First answers in a few minutes</span>}
                         </td>
                         {data.engines.map((e) => (
-                          <td key={e} className={cn(th, "text-center")}>
+                          <td key={e} role="cell" data-label={engineNames[e] ?? e} className={cn(th, "text-center", stack.cell)}>
                             <Cell answer={q.answers[e]} />
                           </td>
                         ))}
-                        <td className="pr-3">
+                        <td role="cell" className={cn("pr-3", stack.hide)}>
                           <ChevronRight size={15} className={cn("text-subtle transition-transform", isOpen && "rotate-90")} aria-hidden />
                         </td>
                       </tr>
                       {isOpen && (
-                        <tr className="border-b border-line last:border-0">
-                          <td colSpan={data.engines.length + 2} className="px-4 pt-1 pb-4">
+                        <tr role="row" className={cn("border-b border-line last:border-0", stack.detail)}>
+                          <td role="cell" colSpan={data.engines.length + 2} className={cn("px-4 pt-1 pb-4", stack.detail)}>
                             <div className="grid gap-3 md:grid-cols-3">
                               {data.engines.map((e) => (
                                 <AnswerCard key={e} engine={e} answer={q.answers[e]} />

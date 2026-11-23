@@ -222,3 +222,19 @@ export function Headline({
     </Card>
   );
 }
+
+/**
+ * Wide tables stack on phones (DESIGN.md): each row becomes its first cell as a heading, then a label and value per
+ * cell (the label is the cell's `data-label`), so nothing scrolls sideways. The roles keep it a table to a screen reader
+ * once the phone layout makes the parts display: block.
+ */
+export const stack = {
+  table: "w-full text-[13.5px] sm:min-w-160 max-sm:block",
+  head: "max-sm:sr-only",
+  body: "max-sm:block",
+  row: "max-sm:block max-sm:space-y-1 max-sm:px-4 max-sm:py-3",
+  first: "max-sm:block max-sm:p-0",
+  cell: "max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-4 max-sm:p-0 max-sm:text-right max-sm:before:shrink-0 max-sm:before:text-[12.5px] max-sm:before:font-normal max-sm:before:text-muted max-sm:before:content-[attr(data-label)]",
+  hide: "max-sm:hidden",
+  detail: "max-sm:block",
+};

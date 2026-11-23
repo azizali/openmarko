@@ -3,7 +3,7 @@
 // ones they win first. Found for you; one can be added by hand or hidden.
 import { useState } from "react";
 import { useSearchParams } from "react-router";
-import { ChevronRight, Plus } from "lucide-react";
+import { ArrowUp, ChevronRight, Plus } from "lucide-react";
 import { Badge, Button, Card, Segmented, cn } from "../../components/ui";
 import { LoadError, useToast } from "../../components/Feedback";
 import { messageOf } from "../../lib/api";
@@ -42,7 +42,11 @@ function Columns({ channel, row, labels }: { channel: Channel; row: Row; labels:
           const wins = ahead(channel, c);
           return (
             <tr key={c.id} className="border-t border-line">
-              <td className={cn("py-1.5 pr-3", wins && "text-bad")}>{labels.get(c.id)}</td>
+              <td className={cn("py-1.5 pr-3", wins && "text-bad")}>
+                {wins && <ArrowUp size={12} className="mr-1 inline align-[-1px]" aria-hidden />}
+                {labels.get(c.id)}
+                {wins && <span className="sr-only"> (they're ahead)</span>}
+              </td>
               <td className={cn("num py-1.5 text-right whitespace-nowrap", wins && "font-medium text-bad")}>{shown(channel, c.theirs)}</td>
               <td className="num py-1.5 pl-3 text-right whitespace-nowrap">{shown(channel, c.yours)}</td>
             </tr>
