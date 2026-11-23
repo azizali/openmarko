@@ -86,11 +86,19 @@ export default function Keywords() {
   const [adding, setAdding] = useState(false);
   const toast = useToast();
 
+  // Stops it on Google search only (on Maps it carries on, if tracked there); Undo puts it back.
   const stop = async (row: Row) => {
-    if (!confirm(`Stop tracking “${row.term}”? Its history is kept.`)) return;
-    const r = await locationApi(orgId, location.id).keywords({ keywordId: row.id }).delete();
+    const here = locationApi(orgId, location.id);
+    const r = await here.keywords({ keywordId: row.id }).delete({ query: { from: "organic" } });
     if (r.error) return toast.error(messageOf(r.error), "Could not stop tracking");
-    toast.success(`Stopped tracking “${row.term}”`);
+    toast.success(`Stopped tracking “${row.term}” on Google search`, "Its history is kept.", {
+      label: "Undo",
+      run: () =>
+        void here.keywords.post({ terms: [row.term], maps: false, organic: true }).then((u) => {
+          if (u.error) toast.error(messageOf(u.error), "Could not undo");
+          void page.reload();
+        }),
+    });
     void page.reload();
   };
 

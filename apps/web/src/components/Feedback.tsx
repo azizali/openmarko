@@ -12,19 +12,22 @@ import { CircleAlert, CircleCheck, X } from "lucide-react";
 import { cn } from "./ui";
 
 type Tone = "good" | "bad";
-export type Message = { id: number; tone: Tone; lead: string; text: string };
+/** One thing to do about a message, beside it: "Undo" after a removal, so removing needs no "Are you sure?". */
+export type MessageAction = { label: string; run: () => void };
+export type Message = { id: number; tone: Tone; lead: string; text: string; action?: MessageAction };
 
 /** How long a success stays. An error stays until it is dismissed or the next attempt. */
 const SUCCESS_MS = 5000;
 
 let nextId = 0;
-const make = (tone: Tone, lead: string, text: string): Message => ({ id: ++nextId, tone, lead, text });
+const make = (tone: Tone, lead: string, text: string, action?: MessageAction): Message => ({ id: ++nextId, tone, lead, text, action });
 
 /** Runs `onExpire` after a success has been on screen for a while; hovering or focusing the message pauses it. */
 function useExpiry(message: Message | null, paused: boolean, onExpire: () => void) {
   useEffect(() => {
     if (!message || message.tone === "bad" || paused) return;
-    const t = setTimeout(onExpire, SUCCESS_MS);
+    // One with an Undo stays twice as long: time to notice it and change your mind.
+    const t = setTimeout(onExpire, message.action ? SUCCESS_MS * 2 : SUCCESS_MS);
     return () => clearTimeout(t);
   }, [message, paused, onExpire]);
 }
@@ -111,6 +114,18 @@ function Bubble({
         <b className="font-medium">{message.lead}</b>
         {message.text && <span className={cn("block", raised && "text-muted")}>{message.text}</span>}
       </span>
+      {message.action && (
+        <button
+          type="button"
+          onClick={() => {
+            message.action!.run();
+            onDismiss();
+          }}
+          className="-my-0.5 shrink-0 rounded-md px-2 py-0.5 font-medium underline underline-offset-2 hover:bg-black/10 pointer-coarse:py-2.5 dark:hover:bg-white/10"
+        >
+          {message.action.label}
+        </button>
+      )}
       <button
         type="button"
         onClick={onDismiss}
@@ -125,7 +140,11 @@ function Bubble({
 
 // ---------- Toasts ----------
 
-type Toasts = { success: (lead: string, text?: string) => void; error: (text: string, lead?: string) => void };
+type Toasts = {
+  /** With `action`, a way to take it back ("Undo") beside the message. */
+  success: (lead: string, text?: string, action?: MessageAction) => void;
+  error: (text: string, lead?: string) => void;
+};
 const ToastContext = createContext<Toasts | null>(null);
 
 /** Mounted once, at the root. Holds the toasts and their always-present live region. */
@@ -135,7 +154,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const drop = useCallback((id: number) => setItems((l) => l.filter((m) => m.id !== id)), []);
   const api = useMemo<Toasts>(
     () => ({
-      success: (lead, text = "") => setItems((l) => [...l.slice(-3), make("good", lead, text)]),
+      success: (lead, text = "", action) => setItems((l) => [...l.slice(-3), make("good", lead, text, action)]),
       error: (text, lead = "That didn't work") => setItems((l) => [...l.slice(-3), make("bad", lead, text)]),
     }),
     [],

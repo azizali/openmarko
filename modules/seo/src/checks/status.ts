@@ -26,6 +26,9 @@ export type CheckStatus = {
   finishing: boolean;
   /** What Check now would ask about. */
   keywords: number;
+  /** Of those, the ones searched on Google Maps (each from every spot of the grid), and on Google search. */
+  mapsKeywords: number;
+  organicKeywords: number;
   questions: number;
 };
 
@@ -56,7 +59,11 @@ export async function checkStatus(ctx: AppContext, orgId: string, locationId: st
       .innerJoin(automationSchema.runs, eq(automationSchema.runs.id, checks.runId))
       .where(and(eq(checks.locationId, locationId), isNull(automationSchema.runs.finishedAt))),
     ctx.db
-      .select({ n: sql<number>`count(*)::int` })
+      .select({
+        n: sql<number>`count(*)::int`,
+        maps: sql<number>`count(*) filter (where ${keywords.maps})::int`,
+        organic: sql<number>`count(*) filter (where ${keywords.organic})::int`,
+      })
       .from(keywords)
       .where(and(eq(keywords.locationId, locationId), eq(keywords.active, true))),
     ctx.db
@@ -79,6 +86,8 @@ export async function checkStatus(ctx: AppContext, orgId: string, locationId: st
     kinds,
     finishing: (open[0]?.n ?? 0) > 0 && kinds.every((k) => !k.running),
     keywords: kw[0]?.n ?? 0,
+    mapsKeywords: kw[0]?.maps ?? 0,
+    organicKeywords: kw[0]?.organic ?? 0,
     questions: qs[0]?.n ?? 0,
   };
 }

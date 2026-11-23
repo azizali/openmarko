@@ -15,7 +15,7 @@ export type ScanRow = typeof mapScans.$inferSelect;
 export async function latestScans(db: Db, locationId: string, before = false): Promise<ScanRow[]> {
   const rows = await db.execute<{ id: string }>(sql`
     select distinct on (m.keyword_id) m.id
-    from seo.map_scans m join seo.keywords k on k.id = m.keyword_id and k.active
+    from seo.map_scans m join seo.keywords k on k.id = m.keyword_id and k.active and k.maps
     where m.location_id = ${locationId}
       ${before ? sql`and m.checked_at <= now() - interval '${sql.raw(String(MONTH_AGO_DAYS))} days'` : sql``}
     order by m.keyword_id, m.checked_at desc`);
@@ -57,7 +57,7 @@ export type SerpRow = typeof serpResults.$inferSelect;
 export async function latestSerps(db: Db, locationId: string, before = false): Promise<SerpRow[]> {
   const rows = await db.execute<{ id: string }>(sql`
     select distinct on (r.keyword_id) r.id
-    from seo.serp_results r join seo.keywords k on k.id = r.keyword_id and k.active
+    from seo.serp_results r join seo.keywords k on k.id = r.keyword_id and k.active and k.organic
     where r.location_id = ${locationId}
       ${before ? sql`and r.checked_at <= now() - interval '${sql.raw(String(MONTH_AGO_DAYS))} days'` : sql``}
     order by r.keyword_id, r.checked_at desc`);

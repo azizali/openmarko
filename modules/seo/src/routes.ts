@@ -290,12 +290,17 @@ export function seoRoutes(ctx: AppContext) {
       )
       .delete(
         "/locations/:locationId/keywords/:keywordId",
-        async ({ caller, params }) => {
+        async ({ caller, params, query }) => {
           await gate(caller, "track");
-          await removeKeyword(ctx, caller.orgId, caller.userId, params.locationId, params.keywordId);
+          await removeKeyword(ctx, caller.orgId, caller.userId, params.locationId, params.keywordId, query.from);
           return { ok: true };
         },
-        { params: ids("locationId", "keywordId"), detail: { summary: "Stop tracking a keyword (its history is kept)" } },
+        {
+          params: ids("locationId", "keywordId"),
+          // From one place only, or everywhere when left out.
+          query: t.Object({ from: t.Optional(t.Union([t.Literal("maps"), t.Literal("organic")])) }),
+          detail: { summary: "Stop tracking a keyword on Google Maps, Google search, or both (its history is kept)" },
+        },
       )
       .get(
         "/locations/:locationId/questions",

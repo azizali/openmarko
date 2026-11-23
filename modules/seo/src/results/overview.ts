@@ -10,12 +10,12 @@ import { openCounts } from "../suggestions/service";
 import { aiPage } from "./ai";
 import { competitorCounts } from "./competitors";
 import { keywordsPage } from "./keywords";
-import { lastCheckedAt } from "./latest";
+import { activeKeywords, lastCheckedAt } from "./latest";
 import { mapsSummary } from "./maps";
 
 export async function overview(ctx: AppContext, orgId: string, locationId: string) {
   const l = await getLocation(ctx, orgId, locationId);
-  const [location, maps, kw, ai, competitors, open, profile, checked, limits] = await Promise.all([
+  const [location, maps, kw, ai, competitors, open, profile, checked, limits, tracked] = await Promise.all([
     getLocationView(ctx, orgId, locationId),
     mapsSummary(ctx, orgId, locationId),
     keywordsPage(ctx, orgId, locationId),
@@ -25,6 +25,7 @@ export async function overview(ctx: AppContext, orgId: string, locationId: strin
     resultsCard(ctx, l).catch(() => null),
     lastCheckedAt(ctx.db, locationId),
     planLimits(ctx, orgId),
+    activeKeywords(ctx.db, locationId),
   ]);
   const ready = maps.keywords.filter((k) => !k.pending);
   const ranked = kw.keywords.filter((k) => !k.pending).sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
@@ -49,7 +50,8 @@ export async function overview(ctx: AppContext, orgId: string, locationId: strin
     openSuggestions: { maps: open.maps ?? 0, keywords: open.keywords ?? 0, ai: open.ai ?? 0 },
     profile,
     usage: {
-      keywords: { used: kw.keywords.length, limit: limits.keywords },
+      // Maps and search share the limit: every keyword tracked anywhere counts once.
+      keywords: { used: tracked.length, limit: limits.keywords },
       questions: { used: ai.questions.length, limit: limits.questions },
     },
   };

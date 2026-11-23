@@ -285,7 +285,19 @@ describe("launching and the first check", () => {
       body: { terms: ["x dentist"], maps: false, organic: false },
     });
     expect(nowhere.status).toBe(422);
-    await call("DELETE", `${base(owner)}/locations/${locationId}/keywords/${add.body.added[0]}`, { headers: owner.headers });
+    // Stopped on Google search, it carries on on Maps; stopped there too, it's no longer tracked.
+    const id = add.body.added[0];
+    const fromSearch = await call("DELETE", `${base(owner)}/locations/${locationId}/keywords/${id}?from=organic`, {
+      headers: owner.headers,
+    });
+    expect(fromSearch.status).toBe(200);
+    expect((await t.ctx.db.select().from(keywords).where(eq(keywords.id, id)))[0]).toMatchObject({
+      active: true,
+      maps: true,
+      organic: false,
+    });
+    await call("DELETE", `${base(owner)}/locations/${locationId}/keywords/${id}?from=maps`, { headers: owner.headers });
+    expect((await t.ctx.db.select().from(keywords).where(eq(keywords.id, id)))[0]).toMatchObject({ active: false });
     await drain();
   });
 

@@ -132,13 +132,32 @@ export async function addKeywords(
   return [...ids, ...widened.map((k) => k.id)];
 }
 
-export async function removeKeyword(ctx: AppContext, orgId: string, by: string | null, locationId: string, keywordId: string) {
+/**
+ * Stops tracking a keyword, `from` one place (Google Maps or Google search) or everywhere. Off in both places, it's no
+ * longer tracked at all (and stops counting against the Plan); its history is kept either way.
+ */
+export async function removeKeyword(
+  ctx: AppContext,
+  orgId: string,
+  by: string | null,
+  locationId: string,
+  keywordId: string,
+  from?: "maps" | "organic",
+) {
+  const mine = and(eq(keywords.id, keywordId), eq(keywords.locationId, locationId), eq(keywords.organizationId, orgId));
+  const [k] = await ctx.db.select({ maps: keywords.maps, organic: keywords.organic }).from(keywords).where(mine);
+  if (!k) throw notFound("Keyword");
+  const left = from
+    ? { maps: from === "maps" ? false : k.maps, organic: from === "organic" ? false : k.organic }
+    : { maps: false, organic: false };
+  const off = !left.maps && !left.organic;
+  // Off everywhere: inactive, with both places on again so tracking it later starts where it's asked for.
   const res = await ctx.db
     .update(keywords)
-    .set({ active: false })
-    .where(and(eq(keywords.id, keywordId), eq(keywords.locationId, locationId), eq(keywords.organizationId, orgId)))
+    .set(off ? { active: false, maps: true, organic: true } : left)
+    .where(mine)
     .returning({ term: keywords.term });
-  if (!res.length) throw notFound("Keyword");
+  const where = from === "maps" ? " on Google Maps" : from === "organic" ? " on Google search" : "";
   await ctx.db.transaction((tx) =>
     logActivity(tx, {
       organizationId: orgId,
@@ -147,7 +166,7 @@ export async function removeKeyword(ctx: AppContext, orgId: string, by: string |
       action: "seo.track",
       resourceType: "seo_location",
       resourceId: locationId,
-      summary: `Stopped tracking “${res[0]!.term}”`,
+      summary: `Stopped tracking “${res[0]!.term}”${off ? "" : where}`,
     }),
   );
 }

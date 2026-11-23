@@ -63,10 +63,17 @@ export default function Ai() {
   const toast = useToast();
 
   const stop = async (q: Question) => {
-    if (!confirm(`Stop asking “${q.text}”? Its history is kept.`)) return;
-    const r = await locationApi(orgId, location.id).questions({ questionId: q.id }).delete();
+    const here = locationApi(orgId, location.id);
+    const r = await here.questions({ questionId: q.id }).delete();
     if (r.error) return toast.error(messageOf(r.error), "Could not stop asking");
-    toast.success("Stopped asking it");
+    toast.success("Stopped asking it", "Its history is kept.", {
+      label: "Undo",
+      run: () =>
+        void here.questions.post({ texts: [q.text] }).then((u) => {
+          if (u.error) toast.error(messageOf(u.error), "Could not undo");
+          void page.reload();
+        }),
+    });
     void page.reload();
   };
 

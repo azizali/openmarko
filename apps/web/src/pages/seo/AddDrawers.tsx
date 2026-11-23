@@ -6,6 +6,7 @@ import { Plus, Search } from "lucide-react";
 import { Badge, Button, Drawer, Field, Input, Textarea, cn, fmt } from "../../components/ui";
 import { Feedback, useFeedback } from "../../components/Feedback";
 import { messageOf } from "../../lib/api";
+import { useLoad } from "../../lib/useLoad";
 import { locationApi, type Ideas, type Place } from "./api";
 import { useSeo } from "./Seo";
 
@@ -28,6 +29,9 @@ function LinesDrawer({
   placeholder,
   tracked,
   limit,
+  inUse,
+  free,
+  freeNote,
   ideas,
   hint,
   submit,
@@ -40,6 +44,12 @@ function LinesDrawer({
   placeholder: string;
   tracked: string[];
   limit: number | null;
+  /** What already counts against the limit, when that's more than `tracked` (keywords: Maps and search share it). */
+  inUse?: number;
+  /** Lines that can be added without counting against the limit (a keyword already tracked in the other place). */
+  free?: string[];
+  /** Said beside a free line. */
+  freeNote?: string;
   ideas: { text: string; note?: string }[];
   hint?: (line: string) => string | null;
   submit: (items: string[]) => Promise<{ error?: string }>;
@@ -48,14 +58,18 @@ function LinesDrawer({
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const fb = useFeedback(open);
+  const { location } = useSeo();
   useEffect(() => {
     if (!open) setText("");
   }, [open]);
   const have = useMemo(() => new Set(tracked.map(normal)), [tracked]);
   const typed = lines(text);
   const fresh = typed.filter((l) => !have.has(normal(l)));
-  const room = limit === null ? Infinity : Math.max(0, limit - tracked.length);
-  const over = fresh.length > room;
+  const freeSet = useMemo(() => new Set((free ?? []).map(normal)), [free]);
+  const used = inUse ?? tracked.length;
+  const counted = fresh.filter((l) => !freeSet.has(normal(l))).length;
+  const room = limit === null ? Infinity : Math.max(0, limit - used);
+  const over = counted > room;
   const name = (n: number) => `${n} ${n === 1 ? noun[0] : noun[1]}`;
 
   const save = async (e: FormEvent) => {
@@ -78,7 +92,7 @@ function LinesDrawer({
       footer={
         <>
           <span className={cn("mr-auto text-[12.5px]", over ? "text-bad" : "text-muted")}>
-            {limit === null ? `${name(tracked.length)} tracked` : `${tracked.length + fresh.length} of ${limit} on your plan`}
+            {limit === null ? `${name(tracked.length)} tracked` : `${used + counted} of ${limit} on your plan`}
           </span>
           <Button type="button" onClick={onClose}>
             Cancel
@@ -89,7 +103,10 @@ function LinesDrawer({
         </>
       }
     >
-      <Field label={label} hint="One per line. The first result comes in a few minutes.">
+      <Field
+        label={label}
+        hint={`One per line. ${location.status === "active" ? "The first result comes in a few minutes." : "Checks are paused here: results come once they're resumed in Settings."}`}
+      >
         <Textarea rows={6} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} autoFocus />
       </Field>
       {typed.length > 0 && (
@@ -99,6 +116,8 @@ function LinesDrawer({
               <span className="min-w-0 truncate">{l}</span>
               {have.has(normal(l)) ? (
                 <Badge>Already tracked</Badge>
+              ) : freeSet.has(normal(l)) && freeNote ? (
+                <span className="shrink-0 text-[12px] text-muted">{freeNote}</span>
               ) : hint?.(l) ? (
                 <span className="shrink-0 text-[12px] text-muted">{hint(l)}</span>
               ) : null}
@@ -186,6 +205,13 @@ export function AddKeywords({
 }) {
   const { orgId, location } = useSeo();
   const ideas = useIdeas(open);
+  // The Plan's limit is shared by Maps and search: every active keyword counts once, and one tracked in the other
+  // place is turned on here too without counting again.
+  const all = useLoad(
+    () => (open ? locationApi(orgId, location.id).keywords.get() : Promise.resolve({ data: null, error: null })),
+    [open, orgId, location.id],
+  );
+  const elsewhere = (all.data ?? []).filter((k) => !k[on]).map((k) => k.term);
   return (
     <LinesDrawer
       open={open}
@@ -195,6 +221,9 @@ export function AddKeywords({
       placeholder={surfaces[on].placeholder}
       tracked={tracked}
       limit={limit}
+      inUse={all.data?.length}
+      free={elsewhere}
+      freeNote={on === "maps" ? "On Google search too; doesn't count again" : "On Google Maps too; doesn't count again"}
       noun={["keyword", "keywords"]}
       ideas={(ideas?.[on] ?? []).map((k) => ({ text: k.term, note: k.monthlySearches ? `${fmt(k.monthlySearches)}/mo` : undefined }))}
       submit={async (terms) => {
