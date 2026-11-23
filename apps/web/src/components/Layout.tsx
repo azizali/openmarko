@@ -74,7 +74,7 @@ export const nav: NavItem[] = [
         [
           ["/seo/overview", "Overview", Gauge],
           ["/seo/maps", "Google Maps", MapPin],
-          ["/seo/keywords", "Keywords", Search],
+          ["/seo/keywords", "Google search", Search],
           ["/seo/ai", "AI answers", Sparkles],
           ["/seo/competitors", "Competitors", UsersRound],
           ["/seo/settings", "Settings", Settings],

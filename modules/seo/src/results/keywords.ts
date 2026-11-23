@@ -1,4 +1,4 @@
-// The Keywords page (Google search): per keyword its searches a month, your position now and a month ago, what the
+// The Google search page (/seo/keywords): per keyword its searches a month, your position now and a month ago, what the
 // page shows, who's first, and Google's whole first page with directories marked; plus how many keywords are on the
 // first page, over the last 90 days; and each keyword's own position by week over the same 90 days.
 

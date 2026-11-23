@@ -26,7 +26,7 @@ export type SeoTab = keyof typeof pages;
 export const tabNames: Record<SeoTab, string> = {
   overview: "SEO",
   maps: "Google Maps ranking",
-  keywords: "Keywords",
+  keywords: "Google search ranking",
   ai: "AI answers",
   competitors: "Competitors",
   settings: "SEO settings",

@@ -45,6 +45,11 @@
   --map-road: #ffffff;
   --map-water: #dde6ee;
   --map-park: #e3ece0;
+  /* Each SEO check's own colour, for its icon: never a status (good, bad, warn and info already mean something). */
+  --check-maps: #0f766e;
+  --check-search: #2563eb;
+  --check-ai: #7c3aed;
+  --check-rivals: #c2410c;
   color-scheme: light;
 }
 
@@ -78,6 +83,10 @@
   --map-road: #27272a;
   --map-water: #172029;
   --map-park: #18241b;
+  --check-maps: #5eead4;
+  --check-search: #93b4fb;
+  --check-ai: #c4b5fd;
+  --check-rivals: #fdba74;
   color-scheme: dark;
 }
 
@@ -119,6 +128,10 @@
   --color-warn-soft: var(--warn-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
+  --color-check-maps: var(--check-maps);
+  --color-check-search: var(--check-search);
+  --color-check-ai: var(--check-ai);
+  --color-check-rivals: var(--check-rivals);
   --font-sans: "Roboto Flex", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Frank Ruhl Libre", ui-serif, Georgia, serif;
   --shadow-float: 0 24px 64px -16px rgb(0 0 0 / 0.14), 0 4px 12px rgb(0 0 0 / 0.04);

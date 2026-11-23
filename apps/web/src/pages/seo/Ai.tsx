@@ -44,7 +44,7 @@ function Cell({ answer }: { answer: Answer | null | undefined }) {
   return <Badge tone="good">{answer.position ? `Named #${answer.position}` : "Named"}</Badge>;
 }
 
-const th = "px-3 py-2 font-normal";
+const th = stack.pad;
 
 // ---------- All questions ----------
 
@@ -143,7 +143,7 @@ function QuestionList() {
               </tbody>
               {data.total > 0 && (
                 <tfoot role="rowgroup" className={stack.body}>
-                  <tr role="row" className={cn("border-t border-line-strong bg-hover/50 font-medium", stack.row)}>
+                  <tr role="row" className={cn(stack.total, stack.row)}>
                     <td role="cell" className={cn(th, "pl-4", stack.first)}>
                       All {data.questions.length} questions
                     </td>

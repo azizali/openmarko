@@ -1,4 +1,4 @@
-// The side panels for adding to what a Location tracks: keywords (Maps and Keywords pages), questions (AI answers)
+// The side panels for adding to what a Location tracks: keywords (the Google Maps and Google search pages), questions (AI answers)
 // and a competitor (Competitors). Keywords and questions are typed one per line; each line says if it's already
 // tracked, and the count stays within the Plan. A competitor is picked from a Google search near the Location.
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
@@ -261,7 +261,7 @@ export function AddQuestions({
       limit={limit}
       noun={["question", "questions"]}
       ideas={(ideas?.questions ?? []).map((text) => ({ text }))}
-      hint={(l) => (!l.includes("?") && l.split(/\s+/).length <= 4 ? "Reads like a keyword; add it on Keywords" : null)}
+      hint={(l) => (!l.includes("?") && l.split(/\s+/).length <= 4 ? "Reads like a keyword; add it on Google search" : null)}
       submit={async (texts) => {
         const r = await locationApi(orgId, location.id).questions.post({ texts });
         if (r.error) return { error: messageOf(r.error) };

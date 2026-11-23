@@ -4,9 +4,121 @@
 // your profile's facts against a competitor's as paired bars, and your name highlighted in an AI answer. Grids come from the API as the order of businesses
 // at each spot, so any business's map can be drawn from the same data.
 import type { ReactNode } from "react";
-import { ArrowDown, ArrowUp, Info } from "lucide-react";
+import { ArrowDown, ArrowUp, Info, MapPin, Search, Sparkles, Users, type LucideIcon } from "lucide-react";
 import { Card, LineChart, cn } from "../../components/ui";
 import { engineNames } from "./api";
+
+// ---------- Each check's mark ----------
+
+export type CheckId = "maps" | "keywords" | "ai" | "competitors";
+
+/** Each check's icon and its own colour (tokens `--check-*` in index.css), written out so Tailwind keeps the classes. */
+const checkMarks: Record<CheckId, { icon: LucideIcon; solid: string; ink: string }> = {
+  maps: { icon: MapPin, solid: "bg-check-maps", ink: "text-check-maps" },
+  keywords: { icon: Search, solid: "bg-check-search", ink: "text-check-search" },
+  ai: { icon: Sparkles, solid: "bg-check-ai", ink: "text-check-ai" },
+  competitors: { icon: Users, solid: "bg-check-rivals", ink: "text-check-rivals" },
+};
+
+/**
+ * A check's icon in its colour, so the four checks tell apart at a glance. `solid`: the icon in the page's own colour
+ * on a tile of the check's colour, where a check is introduced. `duotone`: the icon alone, its outline in the check's
+ * colour and its shape filled faintly with it. `line`: the outline alone, beside a line of text. Decorative: the
+ * check's name always sits beside it.
+ */
+export function CheckIcon({
+  check,
+  size = 14,
+  look = "line",
+  className,
+}: {
+  check: CheckId;
+  size?: number;
+  look?: "solid" | "duotone" | "line";
+  className?: string;
+}) {
+  const m = checkMarks[check];
+  const Icon = m.icon;
+  if (look === "solid")
+    return (
+      <span
+        className={cn("grid shrink-0 place-items-center rounded-[9px] text-surface shadow-control", m.solid, className)}
+        style={{ width: size + 13, height: size + 13 }}
+        aria-hidden
+      >
+        <Icon size={size} strokeWidth={2.25} />
+      </span>
+    );
+  return (
+    <Icon
+      size={size}
+      aria-hidden
+      strokeWidth={look === "duotone" ? 2 : undefined}
+      fill={look === "duotone" ? "currentColor" : "none"}
+      fillOpacity={look === "duotone" ? 0.18 : undefined}
+      className={cn("shrink-0", m.ink, className)}
+    />
+  );
+}
+
+// ---------- A figure's picture: its own data, in its check's colour ----------
+
+/** How much of the whole is the part: a bar filled to the share, for a figure that's a percentage. */
+export function Meter({ check, part, whole, label }: { check: CheckId; part: number; whole: number; label: string }) {
+  const share = whole ? Math.min(1, part / whole) : 0;
+  return (
+    <span className="block h-2 overflow-hidden rounded-full bg-hover" role="img" aria-label={label}>
+      <span className={cn("block h-full rounded-full", checkMarks[check].solid)} style={{ width: `${share * 100}%` }} />
+    </span>
+  );
+}
+
+/**
+ * One square per item, filled for the ones counted, so "7 of 18" is seen as well as read. Past 30 items the squares
+ * get too small to count, so it falls back to a `Meter`.
+ */
+export function Units({ check, count, total, label }: { check: CheckId; count: number; total: number; label: string }) {
+  if (total > 30) return <Meter check={check} part={count} whole={total} label={label} />;
+  return (
+    <span className="flex flex-wrap gap-[3px]" role="img" aria-label={label}>
+      {Array.from({ length: total }, (_, i) => (
+        <span key={i} className={cn("size-2 rounded-[2px]", i < count ? checkMarks[check].solid : "bg-active")} />
+      ))}
+    </span>
+  );
+}
+
+/**
+ * One bar split into parts, each in its check's colour, with a legend under it naming each part: where a total comes
+ * from (competitors by channel).
+ */
+export function Split({ parts, label }: { parts: { check: CheckId; value: number; name: string }[]; label: string }) {
+  const shown = parts.filter((p) => p.value > 0);
+  if (!shown.length) return null;
+  return (
+    <span className="block">
+      <span className="flex h-2 gap-0.5 overflow-hidden rounded-full" role="img" aria-label={label}>
+        {shown.map((p) => (
+          <span
+            key={p.check}
+            className={cn("h-full first:rounded-l-full last:rounded-r-full", checkMarks[p.check].solid)}
+            style={{ flexGrow: p.value }}
+          />
+        ))}
+      </span>
+      <span className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[12px] text-muted" aria-hidden>
+        {shown.map((p) => (
+          <span key={p.check} className="inline-flex items-center gap-1.5">
+            <span className={cn("size-2 rounded-[2px]", checkMarks[p.check].solid)} />
+            <span>
+              <span className="num text-fg">{p.value}</span> {p.name}
+            </span>
+          </span>
+        ))}
+      </span>
+    </span>
+  );
+}
 
 /** Where a business is in one spot's order (1 is first), or null when it's not in the top 20. */
 export const rankIn = (ranking: string[], placeId: string | null) => {
@@ -354,6 +466,10 @@ export function Marked({ text, names }: { text: string; names: string[] }) {
  * once the phone layout makes the parts display: block.
  */
 export const stack = {
+  /** A header or body cell's padding, the same in every section table. */
+  pad: "px-3 py-2 font-normal",
+  /** The totals row a section table ends with ("All 6 keywords"), in place of stat tiles above it (ADR 0034). */
+  total: "border-t border-line-strong bg-hover/50 font-medium",
   table: "w-full text-[13.5px] sm:min-w-160 max-sm:block",
   head: "max-sm:sr-only",
   body: "max-sm:block",

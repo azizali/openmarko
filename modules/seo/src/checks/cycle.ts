@@ -5,7 +5,7 @@
 //   ai       every question, asked of every chosen assistant
 // Queries are posted to the provider here; collect.ts gathers the results as they're ready and files them.
 // A scope narrows a cycle to some keywords or questions: what was just added is checked at once. `kinds` narrows it to
-// some kinds of check: Check now on the Keywords page checks Google search only, unless asked for more.
+// some kinds of check: Check now on the Google search page checks Google search only, unless asked for more.
 
 import { and, eq, inArray } from "drizzle-orm";
 import { AppError, hmacHex, newId, type AppContext } from "@app/kernel";

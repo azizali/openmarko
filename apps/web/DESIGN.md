@@ -316,6 +316,12 @@ Every success or failure message is one `Feedback` (ADR 0030), a soft Good or Ba
 - **Tabs:** text with a 2px ink underline on the current tab. Arrow keys move between them.
 - **Segmented control:** a Hover Wash track with the current option lifted on a Clean Sheet.
 
+### Check marks (SEO)
+
+Each SEO check has its own colour, used only for its icon (`CheckIcon`): Google Maps teal, Google search blue, AI answers violet, Competitors orange (tokens `--check-*`, light and dark). Icons come in three looks (`CheckIcon`): `duotone` (the outline in the colour, its shape filled faintly with it, no box) where a check is introduced, in the overview's figures and section headings; `line` (the outline alone) beside a line of text, such as a suggestion's; `solid` (a tile of the colour, the icon in the page's own colour) is kept for a lone mark that has to carry a check by itself. No pale tinted tiles.
+
+A figure pops through its own data rather than decoration: under each overview figure, a small picture of it in the check's colour, pushed to the foot of the cell so the four line up. `Meter` for a share ("31% of your area"), `Units` for a count out of a few (a square per keyword or answer, filled for the ones that count; a `Meter` past 30), `Split` for where a total comes from (competitors by channel, each part in its channel's check colour, with a legend). These hues never carry status: good, bad, warn and info keep that job, so a teal pin never reads as "fine".
+
 ### Settings sections
 
 A settings page is one card of `SettingsSection`s divided by hairlines. Each has its title, a line on why it matters and its one action (secondary `Change`, or danger to remove) on the left, and what's set on the right as `Facts`: a muted label beside each value, left-aligned so the eye doesn't cross the page. A setting with nothing in it says so in Pencil Gray. On a phone the action sits beside the title and the facts follow.

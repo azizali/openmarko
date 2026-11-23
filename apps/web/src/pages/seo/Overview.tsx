@@ -4,13 +4,13 @@
 // right on the card; an applied one stays in place saying so, with Undo, and is listed under Done from the next visit.
 import { useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
-import { Check, ChevronRight, MapPin, Search, Settings, Sparkles, Users } from "lucide-react";
+import { Check, ChevronRight, Settings } from "lucide-react";
 import { Badge, Button, Card, Segmented, Textarea, cn, fmt } from "../../components/ui";
 import { Feedback, LoadError, useFeedback, useToast } from "../../components/Feedback";
 import { fmtDate, messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
 import { locationApi, seoApi, type Overview as OverviewData, type Suggestion } from "./api";
-import { Change, EngineName, GridThumb } from "./parts";
+import { Change, CheckIcon, EngineName, GridThumb, Meter, Split, Units, type CheckId } from "./parts";
 import { kindsOf, useAfterCheck } from "./checks";
 import { SeoHeader, useSeo, useSeoNavigate } from "./Seo";
 
@@ -20,18 +20,16 @@ const filters = new Set<string>(["all", "maps", "keywords", "ai"]);
 
 const checkNames = {
   maps: "Google Maps",
-  keywords: "Keywords",
+  keywords: "Google search",
   ai: "AI answers",
   competitors: "Competitors",
 } as const;
-const checkIcons = {
-  maps: MapPin,
-  keywords: Search,
-  ai: Sparkles,
-  competitors: Users,
-} as const;
 /** Where a suggestion should move you, as its card says it: "Track a keyword · for Google search". */
 const helpsNames = { maps: "Google Maps", keywords: "Google search", ai: "AI answers" } as const;
+/** Which check's colour a competitor channel is drawn in. */
+const channelChecks: Record<string, CheckId> = { maps: "maps", google: "keywords", ai: "ai" };
+/** A channel in a word, for a legend: "16 Maps · 38 search · 4 AI". */
+const channelShort: Record<string, string> = { maps: "Maps", google: "search", ai: "AI" };
 const channelNames: Record<string, string> = {
   maps: "Google Maps",
   google: "Google search",
@@ -150,6 +148,9 @@ function Standing({ data }: { data: OverviewData }) {
       by: maps.top3Before === null ? null : pct(maps.top3, maps.spots) - pct(maps.top3Before, maps.spots),
       unit: "points",
       todo: open.maps,
+      picture: maps.keywords > 0 && (
+        <Meter check="maps" part={maps.top3} whole={maps.spots} label={`Top 3 at ${maps.top3} of ${maps.spots} spots`} />
+      ),
     },
     {
       id: "keywords",
@@ -163,6 +164,14 @@ function Standing({ data }: { data: OverviewData }) {
       by: diff(keywords.firstPage, keywords.firstPageBefore),
       unit: "more",
       todo: open.keywords,
+      picture: keywords.total > 0 && (
+        <Units
+          check="keywords"
+          count={keywords.firstPage}
+          total={keywords.total}
+          label={`${keywords.firstPage} of ${keywords.total} keywords on the first page`}
+        />
+      ),
     },
     {
       id: "ai",
@@ -176,6 +185,7 @@ function Standing({ data }: { data: OverviewData }) {
       by: diff(ai.named, ai.namedBefore),
       unit: "more",
       todo: open.ai,
+      picture: ai.total > 0 && <Units check="ai" count={ai.named} total={ai.total} label={`${ai.named} of ${ai.total} answers name you`} />,
     },
     {
       id: "competitors",
@@ -183,6 +193,16 @@ function Standing({ data }: { data: OverviewData }) {
       tail: "businesses and sites compete with you",
       by: null,
       todo: 0,
+      picture: (
+        <Split
+          parts={competitors.channels.map((c) => ({
+            check: channelChecks[c.channel] ?? "competitors",
+            value: c.count,
+            name: channelShort[c.channel] ?? c.channel,
+          }))}
+          label={competitors.channels.map((c) => `${channelNames[c.channel] ?? c.channel}: ${c.count}`).join(", ")}
+        />
+      ),
     },
   ];
   // Until a month has passed nothing has a change to show, so that's said once here rather than on every figure.
@@ -207,6 +227,8 @@ function Standing({ data }: { data: OverviewData }) {
 
 type Cell = {
   id: keyof typeof checkNames;
+  /** The figure's own data drawn small in its check's colour, so the four read apart at a glance. */
+  picture?: ReactNode;
   figure: ReactNode;
   tail: string;
   by: number | null;
@@ -214,16 +236,15 @@ type Cell = {
   todo: number;
 };
 
-function StandingCell({ id, figure, tail, by, unit = "", todo }: Cell) {
+function StandingCell({ id, figure, tail, picture, by, unit = "", todo }: Cell) {
   const { location } = useSeo();
-  const Icon = checkIcons[id];
   return (
     <Link
       to={`/seo/${id}?location=${location.id}`}
       className="group flex min-w-0 flex-col bg-surface p-4 transition-colors hover:bg-hover sm:p-5"
     >
-      <span className="flex min-h-5 items-center gap-1.5 text-[13px] text-muted group-hover:text-fg">
-        <Icon size={14} aria-hidden className="shrink-0" />
+      <span className="flex min-h-7 items-center gap-2 text-[13px] text-muted group-hover:text-fg">
+        <CheckIcon check={id} size={16} look="duotone" />
         <span className="truncate">{checkNames[id]}</span>
         <ChevronRight size={14} aria-hidden className="-ml-0.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
       </span>
@@ -231,8 +252,10 @@ function StandingCell({ id, figure, tail, by, unit = "", todo }: Cell) {
         {figure ?? <span className="text-subtle">–</span>}
       </span>
       <span className="mt-1.5 text-[13px] leading-snug text-muted">{tail}</span>
+      {/* Pushed to the cell's foot so the four pictures line up whatever the text above them runs to. */}
+      {picture && <span className="mt-auto block pt-4">{picture}</span>}
       {(by !== null || todo > 0) && (
-        <span className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-3">
+        <span className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 pt-3", !picture && "mt-auto")}>
           {by !== null && <Change by={by} unit={unit} />}
           {todo > 0 && <Badge>{todo} to do</Badge>}
         </span>
@@ -249,10 +272,12 @@ type Row = { key: string; label: ReactNode; value: ReactNode };
 function Breakdown({ data }: { data: OverviewData }) {
   const { location, can } = useSeo();
   const { maps, keywords, ai, competitors } = data;
-  const groups: { id: keyof typeof checkNames; title: string; rows: Row[]; more: string }[] = [
+  // Each section says what its rows are and what its numbers count, so a row reads without the page around it.
+  const groups: { id: keyof typeof checkNames; title: string; columns: [string, string]; rows: Row[]; more: string }[] = [
     {
       id: "maps",
-      title: "On Google Maps",
+      title: "Google Maps keywords",
+      columns: ["Keyword", "Area in the top 3"],
       rows: maps.rows.map((r) => ({
         key: r.id,
         label: r.term,
@@ -267,17 +292,19 @@ function Breakdown({ data }: { data: OverviewData }) {
     },
     {
       id: "keywords",
-      title: "On Google search",
+      title: "Google search keywords",
+      columns: ["Keyword", "Your position"],
       rows: keywords.rows.map((r) => ({
         key: r.id,
         label: r.term,
-        value: r.position === null ? <span className="text-muted">Not found</span> : `Position ${r.position}`,
+        value: r.position === null ? <span className="text-muted">Not found</span> : r.position,
       })),
       more: `All ${keywords.total}`,
     },
     {
       id: "ai",
-      title: "In AI answers",
+      title: "AI answers",
+      columns: ["Assistant", "Answers naming you"],
       rows: ai.byEngine.map((e) => ({
         key: e.engine,
         label: <EngineName engine={e.engine} size={14} className="text-fg" />,
@@ -287,7 +314,8 @@ function Breakdown({ data }: { data: OverviewData }) {
     },
     {
       id: "competitors",
-      title: "Who leads",
+      title: "Competitors",
+      columns: ["Where, and how many", "Who leads"],
       rows: competitors.channels.map((c) => ({
         key: c.channel,
         label: (
@@ -315,7 +343,8 @@ function Breakdown({ data }: { data: OverviewData }) {
           .map((g) => (
             <section key={g.id} aria-labelledby={`by-${g.id}`} className="px-4 py-3.5">
               <div className="flex items-center justify-between gap-3">
-                <h3 id={`by-${g.id}`} className="text-[12.5px] font-medium text-muted">
+                <h3 id={`by-${g.id}`} className="flex items-center gap-2 text-[13.5px] font-medium">
+                  <CheckIcon check={g.id} size={17} look="duotone" />
                   {g.title}
                 </h3>
                 <Link
@@ -326,7 +355,11 @@ function Breakdown({ data }: { data: OverviewData }) {
                   <ChevronRight size={13} aria-hidden />
                 </Link>
               </div>
-              <ul className="mt-1.5 space-y-2">
+              <p className="mt-2.5 flex justify-between gap-3 text-[11.5px] text-subtle" aria-hidden>
+                <span>{g.columns[0]}</span>
+                <span>{g.columns[1]}</span>
+              </p>
+              <ul className="mt-1 space-y-2" aria-label={`${g.title}: ${g.columns[0]}, ${g.columns[1]}`}>
                 {g.rows.map((r) => (
                   <li key={r.key} className="flex min-h-6 items-center justify-between gap-3 text-[13px]">
                     <span className="min-w-0 truncate">{r.label}</span>
@@ -473,7 +506,7 @@ function NextSteps({ open, done, onChange }: { open: Suggestion[]; done: Suggest
           options={[
             { id: "all", label: "All" },
             { id: "maps", label: "Maps" },
-            { id: "keywords", label: "Keywords" },
+            { id: "keywords", label: "Search" },
             { id: "ai", label: "AI" },
           ]}
         />
@@ -649,8 +682,7 @@ function SuggestionCard({
 }
 
 function HelpsIcon({ helps }: { helps: string }) {
-  const Icon = checkIcons[helps in checkIcons ? (helps as Helps) : "maps"];
-  return <Icon size={13} aria-hidden />;
+  return <CheckIcon check={helps in checkNames ? (helps as Helps) : "maps"} size={13} />;
 }
 
 type ProfileChange = { field: "categories"; before: string[]; after: string[] } | { field: "description"; before: string; after: string };

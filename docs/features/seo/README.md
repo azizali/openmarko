@@ -35,21 +35,22 @@ changes what checks cost and links the Google profile.
   which launches (**Cancel setup** at the top
   leaves for good: a draft is removed). Setup is a full screen without the app menu. The first check runs on the
   priority queue and the screen follows it to a first look; **Leave, we'll keep going** goes to SEO while it runs.
-- **Google Maps ranking, Keywords and AI answers** end their header line with how many open suggestions would move
+- **Google Maps ranking, Google search ranking and AI answers** end their header line with how many open suggestions would move
   that check ("· 3 suggestions"), linking to them on the overview; there's no link when there are none.
 - **Every page's header** says, under Check now at its top right, when its data was last checked and, while a check runs, which kind and since when, with
   a link to its status (each kind's results in so far). **Check now** checks what the page shows (Google Maps,
   Google search or AI answers; everything on the overview and competitors) and offers the other kinds in the same
   drawer. A kind already running is skipped, never run twice.
-- **Overview** (`/seo/overview`): a row of four figures, one per check, each with its change over 30 days and opening
-  its page; then **What to do next**, with **Behind the numbers** beside it (the first keywords on Maps and search, each
-  assistant, who leads each channel, and the Google profile's results: calls, website clicks, direction requests,
+- **Overview** (`/seo/overview`): a row of four figures, one per check with its icon and a small picture of its data in that check's colour (a bar for the share of the area, a square per keyword or answer, competitors split by channel), each with
+  its change over 30 days and opening its page; then **What to do next**, with **Behind the numbers** beside it (a
+  section per check, titled and with its columns named: the first keywords on Maps and search, each assistant, who
+  leads each channel, and the Google profile's results: calls, website clicks, direction requests,
   views, and the searches that showed it). On a phone the figures sit two by two and the suggestions come straight after.
 - **Pages are a list, then deep pages.** A section page is its header (one short line) and one table with everything
   known per row; a row opens a full page for that item, with breadcrumbs back up (SEO › section › item). No drawers
   or view switches hide detail: a deep page shows all of it, top to bottom.
-- **Google Maps ranking** (`/seo/maps`): one table of every keyword with its top-3 spots (with their change in 30 days beside
-  them), average rank, its grid and who's #1, and a last row for all keywords together. A keyword
+- **Google Maps ranking** (`/seo/maps`): one table of every keyword with how much of the area sees it in the top 3, as
+  a percentage beside its grid (the count of spots on hover, the change in 30 days in points), average rank and who's #1, and a last row for all keywords together. A keyword
   (`/seo/maps/:keywordId`) shows its map (a real map, MapLibre on OpenFreeMap tiles, no key: zoom with the buttons or
   ctrl/⌘ + scroll, drag to move) beside a ranked leaderboard with each business's rating and reviews, and three tiles
   under the map (top-3 spots, average position, change in 30 days); then **Why they're ahead** (**How you compare**
@@ -60,7 +61,7 @@ changes what checks cost and links the Google profile.
   profile, new reviews per week and rating over 90 days from `place_snapshots`, the categories it lists that you don't,
   and where it stands on each of your Maps keywords, each opening that keyword's map drawn for it. Competitors' posts
   aren't tracked.
-- **Keywords** (`/seo/keywords`): one table with, per keyword, searches a month, your position, its change in 30 days
+- **Google search ranking** (`/seo/keywords`, "Google search" in the sidebar): one table with, per keyword, searches a month, your position, its change in 30 days
   and who's first. A keyword (`/seo/keywords/:keywordId`) shows those facts, whether Google's results page showed a map
   pack and an AI Overview (and whether it cites you), your ranking page, your position by week over 90 days and Google's whole first page.
 - **AI answers** (`/seo/ai`): one table of question × assistant (whether you're named and where, and the sites cited),
@@ -68,9 +69,11 @@ changes what checks cost and links the Google profile.
   a card per assistant with its mark: whether it names you and where, its answer with your name highlighted, who else
   it named, and what it cited.
 - **Competitors** (`/seo/competitors`): per channel (a filter above the table), who's ahead of you on how many keywords
-  and where they beat you most; add one by hand, or hide or unhide one. A competitor (`/seo/competitors/:id`) shows all
-  three channels at once, their result beside yours for every keyword or question, each linking to that keyword's page
-  (on Maps, drawn for them), and their business page when they have one.
+  and where they beat you most, the ones ahead first and the rest saying "Not ahead", with a totals row; add one by
+  hand, or hide or unhide one. A competitor (`/seo/competitors/:id`) is one card with a section per channel they show
+  up in, their result beside yours for every keyword or question (the ones they win first, marked), each linking to
+  that keyword's page (on Maps, drawn for them); the channels they don't show up in are named in one line under it,
+  and their Google profile is linked beside the badges when they have one.
 - **Settings** (`/seo/settings`): one card of sections (business details; checks within the Plan, with the grid's shape and each assistant's mark; the Google profile link; pause; remove), each with its one action, and the grid size and reach edited with the same map preview as setup. With two or more Locations, a list beside the settings picks which one you're viewing, and
   Select pauses, resumes or removes several together.
 - **Suggestions**, each saying what it was based on: add categories competitors ahead of you list; get listed on a site
@@ -127,7 +130,7 @@ unlimited: any phrase a customer might search. A category is where a keyword ide
 trip through Google's sign-in asks for the same ones. What's ticked on What to track is kept for the browser tab until
 launch, so Back and on again keeps it.
 
-**Stopping a keyword** is per place: Stop tracking on Google Maps or on Keywords turns it off there only; off in both,
+**Stopping a keyword** is per place: Stop tracking on Google Maps or on Google search turns it off there only; off in both,
 it's no longer tracked and stops counting against the Plan. Stopping a keyword or a question happens at once with an
 **Undo** in the message, rather than an "Are you sure?".
 

@@ -77,7 +77,7 @@ function AiOverview({ row }: { row: Row }) {
 
 const firstName = (row: Row) => (row.first ? (row.first.isYou ? "You" : (row.first.name ?? row.first.domain)) : "—");
 
-const th = "px-3 py-2 font-normal";
+const th = stack.pad;
 
 // ---------- All keywords ----------
 
