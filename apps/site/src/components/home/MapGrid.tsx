@@ -31,6 +31,7 @@ export function MapGrid({
   className,
   numbers = true,
   animate = false,
+  origin,
 }: {
   size: number;
   ranks: (number | null)[];
@@ -38,6 +39,8 @@ export function MapGrid({
   numbers?: boolean;
   /** Dots appear one after another from the door outwards, once, as the hero enters. */
   animate?: boolean;
+  /** With `animate`: the spot (index) the dots spread out from, at once, instead of the door after the hero enters. */
+  origin?: number;
 }) {
   const c = (size - 1) / 2;
   return (
@@ -51,7 +54,11 @@ export function MapGrid({
           const row = Math.floor(i / size);
           const col = i % size;
           const door = row === c && col === c;
-          const ring = Math.max(Math.abs(row - c), Math.abs(col - c));
+          const from =
+            origin === undefined
+              ? { row: c, col: c, wait: 300, step: 110 }
+              : { row: Math.floor(origin / size), col: origin % size, wait: 0, step: 80 };
+          const ring = Math.max(Math.abs(row - from.row), Math.abs(col - from.col));
           return (
             <div key={i} className="grid place-items-center">
               <span
@@ -60,7 +67,9 @@ export function MapGrid({
                   animate && "dot-in",
                   door && "outline-2 outline-offset-2 outline-ink",
                 )}
-                style={{ background: rankFill(r), animationDelay: animate ? `${300 + ring * 110}ms` : undefined } as CSSProperties}
+                style={
+                  { background: rankFill(r), animationDelay: animate ? `${from.wait + ring * from.step}ms` : undefined } as CSSProperties
+                }
               >
                 {numbers ? (r ?? "–") : null}
               </span>

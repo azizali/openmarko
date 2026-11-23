@@ -1,7 +1,7 @@
 // The hero's tile: the app's Google Maps page for one practice, set in the middle of the first screen. A keyword's
 // 7 × 7 grid on the map, the numbers it adds up to, who's ahead, and this week's fix with its Apply button.
 import { ArrowUpRight, Check, MapPin, Star } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type PointerEvent } from "react";
 import { reducedMotion, useCountUp } from "../../lib/motion";
 import { cn } from "../ui";
 import { GridLegend, MapGrid } from "./MapGrid";
@@ -32,6 +32,7 @@ function Trend({ now, run }: { now: number; run: boolean }) {
   );
 }
 
+/** Moving onto the map with a mouse runs the check again, spreading out from the spot under the pointer. */
 export function RankTile() {
   const [kw, setKw] = useState(0);
   const ranks = gridRanks(SIZE, mapsKeywords[kw]!.seed);
@@ -41,12 +42,23 @@ export function RankTile() {
   // Each keyword runs its check as it's shown: dots fill in from the door outwards (about 1.1 s), then the numbers
   // count up and the trend grows. Under reduced motion it's done at once.
   const [checking, setChecking] = useState(() => !reducedMotion());
+  // A rerun from the pointer: which run this is (restarts the dots and bars) and the spot it spreads from.
+  const [run, setRun] = useState(0);
+  const [origin, setOrigin] = useState<number | undefined>();
   useEffect(() => {
     if (reducedMotion()) return;
     setChecking(true);
     const t = setTimeout(() => setChecking(false), 1100);
     return () => clearTimeout(t);
-  }, [kw]);
+  }, [kw, run]);
+  const rerun = (e: PointerEvent<HTMLDivElement>) => {
+    if (checking || e.pointerType !== "mouse" || reducedMotion()) return;
+    const b = e.currentTarget.getBoundingClientRect();
+    // The dots sit inside a 7% inset; clamp so the map's edge counts as its outer row.
+    const at = (v: number, size: number) => Math.min(SIZE - 1, Math.max(0, Math.floor(((v / size - 0.07) / 0.86) * SIZE)));
+    setOrigin(at(e.clientY - b.top, b.height) * SIZE + at(e.clientX - b.left, b.width));
+    setRun((r) => r + 1);
+  };
   const top = useCountUp(top3(ranks), !checking, 900);
   const avgUp = useCountUp(Math.round(Number(avg) * 10), !checking, 900);
   const change = useCountUp(mapsKeywords[kw]!.change || 1, !checking, 900);
@@ -80,7 +92,10 @@ export function RankTile() {
             {mapsKeywords.slice(0, 3).map((k, i) => (
               <button
                 key={k.keyword}
-                onClick={() => setKw(i)}
+                onClick={() => {
+                  setKw(i);
+                  setRun(0);
+                }}
                 aria-pressed={kw === i}
                 className={cn(
                   "min-h-8 rounded-full border px-3 text-[13px] transition-colors active:scale-[0.97]",
@@ -91,7 +106,9 @@ export function RankTile() {
               </button>
             ))}
           </div>
-          <MapGrid key={kw} size={SIZE} ranks={ranks} animate />
+          <div onPointerEnter={rerun}>
+            <MapGrid key={`${kw}-${run}`} size={SIZE} ranks={ranks} animate origin={run ? origin : undefined} />
+          </div>
           <GridLegend />
         </div>
 
@@ -125,7 +142,7 @@ export function RankTile() {
             </ul>
           </div>
 
-          <Trend key={kw} now={top3(ranks)} run={!checking} />
+          <Trend key={`${kw}-${run}`} now={top3(ranks)} run={!checking} />
 
           <div className="mt-auto rounded-xl border border-line bg-bg p-3.5">
             <div className="flex items-center gap-1.5 text-[12px] font-medium text-accent">

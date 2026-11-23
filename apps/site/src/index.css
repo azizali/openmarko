@@ -477,3 +477,29 @@ button {
     animation: none;
   }
 }
+
+/* Hero effect "streets": the map shows only in a soft light around the pointer (set as --px/--py by HeroFx). */
+.street-light {
+  --map-land: #e1e1e6;
+  --map-water: #cddbe8;
+  --map-park: #d3e4cd;
+  mask-image: radial-gradient(circle 260px at var(--px, -999px) var(--py, -999px), #000 0%, #000 35%, transparent 100%);
+}
+:root[data-theme="dark"] .street-light {
+  --map-land: #202024;
+  --map-road: #34343a;
+}
+/* The "you are here" pin's slow radar ring. */
+.radar {
+  animation: radar 2.4s var(--ease-out) infinite;
+}
+@keyframes radar {
+  from {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(5);
+  }
+}
