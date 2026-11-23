@@ -3,7 +3,7 @@
 // the other kinds too. One status is loaded for the whole SEO section and looked at again every 10 seconds while
 // something is running, so every page agrees and reloads its own data when its kind of check finishes.
 import { createContext, use, useEffect, useRef, useState, type ReactNode } from "react";
-import { Clock, Loader2, RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { Button, Checkbox, Drawer, cn } from "../../components/ui";
 import { Feedback, useFeedback, useToast } from "../../components/Feedback";
 import { fmtTime, messageOf } from "../../lib/api";
@@ -15,7 +15,11 @@ import { useSeo, type SeoTab } from "./Seo";
 
 export type CheckKind = "maps" | "organic" | "ai";
 const allKinds: CheckKind[] = ["maps", "organic", "ai"];
-export const kindNames: Record<CheckKind, string> = { maps: "Google Maps", organic: "Google search", ai: "AI answers" };
+export const kindNames: Record<CheckKind, string> = {
+  maps: "Google Maps",
+  organic: "Google search",
+  ai: "AI answers",
+};
 
 /** What each page shows, so what its Check now checks. Settings shows no results. */
 export const kindsOf: Record<SeoTab, CheckKind[]> = {
@@ -28,7 +32,10 @@ export const kindsOf: Record<SeoTab, CheckKind[]> = {
 };
 
 type Checks = { status: CheckStatus | null; reload: () => Promise<void> };
-const ChecksContext = createContext<Checks>({ status: null, reload: async () => {} });
+const ChecksContext = createContext<Checks>({
+  status: null,
+  reload: async () => {},
+});
 
 export function ChecksProvider({ children }: { children: ReactNode }) {
   const { orgId, location } = useSeo();
@@ -95,8 +102,8 @@ const latest = (dates: (string | Date | null)[]) =>
   dates.reduce<string | Date | null>((a, b) => (!b ? a : !a || new Date(b) > new Date(a) ? b : a), null);
 const list = (names: string[]) => (names.length < 2 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`);
 
-/** Under a page's title: when its data was last checked, and what's checking now. Quiet unless something's running. */
-export function CheckLine({ tab }: { tab: SeoTab }) {
+/** Under Check now: when the page's data was last checked, and what's checking now. Quiet unless something's running. */
+export function CheckLine({ tab, className }: { tab: SeoTab; className?: string }) {
   const { status } = use(ChecksContext);
   const [open, setOpen] = useState(false);
   const kinds = kindsOf[tab];
@@ -107,12 +114,13 @@ export function CheckLine({ tab }: { tab: SeoTab }) {
   const since = latest(running.map((k) => k.running!.startedAt));
   const failed = mine.filter((k) => k.lastError && !k.running);
   return (
-    <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12.5px] text-muted">
+    <span className={cn("flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12.5px] text-muted", className)}>
       <span className="inline-flex items-center gap-1.5">
-        <Clock size={12} className="text-subtle" aria-hidden />
+        {/* Green once there are results to read; grey until the first check, or when the last one failed. */}
+        <span className={cn("size-2 shrink-0 rounded-full", last && !failed.length ? "bg-good" : "bg-subtle")} aria-hidden />
         {last ? (
           <span title={fmtTime(last)}>
-            Updated <span className="font-medium text-fg">{ago(last)}</span>
+            Checked <span className="font-medium text-fg">{ago(last)}</span>
             <span className="hidden text-subtle sm:inline"> · {fmtTime(last)}</span>
           </span>
         ) : (
@@ -187,7 +195,9 @@ function ChecksDrawer({ open, onClose, preselect }: { open: boolean; onClose: ()
 
   const start = async () => {
     setStarting(true);
-    const r = await locationApi(orgId, location.id).check.post({ kinds: chosen });
+    const r = await locationApi(orgId, location.id).check.post({
+      kinds: chosen,
+    });
     setStarting(false);
     if (r.error) return fb.fail(messageOf(r.error), "Could not start the check");
     await reload();

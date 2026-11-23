@@ -3,14 +3,14 @@
 // else the one last opened in this Organization, else the first; a switcher shows only when there's more than one.
 // With no Location yet, SEO starts with setup (/seo/setup). Each page lives in its own file beside this one.
 import { createContext, lazy, use, useEffect, useMemo, type ReactNode } from "react";
-import { Navigate, useNavigate, useParams, useSearchParams } from "react-router";
-import { MapPin } from "lucide-react";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router";
+import { ChevronRight, MapPin } from "lucide-react";
 import { Breadcrumbs, PageHeader, Select, type Crumb } from "../../components/ui";
 import { LoadError } from "../../components/Feedback";
 import { useLoad } from "../../lib/useLoad";
 import { useOrg, useSession } from "../../lib/session";
-import { seoApi, type LocationView } from "./api";
-import { CheckLine, CheckNowButton, ChecksProvider } from "./checks";
+import { locationApi, seoApi, type LocationView } from "./api";
+import { CheckLine, CheckNowButton, ChecksProvider, kindsOf, useAfterCheck } from "./checks";
 
 const pages = {
   overview: lazy(() => import("./Overview")),
@@ -150,7 +150,7 @@ export function LocationSwitcher() {
 }
 
 /**
- * A page's header: its name, one line on what it answers, when its data was last checked and Check now beside it
+ * A page's header: its name, one line on what it answers, Check now with when the data was last checked under it
  * (checks.tsx), the Location switcher, and its own actions. A deep page (one keyword, one business) passes its own
  * `title` and the `trail` below its section, and gets breadcrumbs back up: SEO › its section › … › itself.
  */
@@ -160,6 +160,7 @@ export function SeoHeader({
   trail,
   sub,
   actions,
+  suggestions,
   switcher = true,
 }: {
   tab: SeoTab;
@@ -168,6 +169,8 @@ export function SeoHeader({
   trail?: Crumb[];
   sub: ReactNode;
   actions?: ReactNode;
+  /** The check whose open suggestions a link after `sub` counts, opening them on the overview. Shown only when there are some. */
+  suggestions?: "maps" | "keywords" | "ai";
   /** False where the page lists the Locations itself (settings), so there's one way to choose, not two. */
   switcher?: boolean;
 }) {
@@ -184,19 +187,53 @@ export function SeoHeader({
       crumbs={crumbs && <Breadcrumbs items={crumbs} />}
       title={title ?? tabNames[tab]}
       sub={
-        <>
-          {sub}
-          <CheckLine tab={tab} />
-        </>
+        suggestions ? (
+          <>
+            {sub}
+            <SuggestionsLink helps={suggestions} />
+          </>
+        ) : (
+          sub
+        )
       }
       actions={
-        <>
-          {switcher && <LocationSwitcher />}
-          {actions}
-          <CheckNowButton tab={tab} />
-        </>
+        // When the data was last checked sits under Check now, as that button's caption.
+        <div className="flex flex-col gap-2 sm:items-end">
+          <div className="flex flex-wrap items-center gap-2">
+            {switcher && <LocationSwitcher />}
+            {actions}
+            <CheckNowButton tab={tab} />
+          </div>
+          <CheckLine tab={tab} className="sm:justify-end" />
+        </div>
       }
     />
+  );
+}
+
+/**
+ * " · 3 suggestions ›" after a check page's line: how many open suggestions would move this check, opening them on the
+ * overview with its filter set. It sits in the line, not among the buttons, and says nothing when there are none.
+ */
+function SuggestionsLink({ helps }: { helps: "maps" | "keywords" | "ai" }) {
+  const { orgId, location } = useSeo();
+  const href = useSeoHref();
+  const open = useLoad(() => locationApi(orgId, location.id).suggestions.get(), [orgId, location.id]);
+  // Suggestions are written once a check cycle ends, so the count follows any check finishing.
+  useAfterCheck(kindsOf.overview, open.reload);
+  const count = open.data?.open.filter((s) => s.helps === helps).length ?? 0;
+  if (!count) return null;
+  return (
+    <>
+      {" · "}
+      <Link
+        to={href(`/seo/overview?filter=${helps}`)}
+        className="inline-flex items-center gap-0.5 text-fg underline-offset-2 hover:underline"
+      >
+        {count} {count === 1 ? "suggestion" : "suggestions"}
+        <ChevronRight size={13} aria-hidden />
+      </Link>
+    </>
   );
 }
 

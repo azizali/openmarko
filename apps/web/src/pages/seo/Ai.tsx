@@ -10,7 +10,7 @@ import { messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
 import { engineNames, locationApi, seoApi, type AiPage } from "./api";
 import { AddQuestions } from "./AddDrawers";
-import { Change, Source, stack } from "./parts";
+import { Change, EngineName, Marked, Source, stack } from "./parts";
 import { kindsOf, useAfterCheck, useReloadWhilePending } from "./checks";
 import { SeoHeader, useSeo, useSeoHref } from "./Seo";
 
@@ -40,8 +40,8 @@ function useAiPage() {
 /** One assistant's answer in a word: not asked yet, asked and you're not in it, or where you are in it. */
 function Cell({ answer }: { answer: Answer | null | undefined }) {
   if (!answer) return <span className="text-[12.5px] text-subtle">Waiting</span>;
-  if (!answer.namedYou) return <span className="text-[12.5px] text-muted">Not named</span>;
-  return <Badge tone="good">{answer.position ? `#${answer.position}` : "Named"}</Badge>;
+  if (!answer.namedYou) return <Badge tone="bad">Not named</Badge>;
+  return <Badge tone="good">{answer.position ? `Named #${answer.position}` : "Named"}</Badge>;
 }
 
 const th = "px-3 py-2 font-normal";
@@ -61,6 +61,7 @@ function QuestionList() {
     <>
       <SeoHeader
         tab="ai"
+        suggestions="ai"
         sub={
           data && data.total ? (
             <>
@@ -96,7 +97,7 @@ function QuestionList() {
                   <th className={cn(th, "pl-4")}>Question</th>
                   {data.engines.map((e) => (
                     <th key={e} className={cn(th, "text-center")}>
-                      {engineNames[e] ?? e}
+                      <EngineName engine={e} />
                     </th>
                   ))}
                   <th className={th}>Cites</th>
@@ -270,14 +271,17 @@ function QuestionPage({ id }: { id: string }) {
   );
 }
 
+/** One assistant's answer as a person reads it: whether it names you, the answer with your name picked out, and what it read. */
 function AnswerCard({ engine, answer }: { engine: string; answer: Answer | null | undefined }) {
+  const you = answer?.named.find((n) => n.isYou)?.name;
+  const others = answer?.named.filter((n) => !n.isYou) ?? [];
   return (
-    <Card className="min-w-0 space-y-4">
+    <Card className="flex min-w-0 flex-col gap-3">
       <h2 className="flex items-center justify-between gap-2 text-[14px] font-medium">
-        {engineNames[engine] ?? engine}
+        <EngineName engine={engine} size={18} />
         {answer && (
-          <Badge tone={answer.namedYou ? "good" : "neutral"}>
-            {answer.namedYou ? (answer.position ? `Names you #${answer.position}` : "Names you") : "Doesn't name you"}
+          <Badge tone={answer.namedYou ? "good" : "bad"}>
+            {answer.namedYou ? (answer.position ? `Named #${answer.position}` : "Named") : "Not named"}
           </Badge>
         )}
       </h2>
@@ -285,36 +289,17 @@ function AnswerCard({ engine, answer }: { engine: string; answer: Answer | null 
         <p className="text-[13px] text-muted">No answer yet.</p>
       ) : (
         <>
-          <p className="text-[13.5px] leading-relaxed">“{answer.excerpt}”</p>
-          <div>
-            <h3 className="mb-1 text-[12.5px] font-normal text-muted">Named, in order</h3>
-            {answer.named.length ? (
-              <ol className="space-y-0.5 text-[13.5px]">
-                {answer.named.map((n, i) => (
-                  <li key={n.name} className={cn("flex gap-2", n.isYou && "font-medium")}>
-                    <span className="num w-4 shrink-0 text-muted">{i + 1}</span>
-                    {n.isYou ? "You" : n.name}
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <p className="text-[13px] text-muted">No businesses named.</p>
-            )}
-          </div>
-          <div>
-            <h3 className="mb-1 text-[12.5px] font-normal text-muted">Cited</h3>
-            {answer.cites.length ? (
-              <ul className="flex flex-wrap gap-1.5">
-                {[...new Set(answer.cites)].map((c) => (
-                  <li key={c}>
-                    <Badge>{c}</Badge>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-[13px] text-muted">No sources cited.</p>
-            )}
-          </div>
+          <p className="text-[13.5px] leading-relaxed">
+            <Marked text={answer.excerpt} names={you ? [you] : []} />
+          </p>
+          {others.length > 0 && (
+            <p className="text-[12.5px] text-muted">
+              Also named: <span className="text-fg">{others.map((n) => n.name).join(", ")}</span>
+            </p>
+          )}
+          <p className="mt-auto border-t border-line pt-3 text-[12.5px] text-muted">
+            Cited: {answer.cites.length ? [...new Set(answer.cites)].join(", ") : "no sources"}
+          </p>
         </>
       )}
     </Card>

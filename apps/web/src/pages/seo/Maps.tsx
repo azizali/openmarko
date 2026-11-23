@@ -42,20 +42,13 @@ function MapsList() {
       <SeoHeader
         tab="maps"
         sub={`Your rank from ${location.gridSize * location.gridSize} spots within ${miles(location.gridRadiusM)}.`}
+        suggestions="maps"
         actions={
-          <>
-            {can("track") && (
-              <Button icon={<Plus size={14} />} onClick={() => setAdding(true)}>
-                Add keywords
-              </Button>
-            )}
-            <Link
-              to={`/seo/overview?location=${location.id}&filter=maps`}
-              className="text-[13px] text-muted underline-offset-2 hover:text-fg hover:underline"
-            >
-              Suggestions for Maps
-            </Link>
-          </>
+          can("track") && (
+            <Button icon={<Plus size={14} />} onClick={() => setAdding(true)}>
+              Add keywords
+            </Button>
+          )
         }
       />
       {summary.error ? (

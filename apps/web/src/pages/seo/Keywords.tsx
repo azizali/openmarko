@@ -1,5 +1,7 @@
-// Keywords (/seo/keywords): where the website ranks on Google for each keyword, as one table with everything we know
-// per keyword. A row opens the keyword's own page (/seo/keywords/<id>): its facts, its position over 90 days and
+// Keywords (/seo/keywords): where the website ranks on Google for each keyword, as one table: its searches, position,
+// change and who's first. What else the results page showed (a map pack, an AI Overview and whether it cites you) is on
+// the keyword's page only, so the list doesn't read like the Google Maps and AI answers sections; every row still
+// carries it (hasMapPack, hasAiOverview, aiOverviewCitesYou), so a column for it is a <th> and a <td> away. A row opens the keyword's own page (/seo/keywords/<id>): its facts, its position over 90 days and
 // Google's whole first page, with breadcrumbs back up.
 import type { ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
@@ -94,6 +96,7 @@ function KeywordList() {
     <>
       <SeoHeader
         tab="keywords"
+        suggestions="keywords"
         sub={
           data && ready ? (
             <>
@@ -129,8 +132,6 @@ function KeywordList() {
                 <th className={cn(th, "text-right")}>Searches / mo</th>
                 <th className={th}>Position</th>
                 <th className={cn(th, "text-right")}>30 days</th>
-                <th className={th}>Map pack</th>
-                <th className={th}>AI Overview</th>
                 <th className={th}>First on Google</th>
                 <th className="w-8" />
               </tr>
@@ -138,7 +139,7 @@ function KeywordList() {
             <tbody role="rowgroup" className={stack.body}>
               {data.keywords.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-6 text-center text-muted">
+                  <td colSpan={6} className="px-4 py-6 text-center text-muted">
                     No keywords yet.
                   </td>
                 </tr>
@@ -165,12 +166,6 @@ function KeywordList() {
                     </td>
                     <td role="cell" data-label="30 days" className={cn(th, "text-right", stack.cell)}>
                       <Moved row={k} />
-                    </td>
-                    <td role="cell" data-label="Map pack" className={cn(th, stack.cell)}>
-                      {k.pending ? <span className="text-muted">—</span> : <YesNo yes={k.hasMapPack} />}
-                    </td>
-                    <td role="cell" data-label="AI Overview" className={cn(th, stack.cell)}>
-                      {k.pending ? <span className="text-muted">—</span> : <AiOverview row={k} />}
                     </td>
                     <td
                       role="cell"

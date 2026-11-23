@@ -1,9 +1,12 @@
 // Pieces every SEO page shares: the map grid's thumbnail and legend (the map itself is GridMap.tsx), a change over 30 days, the one-line
-// "Data source" note, a rank's tone, and a bar in a leaderboard. Grids come from the API as the order of businesses
+// "Data source" note, a rank's tone, and a bar in a leaderboard. Then the pieces that make a page read at a glance,
+// drawn the way the marketing site pictures these pages: an assistant's mark, three number tiles, a bar a week,
+// your profile's facts against a competitor's as paired bars, and your name highlighted in an AI answer. Grids come from the API as the order of businesses
 // at each spot, so any business's map can be drawn from the same data.
 import type { ReactNode } from "react";
 import { ArrowDown, ArrowUp, Info } from "lucide-react";
 import { Card, LineChart, cn } from "../../components/ui";
+import { engineNames } from "./api";
 
 /** Where a business is in one spot's order (1 is first), or null when it's not in the top 20. */
 export const rankIn = (ranking: string[], placeId: string | null) => {
@@ -162,6 +165,161 @@ export function Headline({
         area
       />
     </Card>
+  );
+}
+
+// ---------- Read at a glance (the marketing site's pictures of these pages, made real) ----------
+
+/** Each AI assistant's real mark. ChatGPT's is black, so it turns white in dark mode. */
+const engineIcons: Record<string, { src: string; ink?: boolean }> = {
+  chatgpt: { src: "/icons/openai.svg", ink: true },
+  google_ai: { src: "/icons/gemini.svg" },
+  perplexity: { src: "/icons/perplexity.svg" },
+};
+
+/** An assistant's name with its mark beside it. */
+export function EngineName({ engine, size = 16, className }: { engine: string; size?: number; className?: string }) {
+  const icon = engineIcons[engine];
+  return (
+    <span className={cn("inline-flex items-center gap-1.5", className)}>
+      {icon && (
+        <img
+          src={icon.src}
+          alt=""
+          width={size}
+          height={size}
+          style={{ width: size, height: size }}
+          className={cn("shrink-0 object-contain", icon.ink && "dark:invert")}
+        />
+      )}
+      {engineNames[engine] ?? engine}
+    </span>
+  );
+}
+
+export type Tile = { label: string; value: ReactNode; unit?: ReactNode };
+
+/** Three numbers at a glance, each with what it counts under it: "Top 3 · 21/49 · spots". */
+export function Tiles({ tiles, className }: { tiles: Tile[]; className?: string }) {
+  return (
+    <dl className={cn("grid grid-cols-3 gap-2", className)}>
+      {tiles.map((t) => (
+        <div key={t.label} className="min-w-0 rounded-lg bg-hover px-3 py-2.5">
+          <dt className="text-[12px] text-muted">{t.label}</dt>
+          <dd className="num truncate font-serif text-[30px] leading-tight tracking-tight">{t.value}</dd>
+          {t.unit && <dd className="truncate text-[12px] text-muted">{t.unit}</dd>}
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/**
+ * A bar a week, the latest one in full colour, so a climb reads before any number does. A week without a reading is
+ * a gap, not a zero.
+ */
+export function WeekBars({
+  labels,
+  values,
+  label,
+  empty = "Shows after two weeks of checks.",
+}: {
+  labels: string[];
+  values: (number | null)[];
+  /** What the bars count, read out in place of the picture. */
+  label: string;
+  empty?: string;
+}) {
+  const known = values.filter((v): v is number => v !== null);
+  if (!known.length) return <p className="text-[13px] text-muted">{empty}</p>;
+  const max = Math.max(1, ...known);
+  const last = values.findLastIndex((v) => v !== null);
+  return (
+    <div>
+      <div className="flex h-24 items-end gap-1" role="img" aria-label={`${label}, week by week: ${known.join(", ")}`}>
+        {values.map((v, i) => (
+          <div key={labels[i]} className="flex h-full flex-1 flex-col justify-end" title={`Week of ${labels[i]}: ${v ?? "no check"}`}>
+            {v === null ? (
+              <div className="h-px bg-line" />
+            ) : (
+              <div
+                className={cn("rounded-sm", !v ? "bg-line-strong" : i === last ? "bg-accent" : "bg-accent/25")}
+                style={{ height: v ? `${Math.max(6, (v / max) * 100)}%` : 2 }}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="num mt-1 flex justify-between text-[11px] text-muted">
+        <span>{labels[0]}</span>
+        <span>{labels[labels.length - 1]}</span>
+      </div>
+    </div>
+  );
+}
+
+export type Versus = {
+  label: string;
+  yours: number | null;
+  theirs: number | null;
+  show?: (v: number) => string;
+};
+
+/** Your profile beside theirs, a pair of bars per fact, so the gap to close first is the longest. Higher is better. */
+export function VersusBars({ rows, them }: { rows: Versus[]; them: string }) {
+  return (
+    <div className="flex flex-col gap-3 text-[13px]">
+      <div className="flex justify-between text-[12px] text-muted">
+        <span>You</span>
+        <span className="truncate pl-4">{them}</span>
+      </div>
+      {rows.map((r) => {
+        const max = Math.max(r.yours ?? 0, r.theirs ?? 0) || 1;
+        const show = (v: number | null) => (v === null ? "—" : r.show ? r.show(v) : String(v));
+        const behind = r.theirs !== null && (r.yours === null || r.yours < r.theirs);
+        return (
+          <div key={r.label} className="flex flex-col gap-1">
+            <span className="text-muted">
+              {r.label}
+              {behind && <span className="text-bad"> · behind</span>}
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="num w-10 shrink-0 text-right">{show(r.yours)}</span>
+              <span className="h-2 flex-1 overflow-hidden rounded-full bg-hover">
+                <span className="block h-full rounded-full bg-accent" style={{ width: `${((r.yours ?? 0) / max) * 100}%` }} />
+              </span>
+              <span className="h-2 flex-1 overflow-hidden rounded-full bg-hover">
+                <span className="block h-full rounded-full bg-fg/60" style={{ width: `${((r.theirs ?? 0) / max) * 100}%` }} />
+              </span>
+              <span className="num w-10 shrink-0">{show(r.theirs)}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Text with these names picked out, the way an AI answer reads with your name highlighted. */
+export function Marked({ text, names }: { text: string; names: string[] }) {
+  const wanted = names.filter((n) => n.trim().length > 1);
+  if (!wanted.length) return <>{text}</>;
+  const parts = text.split(new RegExp(`(${wanted.map(escape).join("|")})`, "gi"));
+  const lower = new Set(wanted.map((n) => n.toLowerCase()));
+  return (
+    <>
+      {parts.map((p, i) =>
+        lower.has(p.toLowerCase()) ? (
+          <mark key={i} className="rounded-sm bg-accent-soft px-0.5 text-fg">
+            {p}
+          </mark>
+        ) : (
+          p
+        ),
+      )}
+    </>
   );
 }
 

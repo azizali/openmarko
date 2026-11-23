@@ -1,15 +1,15 @@
 // One Google Maps keyword (/seo/maps/<keywordId>): everything about it on one page, top to bottom. The map with its
 // leaderboard (or a tapped spot's top 3), how your profile compares with the businesses ahead, and the last 90 days.
 // `?who=<placeId>` draws another business's map instead of yours. Every business opens its own page (Place.tsx).
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { ArrowUp, ChevronRight, Star, X } from "lucide-react";
-import { Badge, Button, Card, LineChart, cn, fmt } from "../../components/ui";
+import { Button, Card, cn, fmt } from "../../components/ui";
 import { LoadError, useToast } from "../../components/Feedback";
 import { messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
 import { locationApi, type MapsKeyword as Data } from "./api";
-import { GridLegend, GridThumb, Source, rankIn, stack } from "./parts";
+import { GridLegend, GridThumb, Source, Tiles, VersusBars, WeekBars, rankIn, stack } from "./parts";
 import { GridMap } from "./GridMap";
 import { kindsOf, useAfterCheck } from "./checks";
 import { SeoHeader, useSeo, useSeoHref } from "./Seo";
@@ -17,7 +17,12 @@ import { SeoHeader, useSeo, useSeoHref } from "./Seo";
 type Board = Data["board"][number];
 
 const NOT_FOUND = 21;
-const sideText = { north: "north", south: "south", east: "east", west: "west" } as Record<string, string>;
+const sideText = {
+  north: "north",
+  south: "south",
+  east: "east",
+  west: "west",
+} as Record<string, string>;
 
 export default function MapsKeyword({ keywordId }: { keywordId: string }) {
   const { orgId, location, can } = useSeo();
@@ -93,7 +98,7 @@ export default function MapsKeyword({ keywordId }: { keywordId: string }) {
             <MapView d={d} who={who ?? d.youPlaceId} onWho={setWho} placeHref={placeHref} />
           </Card>
           <Card>
-            <h2 className="text-[14px] font-medium">How you compare</h2>
+            <h2 className="text-[14px] font-medium">{ahead.length ? "Why they're ahead" : "How you compare"}</h2>
             <CompareView board={d.board} ahead={ahead} you={you} placeHref={placeHref} />
           </Card>
           <Card>
@@ -142,16 +147,6 @@ function Stars({ rating, reviews }: { rating: number | null; reviews: number | n
       )}
       {reviews !== null && <span>({fmt(reviews)})</span>}
     </span>
-  );
-}
-
-function Stat({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) {
-  return (
-    <div className="min-w-0">
-      <p className="text-[12.5px] text-muted">{label}</p>
-      <p className="num mt-0.5 text-[18px] leading-tight font-medium">{value}</p>
-      {hint && <div className="mt-0.5 text-[12.5px] text-muted">{hint}</div>}
-    </div>
   );
 }
 
@@ -217,6 +212,8 @@ function MapView({
   const door = doorAt === -1 ? null : (ranks[doorAt] ?? null);
   const top3 = ranks.filter((r) => r !== null && r <= 3).length;
   const avg = ranks.length ? ranks.reduce<number>((n, r) => n + (r ?? NOT_FOUND), 0) / ranks.length : NOT_FOUND;
+  // Top-3 spots gained or lost against the scan a month ago, for whoever's map is drawn.
+  const change = d.before ? top3 - d.before.points.filter((p) => (rankIn(p.ranking, who) ?? NOT_FOUND) <= 3).length : null;
   const chosen = d.board.find((b) => b.placeId === who);
   const theirs = chosen && !chosen.isYou;
   const label = (id: string) => (id === d.youPlaceId ? "You" : (d.places[id]?.name ?? "A business"));
@@ -252,12 +249,22 @@ function MapView({
           <GridLegend />
           <span className="text-[12.5px] text-muted">Tap a dot for its top 3</span>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-3 border-t border-line pt-3 sm:grid-cols-4">
-          <Stat label="Top 3" value={top3} hint={`of ${spots} spots`} />
-          <Stat label="Avg rank" value={avg.toFixed(1)} />
-          <Stat label="At your business" value={door === null ? "20+" : `#${door}`} />
-          <Stat label="Strongest / weakest" value={<span className="text-[15px]">{sides}</span>} />
-        </div>
+        <Tiles
+          className="mt-4"
+          tiles={[
+            { label: "Top 3", value: `${top3}/${spots}`, unit: "spots" },
+            { label: "Average", value: `#${avg.toFixed(1)}`, unit: "position" },
+            {
+              label: "30 days",
+              value: change === null ? "—" : change > 0 ? `+${change}` : change < 0 ? `−${-change}` : "0",
+              unit: change === null ? "after a month" : "top-3 spots",
+            },
+          ]}
+        />
+        <p className="mt-2 text-[12.5px] text-muted">
+          At your business {door === null ? "not in the top 20" : `#${door}`}
+          {sides !== "—" && ` · strongest / weakest: ${sides}`}
+        </p>
       </div>
       <div>
         {atSpot ? (
@@ -334,8 +341,18 @@ function MapView({
 // ---------- How you compare ----------
 
 /** The profile numbers compared: higher is better for all of them. */
-const facts: { label: string; of: (b: Board) => number | null; show?: (b: Board) => string }[] = [
-  { label: "Rating", of: (b) => b.rating, show: (b) => (b.rating === null ? "—" : b.rating.toFixed(1)) },
+const facts: {
+  label: string;
+  of: (b: Board) => number | null;
+  show?: (b: Board) => string;
+  fmt?: (v: number) => string;
+}[] = [
+  {
+    label: "Rating",
+    of: (b) => b.rating,
+    show: (b) => (b.rating === null ? "—" : b.rating.toFixed(1)),
+    fmt: (v) => v.toFixed(1),
+  },
   { label: "Reviews", of: (b) => b.reviews },
   { label: "New / mo", of: (b) => b.newReviewsPerMonth },
   { label: "Categories", of: (b) => b.categories },
@@ -358,7 +375,12 @@ function gapsOf(you: Board, rivals: Board[]): Gap[] {
     const y = f.of(you);
     if (m === null) continue;
     const show = (v: number | null) => (v === null ? "—" : f.label === "Rating" ? v.toFixed(1) : fmt(Math.round(v)));
-    out.push({ label: f.label, yours: show(y), theirs: show(m), behind: y === null || y < m });
+    out.push({
+      label: f.label,
+      yours: show(y),
+      theirs: show(m),
+      behind: y === null || y < m,
+    });
   }
   const sites = rivals.filter((r) => r.website).length;
   if (rivals.length)
@@ -395,28 +417,44 @@ function CompareView({
   };
   return (
     <div className="mt-3 space-y-5">
-      {gaps.length > 0 && (
-        <div>
-          <p className="mb-2 text-[12.5px] text-muted">You vs {ahead.length ? `the ${ahead.length} ahead` : "the next 3"} (their median)</p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-            {gaps.map((g) => (
-              <div key={g.label} className="rounded-lg border border-line px-3 py-2">
-                <p className="text-[12px] text-muted">{g.label}</p>
-                <p className="num mt-0.5 text-[15px] font-medium">
-                  {g.yours} <span className="text-[12.5px] font-normal text-muted">vs {g.theirs}</span>
-                </p>
-                <Badge tone={g.behind ? "bad" : "good"} className="mt-1">
-                  {g.behind ? "Behind" : "Even or ahead"}
-                </Badge>
-              </div>
-            ))}
+      {you && leader && (
+        <div className="grid gap-5 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+          <div className="rounded-xl border border-line p-4">
+            <VersusBars
+              them={nameOf(leader)}
+              rows={facts.map((f) => ({
+                label: f.label,
+                yours: f.of(you),
+                theirs: f.of(leader),
+                show: f.fmt,
+              }))}
+            />
           </div>
-          {otherCategory && (
-            <p className="mt-2 text-[13px]">
-              <span className="text-muted">Main category:</span> #{leader.rank} uses <b className="font-medium">{leader.category}</b>, you
-              use <b className="font-medium">{you.category}</b>.
-            </p>
-          )}
+          <ul className="flex flex-col gap-2 text-[13.5px]">
+            {gaps
+              .filter((g) => g.behind)
+              .map((g) => (
+                <li key={g.label} className="flex gap-2">
+                  <ArrowUp size={14} className="mt-0.5 shrink-0 text-bad" aria-hidden />
+                  <span>
+                    {g.label}: yours {g.yours}, theirs {g.theirs}
+                    <span className="text-muted"> ({ahead.length ? `median of the ${ahead.length} ahead` : "median of the next 3"})</span>
+                  </span>
+                </li>
+              ))}
+            {otherCategory && (
+              <li className="flex gap-2">
+                <ArrowUp size={14} className="mt-0.5 shrink-0 text-bad" aria-hidden />
+                <span>
+                  Main category: #{leader.rank} uses <b className="font-medium">{leader.category}</b>, you use{" "}
+                  <b className="font-medium">{you.category}</b>.
+                </span>
+              </li>
+            )}
+            {!gaps.some((g) => g.behind) && !otherCategory && (
+              <li className="text-muted">Your profile is even with or ahead of theirs on every fact here.</li>
+            )}
+          </ul>
         </div>
       )}
       <div className="overflow-x-auto">
@@ -504,23 +542,23 @@ function CompareView({
 const top3Of = (rs: (number | null)[]) => rs.filter((r) => r !== null && r <= 3).length;
 
 function TimeView({ d }: { d: Data }) {
-  const values = [...d.history.you, ...(d.history.leader?.values ?? [])].filter((v): v is number => v !== null);
+  const leaderNow = d.history.leader?.values.findLast((v) => v !== null) ?? null;
   const now = d.scan;
   const then = d.before;
   const ranksOf = (g: NonNullable<Data["scan"]>) => g.points.toSorted((a, b) => a.idx - b.idx).map((p) => rankIn(p.ranking, d.youPlaceId));
   return (
     <div className="mt-3 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
       <div className="min-w-0">
-        <p className="mb-1 text-[13px] text-muted">Top-3 spots, 90 days</p>
-        <LineChart
-          height={220}
-          yMax={Math.max(4, ...values) + 2}
-          labels={d.history.labels}
-          series={[
-            { name: "You", color: "var(--accent)", values: d.history.you },
-            ...(d.history.leader ? [{ name: d.history.leader.name, color: "var(--subtle)", values: d.history.leader.values }] : []),
-          ]}
-        />
+        <p className="mb-2 flex justify-between gap-2 text-[13px] text-muted">
+          <span className="font-medium text-fg">Your spots in the top 3</span>
+          <span>Last {d.history.labels.length} weeks</span>
+        </p>
+        <WeekBars labels={d.history.labels} values={d.history.you} label="Your top-3 spots" />
+        {leaderNow !== null && d.history.leader && (
+          <p className="mt-2 text-[12.5px] text-muted">
+            {d.history.leader.name}, #1 here, had <span className="num text-fg">{leaderNow}</span> last week.
+          </p>
+        )}
       </div>
       {/* Where on the map you gained or lost: only once a scan is a month old. */}
       <div>

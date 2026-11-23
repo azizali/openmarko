@@ -35,31 +35,38 @@ changes what checks cost and links the Google profile.
   which launches (**Cancel setup** at the top
   leaves for good: a draft is removed). Setup is a full screen without the app menu. The first check runs on the
   priority queue and the screen follows it to a first look; **Leave, we'll keep going** goes to SEO while it runs.
-- **Every page's header** says when its data was last checked and, while a check runs, which kind and since when, with
+- **Google Maps ranking, Keywords and AI answers** end their header line with how many open suggestions would move
+  that check ("· 3 suggestions"), linking to them on the overview; there's no link when there are none.
+- **Every page's header** says, under Check now at its top right, when its data was last checked and, while a check runs, which kind and since when, with
   a link to its status (each kind's results in so far). **Check now** checks what the page shows (Google Maps,
   Google search or AI answers; everything on the overview and competitors) and offers the other kinds in the same
   drawer. A kind already running is skipped, never run twice.
-- **Overview** (`/seo/overview`): one number per check with its change over 30 days, the results card from the Google
-  profile (calls, website clicks, direction requests, views, and the searches that showed it), and **What to do next**.
+- **Overview** (`/seo/overview`): a row of four figures, one per check, each with its change over 30 days and opening
+  its page; then **What to do next**, with **Behind the numbers** beside it (the first keywords on Maps and search, each
+  assistant, who leads each channel, and the Google profile's results: calls, website clicks, direction requests,
+  views, and the searches that showed it). On a phone the figures sit two by two and the suggestions come straight after.
 - **Pages are a list, then deep pages.** A section page is its header (one short line) and one table with everything
   known per row; a row opens a full page for that item, with breadcrumbs back up (SEO › section › item). No drawers
   or view switches hide detail: a deep page shows all of it, top to bottom.
 - **Google Maps ranking** (`/seo/maps`): one table of every keyword with its top-3 spots (with their change in 30 days beside
   them), average rank, its grid and who's #1, and a last row for all keywords together. A keyword
   (`/seo/maps/:keywordId`) shows its map (a real map, MapLibre on OpenFreeMap tiles, no key: zoom with the buttons or
-  ctrl/⌘ + scroll, drag to move) beside a ranked leaderboard with each business's rating and reviews; then **How you
-  compare** (your numbers against the median of the ones ahead, main category, website); then **Over time** (the last
-  90 days, and your grid now beside a month ago once one is a month old). `?who=<placeId>` draws another business's
+  ctrl/⌘ + scroll, drag to move) beside a ranked leaderboard with each business's rating and reviews, and three tiles
+  under the map (top-3 spots, average position, change in 30 days); then **Why they're ahead** (**How you compare**
+  when you lead: your profile's facts against #1's as paired bars, and each fact where you're behind the median of the
+  ones ahead, main category included); then **Over time** (your top-3 spots as a bar a week, and your grid now beside a
+  month ago once one is a month old). `?who=<placeId>` draws another business's
   map. Any business opens its own page (`/seo/maps/places/:placeId`, from `GET …/locations/:id/places/:placeId`): its
   profile, new reviews per week and rating over 90 days from `place_snapshots`, the categories it lists that you don't,
   and where it stands on each of your Maps keywords, each opening that keyword's map drawn for it. Competitors' posts
   aren't tracked.
-- **Keywords** (`/seo/keywords`): one table with, per keyword, searches a month, your position, its change in 30 days,
-  map pack, AI Overview (and whether it cites you) and who's first. A keyword (`/seo/keywords/:keywordId`) shows those
-  facts, your ranking page, your position by week over 90 days and Google's whole first page.
+- **Keywords** (`/seo/keywords`): one table with, per keyword, searches a month, your position, its change in 30 days
+  and who's first. A keyword (`/seo/keywords/:keywordId`) shows those facts, whether Google's results page showed a map
+  pack and an AI Overview (and whether it cites you), your ranking page, your position by week over 90 days and Google's whole first page.
 - **AI answers** (`/seo/ai`): one table of question × assistant (whether you're named and where, and the sites cited),
   a last row with each assistant's total, and the sites answers lean on most. A question (`/seo/ai/:questionId`) shows
-  every assistant's answer, who it named in order and what it cited.
+  a card per assistant with its mark: whether it names you and where, its answer with your name highlighted, who else
+  it named, and what it cited.
 - **Competitors** (`/seo/competitors`): per channel (a filter above the table), who's ahead of you on how many keywords
   and where they beat you most; add one by hand, or hide or unhide one. A competitor (`/seo/competitors/:id`) shows all
   three channels at once, their result beside yours for every keyword or question, each linking to that keyword's page

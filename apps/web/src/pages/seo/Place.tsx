@@ -11,6 +11,7 @@ import { useLoad } from "../../lib/useLoad";
 import { locationApi, type PlaceInsight } from "./api";
 import { SeoHeader, useSeo, useSeoHref } from "./Seo";
 import { MapsSource } from "./MapsKeyword";
+import { WeekBars } from "./parts";
 
 export default function Place({ placeId }: { placeId: string }) {
   const { orgId, location } = useSeo();
@@ -85,7 +86,7 @@ function Body({ p }: { p: PlaceInsight }) {
 
         <Card>
           <Section title="New reviews per week" note="last 13 weeks">
-            <WeekBars labels={p.history.labels} values={p.history.newReviews} />
+            <WeekBars labels={p.history.labels} values={p.history.newReviews} label="New reviews" />
             {p.trackedSince && <p className="mt-1.5 text-[12px] text-muted">Tracked since {day(p.trackedSince)}.</p>}
           </Section>
           <RatingTrend values={p.history.rating} />
@@ -146,7 +147,11 @@ function Body({ p }: { p: PlaceInsight }) {
   );
 }
 
-const day = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const day = (iso: string) =>
+  new Date(iso + "T12:00:00").toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
 
 function Ext({ href, children }: { href: string; children: ReactNode }) {
   return (
@@ -174,32 +179,6 @@ function Section({ title, note, children }: { title: string; note?: string; chil
       </h2>
       {children}
     </section>
-  );
-}
-
-/** A bar per week; a week without two readings to compare is a gap, not a zero. */
-function WeekBars({ labels, values }: { labels: string[]; values: (number | null)[] }) {
-  const known = values.filter((v): v is number => v !== null);
-  if (!known.length) return <p className="text-[13px] text-muted">Shows after two weeks of checks.</p>;
-  const max = Math.max(1, ...known);
-  return (
-    <div>
-      <div className="flex h-20 items-end gap-1" role="img" aria-label={`New reviews per week: ${known.join(", ")}`}>
-        {values.map((v, i) => (
-          <div key={labels[i]} className="flex h-full flex-1 flex-col justify-end" title={`Week of ${labels[i]}: ${v ?? "no data"}`}>
-            {v === null ? (
-              <div className="h-px bg-line" />
-            ) : (
-              <div className={cn("rounded-sm", v ? "bg-accent" : "bg-line-strong")} style={{ height: v ? `${(v / max) * 100}%` : 2 }} />
-            )}
-          </div>
-        ))}
-      </div>
-      <div className="num mt-1 flex justify-between text-[11px] text-subtle">
-        <span>{labels[0]}</span>
-        <span>{labels[labels.length - 1]}</span>
-      </div>
-    </div>
   );
 }
 
