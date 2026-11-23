@@ -112,7 +112,7 @@
   --color-band: var(--band);
   --font-sans: "Roboto Flex", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Frank Ruhl Libre", ui-serif, Georgia, serif;
-  --font-display: "Archivo", "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --shadow-float: 0 24px 64px -16px rgb(0 0 0 / 0.16), 0 4px 12px rgb(0 0 0 / 0.04);
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04);
@@ -138,57 +138,12 @@ h3 {
   letter-spacing: -0.02em;
   font-optical-sizing: auto;
 }
-/* Display role: condensed, heavy, tight. In the base layer so weight utilities can still override it. */
+/* Display role: Geist, semibold and tight. In the base layer so weight utilities can still override it. */
 @layer base {
   .font-display {
-    font-stretch: 75%;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    word-spacing: 0.06em;
+    font-weight: 600;
+    letter-spacing: -0.045em;
   }
-}
-
-/*
- * Heading typeface options, picked with the dev-only font picker (html[data-heading]). The default above is Archivo
- * condensed. Once one is chosen, make it the default here and in index.html's font link, and delete the rest.
- */
-:root[data-heading="frank"] .font-display {
-  font-family: "Frank Ruhl Libre", ui-serif, Georgia, serif;
-  font-stretch: normal;
-  font-weight: 400;
-  letter-spacing: -0.025em;
-  word-spacing: normal;
-}
-:root[data-heading="instrument"] .font-display {
-  font-family: "Instrument Serif", ui-serif, Georgia, serif;
-  font-stretch: normal;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  word-spacing: normal;
-}
-:root[data-heading="fraunces"] .font-display {
-  font-family: "Fraunces", ui-serif, Georgia, serif;
-  font-stretch: normal;
-  font-weight: 560;
-  font-variation-settings:
-    "SOFT" 100,
-    "WONK" 0;
-  letter-spacing: -0.03em;
-  word-spacing: normal;
-}
-:root[data-heading="geist"] .font-display {
-  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
-  font-stretch: normal;
-  font-weight: 600;
-  letter-spacing: -0.045em;
-  word-spacing: normal;
-}
-:root[data-heading="bricolage"] .font-display {
-  font-family: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
-  font-stretch: 85%;
-  font-weight: 700;
-  letter-spacing: -0.035em;
-  word-spacing: normal;
 }
 /* A phrase Marko delivers: ink text on a brand-pink underline, the counterpart to the agency strike. */
 .mark-line {

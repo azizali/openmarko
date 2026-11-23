@@ -6,10 +6,12 @@ export const APP_NAME = appConfig.name;
 export const APP_URL = import.meta.env.VITE_APP_URL ?? "http://localhost:5173";
 export const CONTACT_EMAIL = "hello@example.com";
 
+/** The hero's words. A short subtitle on purpose: one line under the headline, not a paragraph. */
 export const hero = {
+  badge: "Local SEO for Google Maps, search and AI answers",
   title: "See where you rank on Google Maps,",
   accent: "street by street.",
-  sub: "OpenMarko is local SEO for owners who'd rather see than be told. It checks your rank from up to 81 spots around your door, on Google search and in the AI assistants, then gives you this week's fixes to apply in one click.",
+  sub: "Your rank from up to 81 spots around your door, on Google search and in AI answers, plus this week's fixes.",
   primary: "Check my rankings",
   secondary: "See the app",
   points: [
