@@ -3,6 +3,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router";
 import {
+  BarChart3,
   BookOpen,
   Bot,
   Check,
@@ -12,18 +13,17 @@ import {
   Gauge,
   LayoutGrid,
   ListChecks,
+  ListTodo,
   LogOut,
   Menu,
   MessagesSquare,
   Moon,
   Plus,
-  MapPin,
   Search,
   SearchCheck,
   Settings,
   Sparkles,
   Sun,
-  UsersRound,
 } from "lucide-react";
 import { Avatar, cn, ModalDialog, navRow } from "./ui";
 import { Logo } from "./Logo";
@@ -48,7 +48,7 @@ type Icon = ComponentType<{
 type NavGroupInfo = { label: string; icon: Icon; section?: boolean };
 const aiGroup: NavGroupInfo = { label: "AI", icon: Bot };
 const seoGroup: NavGroupInfo = {
-  label: "SEO / AEO / GEO",
+  label: "Search",
   icon: SearchCheck,
   section: true,
 };
@@ -60,6 +60,11 @@ export type NavItem = {
   icon: Icon;
   /** Listed under this expandable parent in the sidebar. */
   group?: NavGroupInfo;
+  /**
+   * The pages this entry stands for, shown as tabs on them (Rankings: Google Maps, Google search…). The entry is the
+   * current one on any of them, and each is offered by name in the command palette.
+   */
+  within?: { to: string; label: string }[];
   /** Sits at the foot of the sidebar with the account, apart from the pages. */
   foot?: boolean;
   when?: (can: (r: string, a: string) => boolean) => boolean;
@@ -68,22 +73,41 @@ export type NavItem = {
 /** Every page in the app. Optional modules add theirs only when the build has them. */
 export const nav: NavItem[] = [
   { to: "/", label: "Home", icon: LayoutGrid },
-  // SEO: the overview and one page per check, for the Location chosen on the page.
+  // Search (the SEO module), for the Location chosen on the page: the overview; Rankings, where you stand and who beats
+  // you; Actions, what to change to move them; and its settings. Rankings and Actions are one entry each, their pages
+  // tabs on the page (ADR 0037), so the sidebar stays four rows however many tools Actions grows.
   ...(modules.seo
     ? (
         [
           ["/seo/overview", "Overview", Gauge],
-          ["/seo/maps", "Google Maps", MapPin],
-          ["/seo/keywords", "Google search", Search],
-          ["/seo/ai", "AI answers", Sparkles],
-          ["/seo/competitors", "Competitors", UsersRound],
-          ["/seo/settings", "SEO settings", Settings],
+          [
+            "/seo/maps",
+            "Rankings",
+            BarChart3,
+            [
+              ["/seo/maps", "Google Maps"],
+              ["/seo/keywords", "Google search"],
+              ["/seo/ai", "AI answers"],
+              ["/seo/competitors", "Competitors"],
+            ],
+          ],
+          [
+            "/seo/plan",
+            "Actions",
+            ListTodo,
+            [
+              ["/seo/plan", "Action plan"],
+              ["/seo/site-audit", "Site audit"],
+            ],
+          ],
+          ["/seo/settings", "Search settings", Settings],
         ] as const
-      ).map(([to, label, icon]): NavItem => ({
+      ).map(([to, label, icon, within]): NavItem => ({
         to,
         label,
         icon,
         group: seoGroup,
+        within: within?.map(([t, l]) => ({ to: t, label: l })),
         feature: "seo",
         when: (can) => can("seo", "view"),
       }))
@@ -130,6 +154,8 @@ export const nav: NavItem[] = [
 const iconBtn =
   "grid size-7 shrink-0 place-items-center rounded-md text-muted transition-colors hover:bg-hover hover:text-fg pointer-coarse:size-9";
 const onPath = (path: string, to: string) => (to === "/" ? path === "/" : path === to || path.startsWith(`${to}/`));
+/** Whether a sidebar entry is the current one: its own page, or one of the pages it stands for. */
+const isHere = (path: string, item: NavItem) => onPath(path, item.to) || !!item.within?.some((w) => onPath(path, w.to));
 
 const groupKey = (label: string) => `nav-group-${label}`;
 function storedOpen(label: string) {
@@ -142,7 +168,7 @@ function storedOpen(label: string) {
 
 function SidebarLink({ item, path }: { item: NavItem; path: string }) {
   return (
-    <Link to={item.to} aria-current={onPath(path, item.to) ? "page" : undefined} className={navRow(onPath(path, item.to))}>
+    <Link to={item.to} aria-current={isHere(path, item) ? "page" : undefined} className={navRow(isHere(path, item))}>
       <item.icon size={15} strokeWidth={1.75} className="shrink-0" />
       <span className="flex-1 truncate">{item.label}</span>
     </Link>
@@ -311,7 +337,11 @@ function CommandPalette({ onClose, items }: { onClose: () => void; items: NavIte
   const { admin, partner } = useSession();
   const found = useMemo(() => {
     const pages = [
-      ...items.map((i) => ({ label: i.label, hint: "Page", to: i.to })),
+      ...items.flatMap((i) =>
+        i.within
+          ? i.within.map((w) => ({ label: `${i.label} · ${w.label}`, hint: "Page", to: w.to }))
+          : [{ label: i.label, hint: "Page", to: i.to }],
+      ),
       ...[
         "general",
         "features",
@@ -437,7 +467,7 @@ export default function Layout() {
   // A feature that's off hides its menu entry, and its page says so (Settings → Features turns it back on).
   const switched = (n: NavItem) => !n.feature || features[n.feature]?.on !== false;
   const items = nav.filter((n) => (!n.when || n.when(can)) && switched(n));
-  const offHere = nav.find((n) => n.feature && onPath(loc.pathname, n.to) && !switched(n));
+  const offHere = nav.find((n) => n.feature && isHere(loc.pathname, n) && !switched(n));
   // Everyone who may chat has the widget, as long as the Organization has the assistant switched on.
   const hasChat = modules.ai && can("ai", "chat") && features.assistant?.on !== false;
   const chatButton = hasChat && !onPath(loc.pathname, "/widgets");

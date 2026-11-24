@@ -4,16 +4,21 @@ kind: feature
 module: seo
 status: built (stub data until live keys are connected)
 depends_on: [automation, integrations, features]
-capabilities: [search.maps, search.organic, search.ai, search.keywords, places.find, places.details, profile.manage]
+capabilities: [search.maps, search.organic, search.ai, search.keywords, site.audit, places.find, places.details, profile.manage]
 permissions: seo
 code: [modules/seo, apps/web/src/pages/seo, apps/web/src/pages/admin/SeoCosts.tsx]
-related: [data-model.md, ../../decisions/0033-seo-module.md]
+related: [data-model.md, ../../decisions/0033-seo-module.md, ../../decisions/0037-rankings-and-actions.md]
 ---
 
 # SEO
 
 Where a local business shows up on Google Maps, on Google search and in AI answers (ChatGPT, Google's AI Overview,
-Perplexity), who beats it keyword by keyword, and what to do next. Built from the mock at `apps/mock/src/pages/seo`.
+Perplexity), who beats it keyword by keyword, and what to do next.
+
+In the sidebar it's **Search**, four rows (ADR 0037): Overview; **Rankings**, where you stand and who beats you
+(Google Maps, Google search, AI answers, Competitors as tabs); **Actions**, what to change to move them (the **Action
+plan**, one queue of every suggestion from every source, and the **Site audit** that feeds it, as tabs); and Search
+settings. Built from the mock at `apps/mock/src/pages/seo`.
 
 ## Who uses it
 
@@ -83,10 +88,24 @@ changes what checks cost and links the Google profile.
   and their Google profile is linked beside the badges when they have one.
 - **Settings** (`/seo/settings`): one card of sections (business details; checks within the Plan, with the grid's shape and each assistant's mark; the Google profile link; pause; remove), each with its one action, and the grid size and reach edited with the same map preview as setup. With two or more Locations, a list beside the settings picks which one you're viewing, and
   Select pauses, resumes or removes several together.
+- **Action plan** (`/seo/plan`): every open suggestion, most useful first, from every source: the site audit, the Google
+  profile (categories, description, posts), what to track, and where to get listed. Two filters: the check it should
+  move (`?helps=maps|keywords|ai`, where each Rankings page's "· 3 actions" link lands; a site fix moving two checks
+  shows under both) and where it came from (`?from=audit|profile|tracking|listings`). Done in the last 30 days is
+  listed under it, with Undo. The overview shows the first three, with "All 12 actions" and the site's health in its line.
+- **Site audit** (`/seo/site-audit`): one table of each kind of issue the latest audit of the Location's website found,
+  worst first: severity, how many pages (or services, or AI crawlers) it's on, the change since the audit before, the
+  checks it holds back, and where its fix stands in the Action plan. The header's line is the site's health (0 to
+  100). An issue (`/seo/site-audit/:code`) shows why it matters, how to fix it with what to paste (local business
+  markup built from the Location and its Google profile, robots.txt lines, an llms.txt), since when it's been found,
+  and every page it's on, with Mark as done. **Audit now** in the header crawls the site; scheduled cycles audit it
+  once a week at most. A Location with no website has nothing to audit and says so.
 - **Suggestions**, each saying what it was based on: add categories competitors ahead of you list; get listed on a site
   AI answers cite; track a keyword your profile is found for or a competitor ranks for; say your services in your
-  description; track a "People also ask" question; post on your profile. Applying one is an automation Task, so it shows
-  in Activity and can be undone; Autopilot can apply a kind on its own.
+  description; track a "People also ask" question; post on your profile; fix the website (one per kind of error or
+  warning the site audit found). Applying one is an automation Task, so it shows in Activity and can be undone;
+  Autopilot can apply a kind on its own, except the ones done by hand (getting listed, fixing the website), which are
+  only ever marked done by a person.
 - **SEO costs** (Settings → App admin): this month's search-data spend per Organization, and each Location's monthly cost.
 
 ## How suggestions are made
@@ -152,6 +171,32 @@ pointless never returns):
 | description | the profile's description misses tracked services | say them (profile change) |
 | question | Google's "People also ask" for your keywords | track the question |
 | post | no post on the profile in a month | post |
+| site | the latest site audit's errors and warnings | fix the website, one per kind of issue |
+
+A **site fix** is about the customer's own website, so the app can't make it: it carries the steps and what to paste,
+and applying it marks it done. Its fingerprint names the audit where the issue's current run of audits began: while
+audits keep finding it, it's one suggestion (an open one takes the latest counts); when an audit no longer finds it, an
+open one expires; if it comes back later, that's a new suggestion, even if the old one was marked done.
+
+## How the site audit works
+
+An audit is a fourth kind of check (`audit`), so it shares everything the others have: a `checks` row in the cycle's
+Run with its cost, one provider task, collection by pingback or the every-minute job, and filing once.
+1. **Crawl** (`site.audit`, DataForSEO's On-Page API): the site from its home page, following its own links, without
+   running JavaScript, up to 500 pages (or the Plan's `seo_audit_pages`). The adapter returns facts per page (status,
+   title, description, main heading, words, load time, links in, clicks from home) and about the site (structured
+   data types and phone numbers on the home page, robots.txt, whether /llms.txt exists). The stub makes up a site per
+   domain with the usual problems.
+2. **Issues** (`modules/seo/src/audit/issues.ts`, pure): the facts become issues in five groups (local signals, AI
+   readiness, crawl and index, on-page, speed), each with a severity and the checks it holds back. Local signals
+   compare the site with the business: its phone against the Google profile's, and a page for each tracked service.
+   **Health** is 100 less 10 per kind of error, 4 per warning and 1 per notice, however many pages each is on.
+3. **Fixes** (`audit/fixes.ts`, pure): steps per issue, and what to paste where the business's facts are enough.
+4. **Filing** (`checks/file-audit.ts`): `site_audits` (the audit and its health), `audit_pages` (each page and its
+   issues) and `audit_issues` (each kind of issue and how many), written once.
+
+When: the first cycle at launch, then a scheduled cycle includes it once the last audit is a week old; Check now on
+the Site audit page asks for it outright. Check now elsewhere checks the rankings only.
 
 **Ideas for later**
 - **Search Console and Analytics** as sources: keywords with real impressions and clicks (a keyword you get clicks for
@@ -174,12 +219,14 @@ pointless never returns):
 ## What's live and what's stubbed
 
 Everything runs end to end on the stub market (dental practices around South Congress, Austin). The live DataForSEO,
-Google Places, business details and Google Business Profile calls follow the providers' documented APIs and are covered by tests with
+Google Places, business details, site audit and Google Business Profile calls follow the providers' documented APIs and are covered by tests with
 recorded responses, but haven't been run against real accounts. Before going live: connect DataForSEO and Google
 Places in Admin → Connections and switch them to live, get Business Profile API access for the Google Cloud project,
 and check one real response of each kind against the parsers in `modules/integrations/src/adapters`.
 
 ## Later
 
-Search Console and Analytics (clicks and calls behind each keyword), replying to reviews, articles and website fixes,
-drafts written by a model rather than templates, and a real map under the grid.
+Search Console and Analytics (clicks and calls behind each keyword), replying to reviews, articles, drafts written by
+a model rather than templates, and a real map under the grid. The other Actions tools from ADR 0037: Internal links
+(from the audit's crawl), Backlinks (the link gap against competitors), and Content (pages to write or refresh, drafted
+through `llm.complete`). Applying a site fix to a connected site (WordPress, Webflow) instead of marking it done.

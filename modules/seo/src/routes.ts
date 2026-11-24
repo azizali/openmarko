@@ -11,7 +11,7 @@ import { FEATURE, planLimits, SEO, type SeoAction } from "./access";
 import { costs } from "./admin/costs";
 import { COLLECT_JOB, pingbackSignature, startCycle } from "./checks/cycle";
 import { queueScopedCheck } from "./checks/jobs";
-import { checkKinds, checkStatus, idleKinds } from "./checks/status";
+import { checkStatus, idleKinds, rankingKinds } from "./checks/status";
 import { createLocation, getLocation, getLocationView, linkProfile, listLocations, setStatus, updateLocation } from "./locations/service";
 import { detailsFor, findBusiness, ideasFor, launch, progressOf, searchCategories, searchCityList } from "./onboarding/service";
 import { linkLocationProfile, profileLocations, syncProfileMetrics } from "./profile/service";
@@ -21,6 +21,7 @@ import { keywordsPage } from "./results/keywords";
 import { mapsKeyword, mapsSummary } from "./results/maps";
 import { overview } from "./results/overview";
 import { placeInsight } from "./results/place";
+import { auditIssue, auditPage } from "./audit/results";
 import { actionFor, applySuggestion, dismissSuggestion, listSuggestions, undoSuggestion } from "./suggestions/service";
 import {
   addKeywords,
@@ -55,7 +56,7 @@ const engine = t.Union([t.Literal("chatgpt"), t.Literal("google_ai"), t.Literal(
 const source = t.Union([t.Literal("onboarding"), t.Literal("manual")]);
 const status = t.Union([t.Literal("active"), t.Literal("paused"), t.Literal("archived")]);
 const channel = t.Union([t.Literal("maps"), t.Literal("google"), t.Literal("ai")]);
-const checkKind = t.Union([t.Literal("maps"), t.Literal("organic"), t.Literal("ai")]);
+const checkKind = t.Union([t.Literal("maps"), t.Literal("organic"), t.Literal("ai"), t.Literal("audit")]);
 const overrideAction = t.Union([t.Literal("added"), t.Literal("hidden")]);
 
 export function seoRoutes(ctx: AppContext) {
@@ -157,7 +158,7 @@ export function seoRoutes(ctx: AppContext) {
           await gate(caller, "manage");
           const l = await getLocation(ctx, caller.orgId, params.locationId);
           if (l.status !== "active") throw new AppError(409, "conflict", "Start this location's checks first.");
-          const kinds = await idleKinds(ctx, l.id, body.kinds ?? checkKinds);
+          const kinds = await idleKinds(ctx, l.id, body.kinds ?? rankingKinds);
           if (!kinds.length) throw new AppError(409, "conflict", "Already checking. Results come in over the next few minutes.");
           const { runId } = await startCycle(ctx, caller.orgId, l.id, { queue: "standard", kinds, trigger: "manual", by: caller.userId });
           return { runId, kinds };
@@ -166,7 +167,8 @@ export function seoRoutes(ctx: AppContext) {
           params: loc,
           body: t.Object({ kinds: t.Optional(t.Array(checkKind, { minItems: 1, uniqueItems: true })) }),
           detail: {
-            summary: "Check a Location now, outside its schedule: some kinds of check, or all (a kind already running is skipped)",
+            summary:
+              "Check a Location now, outside its schedule: the kinds named (`audit` crawls its website), or its rankings (a kind already running is skipped)",
           },
         },
       )
@@ -450,6 +452,25 @@ export function seoRoutes(ctx: AppContext) {
           params: loc,
           query: t.Object({ channel: t.Optional(channel) }),
           detail: { summary: "Competitors in one channel, keyword by keyword" },
+        },
+      )
+      .get(
+        "/locations/:locationId/results/audit",
+        async ({ caller, params }) => {
+          await gate(caller, "view");
+          return auditPage(ctx, caller.orgId, params.locationId);
+        },
+        { params: loc, detail: { summary: "Site audit: the website's health and each kind of issue, against the audit before" } },
+      )
+      .get(
+        "/locations/:locationId/results/audit/:code",
+        async ({ caller, params }) => {
+          await gate(caller, "view");
+          return auditIssue(ctx, caller.orgId, params.locationId, params.code);
+        },
+        {
+          params: t.Object({ ...loc.properties, code: t.String({ pattern: "^[a-z_]{2,40}$" }) }),
+          detail: { summary: "One kind of site issue: how to fix it, since when, and every page it's on" },
         },
       )
       // ---------- Suggestions ----------

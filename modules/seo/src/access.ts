@@ -3,8 +3,8 @@
 //   track    add or remove keywords, questions and competitors; act on "track" and "get listed" suggestions
 //   publish  apply changes and posts to the Google profile, and undo them (they go out under the business's name)
 //   manage   add Locations, change what checks cost (grid, how often, engines), link the Google profile
-// The Plan sells SEO through limits (Q5, Q9): Locations, keywords and questions per Location, grid size, and checks
-// per month. A missing limit is unlimited.
+// The Plan sells SEO through limits (Q5, Q9): Locations, keywords and questions per Location, grid size, checks
+// per month, and pages a site audit crawls. A missing limit is unlimited (for audits: AUDIT_PAGES, checks/cycle.ts).
 
 import { billingOf, type AppContext } from "@app/kernel";
 import type { DeclaredResource } from "@app/kernel";
@@ -33,6 +33,7 @@ export const limits = {
   questions: "seo_questions",
   gridSize: "seo_grid_size",
   checksPerMonth: "seo_checks_per_month",
+  auditPages: "seo_audit_pages",
 } as const;
 
 export const checkEvery = ["daily", "weekly", "monthly"] as const;
@@ -72,5 +73,6 @@ export async function planLimits(ctx: AppContext, orgId: string): Promise<Record
     questions: of(limits.questions),
     gridSize: of(limits.gridSize),
     checksPerMonth: of(limits.checksPerMonth),
+    auditPages: of(limits.auditPages),
   };
 }

@@ -2,13 +2,14 @@
 // Location, launching it, the worker collecting and filing results, every page's numbers, suggestions with Apply and
 // Undo through automation Tasks, and who may do what.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { assignPlanManually, upsertPlan } from "@app/billing";
 import { connect } from "@app/integrations";
 import { addMember } from "@app/organizations";
 import { adminSession, composedApp, createTestDb, ownerSession, requester, userSession, type Session, type TestDb } from "@app/testkit";
 import { collectCheck, COLLECT_JOB, CHECK_JOB, dueChecks, startCycle, generateSuggestions } from "../src";
-import { checks, keywords, mapPoints, mapScans, places, suggestions } from "../src/schema";
+import { writeSetting } from "@app/settings";
+import { auditIssues, checks, keywords, mapPoints, mapScans, places, siteAudits, suggestions } from "../src/schema";
 
 let t: TestDb;
 let call: ReturnType<typeof requester>;
@@ -233,10 +234,10 @@ describe("launching and the first check", () => {
     expect(res.status).toBe(200);
     runId = res.body.runId;
     const made = await t.ctx.db.select().from(checks).where(eq(checks.runId, runId));
-    expect(made.map((c) => c.kind).sort()).toEqual(["ai", "maps", "organic"]);
+    expect(made.map((c) => c.kind).sort()).toEqual(["ai", "audit", "maps", "organic"]);
     expect(made.every((c) => c.queue === "priority")).toBe(true);
-    // 3 keywords × 25 spots; 3 keywords; 2 questions × 3 assistants.
-    expect(Object.fromEntries(made.map((c) => [c.kind, c.calls]))).toEqual({ maps: 75, organic: 3, ai: 6 });
+    // 3 keywords × 25 spots; 3 keywords; 2 questions × 3 assistants; one crawl of the website.
+    expect(Object.fromEntries(made.map((c) => [c.kind, c.calls]))).toEqual({ maps: 75, organic: 3, ai: 6, audit: 1 });
     const progress = await call("GET", `${base(owner)}/locations/${locationId}/runs/${runId}`, { headers: owner.headers });
     expect(progress.body.finished).toBe(false);
   });
@@ -480,6 +481,118 @@ describe("suggestions", () => {
     await generateSuggestions(t.ctx, owner.orgId, locationId);
     const again = await call("GET", `${base(owner)}/locations/${locationId}/suggestions`, { headers: owner.headers });
     expect(again.body.open.map((x: { id: string }) => x.id)).not.toContain(one.id);
+  });
+});
+
+describe("the site audit", () => {
+  const url = () => `${base(owner)}/locations/${locationId}`;
+  const siteFixes = async (code: string) =>
+    (
+      await t.ctx.db
+        .select()
+        .from(suggestions)
+        .where(and(eq(suggestions.locationId, locationId), eq(suggestions.kind, "site_fix")))
+    ).filter((s) => (s.payload as { code: string }).code === code);
+
+  test("the first cycle audited the website: health, and each kind of issue worst first", async () => {
+    const res = await call("GET", `${url()}/results/audit`, { headers: owner.headers });
+    expect(res.status).toBe(200);
+    const { audit, issues, history, website } = res.body;
+    expect(website).toBe("mapleandmaindental.com");
+    expect(audit.pagesCrawled).toBeGreaterThan(10);
+    expect(audit.health).toBeGreaterThan(0);
+    expect(audit.health).toBeLessThan(100);
+    expect(audit.before).toBeNull();
+    expect(history).toHaveLength(1);
+    const codes = issues.map((i: { code: string }) => i.code);
+    expect(codes).toEqual(expect.arrayContaining(["no_local_schema", "broken_page", "no_llms_txt"]));
+    expect(issues[0].severity).toBe("error");
+    expect(audit.errors).toBe(issues.filter((i: { severity: string }) => i.severity === "error").length);
+    expect(issues.find((i: { code: string }) => i.code === "no_local_schema")).toMatchObject({
+      helps: ["maps", "ai"],
+      per: "site",
+      count: 1,
+    });
+  });
+
+  test("errors and warnings join the Action plan as site fixes; notices stay on the audit page", async () => {
+    const s = await call("GET", `${url()}/suggestions`, { headers: owner.headers });
+    const fixes = s.body.open.filter((x: { kind: string }) => x.kind === "site_fix");
+    const schema = fixes.find((x: { payload: { code: string } }) => x.payload.code === "no_local_schema");
+    expect(schema).toMatchObject({ source: "audit", byHand: true, helps: "maps", helpsAll: ["maps", "ai"] });
+    expect(schema.payload.snippet.text).toContain("Maple & Main Dental");
+    expect(fixes.some((x: { payload: { code: string } }) => x.payload.code === "no_llms_txt")).toBe(false);
+    const page = await call("GET", `${url()}/results/audit`, { headers: owner.headers });
+    const row = page.body.issues.find((i: { code: string }) => i.code === "no_local_schema");
+    expect(row.fix).toEqual({ suggestionId: schema.id, state: "open" });
+    // A fix moving two checks counts on both pages' headers.
+    const o = await call("GET", `${url()}/overview`, { headers: owner.headers });
+    expect(o.body.site.health).toBe(page.body.audit.health);
+  });
+
+  test("one issue's page: how to fix it, since when, and every page it's on", async () => {
+    const res = await call("GET", `${url()}/results/audit/broken_page`, { headers: owner.headers });
+    expect(res.status).toBe(200);
+    expect(res.body.found.count).toBe(res.body.pages.length);
+    expect(res.body.pages[0]).toMatchObject({ url: "https://mapleandmaindental.com/summer-offer", statusCode: 404 });
+    expect(res.body.fix.steps.length).toBeGreaterThan(0);
+    expect(res.body.planned.state).toBe("open");
+    const schema = await call("GET", `${url()}/results/audit/no_local_schema`, { headers: owner.headers });
+    expect(schema.body.pages.map((p: { url: string }) => p.url)).toEqual(["https://mapleandmaindental.com/"]);
+    expect(schema.body.fix.snippet.label).toBe("Local business markup");
+    expect((await call("GET", `${url()}/results/audit/not_an_issue`, { headers: owner.headers })).status).toBe(404);
+    expect((await call("GET", `${url()}/results/audit/Bad-Code`, { headers: owner.headers })).status).toBe(422);
+  });
+
+  test("marking a site fix done is a Task, and Undo puts it back", async () => {
+    const [fix] = await siteFixes("no_local_schema");
+    const done = await call("POST", `${base(owner)}/suggestions/${fix!.id}/apply`, { headers: owner.headers, body: {} });
+    expect(done.status).toBe(200);
+    const [row] = await t.ctx.db.select().from(suggestions).where(eq(suggestions.id, fix!.id));
+    expect(row).toMatchObject({ status: "applied" });
+    expect(row!.taskId).toBeTruthy();
+    expect((await call("POST", `${base(owner)}/suggestions/${fix!.id}/undo`, { headers: owner.headers })).status).toBe(200);
+    expect((await t.ctx.db.select().from(suggestions).where(eq(suggestions.id, fix!.id)))[0]!.status).toBe("open");
+  });
+
+  test("Check now audits when asked; a scheduled cycle audits once a week; a fix still found stays one fix", async () => {
+    const res = await call("POST", `${url()}/check`, { headers: owner.headers, body: { kinds: ["audit"] } });
+    expect(res.status).toBe(200);
+    expect(res.body.kinds).toEqual(["audit"]);
+    const made = await t.ctx.db.select().from(checks).where(eq(checks.runId, res.body.runId));
+    expect(made.map((c) => [c.kind, c.calls])).toEqual([["audit", 1]]);
+    await drain();
+    expect(await t.ctx.db.select().from(siteAudits).where(eq(siteAudits.locationId, locationId))).toHaveLength(2);
+    expect(await siteFixes("no_local_schema")).toHaveLength(1);
+    const status = await call("GET", `${url()}/checks`, { headers: owner.headers });
+    expect(status.body).toMatchObject({ website: "mapleandmaindental.com", auditPages: 500 });
+
+    // The schedule's cycle names no kinds: it audits only when the last audit is a week old.
+    const { checkIds } = await startCycle(t.ctx, owner.orgId, locationId, { queue: "standard" });
+    const scheduled = await t.ctx.db.select().from(checks).where(inArray(checks.id, checkIds));
+    expect(scheduled.map((c) => c.kind)).not.toContain("audit");
+    await drain();
+  });
+
+  test("a fixed issue leaves the plan; if it comes back it's a new fix, which Autopilot never marks done", async () => {
+    const [latest] = await t.ctx.db
+      .select()
+      .from(siteAudits)
+      .where(eq(siteAudits.locationId, locationId))
+      .orderBy(sql`${siteAudits.checkedAt} desc`)
+      .limit(1);
+    // The latest audit no longer finds the broken page: it was fixed.
+    await t.ctx.db.delete(auditIssues).where(and(eq(auditIssues.checkId, latest!.checkId), eq(auditIssues.code, "broken_page")));
+    await generateSuggestions(t.ctx, owner.orgId, locationId);
+    expect((await siteFixes("broken_page")).map((s) => s.status)).toEqual(["expired"]);
+
+    // It breaks again. Autopilot is on for what site fixes need, but a fix done by hand is never marked done for you.
+    await writeSetting(t.ctx, "organization", owner.orgId, "autopilot", { "seo.track": "on" });
+    const again = await call("POST", `${url()}/check`, { headers: owner.headers, body: { kinds: ["audit"] } });
+    expect(again.status).toBe(200);
+    await drain();
+    await writeSetting(t.ctx, "organization", owner.orgId, "autopilot", {});
+    expect((await siteFixes("broken_page")).map((s) => s.status).sort()).toEqual(["expired", "open"]);
   });
 });
 

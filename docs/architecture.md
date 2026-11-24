@@ -28,7 +28,7 @@ modules/             one folder per module: schema.ts (its tables), module.ts (i
   knowledge *        knowledge bases, documents, ingesting, hybrid search (pgvector)
   automation *       runs, schedules, Tasks with Apply and Undo, Autopilot, the Activity log's routes
   seo *              Locations, Google Maps grids, Google search, AI answers, competitors, suggestions, SEO onboarding;
-                     search data through integrations (`search.*`, `places.find`, `places.details`, `profile.manage`). Needs automation.
+                     search data through integrations (`search.*`, `site.audit`, `places.find`, `places.details`, `profile.manage`). Needs automation.
 packages/
   kernel             config (env + app.config), db, ids, errors, crypto, events (outbox), module contract,
                      the file store (`ctx.files`: a bucket or a folder), the assistant's tool contract (`AssistantTool`, `toolsOf`), activity log, Better Auth table references, the hooks optional modules fill (billing, knowledge),
@@ -83,5 +83,5 @@ The same modules, composed without routes. pg-boss runs each module's jobs (one 
 - `src/components/Feedback.tsx`: every success and failure, beside the action that caused it (`Feedback` + `useFeedback()`) or as a toast (`useToast()`), and `LoadError` for a page that couldn't load (ADR 0030). `feedback.rules.test.ts` fails a page that builds its own. `FileInput` in `ui.tsx` is the only file picker.
 - `src/components/Can.tsx`: guards a control by permission, disabling it with the reason or hiding it. `src/components/RoleEditor.tsx` also exports `RoleSelect` and `AccessSummary` for showing Roles elsewhere.
 - `src/pages/Settings.tsx`: one page with one rail in four groups: the open Organization, its Partner side, You, and App admin for app admins (ADR 0027).
-- `src/pages/seo/`: everything SEO on one folder, behind `__MODULE_SEO__`. `Seo.tsx` is the shell (the Location chosen by `?location=`, else the last one opened; setup when there's none) and gives its pages `useSeo()`; `api.ts` names the calls and infers their shapes from the API's types; `parts.tsx` holds the map grid and the small pieces the pages share; `AddDrawers.tsx` the add panels; `Setup.tsx` is SEO onboarding (`/seo/setup`), which a new Organization lands on when the module is on.
+- `src/pages/seo/`: everything SEO on one folder, behind `__MODULE_SEO__`. `Seo.tsx` is the shell (the Location chosen by `?location=`, else the last one opened; setup when there's none), draws the Rankings and Actions tabs, and gives its pages `useSeo()`; `api.ts` names the calls and infers their shapes from the API's types; `parts.tsx` holds the map grid and the small pieces the pages share; `actions.tsx` the suggestion cards the Action plan (`Plan.tsx`) and the overview share; `AddDrawers.tsx` the add panels; `Setup.tsx` is SEO onboarding (`/seo/setup`), which a new Organization lands on when the module is on.
 - Pages: `pages/` for members, `pages/settings/` for Settings sections, `pages/admin/` for the App admin sections of Settings. Optional modules' pages load behind `__MODULE_X__` flags (`vite.config.ts` reads `app.config.ts`).

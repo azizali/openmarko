@@ -24,3 +24,9 @@ The SEO pages had grown layers. Google Maps stacked a stats strip, a keyword car
 ## Amendment (2026-11-23): fewer columns where a fact belongs to another section's name
 
 Keywords had columns for "Map pack" and "AI Overview": facts about Google's results page for that keyword, read by the Google search check. Beside the Google Maps and AI answers sections, they read as those sections' results, and two more columns made the table heavier. A section table now carries only the columns needed to choose an item; the rest stays on its deep page. The API keeps sending every field per row, so a column can come back without a server change.
+
+## Amendment (2026-11-24): deep pages stay under their section's tabs
+
+With Rankings and Actions as tabbed sections (ADR 0037), a deep page no longer has its own header with breadcrumbs from
+the SEO root. It keeps the section's header with its tab selected, and the tab is the way back to the list; only a page
+two levels down shows the steps between ("dentist ›") above its name.

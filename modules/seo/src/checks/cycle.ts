@@ -3,21 +3,40 @@
 //   maps     every keyword, searched from every spot of the grid
 //   organic  every keyword, on Google search from the business's door
 //   ai       every question, asked of every chosen assistant
+//   audit    the Location's website, crawled (one task). Weekly at most: a scheduled cycle includes it once the last
+//            audit is AUDIT_EVERY_DAYS old; Check now on the Site audit page asks for it outright
 // Queries are posted to the provider here; collect.ts gathers the results as they're ready and files them.
 // A scope narrows a cycle to some keywords or questions: what was just added is checked at once. `kinds` narrows it to
 // some kinds of check: Check now on the Google search page checks Google search only, unless asked for more.
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, ne, sql } from "drizzle-orm";
 import { AppError, hmacHex, newId, type AppContext } from "@app/kernel";
 import { finishRun, labelRun, startRun } from "@app/automation";
-import { invoke, type AiEngine, type AiQuery, type MapsQuery, type OrganicQuery, type PostOutput, type Queue } from "@app/integrations";
+import {
+  invoke,
+  type AiEngine,
+  type AiQuery,
+  type AuditQuery,
+  type MapsQuery,
+  type OrganicQuery,
+  type PostOutput,
+  type Queue,
+} from "@app/integrations";
 import type { CapabilityId } from "@app/shared";
 import { spotsOf, zoomFor } from "../lib/grid";
+import { planLimits } from "../access";
 import { getLocation, type LocationRow } from "../locations/service";
-import { checks, keywords, providerTasks, questions } from "../schema";
+import { checks, keywords, providerTasks, questions, websites } from "../schema";
 
-export type CheckKind = "maps" | "organic" | "ai";
-export const capabilityOf: Record<CheckKind, CapabilityId> = { maps: "search.maps", organic: "search.organic", ai: "search.ai" };
+export type CheckKind = "maps" | "organic" | "ai" | "audit";
+export const capabilityOf: Record<CheckKind, CapabilityId> = {
+  maps: "search.maps",
+  organic: "search.organic",
+  ai: "search.ai",
+  audit: "site.audit",
+};
+/** Every kind, in the order a cycle posts them. */
+export const checkKinds: readonly CheckKind[] = ["maps", "organic", "ai", "audit"];
 
 export const COLLECT_JOB = "seo.collect";
 
@@ -25,7 +44,8 @@ export const COLLECT_JOB = "seo.collect";
 export type TaskTarget =
   | { kind: "maps"; keywordId: string; idx: number; size: number; radiusM: number; center: { lat: number; lng: number }; query: MapsQuery }
   | { kind: "organic"; keywordId: string; query: OrganicQuery }
-  | { kind: "ai"; questionId: string; engine: AiEngine; query: AiQuery };
+  | { kind: "ai"; questionId: string; engine: AiEngine; query: AiQuery }
+  | { kind: "audit"; query: AuditQuery };
 
 export type CycleScope = { keywordIds?: string[]; questionIds?: string[] };
 
@@ -44,6 +64,10 @@ export type CycleOptions = {
 export const MAPS_DEPTH = 20;
 /** Google search results read per keyword: ten pages, so a position past the first page is still known. */
 export const ORGANIC_DEPTH = 100;
+/** Pages a site audit crawls at most, unless the Plan's `seo_audit_pages` says fewer. */
+export const AUDIT_PAGES = 500;
+/** How often a scheduled cycle audits the website: a site changes more slowly than rankings. */
+export const AUDIT_EVERY_DAYS = 7;
 
 /** Where the provider says a task is ready. Only an address the provider can reach: none in development. */
 export function pingbackUrl(ctx: AppContext, checkId: string): string | null {
@@ -58,8 +82,10 @@ function targetsFor(
   l: LocationRow,
   kws: { id: string; term: string; maps: boolean; organic: boolean }[],
   qs: { id: string; text: string }[],
+  audit: AuditQuery | null,
 ): TaskTarget[] {
   const door = { lat: l.lat, lng: l.lng };
+  if (kind === "audit") return audit ? [{ kind: "audit", query: audit }] : [];
   if (kind === "maps") {
     const spots = spotsOf(door, l.gridSize, l.gridRadiusM);
     const zoom = zoomFor(l.gridSize, l.gridRadiusM);
@@ -140,6 +166,33 @@ async function postCheck(
   return checkId;
 }
 
+/** What an audit of the Location's website asks: its domain and the page budget. Null when it has no website. */
+async function auditQuery(ctx: AppContext, l: LocationRow): Promise<AuditQuery | null> {
+  if (!l.websiteId) return null;
+  const [w] = await ctx.db.select({ domain: websites.domain }).from(websites).where(eq(websites.id, l.websiteId));
+  if (!w) return null;
+  const limit = (await planLimits(ctx, l.organizationId)).auditPages;
+  return { domain: w.domain, maxPages: Math.max(1, Math.min(AUDIT_PAGES, limit ?? AUDIT_PAGES)) };
+}
+
+/** Whether a scheduled cycle should audit the site: no audit has run (or is running) in the last week. */
+async function auditDue(ctx: AppContext, locationId: string): Promise<boolean> {
+  const [recent] = await ctx.db
+    .select({ id: checks.id })
+    .from(checks)
+    .where(
+      and(
+        eq(checks.locationId, locationId),
+        eq(checks.kind, "audit"),
+        ne(checks.status, "failed"),
+        gte(checks.queuedAt, sql`now() - make_interval(days => ${AUDIT_EVERY_DAYS}::int)`),
+      ),
+    )
+    .orderBy(desc(checks.queuedAt))
+    .limit(1);
+  return !recent;
+}
+
 /**
  * Starts a cycle for a Location: posts every kind of check and queues their first collection. Returns the Run and
  * the checks it made. A cycle with nothing to check finishes at once.
@@ -182,15 +235,16 @@ export async function startCycle(
         scope?.questionIds ? inArray(questions.id, scope.questionIds) : undefined,
       ),
     );
-  // A scope names what to check; the other kind isn't checked at all.
+  // A scope names what to check; the other kind isn't checked at all, and the site isn't audited.
   const onlyQuestions = !!scope && !scope.keywordIds?.length;
   const onlyKeywords = !!scope && !scope.questionIds?.length;
+  const audit = !scope && (opts.kinds ? opts.kinds.includes("audit") : await auditDue(ctx, l.id)) ? await auditQuery(ctx, l) : null;
 
   const checkIds: string[] = [];
-  for (const kind of ["maps", "organic", "ai"] as const) {
-    if ((kind === "ai" && onlyKeywords) || (kind !== "ai" && onlyQuestions)) continue;
+  for (const kind of checkKinds) {
+    if (kind === "audit" ? !!scope : (kind === "ai" && onlyKeywords) || (kind !== "ai" && onlyQuestions)) continue;
     if (opts.kinds && !opts.kinds.includes(kind)) continue;
-    const id = await postCheck(ctx, l, kind, targetsFor(kind, l, kws, qs), runId, opts.queue);
+    const id = await postCheck(ctx, l, kind, targetsFor(kind, l, kws, qs, audit), runId, opts.queue);
     if (id) checkIds.push(id);
   }
   if (!checkIds.length) {

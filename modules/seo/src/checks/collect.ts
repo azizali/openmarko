@@ -13,6 +13,7 @@ import { generateSuggestions } from "../suggestions/generate";
 import { checks, locations, providerTasks } from "../schema";
 import { capabilityOf, type CheckKind, type TaskTarget } from "./cycle";
 import { fileAi } from "./file-ai";
+import { fileAudit } from "./file-audit";
 import { fileMaps } from "./file-maps";
 import { fileOrganic } from "./file-organic";
 
@@ -82,6 +83,7 @@ export async function fileCheck(ctx: AppContext, checkId: string): Promise<void>
     await ctx.db.transaction(async (tx) => {
       if (claimed.kind === "maps") await fileMaps(tx, filing, received as never);
       else if (claimed.kind === "organic") await fileOrganic(tx, filing, received as never);
+      else if (claimed.kind === "audit") await fileAudit(tx, filing, received as never);
       else await fileAi(tx, filing, received as never);
       const failed = tasks.length - received.length;
       await tx

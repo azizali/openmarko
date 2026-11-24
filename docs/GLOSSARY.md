@@ -101,8 +101,19 @@ _Avoid_: business (in code), store, branch
 A domain one or more Locations use. Google search positions are read for it.
 
 **Check**:
-One look at where a Location shows: Google Maps (a grid of searches around it), Google search, or AI answers. A cycle of checks runs on the Location's schedule and is one Run.
-_Avoid_: scan (except for one keyword's map grid), audit
+One look at where a Location shows: Google Maps (a grid of searches around it), Google search, or AI answers; or one Site audit of its Website. A cycle of checks runs on the Location's schedule and is one Run.
+_Avoid_: scan (except for one keyword's map grid)
+
+**Site audit**:
+A crawl of a Location's Website and the issues found in it, each with its severity, the checks it holds back and how to fix it. Its errors and warnings become Suggestions. Health (0 to 100) sums it up.
+_Avoid_: site scan, SEO audit (for the whole SEO section)
+
+**Rankings**:
+The half of SEO that says where a Location stands and who beats it: Google Maps, Google search, AI answers, Competitors.
+_Avoid_: monitoring
+
+**Action plan**:
+A Location's open Suggestions from every source (the Site audit, the Google profile, what to track, where to get listed), most useful first. The half of SEO it heads, with the Site audit, is **Actions** in the sidebar.
 
 **Grid**:
 The spots around a Location that Google Maps is searched from, 5, 7 or 9 a side. "Top 3 in 31 of 49 spots" counts them.
@@ -115,5 +126,5 @@ What a Location asks the AI assistants, the way a customer would ask it.
 _Avoid_: prompt (in what people read)
 
 **Suggestion**:
-Something to do next for a Location, made from what the checks found, saying what it was based on. Applying one is a Task, so it can be undone.
+Something to do next for a Location, made from what the checks found, saying what it was based on. Applying one is a Task, so it can be undone. People see it as "an action" in the Action plan; that's not a Role's Action.
 _Avoid_: recommendation, insight, action item

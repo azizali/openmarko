@@ -31,6 +31,7 @@ export type CapabilityId =
   | "search.organic"
   | "search.ai"
   | "search.keywords"
+  | "site.audit"
   | "places.find"
   | "places.details"
   | "profile.manage";
@@ -114,6 +115,14 @@ export const capabilities: Capability[] = [
     max: "one",
     permission: ["setup", "connect"],
     ops: ["volume(terms)", "ideas(domain, seeds)"],
+  },
+  {
+    id: "site.audit",
+    label: "Site audit",
+    does: "Crawls a website and reports what each page says and lacks: titles, errors, speed, structured data.",
+    max: "one",
+    permission: ["setup", "connect"],
+    ops: ["post(site)", "collect(tasks)"],
   },
   {
     id: "places.find",
@@ -329,8 +338,8 @@ export const providers: Provider[] = [
     auth: "api_key",
     // The app's own account only: customers pay for SEO through their Plan's limits, not with their own key.
     attach: "app",
-    blurb: "Google Maps, Google search and AI answers, keyword volumes, business details. Pay per request.",
-    capabilities: ["search.maps", "search.organic", "search.ai", "search.keywords", "places.details"],
+    blurb: "Google Maps, Google search and AI answers, keyword volumes, business details, site audits. Pay per request.",
+    capabilities: ["search.maps", "search.organic", "search.ai", "search.keywords", "site.audit", "places.details"],
     fields: [
       { key: "login", label: "API login", placeholder: "you@example.com" },
       { key: "password", label: "API password", secret: true },

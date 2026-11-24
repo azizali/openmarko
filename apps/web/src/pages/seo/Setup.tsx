@@ -989,8 +989,10 @@ function LaunchStep({ locationId, runId }: { locationId: string; runId: string |
       ? `Searching Google Maps from ${spots} spots for ${plural(Math.round(calls / spots), "keyword")}`
       : kind === "organic"
         ? `Checking Google search for ${plural(calls, "keyword")}`
-        : `Asking ${plural(assistants, "assistant")} ${plural(Math.round(calls / assistants), "question")}`;
-  const order = ["maps", "organic", "ai"];
+        : kind === "audit"
+          ? `Auditing ${loc.data?.website ?? "your website"}`
+          : `Asking ${plural(assistants, "assistant")} ${plural(Math.round(calls / assistants), "question")}`;
+  const order = ["maps", "organic", "ai", "audit"];
   const rows = (progress?.checks ?? []).toSorted((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
   const o = overview.data;
   const suggestions = o ? o.openSuggestions.maps + o.openSuggestions.keywords + o.openSuggestions.ai : 0;
@@ -1006,9 +1008,12 @@ function LaunchStep({ locationId, runId }: { locationId: string; runId: string |
             <div className="flex items-center gap-3 text-[14px]">
               <StatusIcon status={c.status} />
               <span className="flex-1">{line(c.kind, c.calls)}</span>
-              <span className="num text-[12.5px] text-muted">
-                {c.received} of {c.calls}
-              </span>
+              {/* An audit is one crawl: a count of one says nothing. */}
+              {c.kind !== "audit" && (
+                <span className="num text-[12.5px] text-muted">
+                  {c.received} of {c.calls}
+                </span>
+              )}
             </div>
             <Progress
               value={c.calls ? (c.received / c.calls) * 100 : c.status === "done" ? 100 : 0}

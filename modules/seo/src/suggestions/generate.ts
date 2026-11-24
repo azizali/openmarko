@@ -7,9 +7,15 @@
 //   description  your profile's description misses the services you track (profile linked)   → profile_change
 //   question     Google's "People also ask" for your keywords                                  → track_question
 //   post         you haven't posted on the profile in a month (profile linked)                 → post
-// When the Organization's Autopilot is On for a suggestion's action, it's applied straight away.
+//   site         the latest site audit's errors and warnings, one per kind of issue            → site_fix
+// When the Organization's Autopilot is On for a suggestion's action, it's applied straight away, unless it's done by
+// hand (a listing, a site fix): marking those done would claim work nobody did.
+//
+// A site fix's fingerprint names the audit where its issue's current streak began. While the issue keeps being found
+// it's the same suggestion (refreshed with the latest counts while open); once an audit no longer finds it, an open
+// one expires, and if the issue comes back later that's a new suggestion, even if the old one was marked done.
 
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, notInArray, sql } from "drizzle-orm";
 import { newId, type AppContext } from "@app/kernel";
 import { autopilotFor } from "@app/automation";
 import { invoke, type KeywordIdea, type Profile } from "@app/integrations";
@@ -26,8 +32,11 @@ import {
   standingsOf,
 } from "../results/latest";
 import { normalizeQuestion, normalizeTerm } from "../lib/text";
-import { competitorOverrides, places, profileSearchTerms, suggestions, websites } from "../schema";
-import { kindInfo, payloadSchemas, type Payload, type SuggestionKind } from "./kinds";
+import { auditIssues, auditPages, competitorOverrides, places, profileSearchTerms, suggestions, websites } from "../schema";
+import { fixFor } from "../audit/fixes";
+import { issueOf, issues, sortFindings, type IssueCode } from "../audit/issues";
+import { fixFactsFor, latestAudits } from "../audit/results";
+import { kindInfo, payloadSchemas, type Helps, type Payload, type SuggestionKind } from "./kinds";
 import { applySuggestion } from "./service";
 
 export type Draft<K extends SuggestionKind = SuggestionKind> = {
@@ -38,6 +47,10 @@ export type Draft<K extends SuggestionKind = SuggestionKind> = {
   payload: Payload<K>;
   fingerprint: string;
   score: number;
+  /** The check it moves most, when the kind doesn't say (a site fix). */
+  helps?: Helps;
+  /** The check it came from (a site fix: the audit). */
+  checkId?: string;
 };
 
 const list = (names: string[]) =>
@@ -308,6 +321,89 @@ async function postRule(ctx: AppContext, c: Context): Promise<Draft<"post">[]> {
   ];
 }
 
+/** The latest site audit's errors and warnings, one suggestion per kind of issue. Notices stay on the audit page. */
+async function siteRule(ctx: AppContext, c: Context): Promise<Draft<"site_fix">[]> {
+  const audits = await latestAudits(ctx.db, c.l.id);
+  const now = audits[0];
+  if (!now) return [];
+  const all = await ctx.db
+    .select()
+    .from(auditIssues)
+    .where(
+      inArray(
+        auditIssues.checkId,
+        audits.map((a) => a.checkId),
+      ),
+    );
+  const found = sortFindings(
+    all
+      .filter((f) => f.checkId === now.checkId && issueOf(f.code)?.severity !== "notice")
+      .map((f) => ({ ...f, code: f.code as IssueCode })),
+  );
+  if (!found.length) return [];
+  const facts = await fixFactsFor(ctx.db, c.l, now.homeUrl);
+  const when = now.checkedAt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const drafts: Draft<"site_fix">[] = [];
+  for (const f of found) {
+    const info = issues[f.code];
+    // Where this issue's streak began: the oldest audit in the unbroken run of audits that found it.
+    let start = now.checkId;
+    for (const a of audits) {
+      if (!all.some((x) => x.checkId === a.checkId && x.code === f.code)) break;
+      start = a.checkId;
+    }
+    const sample =
+      info.per === "page"
+        ? (
+            await ctx.db
+              .select({ url: auditPages.url })
+              .from(auditPages)
+              .where(and(eq(auditPages.checkId, now.checkId), sql`${f.code} = any(${auditPages.issues})`))
+              .orderBy(auditPages.url)
+              .limit(5)
+          ).map((r) => r.url)
+        : f.items.slice(0, 5);
+    const fix = fixFor(f.code, f.items, facts);
+    drafts.push({
+      kind: "site_fix",
+      title: info.todo(f.count),
+      why: info.why,
+      evidence: [
+        info.per === "page"
+          ? `Found on ${fmt(f.count)} ${f.count === 1 ? "page" : "pages"} of ${now.domain} in the audit of ${when}.`
+          : `Found in the audit of ${now.domain} on ${when}.`,
+        ...(info.per === "page" ? sample.slice(0, 3) : f.items.length ? [list(f.items.slice(0, 6))] : []),
+      ],
+      payload: { code: f.code, count: f.count, items: f.items, sample, helps: info.helps, steps: fix.steps, snippet: fix.snippet },
+      fingerprint: `site_fix:${f.code}:${start}`,
+      score: (info.severity === "error" ? 80 : 40) + Math.min(10, f.count),
+      helps: info.helps[0],
+      checkId: now.checkId,
+    });
+  }
+  return drafts;
+}
+
+/** Open site fixes for issues the latest audit no longer found: fixed, so they leave the plan. */
+async function expireFixed(ctx: AppContext, locationId: string): Promise<void> {
+  const [now] = await latestAudits(ctx.db, locationId, 1);
+  if (!now) return;
+  const found = (await ctx.db.select({ code: auditIssues.code }).from(auditIssues).where(eq(auditIssues.checkId, now.checkId))).map(
+    (r) => r.code,
+  );
+  await ctx.db
+    .update(suggestions)
+    .set({ status: "expired", decidedAt: new Date() })
+    .where(
+      and(
+        eq(suggestions.locationId, locationId),
+        eq(suggestions.kind, "site_fix"),
+        eq(suggestions.status, "open"),
+        found.length ? notInArray(sql<string>`${suggestions.payload}->>'code'`, found) : undefined,
+      ),
+    );
+}
+
 // ---------- Writing them ----------
 
 /** Runs every rule for a Location and stores what's new. Returns how many were added. */
@@ -325,7 +421,9 @@ export async function generateSuggestions(
     ...descriptionRule(c),
     ...(await questionRule(ctx, c)),
     ...(await postRule(ctx, c)),
+    ...(await siteRule(ctx, c)),
   ];
+  await expireFixed(ctx, locationId);
   let added = 0;
   for (const d of drafts) {
     const payload = payloadSchemas[d.kind].parse(d.payload) as Record<string, unknown>;
@@ -337,7 +435,7 @@ export async function generateSuggestions(
         organizationId: orgId,
         locationId,
         kind: d.kind,
-        helps: kindInfo[d.kind].helps,
+        helps: d.helps ?? kindInfo[d.kind].helps,
         title: d.title,
         why: d.why,
         evidence: d.evidence,
@@ -345,13 +443,21 @@ export async function generateSuggestions(
         fingerprint: d.fingerprint,
         status: "open",
         score: d.score,
-        checkId: null,
+        checkId: d.checkId ?? null,
       })
       .onConflictDoNothing()
       .returning({ id: suggestions.id });
-    if (!row) continue;
+    if (!row) {
+      // Still found: an open site fix takes the latest counts, pages and fix.
+      if (d.kind === "site_fix")
+        await ctx.db
+          .update(suggestions)
+          .set({ title: d.title, evidence: d.evidence, payload, score: d.score, checkId: d.checkId ?? null })
+          .where(and(eq(suggestions.locationId, locationId), eq(suggestions.fingerprint, d.fingerprint), eq(suggestions.status, "open")));
+      continue;
+    }
     added++;
-    if ((await autopilotFor(ctx, orgId, `seo.${kindInfo[d.kind].action}`)) === "on")
+    if (!kindInfo[d.kind].byHand && (await autopilotFor(ctx, orgId, `seo.${kindInfo[d.kind].action}`)) === "on")
       await applySuggestion(ctx, { organizationId: orgId, userId: null, actorType: "assistant" }, row.id).catch(() => undefined);
   }
   return added;

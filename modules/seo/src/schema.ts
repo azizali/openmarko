@@ -2,8 +2,8 @@
 //   1. The public catalog: Google businesses, their ratings over time, keyword volumes. Shared by every
 //      Organization, with no organization_id: a row says nothing about who tracks it.
 //   2. What an Organization tracks: Locations, Websites, keywords, questions, competitor exceptions, suggestions.
-//   3. Results: what each check found. Summaries (map_scans, map_standings, serp_results, ai_answers) are written
-//      once when results arrive, so pages read small tables.
+//   3. Results: what each check found. Summaries (map_scans, map_standings, serp_results, ai_answers, site_audits,
+//      audit_issues) are written once when results arrive, so pages read small tables.
 // Rule for organization_id: a table routes query directly carries it; a pure child row cascades from its parent.
 
 import { sql } from "drizzle-orm";
@@ -285,8 +285,8 @@ export const checks = seo.table(
     locationId: uuid("location_id")
       .notNull()
       .references(() => locations.id, { onDelete: "cascade" }),
-    kind: text("kind").notNull(), // 'maps' | 'organic' | 'ai'
-    status: text("status").notNull(), // 'running' | 'done' | 'failed'
+    kind: text("kind").notNull(), // 'maps' | 'organic' | 'ai' | 'audit'
+    status: text("status").notNull(), // 'running' | 'filing' | 'done' | 'failed'
     runId: uuid("run_id"), // automation.runs: the cycle this check belongs to, and its cost
     queue: text("queue").notNull(), // 'standard' | 'priority'
     calls: integer("calls").notNull().default(0),
@@ -504,6 +504,87 @@ export const aiCitations = seo.table(
   (t) => [primaryKey({ columns: [t.answerId, t.position] }), index("ai_citations_domain").on(t.domain)],
 );
 
+// ---------- Site audit ----------
+
+/**
+ * One crawl of a Location's website, in one check: its health and what it says about itself as a whole. The check
+ * row is the audit (one per audit check), so its id is the check's.
+ */
+export const siteAudits = seo.table(
+  "site_audits",
+  {
+    checkId: uuid("check_id")
+      .primaryKey()
+      .references(() => checks.id, { onDelete: "cascade" }),
+    organizationId: org(),
+    locationId: uuid("location_id")
+      .notNull()
+      .references(() => locations.id, { onDelete: "cascade" }),
+    domain: text("domain").notNull(),
+    checkedAt: at("checked_at").notNull(),
+    pagesCrawled: integer("pages_crawled").notNull(),
+    /** 0 to 100, from the kinds of issue found (audit/issues.ts). */
+    health: smallint("health").notNull(),
+    homeUrl: text("home_url").notNull(),
+    schemaTypes: text("schema_types")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    phones: text("phones")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    /** The AI crawlers its robots.txt shuts out of the whole site. */
+    blockedBots: text("blocked_bots")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    llmsTxt: boolean("llms_txt").notNull(),
+  },
+  (t) => [index("site_audits_location").on(t.locationId, t.checkedAt)],
+);
+
+/** One page of a crawl: what it says, and the issues found on it (codes from audit/issues.ts). */
+export const auditPages = seo.table(
+  "audit_pages",
+  {
+    checkId: uuid("check_id")
+      .notNull()
+      .references(() => siteAudits.checkId, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    statusCode: smallint("status_code").notNull(),
+    depth: smallint("depth"),
+    title: text("title"),
+    wordCount: integer("word_count"),
+    loadMs: integer("load_ms"),
+    issues: text("issues")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+  },
+  (t) => [primaryKey({ columns: [t.checkId, t.url] })],
+);
+
+/**
+ * Each kind of issue one crawl found: what the Site audit page lists. `count` is pages for a page issue, and items for
+ * a site-wide one (the services without a page, the AI crawlers shut out), which `items` names.
+ */
+export const auditIssues = seo.table(
+  "audit_issues",
+  {
+    checkId: uuid("check_id")
+      .notNull()
+      .references(() => siteAudits.checkId, { onDelete: "cascade" }),
+    code: text("code").notNull(),
+    count: integer("count").notNull(),
+    items: text("items")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+  },
+  (t) => [primaryKey({ columns: [t.checkId, t.code] })],
+);
+
 // ---------- Suggestions ----------
 
 /** What to do next. Applying one goes through an automation Task, which keeps what Undo needs. */
@@ -515,7 +596,8 @@ export const suggestions = seo.table(
     locationId: uuid("location_id")
       .notNull()
       .references(() => locations.id, { onDelete: "cascade" }),
-    kind: text("kind").notNull(), // 'track_keyword' | 'track_question' | 'profile_change' | 'post' | 'listing'
+    kind: text("kind").notNull(), // 'track_keyword' | 'track_question' | 'profile_change' | 'post' | 'listing' | 'site_fix'
+    /** The check it should move most. A site fix may move others too (its payload's `helps`). */
     helps: text("helps").notNull(), // 'maps' | 'keywords' | 'ai'
     title: text("title").notNull(),
     why: text("why").notNull(),

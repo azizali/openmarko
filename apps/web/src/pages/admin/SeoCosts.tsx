@@ -12,6 +12,7 @@ const kinds: [string, string][] = [
   ["maps", "Google Maps"],
   ["organic", "Google search"],
   ["ai", "AI answers"],
+  ["audit", "Site audit"],
 ];
 const usd = (n: number) => `$${n < 0.01 ? n.toFixed(4) : n.toFixed(2)}`;
 
@@ -60,7 +61,7 @@ export default function SeoCosts() {
           volumes are refreshed once a month and counted in the total.
         </p>
         <Table
-          head={["Location", "Tracks", "Checks", "Google Maps", "Google search", "AI answers", "A month"]}
+          head={["Location", "Tracks", "Checks", "Google Maps", "Google search", "AI answers", "Site audit", "A month"]}
           rows={d.locations.map((l) => [
             <span key="n">
               <span className="block font-medium">{l.name}</span>
@@ -80,6 +81,9 @@ export default function SeoCosts() {
             </span>,
             <span key="a" className="num text-muted">
               {money(l.estimate.ai)}
+            </span>,
+            <span key="s" className="num text-muted">
+              {money(l.estimate.audit)}
             </span>,
             <span key="x" className="num font-medium">
               {money(l.estimate.total)}
@@ -101,6 +105,7 @@ export default function SeoCosts() {
             ...Object.entries(d.unitPricesUsd.ai).map(([e, p]) => [`${engineNames[e] ?? e}, one question`, p] as const),
             ["Keyword volumes, up to 1,000 keywords", d.unitPricesUsd.volume],
             ["Keyword ideas, per request", d.unitPricesUsd.labsTask],
+            ["Site audit, up to 500 pages", d.unitPricesUsd.audit],
           ].map(([label, price]) => (
             <div key={label} className="flex justify-between gap-4 border-b border-line py-1.5">
               <dt className="text-muted">{label}</dt>

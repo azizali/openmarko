@@ -5,9 +5,9 @@
 
 import { and, eq, gte, ne, sql } from "drizzle-orm";
 import { authOrganization, type AppContext } from "@app/kernel";
-import { aiEngines, searchPriceUsd, searchUnitPriceUsd, type AiEngine } from "@app/integrations";
+import { aiEngines, auditPriceUsd, searchPriceUsd, searchUnitPriceUsd, type AiEngine } from "@app/integrations";
 import { checksPerMonth, type CheckEvery } from "../access";
-import { MAPS_DEPTH, ORGANIC_DEPTH } from "../checks/cycle";
+import { AUDIT_EVERY_DAYS, AUDIT_PAGES, MAPS_DEPTH, ORGANIC_DEPTH } from "../checks/cycle";
 import { checks, keywords, locations, questions } from "../schema";
 
 const micros = (usd: number) => Math.round(usd * 1_000_000);
@@ -21,9 +21,14 @@ export const pricesUsd = {
   ai: Object.fromEntries(aiEngines.map((e) => [e, searchPriceUsd("ai", { engine: e }, false)])) as Record<AiEngine, number>,
   volume: searchUnitPriceUsd.volume,
   labsTask: searchUnitPriceUsd.labsTask,
+  /** One site audit at the full page budget (it costs what it crawls, so usually less). */
+  audit: auditPriceUsd(AUDIT_PAGES),
 };
 
-/** A Location's monthly cost at its settings, by check. Each keyword counts where it's tracked: Maps, Google search or both. */
+/**
+ * A Location's monthly cost at its settings, by check. Each keyword counts where it's tracked: Maps, Google search or
+ * both. A site with a website is audited with its checks, once every AUDIT_EVERY_DAYS at most, at the full page budget.
+ */
 export function estimateMonthly(input: {
   keywords: number;
   mapsKeywords: number;
@@ -32,15 +37,18 @@ export function estimateMonthly(input: {
   gridSize: number;
   checkEvery: string;
   engines: string[];
+  hasWebsite?: boolean;
 }) {
   const per = checksPerMonth[input.checkEvery as CheckEvery] ?? 4;
+  const audits = input.hasWebsite ? Math.min(per, Math.ceil(30 / AUDIT_EVERY_DAYS)) : 0;
   const p = pricesUsd;
   const maps = micros(input.mapsKeywords * input.gridSize * input.gridSize * p.maps * per);
   const organic = micros(input.organicKeywords * p.organic * per);
   const ai = micros(input.questions * input.engines.reduce((n, e) => n + (p.ai[e as AiEngine] ?? 0), 0) * per);
   // Volumes are refreshed monthly; one request covers up to 1,000 keywords.
   const volumes = input.keywords ? micros(p.volume) : 0;
-  return { maps, organic, ai, volumes, total: maps + organic + ai + volumes };
+  const audit = micros(audits * p.audit);
+  return { maps, organic, ai, audit, volumes, total: maps + organic + ai + audit + volumes };
 }
 
 export async function costs(ctx: AppContext) {
@@ -71,6 +79,7 @@ export async function costs(ctx: AppContext) {
       mapsKeywords: sql<number>`(select count(*)::int from ${keywords} k where k.location_id = "locations"."id" and k.active and k.maps)`,
       organicKeywords: sql<number>`(select count(*)::int from ${keywords} k where k.location_id = "locations"."id" and k.active and k.organic)`,
       questions: sql<number>`(select count(*)::int from ${questions} q where q.location_id = "locations"."id" and q.active)`,
+      hasWebsite: sql<boolean>`"locations"."website_id" is not null`,
     })
     .from(locations)
     .innerJoin(authOrganization, eq(authOrganization.id, locations.organizationId))

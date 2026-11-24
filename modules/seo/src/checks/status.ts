@@ -5,11 +5,14 @@
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { automationSchema } from "@app/automation";
 import type { AppContext } from "@app/kernel";
+import { planLimits } from "../access";
 import { getLocation } from "../locations/service";
-import { checks, keywords, questions } from "../schema";
-import type { CheckKind } from "./cycle";
+import { checks, keywords, questions, websites } from "../schema";
+import { AUDIT_PAGES, checkKinds, type CheckKind } from "./cycle";
 
-export const checkKinds: readonly CheckKind[] = ["maps", "organic", "ai"];
+export { checkKinds };
+/** What Check now checks when it isn't told: the rankings. A site audit is asked for by name (the Site audit page). */
+export const rankingKinds: readonly CheckKind[] = ["maps", "organic", "ai"];
 
 export type KindStatus = {
   kind: CheckKind;
@@ -30,10 +33,17 @@ export type CheckStatus = {
   mapsKeywords: number;
   organicKeywords: number;
   questions: number;
+  /** The website a site audit crawls (null: none, so nothing to audit), and how many pages at most. */
+  website: string | null;
+  auditPages: number;
 };
 
 export async function checkStatus(ctx: AppContext, orgId: string, locationId: string): Promise<CheckStatus> {
-  await getLocation(ctx, orgId, locationId);
+  const location = await getLocation(ctx, orgId, locationId);
+  const [site] = location.websiteId
+    ? await ctx.db.select({ domain: websites.domain }).from(websites).where(eq(websites.id, location.websiteId))
+    : [];
+  const pageLimit = (await planLimits(ctx, orgId)).auditPages;
   const [last, latest, open, kw, qs] = await Promise.all([
     ctx.db
       .select({ kind: checks.kind, at: sql<Date | null>`max(${checks.finishedAt})` })
@@ -89,6 +99,8 @@ export async function checkStatus(ctx: AppContext, orgId: string, locationId: st
     mapsKeywords: kw[0]?.maps ?? 0,
     organicKeywords: kw[0]?.organic ?? 0,
     questions: qs[0]?.n ?? 0,
+    website: site?.domain ?? null,
+    auditPages: Math.max(1, Math.min(AUDIT_PAGES, pageLimit ?? AUDIT_PAGES)),
   };
 }
 

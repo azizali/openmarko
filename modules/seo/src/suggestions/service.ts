@@ -8,12 +8,18 @@ import { applyTask, proposeTask, revertTask, type TaskActor } from "@app/automat
 import { FEATURE } from "../access";
 import { getLocation } from "../locations/service";
 import { suggestions } from "../schema";
-import { kindInfo, payloadSchemas, type SuggestionKind } from "./kinds";
+import { kindInfo, payloadSchemas, type Helps, type Source, type SuggestionKind } from "./kinds";
 
 export type SuggestionView = {
   id: string;
   kind: SuggestionKind;
+  /** The check it should move most. */
   helps: string;
+  /** Every check it should move: one, or for a site fix each one the issue holds back. */
+  helpsAll: Helps[];
+  source: Source;
+  /** Done by hand: applying it marks it done. */
+  byHand: boolean;
   title: string;
   why: string;
   evidence: string[];
@@ -24,10 +30,19 @@ export type SuggestionView = {
   decidedAt: Date | null;
 };
 
+/** Every check a suggestion should move: a site fix carries its own list. */
+function helpsOf(s: typeof suggestions.$inferSelect): Helps[] {
+  const own = (s.payload as { helps?: unknown }).helps;
+  return s.kind === "site_fix" && Array.isArray(own) && own.length ? (own as Helps[]) : [s.helps as Helps];
+}
+
 const view = (s: typeof suggestions.$inferSelect): SuggestionView => ({
   id: s.id,
   kind: s.kind as SuggestionKind,
   helps: s.helps,
+  helpsAll: helpsOf(s),
+  source: kindInfo[s.kind as SuggestionKind].source,
+  byHand: kindInfo[s.kind as SuggestionKind].byHand,
   title: s.title,
   why: s.why,
   evidence: s.evidence,
@@ -133,12 +148,13 @@ export async function undoSuggestion(ctx: AppContext, actor: TaskActor, id: stri
   await ctx.db.update(suggestions).set({ status: "open", taskId: null, decidedBy: null, decidedAt: null }).where(eq(suggestions.id, s.id));
 }
 
-/** Open suggestions per check, for the overview's badges. */
+/** Open suggestions per check they'd move (a site fix counts for each), for the overview and the pages' headers. */
 export async function openCounts(ctx: AppContext, locationId: string): Promise<Record<string, number>> {
   const rows = await ctx.db
-    .select({ helps: suggestions.helps, n: sql<number>`count(*)::int` })
+    .select()
     .from(suggestions)
-    .where(and(eq(suggestions.locationId, locationId), eq(suggestions.status, "open")))
-    .groupBy(suggestions.helps);
-  return Object.fromEntries(rows.map((r) => [r.helps, r.n]));
+    .where(and(eq(suggestions.locationId, locationId), eq(suggestions.status, "open")));
+  const counts: Record<string, number> = {};
+  for (const s of rows) for (const h of helpsOf(s)) counts[h] = (counts[h] ?? 0) + 1;
+  return counts;
 }

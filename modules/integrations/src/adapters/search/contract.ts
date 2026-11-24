@@ -80,6 +80,47 @@ export type AiResult = {
   citations: { domain: string; url: string }[];
 };
 
+// ---------- Site audit ----------
+
+/** Crawl a website, following its own links from the home page, up to `maxPages`. */
+export type AuditQuery = { domain: string; maxPages: number };
+
+/**
+ * What one crawled page says, as facts. The SEO module decides what is a problem (provider-neutral: no provider's
+ * own check names). A null is "not measured", never "none".
+ */
+export type AuditPage = {
+  url: string;
+  statusCode: number;
+  /** Clicks from the home page (0 is the home page). */
+  depth: number | null;
+  title: string | null;
+  description: string | null;
+  h1: string | null;
+  wordCount: number | null;
+  /** Some image on the page has no alt text. */
+  imagesMissingAlt: boolean | null;
+  /** How long the page took to load, in milliseconds. */
+  loadMs: number | null;
+  /** Links to this page from the site's other pages. */
+  linksIn: number | null;
+};
+
+/** What the site says about itself as a whole, read from its home page and its files at the root. */
+export type AuditSite = {
+  homeUrl: string;
+  /** Every JSON-LD and microdata type on the home page ("Dentist", "LocalBusiness", "FAQPage"). */
+  schemaTypes: string[];
+  /** Phone numbers written on the home page, as found. */
+  phones: string[];
+  /** robots.txt as served; null when there is none. */
+  robotsTxt: string | null;
+  /** Whether /llms.txt answers with a file. */
+  llmsTxt: boolean;
+};
+
+export type AuditResult = { pagesCrawled: number; site: AuditSite; pages: AuditPage[] };
+
 // ---------- The two-step protocol ----------
 
 export type PostInput<Q> = {

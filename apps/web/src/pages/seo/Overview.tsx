@@ -1,22 +1,18 @@
 // The SEO overview (/seo): where the Location stands this week as four figures, one per check (each opens its page),
-// then what to do next beside what's behind the figures: keywords, assistants, who leads, and what the Google profile
-// brings in. Each suggestion says which check it should move and what it was based on, and is applied with its button
-// right on the card; an applied one stays in place saying so, with Undo, and is listed under Done from the next visit.
-import { useState, type ReactNode } from "react";
-import { Link, useSearchParams } from "react-router";
-import { Check, ChevronRight, Settings } from "lucide-react";
-import { Badge, Button, Card, Segmented, Textarea, cn, fmt } from "../../components/ui";
-import { Feedback, LoadError, useFeedback, useToast } from "../../components/Feedback";
-import { fmtDate, messageOf } from "../../lib/api";
+// then the first few actions beside what's behind the figures: keywords, assistants, who leads, and what the Google
+// profile brings in. The actions are the Action plan's best (actions.tsx), with the site's health in their line; the
+// rest, with filters and what was done, are on the Action plan.
+import type { ReactNode } from "react";
+import { Link } from "react-router";
+import { ChevronRight, Settings } from "lucide-react";
+import { Badge, Button, Card, cn, fmt } from "../../components/ui";
+import { LoadError } from "../../components/Feedback";
 import { useLoad } from "../../lib/useLoad";
-import { locationApi, seoApi, type Overview as OverviewData, type Suggestion } from "./api";
+import { locationApi, type Overview as OverviewData, type Suggestion } from "./api";
 import { Change, CheckIcon, EngineName, GridThumb, Meter, Split, Units, type CheckId } from "./parts";
+import { ActionList } from "./actions";
 import { kindsOf, useAfterCheck } from "./checks";
-import { SeoHeader, useSeo, useSeoNavigate } from "./Seo";
-
-type Helps = "maps" | "keywords" | "ai";
-type Filter = "all" | Helps;
-const filters = new Set<string>(["all", "maps", "keywords", "ai"]);
+import { SeoHeader, useSeo, useSeoHref, useSeoNavigate } from "./Seo";
 
 const checkNames = {
   maps: "Google Maps",
@@ -24,8 +20,6 @@ const checkNames = {
   ai: "AI answers",
   competitors: "Competitors",
 } as const;
-/** Where a suggestion should move you, as its card says it: "Track a keyword · for Google search". */
-const helpsNames = { maps: "Google Maps", keywords: "Google search", ai: "AI answers" } as const;
 /** Which check's colour a competitor channel is drawn in. */
 const channelChecks: Record<string, CheckId> = { maps: "maps", google: "keywords", ai: "ai" };
 /** A channel in a word, for a legend: "16 Maps · 38 search · 4 AI". */
@@ -35,41 +29,6 @@ const channelNames: Record<string, string> = {
   google: "Google search",
   ai: "AI answers",
 };
-
-/** What each kind of suggestion is called, its button, and what it says once done. */
-const kinds: Record<string, { label: string; action: string; done: string; needs: "track" | "publish" }> = {
-  track_keyword: {
-    label: "Track a keyword",
-    action: "Track it",
-    done: "Tracking. First result in a few minutes.",
-    needs: "track",
-  },
-  track_question: {
-    label: "Track an AI question",
-    action: "Track it",
-    done: "Tracking. First answers in a few minutes.",
-    needs: "track",
-  },
-  profile_change: {
-    label: "Change your Google profile",
-    action: "Apply to Google",
-    done: "Sent to Google. Changes can take a day to show.",
-    needs: "publish",
-  },
-  post: {
-    label: "Post on your Google profile",
-    action: "Publish",
-    done: "Published on your Google profile.",
-    needs: "publish",
-  },
-  listing: {
-    label: "Get listed",
-    action: "Mark as done",
-    done: "Marked as done.",
-    needs: "track",
-  },
-};
-const kindOf = (s: Suggestion) => kinds[s.kind] ?? kinds.listing!;
 
 const diff = (now: number, before: number | null) => (before === null ? null : now - before);
 
@@ -111,7 +70,7 @@ export default function Overview() {
                 {suggestions.error ? (
                   <LoadError what="suggestions">{suggestions.error}</LoadError>
                 ) : (
-                  suggestions.data && <NextSteps open={suggestions.data.open} done={suggestions.data.done} onChange={reload} />
+                  suggestions.data && <NextSteps open={suggestions.data.open} site={overview.data.site} onChange={reload} />
                 )}
               </section>
               <Breakdown data={overview.data} />
@@ -461,33 +420,14 @@ function Delta({ now, before }: { now: number; before: number }) {
     </span>
   );
 }
-
 // ---------- What to do next ----------
 
-function NextSteps({ open, done, onChange }: { open: Suggestion[]; done: Suggestion[]; onChange: () => Promise<void> }) {
-  const [params] = useSearchParams();
-  const asked = params.get("filter") as Filter | null;
-  const [filter, setFilter] = useState<Filter>(asked && filters.has(asked) ? asked : "all");
-  // Applied on this visit: they stay where they were, saying what happened with an Undo, instead of jumping to Done.
-  const [settled, setSettled] = useState<Record<string, { s: Suggestion; at: number }>>({});
-  const matches = (s: Suggestion) => filter === "all" || s.helps === filter;
-  const shown: { s: Suggestion; applied: boolean }[] = open.filter((s) => matches(s) && !settled[s.id]).map((s) => ({ s, applied: false }));
-  for (const { s, at } of Object.values(settled).toSorted((a, b) => a.at - b.at))
-    if (matches(s)) shown.splice(Math.min(at, shown.length), 0, { s, applied: true });
-  const waiting = open.filter((s) => !settled[s.id]).length;
+/** How many actions the overview shows: the rest are on the Action plan. */
+const FIRST = 3;
 
-  const applied = async (s: Suggestion) => {
-    setSettled((m) => ({
-      ...m,
-      [s.id]: { s, at: shown.findIndex((x) => x.s.id === s.id) },
-    }));
-    await onChange();
-  };
-  const undone = async (s: Suggestion) => {
-    setSettled((m) => Object.fromEntries(Object.entries(m).filter(([id]) => id !== s.id)));
-    await onChange();
-  };
-
+/** The first few actions, best first, with the way to the Action plan and the site's health in a line. */
+function NextSteps({ open, site, onChange }: { open: Suggestion[]; site: OverviewData["site"]; onChange: () => Promise<void> }) {
+  const href = useSeoHref();
   return (
     <>
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
@@ -496,250 +436,35 @@ function NextSteps({ open, done, onChange }: { open: Suggestion[]; done: Suggest
             What to do next
           </h2>
           <p className="text-[12.5px] text-muted">
-            {waiting} {waiting === 1 ? "fix" : "fixes"}, each with its reason
-          </p>
-        </div>
-        <Segmented<Filter>
-          label="Show suggestions for"
-          value={filter}
-          onChange={setFilter}
-          options={[
-            { id: "all", label: "All" },
-            { id: "maps", label: "Maps" },
-            { id: "keywords", label: "Search" },
-            { id: "ai", label: "AI" },
-          ]}
-        />
-      </div>
-      <div className="space-y-3">
-        {shown.map(({ s, applied: isApplied }) => (
-          <SuggestionCard key={s.id} s={s} applied={isApplied} onApplied={applied} onUndone={undone} onChange={onChange} />
-        ))}
-        {shown.length === 0 && (
-          <Card className="text-center">
-            <p className="text-[14px] font-medium">Nothing left here</p>
-            <p className="mt-1 text-[13px] text-muted">
-              More after the next check.{" "}
-              {filter !== "all" && (
-                <button type="button" onClick={() => setFilter("all")} className="text-fg underline underline-offset-2">
-                  Show all
-                </button>
-              )}
-            </p>
-          </Card>
-        )}
-      </div>
-      {done.some((s) => !settled[s.id]) && <DoneList done={done.filter((s) => !settled[s.id])} onChange={onChange} />}
-    </>
-  );
-}
-
-/**
- * One fix, ready to apply: what kind it is, what to do, why, and its button. What it was based on (and a post's text,
- * to edit before it goes out) opens under Details. Once applied it says so in place, with Undo.
- */
-function SuggestionCard({
-  s,
-  applied,
-  onApplied,
-  onUndone,
-  onChange,
-}: {
-  s: Suggestion;
-  applied: boolean;
-  onApplied: (s: Suggestion) => Promise<void>;
-  onUndone: (s: Suggestion) => Promise<void>;
-  onChange: () => Promise<void>;
-}) {
-  const { orgId, location, can } = useSeo();
-  const go = useSeoNavigate();
-  const toast = useToast();
-  const fb = useFeedback();
-  const k = kindOf(s);
-  const draft = s.kind === "post" ? String((s.payload as { text?: string }).text ?? "") : null;
-  const [text, setText] = useState(draft ?? "");
-  const [details, setDetails] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const allowed = can(k.needs);
-  const blocked = s.needsProfile && !location.profileLinked;
-  const one = seoApi(orgId).suggestions({ suggestionId: s.id });
-
-  const act = async (what: "apply" | "dismiss") => {
-    setBusy(true);
-    fb.clear();
-    const r = what === "apply" ? await one.apply.post(draft !== null && text !== draft ? { text } : {}) : await one.dismiss.post();
-    setBusy(false);
-    if (r.error) {
-      const needsProfile = (r.error.value as { details?: { needs?: string } } | undefined)?.details?.needs === "profile.manage";
-      return fb.fail(
-        needsProfile ? "Link this location's Google profile in SEO settings first." : messageOf(r.error),
-        what === "apply" ? "Could not apply" : "Could not dismiss",
-      );
-    }
-    setDetails(false);
-    if (what === "apply") await onApplied(s);
-    else await onChange();
-  };
-  const undo = async () => {
-    setBusy(true);
-    const r = await one.undo.post();
-    setBusy(false);
-    if (r.error) return toast.error(messageOf(r.error), "Could not undo");
-    await onUndone(s);
-  };
-
-  // A post goes out under the business's name, so its text is read before Publish.
-  const mustReview = draft !== null && !details;
-  return (
-    <Card pad={false} className="p-4 sm:p-5">
-      <h3 className="text-[15px] leading-snug font-medium text-balance">{s.title}</h3>
-      <p className="mt-1 max-w-[68ch] text-[13px] text-muted">{s.why}</p>
-      <p className="mt-2 flex items-center gap-1.5 text-[12.5px] text-muted">
-        <HelpsIcon helps={s.helps} />
-        {k.label}
-        <span aria-hidden>·</span>
-        <span>for {helpsNames[s.helps as Helps] ?? s.helps}</span>
-      </p>
-      {details && !applied && (
-        <div className="anim-fade mt-3 border-t border-line pt-3">
-          <p className="text-[12.5px] font-medium">Based on</p>
-          <ul className="mt-1.5 space-y-1 text-[13.5px] text-muted">
-            {s.evidence.map((e) => (
-              <li key={e} className="flex gap-2">
-                <span className="mt-[9px] size-1 shrink-0 rounded-full bg-subtle" />
-                {e}
-              </li>
-            ))}
-          </ul>
-          {s.kind === "profile_change" && <BeforeAfter payload={s.payload as ProfileChange} />}
-          {draft !== null && (
-            <label className="mt-4 block">
-              <span className="text-[12.5px] font-medium">The post (edit it if you like)</span>
-              <Textarea
-                className="mt-1.5 w-full"
-                rows={4}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                disabled={!allowed || blocked}
-              />
-            </label>
-          )}
-        </div>
-      )}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        {applied ? (
-          <>
-            <Badge tone="good" className="min-h-7 px-2.5 text-[13px]">
-              <Check size={14} aria-hidden /> {k.done}
-            </Badge>
-            {can(k.needs) && (
-              <Button variant="ghost" size="sm" onClick={() => void undo()} disabled={busy}>
-                Undo
-              </Button>
-            )}
-          </>
-        ) : (
-          <>
-            {allowed && blocked && (
+            {open.length} {open.length === 1 ? "action" : "actions"}, each with its reason
+            {site && (
               <>
-                <span className="text-[13px] text-muted">Needs your Google profile linked.</span>
-                {can("manage") && (
-                  <Button size="sm" onClick={() => go("/seo/settings")}>
-                    Link it
-                  </Button>
-                )}
+                {" · "}
+                <Link to={href("/seo/site-audit")} className="text-fg underline-offset-2 hover:underline">
+                  Site health {site.health}
+                </Link>
+                {site.errors > 0 && ` with ${site.errors} ${site.errors === 1 ? "error" : "errors"}`}
               </>
             )}
-            {allowed && !blocked && (
-              <Button
-                variant="primary"
-                onClick={() => (mustReview ? setDetails(true) : void act("apply"))}
-                disabled={busy || (draft !== null && details && text.trim().length < 20)}
-              >
-                {mustReview ? "Review the post" : k.action}
-              </Button>
-            )}
-            {can("track") && (
-              <Button variant="ghost" onClick={() => void act("dismiss")} disabled={busy}>
-                Not now
-              </Button>
-            )}
-            <button
-              type="button"
-              onClick={() => setDetails(!details)}
-              aria-expanded={details}
-              className="ml-auto inline-flex min-h-9 items-center gap-1 text-[13px] text-muted hover:text-fg"
-            >
-              {details ? "Hide details" : "Details"}
-              <ChevronRight size={14} aria-hidden className={cn("transition-transform", details && "rotate-90")} />
-            </button>
-            <Feedback {...fb.props} />
-          </>
+          </p>
+        </div>
+        {open.length > FIRST && (
+          <Link to={href("/seo/plan")} className="inline-flex items-center gap-0.5 text-[13px] text-muted hover:text-fg">
+            All {open.length} actions
+            <ChevronRight size={14} aria-hidden />
+          </Link>
         )}
       </div>
-    </Card>
-  );
-}
-
-function HelpsIcon({ helps }: { helps: string }) {
-  return <CheckIcon check={helps in checkNames ? (helps as Helps) : "maps"} size={13} />;
-}
-
-type ProfileChange = { field: "categories"; before: string[]; after: string[] } | { field: "description"; before: string; after: string };
-
-const shown = (v: string | string[]) => (Array.isArray(v) ? v.join(", ") : v) || "Nothing yet";
-
-function BeforeAfter({ payload }: { payload: ProfileChange }) {
-  const label = payload.field === "categories" ? "Categories" : "Description";
-  return (
-    <div className="mt-4 grid gap-3 border-t border-line pt-3 sm:grid-cols-2">
-      <div>
-        <p className="text-[12.5px] text-muted">{label} now</p>
-        <p className="mt-1 text-[13.5px]">{shown(payload.before)}</p>
-      </div>
-      <div>
-        <p className="text-[12.5px] text-good">{label} after</p>
-        <p className="mt-1 text-[13.5px]">{shown(payload.after)}</p>
-      </div>
-    </div>
-  );
-}
-
-function DoneList({ done, onChange }: { done: Suggestion[]; onChange: () => Promise<void> }) {
-  const { orgId, can } = useSeo();
-  const toast = useToast();
-  const [busy, setBusy] = useState<string | null>(null);
-  const undo = async (s: Suggestion) => {
-    setBusy(s.id);
-    const r = await seoApi(orgId).suggestions({ suggestionId: s.id }).undo.post();
-    setBusy(null);
-    if (r.error) return toast.error(messageOf(r.error), "Could not undo");
-    toast.success("Undone", s.title);
-    await onChange();
-  };
-  return (
-    <div className="mt-6">
-      <h3 className="mb-2 text-[13px] font-medium text-muted">Done ({done.length})</h3>
-      <ul className="divide-y divide-line rounded-xl border border-line bg-surface">
-        {done.map((s) => (
-          <li key={s.id} className="flex items-start gap-3 px-4 py-3">
-            <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border border-good/40 text-good">
-              <Check size={13} aria-hidden />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[13.5px]">{s.title}</p>
-              <p className="text-[12.5px] text-muted">
-                {kindOf(s).done} {s.decidedAt && `· ${fmtDate(s.decidedAt)}`}
-              </p>
-            </div>
-            {can(kindOf(s).needs) && (
-              <Button variant="ghost" size="sm" onClick={() => void undo(s)} disabled={busy === s.id}>
-                Undo
-              </Button>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
+      <ActionList
+        open={open.slice(0, FIRST)}
+        onChange={onChange}
+        empty={
+          <>
+            <p className="text-[14px] font-medium">Nothing left to do</p>
+            <p className="mt-1 text-[13px] text-muted">More after the next check.</p>
+          </>
+        }
+      />
+    </>
   );
 }

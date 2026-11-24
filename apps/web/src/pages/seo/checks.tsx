@@ -15,23 +15,29 @@ import { gridArea } from "./distance";
 import { everyLabel, type Every } from "./fields";
 import { useSeo, type SeoTab } from "./Seo";
 
-export type CheckKind = "maps" | "organic" | "ai";
-const allKinds: CheckKind[] = ["maps", "organic", "ai"];
+export type CheckKind = "maps" | "organic" | "ai" | "audit";
+/** The rankings: what the overview and Competitors show, and what "Check now" means there. */
+const rankingKinds: CheckKind[] = ["maps", "organic", "ai"];
+/** Every kind, for a page that changes after any of them (the Action plan). */
+export const everyKind: CheckKind[] = [...rankingKinds, "audit"];
 export const kindNames: Record<CheckKind, string> = {
   maps: "Google Maps",
   organic: "Google search",
   ai: "AI answers",
+  audit: "Site audit",
 };
 /** For the header's chip, where the whole line must fit on one row. */
-const shortNames: Record<CheckKind, string> = { maps: "Maps", organic: "Search", ai: "AI answers" };
+const shortNames: Record<CheckKind, string> = { maps: "Maps", organic: "Search", ai: "AI answers", audit: "Site audit" };
 
-/** What each page shows, so what its Check now checks. Settings shows no results. */
+/** What each page shows, so what its Check now checks. The Action plan and Settings show no results of their own. */
 export const kindsOf: Record<SeoTab, CheckKind[]> = {
-  overview: allKinds,
-  competitors: allKinds,
+  overview: rankingKinds,
+  competitors: rankingKinds,
   maps: ["maps"],
   keywords: ["organic"],
   ai: ["ai"],
+  "site-audit": ["audit"],
+  plan: [],
   settings: [],
 };
 
@@ -225,7 +231,13 @@ export function CheckNowButton({ tab }: { tab: SeoTab }) {
         onClick={() => setOpen(true)}
         disabled={!status || busy}
       >
-        {busy ? "Checking…" : "Check now"}
+        {busy
+          ? kinds.includes("audit")
+            ? "Auditing…"
+            : "Checking…"
+          : kinds.length === 1 && kinds[0] === "audit"
+            ? "Audit now"
+            : "Check now"}
       </Button>
       {open && <ChecksDrawer open onClose={() => setOpen(false)} preselect={kinds} />}
     </>
@@ -246,9 +258,17 @@ function ChecksDrawer({ open, onClose, preselect }: { open: boolean; onClose: ()
     maps: `${status.mapsKeywords} keyword${status.mapsKeywords === 1 ? "" : "s"} across ${gridArea(location.gridRadiusM)}`,
     organic: `${status.organicKeywords} keyword${status.organicKeywords === 1 ? "" : "s"} from your address`,
     ai: `${status.questions} question${status.questions === 1 ? "" : "s"} asked of ${list(location.engines.map((e) => engineNames[e] ?? e))}`,
+    audit: `Up to ${status.auditPages} pages of ${status.website ?? "your website"}`,
   };
   const empty = (k: CheckKind) =>
-    k === "ai" ? status.questions === 0 : k === "maps" ? status.mapsKeywords === 0 : status.organicKeywords === 0;
+    k === "audit"
+      ? !status.website
+      : k === "ai"
+        ? status.questions === 0
+        : k === "maps"
+          ? status.mapsKeywords === 0
+          : status.organicKeywords === 0;
+  const nothing = (k: CheckKind) => (k === "audit" ? "No website to audit. Add it in Search settings." : "Nothing to check yet");
   const canPick = (k: CheckKind) => manage && !empty(k) && !queued.includes(k) && !status.kinds.find((s) => s.kind === k)?.running;
   const chosen = [...picked].filter(canPick);
 
@@ -282,7 +302,7 @@ function ChecksDrawer({ open, onClose, preselect }: { open: boolean; onClose: ()
               starting
                 ? "Starting…"
                 : chosen.length
-                  ? `Check ${chosen.length === 3 ? "everything" : list(chosen.map((k) => kindNames[k]))}`
+                  ? `Check ${chosen.length > 2 && chosen.length === status.kinds.filter((k) => !empty(k.kind)).length ? "everything" : list(chosen.map((k) => kindNames[k]))}`
                   : "Check"
             }
           />
@@ -312,13 +332,15 @@ function ChecksDrawer({ open, onClose, preselect }: { open: boolean; onClose: ()
                 )}
                 <span className="min-w-0 flex-1">
                   <span className="block text-[13.5px] font-medium">{kindNames[s.kind]}</span>
-                  <span className="block text-[12.5px] text-muted">{empty(s.kind) ? `Nothing to check yet` : what[s.kind]}</span>
+                  <span className="block text-[12.5px] text-muted">{empty(s.kind) ? nothing(s.kind) : what[s.kind]}</span>
                   <span className="mt-1 block text-[12.5px]">
                     {queued.includes(s.kind) && !s.running ? (
                       <span className="text-info">Starting…</span>
                     ) : s.running ? (
                       <span className="text-info">
-                        Checking since {fmtTime(s.running.startedAt)} · {s.running.received} of {s.running.calls} results in
+                        {s.kind === "audit"
+                          ? `Crawling your site since ${fmtTime(s.running.startedAt)}`
+                          : `Checking since ${fmtTime(s.running.startedAt)} · ${s.running.received} of ${s.running.calls} results in`}
                       </span>
                     ) : s.lastError ? (
                       <span className="text-bad">Last check failed: {s.lastError}</span>
@@ -337,7 +359,8 @@ function ChecksDrawer({ open, onClose, preselect }: { open: boolean; onClose: ()
       {status.finishing && <p className="mt-2 text-[12.5px] text-info">Every result is in. Writing suggestions…</p>}
       <p className="mt-4 text-[12.5px] text-subtle">
         Results usually take a few minutes, Google search a little longer. You can keep working: each page updates when its results are in.
-        {manage && ` Checks also run on their own: ${(everyLabel[location.checkEvery as Every] ?? "on a schedule").toLowerCase()}.`}
+        {manage &&
+          ` Checks also run on their own: ${(everyLabel[location.checkEvery as Every] ?? "on a schedule").toLowerCase()}, and the site audit once a week at most.`}
       </p>
     </Drawer>
   );

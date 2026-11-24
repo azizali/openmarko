@@ -23,7 +23,7 @@ export { integrationRoutes } from "./routes";
 export { startOAuth, finishOAuth, signState, readState } from "./oauth";
 export * from "./adapters/search/contract";
 export * from "./adapters/google/contract";
-export { unitPriceUsd as searchUnitPriceUsd, searchPriceUsd } from "./adapters/search/dataforseo";
+export { unitPriceUsd as searchUnitPriceUsd, searchPriceUsd, auditPriceUsd } from "./adapters/search/dataforseo";
 export { splitFieldValues } from "./fields";
 export type { EmailInput, EmailOutput } from "./adapters/email";
 export {

@@ -229,7 +229,7 @@ erDiagram
         uuid id PK
         text organization_id FK
         uuid location_id FK
-        text kind "maps | organic | ai"
+        text kind "maps | organic | ai | audit"
         text status "running | filing | done | failed"
         text queue "standard | priority"
         int calls
@@ -378,6 +378,50 @@ erDiagram
   names still count in **Competitors** under the AI answers channel.
 - `ai_citations` feeds the "Get listed on Healthgrades" kind of suggestion (Q12).
 
+### Site audit
+
+```mermaid
+erDiagram
+    checks ||--o| site_audits : "an audit check is the audit"
+    site_audits ||--o{ audit_pages : "crawled"
+    site_audits ||--o{ audit_issues : "found"
+
+    site_audits {
+        uuid check_id PK,FK
+        text organization_id FK
+        uuid location_id FK
+        text domain
+        timestamptz checked_at
+        int pages_crawled
+        smallint health "0 to 100"
+        text home_url
+        text_array schema_types "on the home page"
+        text_array phones "on the home page"
+        text_array blocked_bots "AI crawlers robots.txt shuts out"
+        bool llms_txt
+    }
+    audit_pages {
+        uuid check_id PK,FK
+        text url PK
+        smallint status_code
+        smallint depth "clicks from home"
+        text title
+        int word_count
+        int load_ms
+        text_array issues "codes, audit/issues.ts"
+    }
+    audit_issues {
+        uuid check_id PK,FK
+        text code PK
+        int count "pages, or items for a site-wide issue"
+        text_array items "the services, crawlers or phones it's about"
+    }
+```
+
+- The crawl's facts are kept per page; what counts as an issue is decided when it's filed (`audit/issues.ts`), so the
+  rules can change without a new crawl. A site-wide issue is listed on the home page's row.
+- `audit_issues` is the summary the Site audit page reads, and what the `site` suggestion rule compares between audits.
+
 ### Competitors check
 
 No table of its own. It reads `map_standings`, `serp_items` and `ai_mentions` for the Location's latest checks,
@@ -395,8 +439,8 @@ erDiagram
         uuid id PK
         text organization_id FK
         uuid location_id FK
-        text kind "track_keyword | track_question | profile_change | post | listing"
-        text helps "maps | keywords | ai"
+        text kind "track_keyword | track_question | profile_change | post | listing | site_fix"
+        text helps "maps | keywords | ai: the check it moves most"
         text title
         text why
         jsonb evidence "list of sentences"
@@ -413,9 +457,11 @@ erDiagram
 ```
 
 - `payload` is a union checked by a zod schema per `kind`: a term to track; a profile field before and after; a
-  post's text; a directory to get listed on.
+  post's text; a directory to get listed on; a site audit issue with its count, sample pages, every check it holds
+  back (`helps`), the steps and what to paste.
 - `fingerprint` (kind plus its subject, such as `track_keyword:emergency dentist austin`) stops a dismissed or
-  applied suggestion coming back each week.
+  applied suggestion coming back each week. A site fix's is `site_fix:<code>:<audit check id>`, the audit where the
+  issue's current run began, so an issue that's fixed and then comes back is a new suggestion.
 - Apply and Undo go through an automation Task executor, which keeps the revert data, writes Activity and lets
   Autopilot act (Q4). `listing` and profile gaps (a `profile_change` with an empty before) come from the
   improvements (Q12); question ideas from "People also ask" are `track_question` suggestions.

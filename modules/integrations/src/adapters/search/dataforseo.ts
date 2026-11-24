@@ -1,4 +1,4 @@
-// DataForSEO: Google Maps, Google search and AI answers (two steps: post, collect) and keyword data (at once).
+// DataForSEO: Google Maps, Google search, AI answers and site audits (two steps: post, collect) and keyword data (at once).
 // Live calls follow DataForSEO's v3 API; they have not been run against a real account in this repository yet, so
 // parsing is defensive and a shape we don't recognise is a failed task, not a crash. The stub answers from
 // stub-world.ts and costs what the live call would (unit prices below), so cost pages read true in development.
@@ -15,6 +15,9 @@ import {
   type AiEngine,
   type AiQuery,
   type AiResult,
+  type AuditPage,
+  type AuditQuery,
+  type AuditResult,
   type BusinessDetails,
   type Collected,
   type CategoriesOutput,
@@ -34,7 +37,7 @@ import {
   type PostInput,
   type SearchInput,
 } from "./contract";
-import { stubAi, stubCategories, stubDetails, stubLocations, stubIdeas, stubMaps, stubOrganic, stubVolume } from "./stub-world";
+import { stubAi, stubAudit, stubCategories, stubDetails, stubLocations, stubIdeas, stubMaps, stubOrganic, stubVolume } from "./stub-world";
 
 const BASE = "https://api.dataforseo.com/v3";
 const micros = (usd: number) => Math.round(usd * 1_000_000);
@@ -57,7 +60,12 @@ export const unitPriceUsd = {
   labsTask: 0.012,
   labsRow: 0.00012,
   details: 0.0054,
+  /** On-Page API, per page crawled without JavaScript (an estimate: check it). */
+  auditPage: 0.000125,
 } as const;
+
+/** What one site audit costs at most: its page budget. DataForSEO bills the pages it crawls. */
+export const auditPriceUsd = (maxPages: number) => unitPriceUsd.auditPage * maxPages;
 
 type Kind = "maps" | "organic" | "ai";
 const kindOf: Partial<Record<CapabilityId, Kind>> = { "search.maps": "maps", "search.organic": "organic", "search.ai": "ai" };
@@ -361,6 +369,133 @@ function parseAi(engine: AiQuery["engine"], task: Task): AiResult {
   return { text, citations: referencesOf(node) };
 }
 
+// ---------- Site audit (On-Page API) ----------
+
+async function postAudit(input: PostInput<AuditQuery>, c: CallContext): Promise<CallResult<{ posted: Posted<unknown>[] }>> {
+  if (c.mode === "stub") {
+    const posted = input.queries.map(({ tag, query }) => ({
+      tag,
+      externalId: `stub_${crypto.randomUUID()}`,
+      costMicros: micros(auditPriceUsd(query.maxPages)),
+    }));
+    return { output: { posted }, quantity: posted.length, costMicros: posted.reduce((n, p) => n + p.costMicros, 0) };
+  }
+  const json = await request(
+    c,
+    "POST",
+    "on_page/task_post",
+    input.queries.map(({ tag, query }) => ({
+      target: query.domain,
+      max_crawl_pages: query.maxPages,
+      tag,
+      // Plain HTML: what search engines and AI crawlers read first, at the lowest price.
+      enable_javascript: false,
+      load_resources: false,
+      ...(input.pingbackUrl ? { pingback_url: input.pingbackUrl.replace("{id}", "$id") } : {}),
+    })),
+  );
+  const posted: Posted<unknown>[] = [];
+  for (const task of json.tasks ?? []) {
+    if (task.status_code !== 20100) throw new AppError(502, "provider_failed", `DataForSEO refused a task: ${task.status_message}`);
+    posted.push({ tag: String(task.data?.tag ?? ""), externalId: `on_page|${task.id}`, costMicros: micros(task.cost ?? 0) });
+  }
+  return { output: { posted }, quantity: posted.length, costMicros: posted.reduce((n, p) => n + p.costMicros, 0) };
+}
+
+async function collectAudit(input: CollectInput<AuditQuery>, c: CallContext): Promise<CallResult<{ collected: Collected<unknown>[] }>> {
+  if (c.mode === "stub") {
+    const collected = input.tasks.map(({ externalId, query }) => ({ externalId, status: "ready" as const, result: stubAudit(query) }));
+    return { output: { collected }, quantity: 0, costMicros: 0 };
+  }
+  const collected: Collected<unknown>[] = [];
+  for (const { externalId, query } of input.tasks) {
+    const id = externalId.split("|")[1];
+    if (!id) {
+      collected.push({ externalId, status: "failed", error: "Not a task we posted." });
+      continue;
+    }
+    const summary = (await request(c, "GET", `on_page/summary/${id}`)).tasks?.[0];
+    if (!summary || PENDING.has(summary.status_code)) {
+      collected.push({ externalId, status: "pending" });
+      continue;
+    }
+    if (summary.status_code !== 20000) {
+      collected.push({ externalId, status: "failed", error: summary.status_message });
+      continue;
+    }
+    const s = summary.result?.[0];
+    if (s?.crawl_progress !== "finished") {
+      collected.push({ externalId, status: "pending" });
+      continue;
+    }
+    collected.push({ externalId, status: "ready", result: await readAudit(c, id, query, s) });
+  }
+  return { output: { collected }, quantity: 0, costMicros: 0 };
+}
+
+/** A finished crawl: its pages, then the home page's structured data and text, then robots.txt and llms.txt. */
+async function readAudit(c: CallContext, id: string, query: AuditQuery, summary: any): Promise<AuditResult> {
+  const pagesTask = (await request(c, "POST", "on_page/pages", [{ id, limit: 1000 }])).tasks?.[0];
+  const pages = items(pagesTask ?? ({} as Task))
+    .map(parseAuditPage)
+    .filter((p): p is AuditPage => !!p);
+  const home = pages.find((p) => p.depth === 0)?.url ?? `https://${query.domain}/`;
+  const micro = (await request(c, "POST", "on_page/microdata", [{ id, url: home }]).catch(() => null))?.tasks?.[0];
+  const schemaTypes = [
+    ...new Set(
+      items(micro ?? ({} as Task))
+        .flatMap((i: any) => (Array.isArray(i?.types) ? i.types : [i?.type]))
+        .filter((t: unknown): t is string => typeof t === "string")
+        .map((t: string) => t.replace(/^https?:\/\/schema\.org\//, "")),
+    ),
+  ];
+  const parsed = (await request(c, "POST", "on_page/content_parsing", [{ id, url: home }]).catch(() => null))?.tasks?.[0];
+  const phones = [...new Set(JSON.stringify(parsed?.result ?? "").match(/\+?1?[\s.-]?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}/g) ?? [])].slice(
+    0,
+    5,
+  );
+  return {
+    pagesCrawled: num(summary?.crawl_status?.pages_crawled) ?? pages.length,
+    site: {
+      homeUrl: home,
+      schemaTypes,
+      phones,
+      robotsTxt: await fetchText(`https://${query.domain}/robots.txt`),
+      llmsTxt: !!(await fetchText(`https://${query.domain}/llms.txt`)),
+    },
+    pages,
+  };
+}
+
+function parseAuditPage(i: any): AuditPage | null {
+  const url = str(i?.url);
+  if (!url) return null;
+  const meta = i.meta ?? {};
+  return {
+    url,
+    statusCode: num(i.status_code) ?? 0,
+    depth: num(i.click_depth),
+    title: str(meta.title),
+    description: str(meta.description),
+    h1: str(meta.htags?.h1?.[0]),
+    wordCount: num(meta.content?.plain_text_word_count),
+    imagesMissingAlt: typeof i.checks?.no_image_alt === "boolean" ? i.checks.no_image_alt : null,
+    loadMs: num(i.page_timing?.duration_time),
+    linksIn: num(meta.inbound_links_count),
+  };
+}
+
+/** A small text file from the site itself (robots.txt, llms.txt). Null when it isn't there. */
+async function fetchText(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(10_000) });
+    if (!res.ok || !(res.headers.get("content-type") ?? "text/plain").startsWith("text/")) return null;
+    return (await res.text()).slice(0, 20_000);
+  } catch {
+    return null;
+  }
+}
+
 // ---------- Keyword data ----------
 
 /** DataForSEO's location codes for the countries we expect first; others fall back to the United States. */
@@ -526,7 +661,7 @@ async function details(input: DetailsInput, c: CallContext): Promise<CallResult<
 
 export const dataforseo: Adapter = {
   provider: "dataforseo",
-  capabilities: ["search.maps", "search.organic", "search.ai", "search.keywords", "places.details"],
+  capabilities: ["search.maps", "search.organic", "search.ai", "search.keywords", "site.audit", "places.details"],
   estimate: (capability, input) =>
     capability === "search.keywords" || capability === "places.details" ? 1 : input?.op === "post" ? (input.queries?.length ?? 1) : 0,
   call: async (capability, input, c) => {
@@ -536,6 +671,10 @@ export const dataforseo: Adapter = {
       if (op === "categories") return categories(c);
       if (op === "locations") return locations(input as LocationsInput, c);
       return details(input as DetailsInput, c);
+    }
+    if (capability === "site.audit") {
+      const i = input as SearchInput<AuditQuery>;
+      return i.op === "post" ? postAudit(i, c) : collectAudit(i, c);
     }
     const kind = kindOf[capability];
     if (!kind) throw new AppError(501, "not_implemented", `DataForSEO doesn't do ${capability}.`);

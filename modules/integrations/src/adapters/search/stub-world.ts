@@ -8,6 +8,9 @@
 import type {
   AiQuery,
   AiResult,
+  AuditPage,
+  AuditQuery,
+  AuditResult,
   BusinessDetails,
   Coordinates,
   DetailsInput,
@@ -427,6 +430,102 @@ export function stubIdeas(domain: string | null, seeds: string[], limit: number)
     monthlySearches: stubVolume(term).monthlySearches,
     position: domain ? (hash(`pos|${domain}|${term}`) > 0.3 ? 1 + Math.floor(hash(`p|${domain}|${term}`) * 40) : null) : null,
   }));
+}
+
+// ---------- A site audit ----------
+
+const slugOf = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+const titleCase = (s: string) => s.replace(/\b[a-z]/g, (c) => c.toUpperCase());
+
+/**
+ * A made-up crawl of a site: its usual pages (home, about, contact, a page per service, a blog), each with the
+ * problems a small business's site tends to have. A known stub business gets its own name, phone and services; any
+ * other domain a generic practice. Some problems drift by week (`round`), so health moves between audits.
+ */
+export function stubAudit(q: AuditQuery, now = Date.now()): AuditResult {
+  const r = round(now);
+  const biz = stubBusinesses.find((b) => b.domain === q.domain);
+  const name = biz?.name ?? titleCase(q.domain.split(".")[0]!.replace(/-/g, " "));
+  const services = biz?.services ?? ["cleaning", "whitening", "emergency", "kids"];
+  // What varies goes first: FNV-1a strings that differ only at the end hash to nearby numbers.
+  const roll = (k: string) => hash(`${k}|audit|${q.domain}`);
+  const weekly = (k: string) => hash(`${k}|${r}|audit|${q.domain}`);
+  const home = `https://${q.domain}/`;
+
+  type Draft = { path: string; title: string; words: number; depth: number };
+  const drafts: Draft[] = [
+    { path: "", title: `${name} | Dentist in ${CITY.name}`, words: 640, depth: 0 },
+    { path: "about", title: `About ${name}`, words: 420, depth: 1 },
+    { path: "contact", title: `Contact ${name}`, words: 140, depth: 1 },
+    { path: "new-patients", title: `New patients | ${name}`, words: 520, depth: 1 },
+    { path: "insurance", title: `Insurance we accept | ${name}`, words: 310, depth: 2 },
+    { path: "services", title: `Services | ${name}`, words: 380, depth: 1 },
+    // About a third of services have no page of their own: the "no page for a service" finding.
+    ...services
+      .filter((x) => roll(`svc|${x}`) > 0.35)
+      .map((x) => ({
+        path: `services/${slugOf(x)}`,
+        title: `${titleCase(x)} in ${CITY.name} | ${name}`,
+        words: 280 + Math.floor(roll(`w|${x}`) * 900),
+        depth: 2,
+      })),
+    ...Array.from({ length: 6 + Math.floor(roll("blog") * 14) }, (_, i) => ({
+      path: `blog/post-${i + 1}`,
+      // Some posts kept the template's title: duplicates.
+      title: roll(`dup|${i}`) < 0.3 ? `Blog | ${name}` : `${titleCase(ideaTopics[i % ideaTopics.length]!)}: what to know (${i + 1})`,
+      words: 150 + Math.floor(roll(`bw|${i}`) * 1300),
+      depth: 3 + (i > 8 ? 1 : 0),
+    })),
+  ];
+  const pages: AuditPage[] = drafts.map((d, i) => {
+    const k = d.path || "home";
+    return {
+      url: `${home}${d.path}`,
+      statusCode: 200,
+      depth: d.depth,
+      title: i > 0 && roll(`notitle|${k}`) < 0.03 ? null : d.title,
+      description: i > 0 && weekly(`desc|${k}`) < 0.3 ? null : `${d.title}. Book online or call us.`,
+      h1: roll(`h1|${k}`) < 0.1 ? null : d.title.split(" | ")[0]!,
+      wordCount: d.words,
+      imagesMissingAlt: roll(`alt|${k}`) < 0.35,
+      loadMs: Math.round(800 + weekly(`speed|${k}`) * (i === 0 ? 3600 : 2600)),
+      linksIn: i === 0 ? null : roll(`orphan|${k}`) < 0.08 ? 0 : 1 + Math.floor(roll(`in|${k}`) * 12),
+    };
+  });
+  // A page the site still links to but that's gone.
+  if (roll("broken") < 0.7)
+    pages.push({
+      url: `${home}summer-offer`,
+      statusCode: 404,
+      depth: 2,
+      title: null,
+      description: null,
+      h1: null,
+      wordCount: null,
+      imagesMissingAlt: null,
+      loadMs: 240,
+      linksIn: 3,
+    });
+  const phone = biz?.phone ?? "(512) 555-0100";
+  const blocksAi = roll("robots") < 0.6;
+  return {
+    pagesCrawled: Math.min(pages.length, q.maxPages),
+    site: {
+      homeUrl: home,
+      schemaTypes: roll("schema") < 0.6 ? ["WebSite"] : ["Dentist", "WebSite"],
+      // An old number left in the footer, on some sites.
+      phones: roll("phone") < 0.5 ? [phone.replace(/\d$/, (d) => String((Number(d) + 3) % 10))] : [phone],
+      robotsTxt: blocksAi
+        ? `User-agent: *\nAllow: /\n\nUser-agent: GPTBot\nDisallow: /\n\nUser-agent: PerplexityBot\nDisallow: /\n`
+        : `User-agent: *\nAllow: /\nSitemap: ${home}sitemap.xml\n`,
+      llmsTxt: roll("llms") > 0.85,
+    },
+    pages: pages.slice(0, q.maxPages),
+  };
 }
 
 // ---------- A business's full profile ----------
