@@ -371,11 +371,12 @@ export function PageHeader({
     <div className="mb-7">
       {crumbs && <div className="mb-3 text-[13px] text-muted">{crumbs}</div>}
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="font-serif text-[34px] leading-[1.1] tracking-[-0.02em]">{title}</h1>
+        {/* A long title (a question) wraps in the space the actions leave, rather than pushing them to a row of their own. */}
+        <div className="min-w-0 flex-1 basis-[20rem]">
+          <h1 className="font-serif text-[34px] leading-[1.1] tracking-[-0.02em] text-balance">{title}</h1>
           {sub && <p className="mt-1.5 max-w-2xl text-[14px] text-muted">{sub}</p>}
         </div>
-        {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+        {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
       </div>
     </div>
   );

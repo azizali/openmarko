@@ -1,9 +1,11 @@
 // Checks on every SEO page: when this page's data was last checked, a quiet chip while a check runs (with when it
 // started, and a link to its status), and Check now. Check now checks what this page shows; the drawer it opens offers
 // the other kinds too. One status is loaded for the whole SEO section and looked at again every 10 seconds while
-// something is running, so every page agrees and reloads its own data when its kind of check finishes.
+// something is running, so every page agrees and reloads its own data when its kind of check finishes. A check just
+// started is queued for the worker before the status knows of it: it shows as starting, looked at every 3 seconds,
+// until it's running.
 import { createContext, use, useEffect, useRef, useState, type ReactNode } from "react";
-import { Loader2, RefreshCw } from "lucide-react";
+import { ChevronRight, Loader2, RefreshCw } from "lucide-react";
 import { Button, Checkbox, Drawer, cn, FormFooter } from "../../components/ui";
 import { Feedback, useFeedback, useToast } from "../../components/Feedback";
 import { fmtTime, messageOf } from "../../lib/api";
@@ -20,6 +22,8 @@ export const kindNames: Record<CheckKind, string> = {
   organic: "Google search",
   ai: "AI answers",
 };
+/** For the header's chip, where the whole line must fit on one row. */
+const shortNames: Record<CheckKind, string> = { maps: "Maps", organic: "Search", ai: "AI answers" };
 
 /** What each page shows, so what its Check now checks. Settings shows no results. */
 export const kindsOf: Record<SeoTab, CheckKind[]> = {
@@ -31,24 +35,58 @@ export const kindsOf: Record<SeoTab, CheckKind[]> = {
   settings: [],
 };
 
-type Checks = { status: CheckStatus | null; reload: () => Promise<void> };
+/** Kinds just started and not yet running, with when, and each one's last check then (a fast check may finish unseen). */
+type Queued = { locationId: string; kinds: CheckKind[]; at: number; lastCheckedAt: Record<string, string | null> };
+type Checks = {
+  status: CheckStatus | null;
+  reload: () => Promise<void>;
+  /** The kinds started from this page that the worker hasn't picked up yet. */
+  starting: CheckKind[];
+  started: (kinds: CheckKind[]) => void;
+};
 const ChecksContext = createContext<Checks>({
   status: null,
   reload: async () => {},
+  starting: [],
+  started: () => {},
 });
+
+const stamp = (d: string | Date | null) => (d ? String(d) : null);
+
+/** How long a started check may wait for the worker before it's no longer shown as starting. */
+const STARTING_FOR_MS = 2 * 60_000;
 
 export function ChecksProvider({ children }: { children: ReactNode }) {
   const { orgId, location } = useSeo();
   const checks = useLoad(() => locationApi(orgId, location.id).checks.get(), [orgId, location.id]);
   const status = checks.data ?? null;
+  const [queued, setQueued] = useState<Queued | null>(null);
   const busy = !!status && (status.finishing || status.kinds.some((k) => k.running));
   const reload = checks.reload;
+  // Picked up (running), done already, or waited too long: no longer starting.
   useEffect(() => {
-    if (!busy) return;
-    const t = setInterval(() => void reload(), 10_000);
+    if (!queued || !status) return;
+    const mine = status.kinds.filter((k) => queued.kinds.includes(k.kind));
+    if (mine.some((k) => k.running || stamp(k.lastCheckedAt) !== queued.lastCheckedAt[k.kind]) || Date.now() - queued.at > STARTING_FOR_MS)
+      setQueued(null);
+  }, [queued, status]);
+  useEffect(() => {
+    if (!busy && !queued) return;
+    const t = setInterval(() => void reload(), queued ? 3_000 : 10_000);
     return () => clearInterval(t);
-  }, [busy, reload]);
-  return <ChecksContext value={{ status, reload }}>{children}</ChecksContext>;
+  }, [busy, queued, reload]);
+  const started = (kinds: CheckKind[]) =>
+    setQueued({
+      locationId: location.id,
+      kinds,
+      at: Date.now(),
+      lastCheckedAt: Object.fromEntries((status?.kinds ?? []).map((k) => [k.kind, stamp(k.lastCheckedAt)])),
+    });
+  return (
+    <ChecksContext value={{ status, reload, starting: queued?.locationId === location.id ? queued.kinds : [], started }}>
+      {children}
+    </ChecksContext>
+  );
 }
 
 /**
@@ -100,11 +138,16 @@ const ago = (d: string | Date) => {
 };
 const latest = (dates: (string | Date | null)[]) =>
   dates.reduce<string | Date | null>((a, b) => (!b ? a : !a || new Date(b) > new Date(a) ? b : a), null);
+/** The time alone when it's today, else the date and time. */
+const clock = (d: string | Date) =>
+  new Date(d).toDateString() === new Date().toDateString()
+    ? new Date(d).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+    : fmtTime(d);
 const list = (names: string[]) => (names.length < 2 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`);
 
 /** Under Check now: when the page's data was last checked, and what's checking now. Quiet unless something's running. */
 export function CheckLine({ tab, className }: { tab: SeoTab; className?: string }) {
-  const { status } = use(ChecksContext);
+  const { status, starting } = use(ChecksContext);
   const [open, setOpen] = useState(false);
   const kinds = kindsOf[tab];
   if (!status || !kinds.length) return null;
@@ -127,18 +170,34 @@ export function CheckLine({ tab, className }: { tab: SeoTab; className?: string 
           "Not checked yet"
         )}
       </span>
-      {(running.length > 0 || status.finishing) && (
+      {(running.length > 0 || starting.length > 0 || status.finishing) && (
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-full bg-info-soft px-2.5 py-0.5 font-medium text-info transition-opacity hover:opacity-80"
+          title={
+            running.length
+              ? `Checking ${list(running.map((k) => kindNames[k.kind]))}, started ${fmtTime(since!)}. See status.`
+              : starting.length
+                ? `Starting ${list(starting.map((k) => kindNames[k]))}. See status.`
+                : "Every result is in. Writing suggestions. See status."
+          }
+          className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-info-soft py-0.5 pl-2.5 pr-1.5 font-medium text-info transition-opacity hover:opacity-80"
         >
           <span className="relative flex size-2" aria-hidden>
             <span className="absolute inline-flex size-full animate-ping rounded-full bg-info opacity-60 motion-reduce:hidden" />
             <span className="relative inline-flex size-2 rounded-full bg-info" />
           </span>
-          {running.length ? `Checking ${list(running.map((k) => kindNames[k.kind]))} · started ${fmtTime(since)}` : "Writing suggestions"}
-          <span className="font-normal underline decoration-info/40 underline-offset-2">See status</span>
+          {running.length ? (
+            <>
+              Checking {list(running.map((k) => shortNames[k.kind]))}
+              <span className="font-normal opacity-80">· since {clock(since!)}</span>
+            </>
+          ) : starting.length ? (
+            `Starting ${list(starting.map((k) => shortNames[k]))}…`
+          ) : (
+            "Writing suggestions"
+          )}
+          <ChevronRight size={13} aria-hidden className="-ml-0.5 opacity-70" />
         </button>
       )}
       {failed.length > 0 && (
@@ -153,12 +212,12 @@ export function CheckLine({ tab, className }: { tab: SeoTab; className?: string 
 
 /** Check now: checks this page's kinds, offering the others. Disabled while all of this page's kinds are running. */
 export function CheckNowButton({ tab }: { tab: SeoTab }) {
-  const { status } = use(ChecksContext);
+  const { status, starting } = use(ChecksContext);
   const { can } = useSeo();
   const [open, setOpen] = useState(false);
   const kinds = kindsOf[tab];
   if (!can("manage") || !kinds.length) return null;
-  const busy = !!status && kinds.every((k) => status.kinds.find((s) => s.kind === k)?.running);
+  const busy = !!status && kinds.every((k) => starting.includes(k) || status.kinds.find((s) => s.kind === k)?.running);
   return (
     <>
       <Button
@@ -176,7 +235,7 @@ export function CheckNowButton({ tab }: { tab: SeoTab }) {
 /** Each kind of check: what it asks, where it stands, and (for whoever may) a box to check it now. */
 function ChecksDrawer({ open, onClose, preselect }: { open: boolean; onClose: () => void; preselect: CheckKind[] }) {
   const { orgId, location, can } = useSeo();
-  const { status, reload } = use(ChecksContext);
+  const { status, reload, starting: queued, started } = use(ChecksContext);
   const toast = useToast();
   const fb = useFeedback(open);
   const [picked, setPicked] = useState<Set<CheckKind>>(() => new Set(preselect));
@@ -190,7 +249,7 @@ function ChecksDrawer({ open, onClose, preselect }: { open: boolean; onClose: ()
   };
   const empty = (k: CheckKind) =>
     k === "ai" ? status.questions === 0 : k === "maps" ? status.mapsKeywords === 0 : status.organicKeywords === 0;
-  const canPick = (k: CheckKind) => manage && !empty(k) && !status.kinds.find((s) => s.kind === k)?.running;
+  const canPick = (k: CheckKind) => manage && !empty(k) && !queued.includes(k) && !status.kinds.find((s) => s.kind === k)?.running;
   const chosen = [...picked].filter(canPick);
 
   const start = async () => {
@@ -200,6 +259,7 @@ function ChecksDrawer({ open, onClose, preselect }: { open: boolean; onClose: ()
     });
     setStarting(false);
     if (r.error) return fb.fail(messageOf(r.error), "Could not start the check");
+    started(r.data.kinds);
     await reload();
     toast.success(`Checking ${list(r.data.kinds.map((k) => kindNames[k]))}`, "Results usually take a few minutes. You can keep working.");
     onClose();
@@ -254,7 +314,9 @@ function ChecksDrawer({ open, onClose, preselect }: { open: boolean; onClose: ()
                   <span className="block text-[13.5px] font-medium">{kindNames[s.kind]}</span>
                   <span className="block text-[12.5px] text-muted">{empty(s.kind) ? `Nothing to check yet` : what[s.kind]}</span>
                   <span className="mt-1 block text-[12.5px]">
-                    {s.running ? (
+                    {queued.includes(s.kind) && !s.running ? (
+                      <span className="text-info">Starting…</span>
+                    ) : s.running ? (
                       <span className="text-info">
                         Checking since {fmtTime(s.running.startedAt)} · {s.running.received} of {s.running.calls} results in
                       </span>
