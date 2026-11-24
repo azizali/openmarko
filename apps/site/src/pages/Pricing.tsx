@@ -1,5 +1,5 @@
 import { Container, Heading, Section } from "../components/ui";
-import { Faq, FinalCta, PricingCards } from "../components/sections";
+import { Faq, PricingCards } from "../components/sections";
 import { APP_NAME, CONTACT_EMAIL } from "../data/site";
 import { useTitle } from "../lib/useTitle";
 
@@ -38,7 +38,6 @@ export default function Pricing() {
           <Faq items={pricingFaqs} />
         </div>
       </Section>
-      <FinalCta />
     </>
   );
 }

@@ -10,7 +10,8 @@ apps/
   api/               index.ts: builds the HTTP app from the enabled modules, listens on PORT
   worker/            index.ts + runner.ts: pg-boss queues, cron schedules, outbox drain loop
   web/               the product (React, Vite, Tailwind). Eden-typed calls to the API; Better Auth's client for sign-in
-  site/              the marketing site (React, Vite, Tailwind). Static.
+  site/              the marketing site (React, Vite, Tailwind). Static. Every page shares one Layout: header
+                     (with the Industries menu), the closing call to action, and the footer.
 modules/             one folder per module: schema.ts (its tables), module.ts (its manifest), routes.ts, services, test/
   identity           Better Auth: sign-in, sessions, Organizations, invitations; app admins
   organizations      Organizations, members, archive and delete; the platform admin area's list

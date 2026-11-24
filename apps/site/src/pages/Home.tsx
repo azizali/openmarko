@@ -1,5 +1,5 @@
 import { Button, Container, Heading, Section } from "../components/ui";
-import { Faq, FinalCta } from "../components/sections";
+import { Faq } from "../components/sections";
 import { Hero } from "../components/home/Hero";
 import { AppShowcase } from "../components/home/AppShowcase";
 import { BenefitGrid, ChannelRow, Problem, Steps, Testimonials, hasProof } from "../components/home/Benefits";
@@ -93,7 +93,6 @@ export default function Home() {
           </div>
         </div>
       </Section>
-      <FinalCta />
     </>
   );
 }

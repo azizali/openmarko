@@ -3,6 +3,9 @@ import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { Menu, Moon, Sun, X } from "lucide-react";
 import { Logo } from "./Logo";
 import { Button, Container, cn } from "./ui";
+import { IndustriesMenu } from "./IndustriesMenu";
+import { FinalCta } from "./sections";
+import { featured } from "../data/industries";
 import { APP_NAME, APP_URL, CONTACT_EMAIL } from "../data/site";
 
 const links = [
@@ -57,7 +60,13 @@ function Header() {
           <Logo size={21} />
         </Link>
         <nav className="hidden items-center lg:flex" aria-label="Main">
-          {links.map((l) => (
+          {links.slice(0, 1).map((l) => (
+            <NavLink key={l.to} to={l.to} className={navCls}>
+              {l.label}
+            </NavLink>
+          ))}
+          <IndustriesMenu />
+          {links.slice(1).map((l) => (
             <NavLink key={l.to} to={l.to} className={navCls}>
               {l.label}
             </NavLink>
@@ -84,7 +93,7 @@ function Header() {
       {mobile && (
         <div className="rise border-t border-line bg-bg lg:hidden">
           <Container className="flex flex-col gap-2 py-6">
-            {links.map((l) => (
+            {[links[0]!, { to: "/for", label: "Industries" }, ...links.slice(1)].map((l) => (
               <Link key={l.to} to={l.to} className="py-2 text-[16px]">
                 {l.label}
               </Link>
@@ -122,6 +131,10 @@ const footerCols = [
     ],
   },
   {
+    title: "Industries",
+    links: [...featured.map((i) => ({ to: `/for/${i.slug}`, label: i.name })), { to: "/for", label: "All industries" }],
+  },
+  {
     title: "Resources",
     links: [
       { to: "/blog", label: "Blog" },
@@ -138,12 +151,12 @@ const footerCols = [
   },
 ];
 
-/** A dark band: the brand and its AI-summary links, then the link columns, then copyright and legal. */
+/** A dark band, the same on every page: the brand and its AI-summary links, then the link columns, then copyright and legal. */
 function Footer() {
   const link = "inline-flex min-h-7 items-center text-[14px] text-white/60 transition-colors hover:text-white";
   return (
     <footer className="bg-band text-white">
-      <Container className="grid gap-12 pt-16 pb-12 md:grid-cols-[1.5fr_repeat(3,1fr)]">
+      <Container className="grid gap-12 pt-16 pb-12 sm:grid-cols-2 lg:grid-cols-[1.5fr_repeat(4,1fr)]">
         <div className="flex flex-col gap-4">
           <Logo size={22} />
           <p className="max-w-[30ch] text-[14px] text-white/60">See where you rank on Google Maps, street by street.</p>
@@ -230,6 +243,8 @@ export default function Layout() {
       <main className="flex-1">
         <Outlet />
       </main>
+      {/* Every page closes the same way: the call to action opening into the footer. */}
+      <FinalCta />
       <Footer />
     </div>
   );

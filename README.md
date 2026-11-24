@@ -48,7 +48,7 @@ It asks where the app goes, checks that those places work, prepares the database
 1. `app.config.ts`: your feature switches, and anything else `bun run setup` didn't ask.
 2. `.env`: keys for Google sign-in, Stripe and Turnstile as you need them. For production, `.env.production`, then `bun run deploy:setup` again.
 3. Add your product as a module under `modules/<name>/` (see [docs/modules.md](docs/modules.md)) and its pages under `apps/web/src/pages/`.
-4. Replace the site's copy in `apps/site/src/data/site.ts`.
+4. Replace the site's copy in `apps/site/src/data/site.ts`. The industries in the header menu, the footer and the `/for/<slug>` pages come from `apps/site/src/data/industries.ts`: one row per industry.
 
 ## Commands
 
