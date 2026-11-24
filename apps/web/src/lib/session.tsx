@@ -5,6 +5,7 @@ import { api } from "./api";
 import { authClient } from "./auth";
 import { loadBrand } from "./brand";
 import { modules } from "./modules";
+import { useTasksChanged } from "./tasksChanged";
 
 export type Me = { id: string; email: string; name: string; emailVerified: boolean };
 export type Membership = {
@@ -90,6 +91,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+  // A Task applied from the chat may have changed what the session shows (the Organization's name, say).
+  useTasksChanged((applied) => {
+    if (applied) void refresh();
+  });
 
   // The Role in the current Organization, from the API: what the sidebar and pages show follows it.
   const loadCaller = useCallback(async (id: string | null) => {

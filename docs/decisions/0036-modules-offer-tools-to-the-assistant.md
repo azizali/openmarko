@@ -47,6 +47,16 @@ schema, and pauses for a person's approval.
   is the tool's result, so the answer can say why; anything else fails the turn.
 - **Names the model sees** replace the dot with two underscores (`seo__keyword_detail`): providers allow only letters,
   digits, `_` and `-`.
+- **In a member's turn** (`runTurn` with the caller), the model gets those tools, at most `TOOL_STEPS` (5) model calls,
+  and a line in its instructions: a proposal isn't a change, so say whether it was applied. The web app sends the page
+  the member is on with each message. The answer is saved as UI message parts: each step's text, and each tool call
+  with what it returned, so the next turn's history and the chat's history both keep them. An answer without tools is
+  one text part, as before.
+- **The chat shows tools** as a line each ("✓ recent activity") and a proposed Task as a card with **Apply** (the
+  member's backend applies it through the Tasks route; Undo stays in Activity). Visitors' chats have no tools, so they
+  show none.
+- **The stub model calls tools too:** a message `/tool <model name> {json}` calls that tool when the turn offers it,
+  and the next step reports what it returned, so tools are tried and tested without a model key.
 - The boilerplate ships two examples in automation: `automation.recent_activity` (read) and
   `automation.rename_organization` (propose, the example Task kind).
 
@@ -54,11 +64,9 @@ schema, and pauses for a person's approval.
 
 - A feature adds what the assistant can do in its own folder, tested like a service. The assistant can never do more
   than the member could do on a page, nor anything Autopilot would hold back.
-- A Task card ("Proposed: rename to X · Apply · Undo") becomes the way the chat shows a change, the same Task the
+- A Task card (its title, "Proposed" or "Applied", Apply) is the way the chat shows a change: the same Task the
   Automation page lists.
 - Every tool step is model tokens, metered as `llm.tokens` like any turn; a step limit keeps one question from running long.
-- Next, in order: wire `toolsFor` into a member's turn (`runTurn` gets the caller, `stopWhen: stepCountIs(5)`, the
-  page the member is on) and save tool calls and results in the message's parts so history keeps them; draw tool
-  results and Task cards in `packages/chat-widget`; then the SEO tools (`seo.overview`, `seo.keyword_detail`,
-  `seo.competitors`, `seo.ai_answers`, `seo.suggestions`, and `seo.track_keyword` proposing a Task), read from
-  `results/*`.
+- Next: the SEO tools (`seo.overview`, `seo.keyword_detail`, `seo.competitors`, `seo.ai_answers`, `seo.suggestions`,
+  and `seo.track_keyword` proposing a Task), read from `results/*`, once the Monitor/Improve split settles where the
+  Action plan lives.

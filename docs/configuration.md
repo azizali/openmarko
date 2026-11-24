@@ -64,7 +64,7 @@ Which widget the chat button inside the app answers as is not an environment var
 
 ## Providers: stub or live
 
-Every provider adapter has a stub that answers with made-up data and no network call, so the app works end to end with no vendor account (ADR 0013). Each Connection has its own mode (ADR 0029). A platform admin chooses it in Platform admin → Connections when connecting, and can switch it later. A key an Organization adds in Settings → Integrations is live. A Connection made in code is a stub unless the code says otherwise, so tests never reach a vendor. The seed connects SMTP live (Mailpit, on this machine), and Anthropic and OpenAI as stubs; to use real models, disconnect a seeded one and connect it again with a real key.
+Every provider adapter has a stub that answers with made-up data and no network call, so the app works end to end with no vendor account (ADR 0013). Each Connection has its own mode (ADR 0029). A platform admin chooses it in Platform admin → Connections when connecting, and can switch it later. A key an Organization adds in Settings → Integrations is live. A Connection made in code is a stub unless the code says otherwise, so tests never reach a vendor. The seed connects SMTP live (Mailpit, on this machine), and Anthropic and OpenAI as stubs; to use real models, disconnect a seeded one and connect it again with a real key. A stub model echoes the message, or calls a tool when the message is `/tool <name> {json}` (ADR 0036).
 
 ## Where provider accounts live
 

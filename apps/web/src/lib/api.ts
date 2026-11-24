@@ -18,6 +18,8 @@ export async function readChatStream(
   res: Response,
   onText: (delta: string) => void,
   onSources: (sources: { n: number; documentTitle: string }[]) => void,
+  /** Every chunk, for what this reader doesn't handle itself: tool calls and steps (ADR 0036). */
+  onChunk?: (chunk: Record<string, unknown> & { type: string }) => void,
 ): Promise<void> {
   const reader = res.body!.getReader();
   const decoder = new TextDecoder();
@@ -39,6 +41,7 @@ export async function readChatStream(
       if (chunk.type === "text-delta" && chunk.delta) onText(chunk.delta);
       if (chunk.messageMetadata?.sources) onSources(chunk.messageMetadata.sources);
       if (chunk.type === "error") throw new Error(chunk.errorText ?? "The assistant ran into a problem.");
+      onChunk?.(chunk);
     }
   }
 }

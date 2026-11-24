@@ -69,14 +69,14 @@ export const LLM_COST_PER_1K_TOKENS_MICROS = 3000;
 
 // ---------- The stub: a fixed, short reply that streams in pieces ----------
 
-const lastUser = (prompt: unknown): string => {
+const lastUser = (prompt: unknown, max = 120): string => {
   const msgs = Array.isArray(prompt) ? (prompt as { role: string; content: unknown }[]) : [];
   let last: (typeof msgs)[number] | undefined;
   for (let i = msgs.length - 1; i >= 0 && !last; i--) if (msgs[i]!.role === "user") last = msgs[i];
   const content = last?.content;
   const text =
     typeof content === "string" ? content : Array.isArray(content) ? content.map((p: { text?: string }) => p.text ?? "").join(" ") : "";
-  return text.slice(0, 120);
+  return text.slice(0, max);
 };
 
 const stubUsage = (text: string) => ({
@@ -84,26 +84,74 @@ const stubUsage = (text: string) => ({
   outputTokens: { total: Math.max(1, Math.ceil(text.length / 4)), text: undefined, reasoning: undefined },
 });
 
+/**
+ * What the stub does with a prompt. A message `/tool <name> {json}` calls that tool when the turn offers it, and the
+ * next step reports what it returned, so tools can be tried without a model (ADR 0036). Anything else is echoed.
+ */
+type StubStep = { text: string } | { call: { toolName: string; input: string } };
+const STUB_TOOL = /^\/tool (\S+)\s*(\{[^]*\})?\s*$/;
+
+function stubStep(ref: ModelRef, prompt: unknown, tools: { name: string }[] = []): StubStep {
+  const msgs = Array.isArray(prompt) ? (prompt as { role: string; content: unknown }[]) : [];
+  const last = msgs[msgs.length - 1];
+  if (last?.role === "tool") {
+    const results = (last.content as { toolName?: string; output?: { value?: unknown } }[]) ?? [];
+    return {
+      text: results
+        .map((r) => `[stub ${ref.id}] ${r.toolName} returned: ${JSON.stringify(r.output?.value ?? null).slice(0, 300)}`)
+        .join("\n"),
+    };
+  }
+  const said = lastUser(prompt, 2000);
+  const m = STUB_TOOL.exec(said.trim());
+  if (m && tools.some((t) => t.name === m[1])) return { call: { toolName: m[1]!, input: m[2] ?? "{}" } };
+  return { text: `[stub ${ref.id}] You said: ${said.slice(0, 120)}` };
+}
+
 function stubLanguageModel(ref: ModelRef): LanguageModel {
-  const reply = (prompt: unknown) => `[stub ${ref.id}] You said: ${lastUser(prompt)}`;
   const usage = stubUsage;
   return new MockLanguageModelV4({
     provider: `stub.${ref.vendor}`,
     modelId: ref.model,
-    doGenerate: async ({ prompt }) => {
-      const text = reply(prompt);
-      return { content: [{ type: "text", text }], finishReason: { unified: "stop", raw: "stop" }, usage: usage(text), warnings: [] };
+    doGenerate: async ({ prompt, tools }) => {
+      const step = stubStep(ref, prompt, tools);
+      if ("call" in step)
+        return {
+          content: [{ type: "tool-call", toolCallId: "stub-call", ...step.call }],
+          finishReason: { unified: "tool-calls", raw: "tool_calls" },
+          usage: usage(step.call.input),
+          warnings: [],
+        };
+      return {
+        content: [{ type: "text", text: step.text }],
+        finishReason: { unified: "stop", raw: "stop" },
+        usage: usage(step.text),
+        warnings: [],
+      };
     },
-    doStream: async ({ prompt }) => {
-      const text = reply(prompt);
-      const words = text.split(/(?<= )/);
+    doStream: async ({ prompt, tools }) => {
+      const step = stubStep(ref, prompt, tools);
+      if ("call" in step)
+        return {
+          stream: simulateReadableStream({
+            chunks: [
+              { type: "tool-call" as const, toolCallId: `stub-${Date.now()}`, ...step.call },
+              {
+                type: "finish" as const,
+                finishReason: { unified: "tool-calls" as const, raw: "tool_calls" },
+                usage: usage(step.call.input),
+              },
+            ],
+          }),
+        };
+      const words = step.text.split(/(?<= )/);
       return {
         stream: simulateReadableStream({
           chunks: [
             { type: "text-start", id: "t" },
             ...words.map((delta) => ({ type: "text-delta" as const, id: "t", delta })),
             { type: "text-end", id: "t" },
-            { type: "finish", finishReason: { unified: "stop", raw: "stop" }, usage: usage(text) },
+            { type: "finish", finishReason: { unified: "stop", raw: "stop" }, usage: usage(step.text) },
           ],
         }),
       };

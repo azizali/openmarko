@@ -33,7 +33,7 @@ Add it to `features` in `app.config.ts`. It appears in Settings → Features for
 
 ## A tool for the assistant
 
-Return it from `setup`: `{ routes, jobs, tools: [myTool] }`, each made with `defineTool({ name, description, input, requires, effect, run })` (`packages/kernel/src/tools.ts`, ADR 0036). Name it `<module id>.<verb_noun>`; `requires` is a permission your manifest (or one it depends on) declares; both are checked at boot. `effect: "read"` returns a small JSON summary from your services, scoped to `caller.orgId`. `effect: "propose"` never writes: it calls `proposeTask(..., createdByType: "assistant")` and returns `{ taskId, applied, title }`, so Autopilot decides. Throw an AppError to tell the model why not. Members whose Role lacks `requires` are never offered it. Automation's `tools.ts` has one of each.
+Return it from `setup`: `{ routes, jobs, tools: [myTool] }`, each made with `defineTool({ name, description, input, requires, effect, run })` (`packages/kernel/src/tools.ts`, ADR 0036). Name it `<module id>.<verb_noun>`; `requires` is a permission your manifest (or one it depends on) declares; both are checked at boot. `effect: "read"` returns a small JSON summary from your services, scoped to `caller.orgId`. `effect: "propose"` never writes: it calls `proposeTask(..., createdByType: "assistant")` and returns `{ taskId, applied, title }`, so Autopilot decides. Throw an AppError to tell the model why not. Members whose Role lacks `requires` are never offered it. Automation's `tools.ts` has one of each. To try one without a model key, send `/tool <module>__<verb_noun> {json}` in the app's chat: the stub model calls it and reports what it returned.
 
 ## A job
 
