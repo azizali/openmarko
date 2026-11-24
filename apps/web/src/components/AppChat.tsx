@@ -23,7 +23,12 @@ const theme = {
   "--cw-z": "30",
 };
 
-type Using = { assistantId: string; name: string; greeting: string; accent: string | null; level: string };
+type Using = {
+  assistantId: string;
+  accent: string | null;
+  /** Null while the built-in widget is untouched: the app's own name and greeting show instead. */
+  shows: { name: string | null; greeting: string | null };
+};
 
 /** Keyed by Organization in Layout: another Organization is a new widget with its own chats. */
 export default function AppChat({
@@ -63,8 +68,9 @@ export default function AppChat({
 
   const assistantId = using?.assistantId;
   const accent = using?.accent ?? null;
-  // The built-in widget keeps the app's own name for the assistant (a Partner's brand); a chosen one speaks as itself.
-  const chosen = using && using.level !== "builtin" ? using : null;
+  // A widget shows its own name and greeting; an untouched built-in one keeps the app's (a Partner's brand).
+  const shownName = using?.shows.name ?? null;
+  const shownGreeting = using?.shows.greeting ?? null;
   useEffect(() => {
     if (using === undefined) return;
     const host = document.createElement("div");
@@ -72,8 +78,8 @@ export default function AppChat({
     const firstName = me?.name.split(" ")[0];
     const mounted = mountChat(host, {
       backend: memberBackend(org.id, assistantId),
-      name: chosen?.name ?? brand.assistant,
-      greeting: chosen?.greeting ?? (firstName ? `Hi ${firstName}. What can I help you with?` : "What can I help you with?"),
+      name: shownName ?? brand.assistant,
+      greeting: shownGreeting ?? (firstName ? `Hi ${firstName}. What can I help you with?` : "What can I help you with?"),
       maxLength: 20000,
       launcher: true,
       // The widget's own colour, when it has one; otherwise the app's.
@@ -85,9 +91,9 @@ export default function AppChat({
       mounted.destroy();
       host.remove();
     };
-    // `chosen` is derived from `using`, whose identity changes on every answer: only the parts that show are watched.
+    // `using`'s identity changes on every answer: only the parts that show are watched.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [org.id, brand.assistant, me?.name, using === undefined, assistantId, chosen?.name, chosen?.greeting, accent]);
+  }, [org.id, brand.assistant, me?.name, using === undefined, assistantId, shownName, shownGreeting, accent]);
 
   useEffect(() => chat?.setOpen(open), [chat, open]);
   useEffect(() => chat?.setLauncher(launcher), [chat, launcher]);

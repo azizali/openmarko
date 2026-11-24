@@ -67,7 +67,7 @@ The floating chat button and its panel, with past chats and a new chat. The pane
 _Avoid_: chatbot, copilot, bubble
 
 **In-app widget**:
-The widget the chat button inside the app answers as. The nearest choice wins: the Organization's own, its Partner's (reaching its Clients), the app's (reaching everyone), then the Organization's **built-in widget**, a starter with no instructions and the default model that every Organization has and none can delete. A widget chosen from another Organization answers with its owner's knowledge and model, and its owner is metered.
+The widget the chat button inside the app answers as. The nearest choice wins: the Organization's own, its Partner's (reaching its Clients), the app's (reaching everyone), then the Organization's **built-in widget**, a starter with no instructions and the default model that every Organization has and none can delete. Until it is renamed or given a greeting, the chat shows the app's own assistant name and greeting; after, its own, and the model answers to its name. A widget chosen from another Organization answers with its owner's knowledge and model, and its owner is metered.
 
 **Knowledge base**:
 An Organization's documents, chunked and embedded, searched by meaning and by words.
