@@ -16,4 +16,5 @@ export * from "./params";
 export * from "./billing";
 export * from "./knowledge";
 export * from "./files";
+export * from "./tools";
 export { appConfig, type AppConfig, type OptionalModule, type FeatureId } from "../../../app.config";

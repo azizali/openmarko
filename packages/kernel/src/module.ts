@@ -9,6 +9,7 @@ import type { Catalog, Declared, DeclaredResource, DeclaredSetting } from "./cat
 import type { Billing } from "./billing";
 import type { Knowledge } from "./knowledge";
 import type { FileStore } from "./files";
+import type { AssistantTool } from "./tools";
 
 /** What every module can reach. Built once at boot by apps/api and apps/worker. */
 export type AppContext = {
@@ -35,6 +36,8 @@ export type AppContext = {
   knowledge?: Knowledge;
   /** What the composed modules offer (their manifests). Set by the composition root; read it with `catalogOf`. */
   catalog?: Catalog;
+  /** The tools the enabled modules offer the assistant. Set by the composition root; read it with `toolsOf`. */
+  tools?: AssistantTool[];
   /**
    * Queues an email, when the messaging module runs: sign-in emails from identity go through it.
    * Resolves `false` when the app can't send yet (no sender or no provider), so callers carry on without it.
@@ -81,6 +84,8 @@ export type ModuleParts = {
   routes?: Elysia<any, any, any, any, any, any, any>;
   handlers?: { event: string; name: string; fn: Handler }[];
   jobs?: JobDefinition[];
+  /** Tools a member's chat may call (ADR 0036). Named `<module id>.<verb_noun>`, each needing a declared permission. */
+  tools?: AssistantTool[];
 };
 
 /**

@@ -10,7 +10,9 @@ import {
   buildCatalog,
   handle,
   resolveModules,
+  TOOL_PATTERN,
   type AppContext,
+  type AssistantTool,
   type Catalog,
   type ModuleDefinition,
   type ModuleId,
@@ -82,7 +84,31 @@ export function compose(ctx: AppContext): Composed {
       if (!declared.has(h.event)) throw new Error(`${p.id}: handler ${h.name} listens for "${h.event}", which no module declares.`);
       handle(h.event, h.name, h.fn);
     }
+  ctx.tools = checkedTools(parts, ctx.catalog);
   return { parts, modules };
+}
+
+/**
+ * The tools the modules offer the assistant, checked: each named `<its module>.<verb_noun>`, none twice, each needing
+ * a permission some enabled module declares (ADR 0036). A tool that fails fails the boot: it would be offered wrongly
+ * or never.
+ */
+export function checkedTools(parts: (ModuleParts & { id: string })[], catalog: Catalog): AssistantTool[] {
+  const actions = new Map(catalog.resources.map((r) => [r.id, new Set(r.actions.map((a) => a.id))]));
+  const seen = new Set<string>();
+  const out: AssistantTool[] = [];
+  for (const p of parts)
+    for (const tool of p.tools ?? []) {
+      if (!TOOL_PATTERN.test(tool.name) || !tool.name.startsWith(`${p.id}.`))
+        throw new Error(`${p.id}: tool "${tool.name}" must be named "${p.id}.<verb_noun>".`);
+      if (seen.has(tool.name)) throw new Error(`${p.id}: tool "${tool.name}" is offered twice.`);
+      const { resource, action } = tool.requires;
+      if (!actions.get(resource)?.has(action))
+        throw new Error(`${p.id}: tool "${tool.name}" needs ${resource}.${action}, which no enabled module declares.`);
+      seen.add(tool.name);
+      out.push(tool);
+    }
+  return out;
 }
 
 /** The HTTP app: every enabled module's routes, plus health, readiness and the API docs. */

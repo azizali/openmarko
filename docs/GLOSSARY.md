@@ -58,6 +58,10 @@ One connected Provider, with its encrypted credentials. An Organization's own, o
 A model, instructions and the knowledge bases it answers from, owned by an Organization. Its chat widget can answer on websites it allows.
 _Avoid_: bot, agent
 
+**Tool**:
+Something a Module lets the Assistant do in a Member's chat: read the Organization's data, or propose a Task. Offered only when the Member's Role allows its Action; visitors on a website get none.
+_Avoid_: function, skill, action (an Action is what a Role allows)
+
 **Chat widget**:
 The floating chat button and its panel, with past chats and a new chat. The panel floats, docks to the side of the page, or goes wide over most of the screen. Members have one in the app, answering as the widget their Organization is offered (the **in-app widget**); a website embeds an Assistant's with one script tag, for its anonymous visitors. The button can be dragged anywhere on the page. The app's Widgets page is where an Organization makes them: on screen a widget and its Assistant are one thing.
 _Avoid_: chatbot, copilot, bubble

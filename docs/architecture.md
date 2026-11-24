@@ -23,17 +23,19 @@ modules/             one folder per module: schema.ts (its tables), module.ts (i
   messaging          the app's email: sender setting, send job, templates
   billing *          Plans, Entitlements, overrides, metering, manual and Stripe providers
   partners *         Partners and their Clients, whitelabel brand, transfer-out
-  ai *               models by name, conversations, streaming chat, assistants, the chat widget
+  ai *               models by name, conversations, streaming chat, assistants, the chat widget, the tools a member's chat
+                     may use (`toolsFor`: the modules' tools their Role allows; ADR 0036)
   knowledge *        knowledge bases, documents, ingesting, hybrid search (pgvector)
   automation *       runs, schedules, Tasks with Apply and Undo, Autopilot, the Activity log's routes
   seo *              Locations, Google Maps grids, Google search, AI answers, competitors, suggestions, SEO onboarding;
                      search data through integrations (`search.*`, `places.find`, `places.details`, `profile.manage`). Needs automation.
 packages/
   kernel             config (env + app.config), db, ids, errors, crypto, events (outbox), module contract,
-                     the file store (`ctx.files`: a bucket or a folder), activity log, Better Auth table references, the hooks optional modules fill (billing, knowledge),
+                     the file store (`ctx.files`: a bucket or a folder), the assistant's tool contract (`AssistantTool`, `toolsOf`), activity log, Better Auth table references, the hooks optional modules fill (billing, knowledge),
                      the Drizzle migrations (drizzle/)
   shared             pure: the access model, the feature catalog, the provider catalog, metering rules
-  server             composition root: the module registry, compose(), buildApi(), CORS, the queue client, Api type
+  server             composition root: the module registry, compose() (which checks and gathers the modules' tools), buildApi(), CORS,
+                     the queue client, Api type
   testkit            createTestDb() (a throwaway database per test file), sessions, requester()
   chat-widget        the chat UI (floating button and panel, no dependencies): the script the ai module serves at
                      /widget/v1.js for websites, and what the web app shows its members

@@ -5,7 +5,7 @@
 Your product's logic is a module: `modules/<id>/` with `src/schema.ts`, `src/module.ts`, `src/routes.ts`, services and `test/`.
 
 1. `schema.ts`: tables in a Postgres schema named after the module (`pgSchema("<id>")`). Rows that belong to an Organization reference `authOrganization.id` with `onDelete: "cascade"`.
-2. `module.ts`: `defineModule({ id, apiGroup, dependsOn, events, settings, permissions, roleGroups, setup })`: the manifest, and nothing but what `setup` wires up. `setup(ctx)` returns `{ routes, jobs, handlers }`; routes live in `routes.ts`. `apiGroup` is the module's group in the API docs. Declare the permission resources your routes check and the events you emit: a route checking an undeclared resource, or a handler for an undeclared event, fails at boot. A resource can sit in a Role editor group from a module yours `dependsOn`, as knowledge does with ai.
+2. `module.ts`: `defineModule({ id, apiGroup, dependsOn, events, settings, permissions, roleGroups, setup })`: the manifest, and nothing but what `setup` wires up. `setup(ctx)` returns `{ routes, jobs, handlers, tools }`; routes live in `routes.ts`. `apiGroup` is the module's group in the API docs. Declare the permission resources your routes check and the events you emit: a route checking an undeclared resource, or a handler for an undeclared event, fails at boot. A resource can sit in a Role editor group from a module yours `dependsOn`, as knowledge does with ai.
 3. Routes under `/api/v1/organizations/:orgId/...` use `.use(ctx.orgGuard!)` and get `caller`; check with `requireAllowed(caller, resource, action)`. Admin routes under `/api/v1/admin/...` use `.use(ctx.adminGuard!)` and get `admin`.
 4. Register it in `packages/server/src/index.ts`: the `registry` and `apiShape()` (so the web app's client is typed). Add its id to `ModuleId` in `packages/kernel/src/config.ts` (core, or an `app.config.ts` switch).
 5. `bun run db:generate` for the migration; `bun run db:reset` to apply it locally.
@@ -30,6 +30,10 @@ Add it to `features` in `app.config.ts`. It appears in Settings → Features for
 ## A Task kind
 
 `registerExecutor("<kind>", { apply, revert })` in your module's `setup`. `apply` does the change and returns what `revert` needs. Propose with `proposeTask(ctx, { kind, featureId, action, title, payload, ... })`: it waits in Automation → Tasks, or applies at once when the Organization's Autopilot says `on` for that action. The boilerplate ships `organization.rename` as the example.
+
+## A tool for the assistant
+
+Return it from `setup`: `{ routes, jobs, tools: [myTool] }`, each made with `defineTool({ name, description, input, requires, effect, run })` (`packages/kernel/src/tools.ts`, ADR 0036). Name it `<module id>.<verb_noun>`; `requires` is a permission your manifest (or one it depends on) declares; both are checked at boot. `effect: "read"` returns a small JSON summary from your services, scoped to `caller.orgId`. `effect: "propose"` never writes: it calls `proposeTask(..., createdByType: "assistant")` and returns `{ taskId, applied, title }`, so Autopilot decides. Throw an AppError to tell the model why not. Members whose Role lacks `requires` are never offered it. Automation's `tools.ts` has one of each.
 
 ## A job
 

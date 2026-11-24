@@ -1,6 +1,7 @@
 import { authOrganization, defineModule, logActivity, type AppContext, type JobDefinition } from "@app/kernel";
 import { eq } from "drizzle-orm";
 import { automationRoutes } from "./routes";
+import { recentActivity, renameOrganization } from "./tools";
 import { autopilotSchema, dueSchedules, advanceSchedule, startRun, registerExecutor } from "./service";
 
 /**
@@ -80,7 +81,7 @@ export const automationModule = defineModule({
   ],
   setup: (ctx) => {
     registerExamples(ctx);
-    return { routes: automationRoutes(ctx), jobs: [scheduleTick(ctx), exampleJob(ctx)] };
+    return { routes: automationRoutes(ctx), jobs: [scheduleTick(ctx), exampleJob(ctx)], tools: [recentActivity, renameOrganization] };
   },
 });
 

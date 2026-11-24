@@ -4,3 +4,4 @@ export { aiSettings, aiSettingsSchema, chooseModel, type AiSettings, type Chosen
 export { createAssistant, getAssistant, listAssistants, prepareTurn, type Assistant } from "./assistants";
 export { CHAT_STREAMS } from "./chat";
 export * as aiSchema from "./schema";
+export { toolsFor, modelToolName } from "./tools";
