@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { appConfig, type OptionalModule } from "../../../app.config";
+import type { FilesConfig } from "./files";
 
 // The one place that reads the environment. Everything else gets a typed Config.
 // Loading fails fast, listing every problem at once, so a bad deploy stops at boot instead of on the first request.
@@ -62,7 +63,20 @@ const Env = z.object({
   TURNSTILE_SECRET_KEY: z.string().optional(),
   MASTER_KEY_CURRENT: z.string().regex(/^\d+$/, "must be a key version number, e.g. 1").default("1"),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  /** A folder for kept files. Relative paths are from the repository's root. */
+  FILES_DIR: z.string().optional(),
+  FILES_S3_BUCKET: z.string().optional(),
+  FILES_S3_ENDPOINT: z.string().url().optional(),
+  FILES_S3_REGION: z.string().optional(),
+  FILES_S3_ACCESS_KEY_ID: z.string().optional(),
+  FILES_S3_SECRET_ACCESS_KEY: z.string().optional(),
+  /** Days a provider's untrimmed responses are kept; 0 keeps them for good. */
+  PROVIDER_ORIGINALS_DAYS: z.coerce.number().int().min(0).default(400),
 });
+
+/** The repository's root, so the API and worker (run from their own folders) find the same files folder. */
+const repoRoot = new URL("../../../", import.meta.url).pathname;
+const DEV_FILES_DIR = ".data/files";
 
 export type Config = {
   nodeEnv: "development" | "test" | "production";
@@ -87,6 +101,13 @@ export type Config = {
   /** Master keys by version, from MASTER_KEY_V<n>. Each is checked to be 32 bytes. */
   masterKeys: Record<string, string>;
   port: number;
+  /**
+   * Where files outside the database go (ADR 0035): an S3-compatible bucket when FILES_S3_* are set, else the folder
+   * FILES_DIR names. In development, `.data/files` when neither is set; otherwise null, and nothing is kept.
+   */
+  files: FilesConfig | null;
+  /** Days a provider's untrimmed responses are kept (0: for good). Kept only when `files` is set. */
+  providerOriginalsDays: number;
 };
 
 /** Thrown when the environment is wrong. The message lists every problem, one per line. */
@@ -130,6 +151,12 @@ export function loadConfig(rawEnv: Record<string, string | undefined> = process.
   if (!!env.GOOGLE_CLIENT_ID !== !!env.GOOGLE_CLIENT_SECRET) problems.push("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET go together");
   if (!!env.TURNSTILE_SITE_KEY !== !!env.TURNSTILE_SECRET_KEY) problems.push("TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY go together");
   if (env.STRIPE_WEBHOOK_SECRET && !env.STRIPE_SECRET_KEY) problems.push("STRIPE_WEBHOOK_SECRET needs STRIPE_SECRET_KEY");
+  const s3Keys = ["FILES_S3_BUCKET", "FILES_S3_ACCESS_KEY_ID", "FILES_S3_SECRET_ACCESS_KEY"] as const;
+  const s3Set = s3Keys.filter((k) => env[k]);
+  if (s3Set.length && s3Set.length < s3Keys.length) problems.push(`${s3Keys.join(", ")} go together`);
+  if ((env.FILES_S3_ENDPOINT || env.FILES_S3_REGION) && !env.FILES_S3_BUCKET)
+    problems.push("FILES_S3_ENDPOINT and FILES_S3_REGION need FILES_S3_BUCKET");
+  if (env.FILES_DIR && env.FILES_S3_BUCKET) problems.push("FILES_DIR and FILES_S3_BUCKET: choose one place for files");
 
   // Production rules: what a public deploy must have.
   if (env.NODE_ENV === "production") {
@@ -165,7 +192,24 @@ export function loadConfig(rawEnv: Record<string, string | undefined> = process.
     masterKeyCurrent: e.MASTER_KEY_CURRENT,
     masterKeys,
     port: e.PORT,
+    files: filesOf(e),
+    providerOriginalsDays: e.PROVIDER_ORIGINALS_DAYS,
   };
+}
+
+function filesOf(e: z.infer<typeof Env>): FilesConfig | null {
+  if (e.FILES_S3_BUCKET && e.FILES_S3_ACCESS_KEY_ID && e.FILES_S3_SECRET_ACCESS_KEY)
+    return {
+      kind: "s3",
+      bucket: e.FILES_S3_BUCKET,
+      endpoint: e.FILES_S3_ENDPOINT ?? null,
+      region: e.FILES_S3_REGION ?? null,
+      accessKeyId: e.FILES_S3_ACCESS_KEY_ID,
+      secretAccessKey: e.FILES_S3_SECRET_ACCESS_KEY,
+    };
+  const dir = e.FILES_DIR ?? (e.NODE_ENV === "development" ? DEV_FILES_DIR : null);
+  if (!dir) return null;
+  return { kind: "disk", dir: dir.startsWith("/") ? dir : `${repoRoot}${dir}` };
 }
 
 /**

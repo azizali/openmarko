@@ -8,6 +8,7 @@ import type { AdminGuard, OrgGuard } from "./guard";
 import type { Catalog, Declared, DeclaredResource, DeclaredSetting } from "./catalog";
 import type { Billing } from "./billing";
 import type { Knowledge } from "./knowledge";
+import type { FileStore } from "./files";
 
 /** What every module can reach. Built once at boot by apps/api and apps/worker. */
 export type AppContext = {
@@ -16,6 +17,8 @@ export type AppContext = {
   /** The application's pool. Modules that need their own search_path (identity) make their own. */
   pool: Pool;
   masterKeys: MasterKeys;
+  /** Files kept outside the database (`cfg.files`): null when the app has nowhere to put them, so nothing is kept. */
+  files: FileStore | null;
   /**
    * Derives `caller` for routes inside an Organization (`/organizations/:orgId/...`).
    * Set by the composition root, which owns sessions. Modules use it with `.use(ctx.orgGuard)`, never import it.

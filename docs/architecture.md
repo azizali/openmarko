@@ -17,7 +17,8 @@ modules/             one folder per module: schema.ts (its tables), module.ts (i
   access             Roles and permissions; the caller guard
   features           feature switches per Organization
   settings           core.settings: namespaces modules declare, checked on read and write
-  integrations       Connections, encrypted credentials, adapters (stub + live), invoke(), model access
+  integrations       Connections, encrypted credentials, adapters (stub + live), invoke(), model access,
+                     providers' untrimmed responses kept as files (`provider_originals`)
   messaging          the app's email: sender setting, send job, templates
   billing *          Plans, Entitlements, overrides, metering, manual and Stripe providers
   partners *         Partners and their Clients, whitelabel brand, transfer-out
@@ -28,7 +29,7 @@ modules/             one folder per module: schema.ts (its tables), module.ts (i
                      search data through integrations (`search.*`, `places.find`, `places.details`, `profile.manage`). Needs automation.
 packages/
   kernel             config (env + app.config), db, ids, errors, crypto, events (outbox), module contract,
-                     activity log, Better Auth table references, the hooks optional modules fill (billing, knowledge),
+                     the file store (`ctx.files`: a bucket or a folder), activity log, Better Auth table references, the hooks optional modules fill (billing, knowledge),
                      the Drizzle migrations (drizzle/)
   shared             pure: the access model, the feature catalog, the provider catalog, metering rules
   server             composition root: the module registry, compose(), buildApi(), CORS, the queue client, Api type

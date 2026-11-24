@@ -17,6 +17,7 @@ import { capabilityOf, meterOf, providerOf, type CapabilityId, type ProviderId }
 import { connections, credentials, webhookEvents } from "./schema";
 import { adapterFor } from "./adapters";
 import { accessTokenFor } from "./oauth";
+import { keepOriginals, type Original } from "./originals";
 import type { Mode } from "./mode";
 
 /** What a Connection belongs to: the app itself, or an Organization (as itself, or as a Partner for its Clients). */
@@ -285,7 +286,8 @@ export type InvokeResult<T> = { output: T; connectionId: string; provider: Provi
 
 /**
  * The one path to a provider (ADR 0002). Picks the connection, checks the Plan's allowance for metered
- * providers, calls the adapter, and records usage. Throws needs() when nothing is connected.
+ * providers, calls the adapter, keeps the provider's untrimmed responses the adapter hands over (ADR 0035), and
+ * records usage. Throws needs() when nothing is connected.
  */
 export async function invoke<T = unknown>(
   ctx: AppContext,
@@ -307,6 +309,7 @@ export async function invoke<T = unknown>(
   const estimate = adapter.estimate?.(capability, input) ?? 1;
   if (meter && organizationId && !meter.costOnly) await billing.assertMeterAllowed(organizationId, meter.meter, estimate, { byok });
 
+  const originals: Original[] = [];
   const result = await adapter.call(capability, input, {
     mode: conn.mode,
     provider: conn.providerId,
@@ -314,7 +317,9 @@ export async function invoke<T = unknown>(
     secrets: () => readSecrets(ctx, conn.id),
     settings: conn.settings,
     accessToken: () => accessTokenFor(ctx, conn.id, conn.providerId),
+    ...(conn.mode === "live" && ctx.files ? { keep: (o: Original) => void originals.push(o) } : {}),
   });
+  await keepOriginals(ctx, { providerId: conn.providerId, capability, organizationId }, originals);
 
   // A call that cost nothing and used nothing (collecting results already paid for) leaves no usage row.
   if (meter && organizationId && (result.quantity > 0 || result.costMicros > 0)) {

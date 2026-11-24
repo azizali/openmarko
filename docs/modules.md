@@ -17,7 +17,7 @@ Reach other modules through their `index.ts` only. Reach billing and knowledge t
 ## A new provider
 
 1. A catalog entry in `packages/shared/src/integrations.ts`: id, name, category, `attach`, `capabilities`, and the `fields` a person fills in (secret fields are encrypted; the rest become settings). A new capability goes in `capabilities` with the permission connecting it needs.
-2. An adapter in `modules/integrations/src/adapters/`: `{ provider, capabilities, estimate?, call }`. `call` gets `mode` (`stub` or `live`), `secrets()` and `settings`. Always implement the stub.
+2. An adapter in `modules/integrations/src/adapters/`: `{ provider, capabilities, estimate?, call }`. `call` gets `mode` (`stub` or `live`), `secrets()` and `settings`. Always implement the stub. When a live response holds more than you read, hand it over with `keep({ ref, body })` (`ref`: the provider's id for it); `invoke()` keeps it as a file, and `readOriginal(ctx, provider, ref)` reads it back (ADR 0035).
 3. Register the adapter in `adapters/index.ts`. If it costs money, a meter in `packages/shared/src/metering.ts`.
 4. Call it with `invoke(ctx, orgId, "capability.id", input)`.
 

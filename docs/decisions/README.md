@@ -34,6 +34,7 @@ The first ones (from 0002) were written on 2026-10-31 to record decisions alread
 | [0032](0032-setup-and-deploy-commands.md) | A fork is set up and deployed by two commands | Accepted |
 | [0033](0033-seo-module.md) | SEO is an optional module on shared search data, sold by limits | Accepted |
 | [0034](0034-list-pages-then-deep-pages.md) | A section is one table; detail is a deep page with breadcrumbs | Accepted |
+| [0035](0035-keep-provider-responses-as-files.md) | Keep providers' untrimmed responses as files | Accepted |
 
 ## Template
 

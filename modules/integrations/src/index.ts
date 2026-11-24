@@ -14,6 +14,7 @@ export {
   type InvokeResult,
 } from "./service";
 export { integrationsModule } from "./module";
+export { readOriginal, pruneOriginals } from "./originals";
 export { adapterFor } from "./adapters";
 export * as integrationsSchema from "./schema";
 export type { Mode } from "./mode";
@@ -22,7 +23,7 @@ export { integrationRoutes } from "./routes";
 export { startOAuth, finishOAuth, signState, readState } from "./oauth";
 export * from "./adapters/search/contract";
 export * from "./adapters/google/contract";
-export { unitPriceUsd as searchUnitPriceUsd } from "./adapters/search/dataforseo";
+export { unitPriceUsd as searchUnitPriceUsd, searchPriceUsd } from "./adapters/search/dataforseo";
 export { splitFieldValues } from "./fields";
 export type { EmailInput, EmailOutput } from "./adapters/email";
 export {

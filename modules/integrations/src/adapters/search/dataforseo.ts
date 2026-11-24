@@ -81,6 +81,8 @@ async function request(c: CallContext, method: "GET" | "POST", path: string, bod
   if (!res.ok) throw new AppError(502, "provider_failed", `DataForSEO answered ${res.status}.`);
   const json = (await res.json()) as Envelope;
   if (json.status_code !== 20000) throw new AppError(502, "provider_failed", `DataForSEO: ${json.status_message}`);
+  // Every task that came back with results is kept whole (ADR 0035): we read a small part of it.
+  for (const t of json.tasks ?? []) if (t.result) c.keep?.({ ref: t.id, body: t });
   return json;
 }
 

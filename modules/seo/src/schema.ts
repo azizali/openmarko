@@ -311,7 +311,10 @@ export const providerTasks = seo.table(
     target: jsonb("target").$type<Record<string, unknown>>().notNull(),
     status: text("status").notNull(), // 'posted' | 'received' | 'failed'
     costMicros: bigint("cost_micros", { mode: "number" }).notNull().default(0),
-    /** The normalised result, kept 30 days so results can be re-read after a parser fix. */
+    /**
+     * The normalised result, kept 30 days so results can be re-read after a parser fix. DataForSEO's whole response is
+     * kept longer as a file: `readOriginal(ctx, "dataforseo", <the task id in external_task_id>)` (ADR 0035).
+     */
     raw: jsonb("raw").$type<unknown>(),
     error: text("error"),
     postedAt: createdAt("posted_at"),
