@@ -1,22 +1,44 @@
 // How each kind of suggestion is applied and undone, as automation Task executors (ADR 0005). `apply` makes the
 // change and returns what `revert` needs; the Task keeps it. Task payloads carry the suggestion's payload plus its
-// Location and suggestion ids.
+// Location and suggestion ids; a keyword or question the assistant proposes tracking (ADR 0036) has no suggestion.
+// Whichever way a suggestion's Task is applied or undone (the Action plan, the Automation page, the chat), the
+// suggestion follows: applied, or back in the list.
 
-import { inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { invalid } from "@app/kernel";
-import { registerExecutor } from "@app/automation";
+import { registerExecutor as register, type Executor } from "@app/automation";
 import { getLocation } from "../locations/service";
 import { changeProfile, deletePost, publishPost, readProfile } from "../profile/service";
-import { keywords, questions } from "../schema";
+import { keywords, questions, suggestions } from "../schema";
 import { addKeywords, addQuestions } from "../tracking/service";
 import { queueScopedCheck } from "../checks/jobs";
 import { payloadSchemas } from "./kinds";
 
-type Common = { locationId: string; suggestionId: string };
-const common = (p: Record<string, unknown>): Common => {
-  if (typeof p.locationId !== "string" || typeof p.suggestionId !== "string") throw invalid("The task names no location.");
-  return { locationId: p.locationId, suggestionId: p.suggestionId };
+const common = (p: Record<string, unknown>): { locationId: string } => {
+  if (typeof p.locationId !== "string") throw invalid("The task names no location.");
+  return { locationId: p.locationId };
 };
+
+/** Registers a Task kind whose Task keeps its suggestion, when it has one, in step with it. */
+function registerExecutor(kind: string, ex: Executor): void {
+  const follow = (task: Parameters<Executor["apply"]>[1]) => {
+    const id = task.payload.suggestionId;
+    return typeof id === "string" ? and(eq(suggestions.id, id), eq(suggestions.organizationId, task.organizationId)) : null;
+  };
+  register(kind, {
+    apply: async (ctx, task) => {
+      const revert = await ex.apply(ctx, task);
+      const where = follow(task);
+      if (where) await ctx.db.update(suggestions).set({ status: "applied", taskId: task.id, decidedAt: new Date() }).where(where);
+      return revert;
+    },
+    revert: async (ctx, task) => {
+      await ex.revert(ctx, task);
+      const where = follow(task);
+      if (where) await ctx.db.update(suggestions).set({ status: "open", taskId: null, decidedBy: null, decidedAt: null }).where(where);
+    },
+  });
+}
 
 export function registerExecutors(): void {
   registerExecutor("seo.track_keyword", {

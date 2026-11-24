@@ -127,8 +127,22 @@ numbers as the pages, for members whose Role has SEO's View (ADR 0036, `modules/
 | `seo.site_audit_issue` | one issue: why it matters, the steps, what to paste, and its pages |
 
 A tool works on the business it's asked about (by name), else the one on the member's page (`?location=`), else the
-only one; with several and none named, it asks which. Tracking keywords and applying suggestions from the chat come
-later, as tools that propose Tasks.
+only one; with several and none named, it asks which.
+
+Three tools change things, for members with SEO's Track. Each proposes an automation Task and changes nothing
+itself: Autopilot for the action applies it at once, or it waits for Apply (in the chat's card, on Automation, or on
+the Action plan), and it can be undone.
+
+| Tool | Proposes |
+|---|---|
+| `seo.track_keyword` | tracking a keyword on Google Maps and Google search (refused when it's tracked already) |
+| `seo.track_question` | asking the AI assistants a question (refused when it's asked already) |
+| `seo.apply_suggestion` | applying a suggestion by its id; a Google profile change or post also needs Publish |
+
+Website fixes and listings are done by hand, so the assistant can't apply them: it gives the steps and says to mark
+it done on the Action plan. However a suggestion's Task is applied or undone (the Action plan, Automation, the chat),
+the suggestion follows it: applied, or back in the list. Asking twice for the same suggestion returns the Task
+already waiting.
 
 ## How suggestions are made
 

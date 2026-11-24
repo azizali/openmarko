@@ -1,6 +1,7 @@
 // Acting on suggestions. Applying one proposes an automation Task and applies it at once (ADR 0005): the Task's
 // executor (executors.ts) makes the change and keeps what Undo needs, and Activity records who did it. Undo reverts
-// the Task and puts the suggestion back in the list. A post's text can be edited before it's applied.
+// the Task and puts the suggestion back in the list. A post's text can be edited before it's applied. The assistant
+// only proposes the Task (ADR 0036); applying it from anywhere marks the suggestion applied.
 
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { conflict, invalid, notFound, type AppContext } from "@app/kernel";
@@ -75,7 +76,9 @@ export async function listSuggestions(ctx: AppContext, orgId: string, locationId
   return { open: open.map(view), done: done.map(view) };
 }
 
-async function load(ctx: AppContext, orgId: string, id: string) {
+type Row = typeof suggestions.$inferSelect;
+
+async function load(ctx: AppContext, orgId: string, id: string): Promise<Row> {
   const [s] = await ctx.db
     .select()
     .from(suggestions)
@@ -91,24 +94,15 @@ export async function actionFor(ctx: AppContext, orgId: string, id: string) {
 
 const shown = (v: unknown) => (Array.isArray(v) ? v.join(", ") : String(v));
 
-/** Applies a suggestion through an automation Task. `text` replaces a post's draft. */
-export async function applySuggestion(ctx: AppContext, actor: TaskActor, id: string, edit?: { text?: string }): Promise<void> {
-  const s = await load(ctx, actor.organizationId, id);
-  if (s.status !== "open") throw conflict(`This suggestion is ${s.status}.`);
-  const kind = s.kind as SuggestionKind;
-  let payload = s.payload;
-  if (edit?.text !== undefined) {
-    if (kind !== "post") throw invalid("Only a post's text can be edited.");
-    payload = payloadSchemas.post.parse({ text: edit.text.trim() });
-    await ctx.db.update(suggestions).set({ payload }).where(eq(suggestions.id, s.id));
-  }
-  const info = kindInfo[kind];
+/** Proposes the Task that applies a suggestion. An open Task for it already is returned, not made twice. */
+async function proposeFor(ctx: AppContext, actor: TaskActor, s: Row, payload: Record<string, unknown>) {
+  const info = kindInfo[s.kind as SuggestionKind];
   if (info.needsProfile) {
     const l = await getLocation(ctx, actor.organizationId, s.locationId);
     if (!l.gbpLocationName) throw conflict("Connect this location's Google profile to apply this.", { needs: "profile.manage" });
   }
-  const change = kind === "profile_change" ? (payload as { field: string; before: unknown; after: unknown }) : null;
-  const task = await proposeTask(ctx, {
+  const change = s.kind === "profile_change" ? (payload as { field: string; before: unknown; after: unknown }) : null;
+  return proposeTask(ctx, {
     organizationId: actor.organizationId,
     kind: info.task,
     featureId: FEATURE,
@@ -126,11 +120,43 @@ export async function applySuggestion(ctx: AppContext, actor: TaskActor, id: str
     createdByType: actor.actorType,
     createdBy: actor.userId,
   });
+}
+
+/** Applies a suggestion through an automation Task. `text` replaces a post's draft. */
+export async function applySuggestion(ctx: AppContext, actor: TaskActor, id: string, edit?: { text?: string }): Promise<void> {
+  const s = await load(ctx, actor.organizationId, id);
+  if (s.status !== "open") throw conflict(`This suggestion is ${s.status}.`);
+  let payload = s.payload;
+  if (edit?.text !== undefined) {
+    if (s.kind !== "post") throw invalid("Only a post's text can be edited.");
+    payload = payloadSchemas.post.parse({ text: edit.text.trim() });
+    await ctx.db.update(suggestions).set({ payload }).where(eq(suggestions.id, s.id));
+  }
+  // One the assistant proposed already is that Task, applied now.
+  const task = await proposeFor(ctx, actor, s, payload);
   if (!task.applied) await applyTask(ctx, actor, task.id);
   await ctx.db
     .update(suggestions)
     .set({ status: "applied", taskId: task.id, decidedBy: actor.userId, decidedAt: new Date() })
     .where(eq(suggestions.id, s.id));
+}
+
+/**
+ * The assistant's way to apply a suggestion (ADR 0036): it proposes the Task, and Autopilot for its action, or a
+ * person, applies it. One done by hand isn't proposed: nobody has done the work yet.
+ */
+export async function proposeSuggestion(
+  ctx: AppContext,
+  actor: TaskActor,
+  id: string,
+): Promise<{ id: string; applied: boolean; title: string }> {
+  const s = await load(ctx, actor.organizationId, id);
+  if (s.status !== "open") throw conflict(`This suggestion is ${s.status}.`);
+  if (kindInfo[s.kind as SuggestionKind].byHand)
+    throw conflict(
+      "This one is done by hand, on the website or the other site. Once it's done, mark it done on Search → Actions → Action plan.",
+    );
+  return { ...(await proposeFor(ctx, actor, s, s.payload)), title: s.title };
 }
 
 /** "Not now": it leaves the list and doesn't come back. */

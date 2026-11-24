@@ -159,4 +159,48 @@ describe("SEO tools in a member's chat", () => {
     expect(onPage.business.name).toBe("Second Office");
     expect((await run("seo.overview", { location: "maple" })).business.id).toBe(locationId);
   });
+
+  test("tracking a keyword or question is proposed as a Task, applied by a member, and a repeat is refused", async () => {
+    const tasks = `/api/v1/organizations/${owner.orgId}/tasks`;
+    const k = await run("seo.track_keyword", { keyword: "Emergency  Dentist Austin", location: "maple" });
+    expect(k).toMatchObject({ applied: false, title: 'Track "emergency dentist austin" for Maple & Main Dental' });
+    expect((await run("seo.search_rankings", { location: "maple" })).keywords.map((x: { keyword: string }) => x.keyword)).not.toContain(
+      "emergency dentist austin",
+    );
+    expect((await call("POST", `${tasks}/${k.taskId}/apply`, { headers: owner.headers })).status).toBe(200);
+    const tracked = (await call("GET", `${base(owner)}/locations/${locationId}/keywords`, { headers: owner.headers })).body;
+    expect(tracked.map((x: { term: string }) => x.term)).toContain("emergency dentist austin");
+    const again = await run("seo.track_keyword", { keyword: "emergency dentist austin", location: "maple" }).catch((e) => e);
+    expect(again.code).toBe("conflict");
+
+    const q = await run("seo.track_question", { question: "who does same day crowns in austin", location: "maple" });
+    expect(q).toMatchObject({
+      applied: false,
+      title: 'Ask the AI assistants "Who does same day crowns in austin?" for Maple & Main Dental',
+    });
+  });
+
+  test("a suggestion is proposed, not applied; applying its Task anywhere marks it applied, and Undo puts it back", async () => {
+    const tasks = `/api/v1/organizations/${owner.orgId}/tasks`;
+    const plan = await run("seo.suggestions", { location: "maple" });
+    const handDone = plan.open.find((x: { doneByHand: boolean }) => x.doneByHand);
+    expect((await run("seo.apply_suggestion", { suggestion: handDone.id }).catch((e) => e)).message).toContain("done by hand");
+
+    const pick = plan.open.find((x: { kind: string }) => x.kind === "track_keyword" || x.kind === "track_question");
+    expect(pick).toBeDefined();
+    const r = await run("seo.apply_suggestion", { suggestion: pick.id });
+    expect(r).toMatchObject({ applied: false, title: pick.title });
+    // Asked twice, it's the same Task.
+    expect((await run("seo.apply_suggestion", { suggestion: pick.id })).taskId).toBe(r.taskId);
+    const stillOpen = (await run("seo.suggestions", { location: "maple" })).open.map((x: { id: string }) => x.id);
+    expect(stillOpen).toContain(pick.id);
+
+    expect((await call("POST", `${tasks}/${r.taskId}/apply`, { headers: owner.headers })).status).toBe(200);
+    const list = (await call("GET", `${base(owner)}/locations/${locationId}/suggestions`, { headers: owner.headers })).body;
+    expect(list.done.map((x: { id: string }) => x.id)).toContain(pick.id);
+
+    expect((await call("POST", `${tasks}/${r.taskId}/undo`, { headers: owner.headers })).status).toBe(200);
+    const back = (await call("GET", `${base(owner)}/locations/${locationId}/suggestions`, { headers: owner.headers })).body;
+    expect(back.open.map((x: { id: string }) => x.id)).toContain(pick.id);
+  });
 });

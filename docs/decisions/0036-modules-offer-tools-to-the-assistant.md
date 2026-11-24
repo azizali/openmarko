@@ -48,13 +48,13 @@ schema, and pauses for a person's approval.
 - **Names the model sees** replace the dot with two underscores (`seo__keyword_detail`): providers allow only letters,
   digits, `_` and `-`.
 - **In a member's turn** (`runTurn` with the caller), the model gets those tools, at most `TOOL_STEPS` (5) model calls,
-  and a line in its instructions: a proposal isn't a change, so say whether it was applied. The web app sends the page
-  the member is on with each message. The answer is saved as UI message parts: each step's text, and each tool call
-  with what it returned, so the next turn's history and the chat's history both keep them. An answer without tools is
-  one text part, as before.
+  and a line in its instructions: a proposal isn't a change, so call it proposed and waiting for Apply unless it was
+  applied. The web app sends the page the member is on with each message. The answer is saved as UI message parts:
+  each step's text, and each tool call with what it returned, so the next turn's history and the chat's history both
+  keep them. An answer without tools is one text part, as before.
 - **The chat shows tools** as a line each ("✓ recent activity") and a proposed Task as a card with **Apply** (the
-  member's backend applies it through the Tasks route; Undo stays in Activity). Visitors' chats have no tools, so they
-  show none.
+  member's backend applies it through the Tasks route; Undo is on Automation → Tasks). Visitors' chats have no tools,
+  so they show none.
 - **A member's chat knows what the app does.** A module's manifest may carry an `assistantBrief`: what it does for
   members and which page shows what, by on-screen labels, never the app's name. A member's turn is told, after the
   widget's own instructions: the Organization's name, the enabled modules' briefs, to answer from the app (a tool, or
@@ -76,6 +76,8 @@ schema, and pauses for a person's approval.
   Automation page lists.
 - Every tool step is model tokens, metered as `llm.tokens` like any turn; a step limit keeps one question from running long.
 - SEO offers read tools (`modules/seo/src/tools.ts`): its Locations, the overview, Google Maps rankings and one Maps
-  keyword's board, Google search rankings, AI answers, competitors per channel, and open suggestions.
-- Next: SEO tools that propose (track a keyword or question, apply a suggestion) and read the Action plan and Site
-  audit, once Rankings / Actions (ADR 0037) is merged.
+  keyword's board, Google search rankings, AI answers, competitors per channel, the Action plan and the Site audit.
+- SEO's tools that propose: `seo.track_keyword`, `seo.track_question` and `seo.apply_suggestion`. A suggestion done
+  by hand (a website fix, a listing) is never proposed, since nobody has done the work; the member marks it done. A
+  suggestion's Task keeps the suggestion in step however it's applied or undone, so the Action plan, Automation and
+  the chat agree.

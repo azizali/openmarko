@@ -608,7 +608,7 @@ class ChatView implements ChatHandle {
     const title = document.createElement("strong");
     title.textContent = task.title;
     const status = document.createElement("span");
-    status.textContent = task.applied ? "Applied. Undo it from Activity." : "Proposed. Nothing changes until it's applied.";
+    status.textContent = task.applied ? "Applied. Undo it from Automation → Tasks." : "Proposed. Nothing changes until it's applied.";
     el.append(title, status);
     const apply = this.o.backend.applyTask;
     if (!task.applied && apply) {

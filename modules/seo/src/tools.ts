@@ -1,18 +1,23 @@
 // What SEO offers a member's chat (ADR 0036): read tools over the same services the pages use, each trimmed to a
 // summary a model can reason over. Each asks for SEO's `view` and SEO being on for the Organization. A tool works on
 // one Location: the one named, else the one on the member's page (`?location=`), else the only one there is.
-// Changes (tracking a keyword, applying a suggestion) come later, as tools that propose Tasks.
+// Changes (tracking a keyword or a question, applying a suggestion) are proposed as automation Tasks: Autopilot for
+// the action, or a member, applies them, and they can be undone.
 import { z } from "zod";
 import { assertFeatureOn } from "@app/features";
-import { AppError, defineTool, type AppContext, type Caller, type ToolCall } from "@app/kernel";
-import { FEATURE } from "./access";
+import { AppError, conflict, defineTool, type AppContext, type Caller, type ToolCall } from "@app/kernel";
+import { requireAllowed } from "@app/shared";
+import { proposeTask } from "@app/automation";
+import { FEATURE, SEO } from "./access";
+import { normalizeQuestion, normalizeTerm } from "./lib/text";
+import { listKeywords, listQuestions } from "./tracking/service";
 import { listLocations, type LocationView } from "./locations/service";
 import { overview } from "./results/overview";
 import { mapsKeyword, mapsSummary } from "./results/maps";
 import { keywordsPage } from "./results/keywords";
 import { aiPage } from "./results/ai";
 import { channels, competitorsPage } from "./results/competitors";
-import { listSuggestions } from "./suggestions/service";
+import { actionFor, listSuggestions, proposeSuggestion } from "./suggestions/service";
 import { auditIssue, auditPage } from "./audit/results";
 
 const requires = { resource: "seo", action: "view" };
@@ -267,7 +272,7 @@ export const competitors = defineTool({
 export const suggestions = defineTool({
   name: "seo.suggestions",
   description:
-    "The Action plan: what to do next for a business, best first. Each says what it would improve (maps, keywords, ai; a website fix can improve several), where it came from (audit: the site audit; profile: the Google profile; tracking: a keyword or question to track; listings: a site to get listed on), why, and what it was based on. Ones done by hand (website fixes, listings) are marked done rather than applied. Applying one is done on the page (Search → Actions → Action plan).",
+    "The Action plan: what to do next for a business, best first. Each says what it would improve (maps, keywords, ai; a website fix can improve several), where it came from (audit: the site audit; profile: the Google profile; tracking: a keyword or question to track; listings: a site to get listed on), why, and what it was based on. Ones done by hand (website fixes, listings) are marked done rather than applied. seo.apply_suggestion applies one by its id.",
   input: z.object({ location }),
   requires,
   effect: "read",
@@ -277,6 +282,7 @@ export const suggestions = defineTool({
     return {
       business: l.name,
       open: open.slice(0, 12).map((s) => ({
+        id: s.id,
         kind: s.kind,
         improves: s.helpsAll,
         from: s.source,
@@ -345,6 +351,110 @@ export const siteAuditIssue = defineTool({
   },
 });
 
+// ---------- Changes, proposed as Tasks ----------
+
+const tracks = { resource: "seo", action: "track" };
+const waits =
+  "It only proposes the change: unless Autopilot applies it at once (`applied: true`), it waits for a member to Apply it. Say which, and never call a proposal applied.";
+
+/** Proposes a Task the assistant asked for in chat, on a Location. */
+async function proposeFromChat(
+  ctx: AppContext,
+  caller: Caller,
+  l: LocationView,
+  t: { kind: string; title: string; label: string; after: string; payload: Record<string, unknown> },
+) {
+  const r = await proposeTask(ctx, {
+    organizationId: caller.orgId,
+    kind: t.kind,
+    featureId: FEATURE,
+    action: "seo.track",
+    title: t.title,
+    why: "Asked for in chat.",
+    impact: "low",
+    targetType: "seo_location",
+    targetId: l.id,
+    sourceType: "conversation",
+    preview: { label: t.label, after: t.after },
+    payload: { ...t.payload, locationId: l.id },
+    createdByType: "assistant",
+    createdBy: caller.userId,
+  });
+  return { taskId: r.id, applied: r.applied, title: t.title };
+}
+
+export const trackKeyword = defineTool({
+  name: "seo.track_keyword",
+  description: `Proposes tracking a keyword for a business on Google Maps and Google search; once applied it's checked straight away and in every check after. ${waits} The Plan limits how many keywords a business tracks.`,
+  input: z.object({
+    keyword: z.string().trim().min(2).max(80).describe("The search as people type it, e.g. 'emergency dentist austin'."),
+    location,
+  }),
+  requires: tracks,
+  effect: "propose",
+  run: async (ctx, caller, input, call) => {
+    const l = await locationFor(ctx, caller, input.location, call);
+    const term = normalizeTerm(input.keyword);
+    if ((await listKeywords(ctx, caller.orgId, l.id)).some((k) => k.term === term))
+      throw conflict(`"${term}" is tracked already for ${l.name}.`);
+    return proposeFromChat(ctx, caller, l, {
+      kind: "seo.track_keyword",
+      title: `Track "${term}" for ${l.name}`,
+      label: "Keyword",
+      after: term,
+      payload: { term, monthlySearches: null },
+    });
+  },
+});
+
+export const trackQuestion = defineTool({
+  name: "seo.track_question",
+  description: `Proposes asking the AI assistants (ChatGPT, Google's AI Overview, Perplexity and others) a question for a business, to see whether they name it; once applied it's asked straight away and in every check after. ${waits} The Plan limits how many questions a business tracks.`,
+  input: z.object({
+    question: z
+      .string()
+      .trim()
+      .min(8)
+      .max(200)
+      .describe("A question a customer would ask an assistant, e.g. 'Who is the best emergency dentist in Austin?'."),
+    location,
+  }),
+  requires: tracks,
+  effect: "propose",
+  run: async (ctx, caller, input, call) => {
+    const l = await locationFor(ctx, caller, input.location, call);
+    const text = normalizeQuestion(input.question);
+    if ((await listQuestions(ctx, caller.orgId, l.id)).some((q) => q.text.toLowerCase() === text.toLowerCase()))
+      throw conflict(`"${text}" is asked already for ${l.name}.`);
+    return proposeFromChat(ctx, caller, l, {
+      kind: "seo.track_question",
+      title: `Ask the AI assistants "${text}" for ${l.name}`,
+      label: "Question",
+      after: text,
+      payload: { text },
+    });
+  },
+});
+
+export const applySuggestion = defineTool({
+  name: "seo.apply_suggestion",
+  description: `Proposes applying one suggestion from the Action plan, by its id from seo.suggestions: tracking a keyword or question, a change to the Google profile (needs it linked), or a post. ${waits} Undo is on the Action plan. Website fixes and listings are done by hand and can't be applied: give the member the steps (seo.site_audit_issue), and say they mark it done on Search → Actions → Action plan.`,
+  input: z.object({ suggestion: z.uuid().describe("The suggestion's id, from seo.suggestions.") }),
+  requires: tracks,
+  effect: "propose",
+  run: async (ctx, caller, input) => {
+    await assertFeatureOn(ctx, caller.orgId, FEATURE);
+    // A change to the Google profile, or a post, needs `publish` too.
+    requireAllowed(caller, SEO, await actionFor(ctx, caller.orgId, input.suggestion));
+    const r = await proposeSuggestion(
+      ctx,
+      { organizationId: caller.orgId, userId: caller.userId, actorType: "assistant" },
+      input.suggestion,
+    );
+    return { taskId: r.id, applied: r.applied, title: r.title };
+  },
+});
+
 export const seoTools = [
   listBusinesses,
   seoOverview,
@@ -356,4 +466,7 @@ export const seoTools = [
   suggestions,
   siteAudit,
   siteAuditIssue,
+  trackKeyword,
+  trackQuestion,
+  applySuggestion,
 ];

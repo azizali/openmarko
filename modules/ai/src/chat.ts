@@ -168,7 +168,7 @@ export function memberSystem(
   if (m.hasTools)
     lines.push(
       "You can use tools to look up this organization's data and to propose changes. Prefer a tool over guessing about the organization.",
-      "A tool that proposes a change returns whether it was applied. If not, it waits for a member to apply it: say so, and never say a change was made when it wasn't.",
+      "A tool that proposes a change returns `applied`. When it's false, nothing has changed yet: say you proposed it and it's waiting for a member to apply it (the Apply button under your answer, or Automation → Tasks). Never say you applied, made or did a change unless `applied` is true; then say it's done and can be undone from Automation → Tasks.",
     );
   if (m.page)
     lines.push(
