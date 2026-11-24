@@ -37,6 +37,9 @@ function checkWidget(current: WidgetSettings, w: Partial<WidgetSettings>): Widge
   if (!/^#[0-9a-fA-F]{6}$/.test(next.accent)) throw invalid("The colour is a hex colour, e.g. #1d4ed8.");
   return { ...next, allowedOrigins: [...new Set(next.allowedOrigins)] };
 }
+/** What the built-in widget is called until someone renames it. */
+export const BUILTIN_NAME = "Assistant";
+
 export const DEFAULT_WIDGET: WidgetSettings = { enabled: false, allowedOrigins: [], greeting: "Hi! How can I help?", accent: "#db2777" };
 
 const MAX_INSTRUCTIONS = 8000;
@@ -130,6 +133,8 @@ export async function prepareTurn(ctx: AppContext, a: Assistant, message: string
     }
   const sources = live.length ? await knowledge!.search(a.organizationId, live, message, PASSAGES) : [];
   const parts = [a.instructions.trim() || "You are a helpful assistant."];
+  // Its own name, once it has one: a renamed widget answers to it, here and on websites.
+  if (!(a.builtin && a.name === BUILTIN_NAME)) parts.push(`Your name is ${a.name}. Use it when asked who you are.`);
   if (live.length) {
     parts.push(
       sources.length

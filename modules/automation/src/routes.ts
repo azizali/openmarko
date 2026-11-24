@@ -153,8 +153,8 @@ export function automationRoutes(ctx: AppContext) {
         "/tasks/:taskId/dismiss",
         async ({ caller, params }) => {
           const task = await taskFor(ctx, caller.orgId, params.taskId);
-          const [resource] = actionOf(task.action);
-          requireAllowed(caller, resource, "view");
+          const [resource, act] = actionOf(task.action);
+          requireAllowed(caller, resource, act);
           await dismissTask(ctx, caller.orgId, task.id);
           return { ok: true };
         },

@@ -107,6 +107,11 @@ export type ModuleDefinition = {
   permissions?: DeclaredResource[];
   /** Role editor groups this module introduces. A resource may sit in any group in the catalog. */
   roleGroups?: Declared[];
+  /**
+   * What a member's chat should know about this module (ADR 0036): what it does for them and which page shows what,
+   * by the pages' on-screen labels. Never the app's name: a Partner may whitelabel it. A few sentences at most.
+   */
+  assistantBrief?: string;
   setup: (ctx: AppContext) => ModuleParts;
 };
 

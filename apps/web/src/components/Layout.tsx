@@ -1,6 +1,7 @@
 // The app shell: a sidebar with the Organization switcher and the pages the enabled modules add, a command palette
-// (⌘K), the theme toggle, and the page area. Pages a Role can't see, or a module that's off, never show.
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
+// (⌘K), the assistant (⌘J), the theme toggle, and the page area. Pages a Role can't see, or a module that's off, never
+// show. On wide screens the sidebar narrows to icons (⌘\ or its button) and remembers it.
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router";
 import {
   BarChart3,
@@ -18,6 +19,8 @@ import {
   Menu,
   MessagesSquare,
   Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
   Plus,
   Search,
   SearchCheck,
@@ -26,7 +29,7 @@ import {
   Sun,
 } from "lucide-react";
 import { Avatar, cn, ModalDialog, navRow } from "./ui";
-import { Logo } from "./Logo";
+import { Logo, LogoMark } from "./Logo";
 import { useTheme } from "../lib/theme";
 import { platformAdminLabel, roleName } from "@app/shared/access";
 import { useSession, type Membership } from "../lib/session";
@@ -157,6 +160,41 @@ const onPath = (path: string, to: string) => (to === "/" ? path === "/" : path =
 /** Whether a sidebar entry is the current one: its own page, or one of the pages it stands for. */
 const isHere = (path: string, item: NavItem) => onPath(path, item.to) || !!item.within?.some((w) => onPath(path, w.to));
 
+/** The keyboard shortcuts, written the way this computer's keyboard labels them. */
+const mac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+const shortcut = { search: "K", assistant: "J", sidebar: "\\" } as const;
+const keys = (key: string) => (mac ? `⌘${key}` : `Ctrl ${key}`);
+function Kbd({ k }: { k: string }) {
+  return <kbd className="ml-auto shrink-0 rounded border border-line px-1 font-sans text-[11px] leading-[16px] text-subtle">{keys(k)}</kbd>;
+}
+
+const narrowKey = "sidebar-narrow";
+function storedNarrow() {
+  try {
+    return localStorage.getItem(narrowKey) === "1";
+  } catch {
+    return false; // storage blocked: wide, the default
+  }
+}
+
+/** Whether the wide-screen sidebar shows icons only, remembered on this browser. */
+function useNarrowSidebar() {
+  const [narrow, setNarrow] = useState(storedNarrow);
+  const toggle = useCallback(
+    () =>
+      setNarrow((v) => {
+        try {
+          localStorage.setItem(narrowKey, v ? "0" : "1");
+        } catch {
+          // storage blocked: it just won't be remembered
+        }
+        return !v;
+      }),
+    [],
+  );
+  return [narrow, toggle] as const;
+}
+
 const groupKey = (label: string) => `nav-group-${label}`;
 function storedOpen(label: string) {
   try {
@@ -166,12 +204,32 @@ function storedOpen(label: string) {
   }
 }
 
-function SidebarLink({ item, path }: { item: NavItem; path: string }) {
+/** A row in the narrow sidebar: just the icon, its name in the tooltip and for screen readers. */
+const narrowRow = (active: boolean) => cn(navRow(active), "w-9 justify-center px-0 pointer-coarse:w-9");
+
+function SidebarLink({ item, path, narrow }: { item: NavItem; path: string; narrow?: boolean }) {
+  const here = isHere(path, item);
   return (
-    <Link to={item.to} aria-current={isHere(path, item) ? "page" : undefined} className={navRow(isHere(path, item))}>
+    <Link
+      to={item.to}
+      aria-current={here ? "page" : undefined}
+      title={narrow ? item.label : undefined}
+      className={narrow ? narrowRow(here) : navRow(here)}
+    >
       <item.icon size={15} strokeWidth={1.75} className="shrink-0" />
-      <span className="flex-1 truncate">{item.label}</span>
+      <span className={narrow ? "sr-only" : "flex-1 truncate"}>{item.label}</span>
     </Link>
+  );
+}
+
+/** A group in the narrow sidebar: its pages as icons, set apart by a rule instead of a label. */
+function NarrowGroup({ info, items, path }: { info: NavGroupInfo; items: NavItem[]; path: string }) {
+  return (
+    <div role="group" aria-label={info.label} className="my-1 flex flex-col items-center gap-px border-y border-line py-1">
+      {items.map((n) => (
+        <SidebarLink key={n.to} item={n} path={path} narrow />
+      ))}
+    </div>
   );
 }
 
@@ -233,7 +291,7 @@ function NavSection({ info, items, path }: { info: NavGroupInfo; items: NavItem[
   );
 }
 
-function OrgSwitcher() {
+function OrgSwitcher({ narrow }: { narrow?: boolean }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const { organizations, org, partners, switchOrg, me } = useSession();
@@ -270,18 +328,29 @@ function OrgSwitcher() {
     <div ref={root} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex min-h-10 w-full items-center gap-2.5 rounded-md p-1 text-left hover:bg-hover"
+        className={cn("flex min-h-10 items-center gap-2.5 rounded-md p-1 text-left hover:bg-hover", narrow ? "mx-auto" : "w-full")}
         aria-expanded={open}
+        aria-label={narrow ? `Organization: ${org?.name ?? "none"}` : undefined}
+        title={narrow ? (org?.name ?? "No organization") : undefined}
       >
         <span className="grid size-7 shrink-0 place-items-center rounded-md bg-ink text-[13px] font-semibold text-on-ink">{initial}</span>
-        <span className="min-w-0 flex-1 leading-tight">
-          <span className="block truncate text-[13px] font-medium">{org?.name ?? "No organization"}</span>
-          {kind && <span className="block truncate text-[12px] text-muted">{kind}</span>}
-        </span>
-        <ChevronsUpDown size={14} className="text-subtle" />
+        {!narrow && (
+          <>
+            <span className="min-w-0 flex-1 leading-tight">
+              <span className="block truncate text-[13px] font-medium">{org?.name ?? "No organization"}</span>
+              {kind && <span className="block truncate text-[12px] text-muted">{kind}</span>}
+            </span>
+            <ChevronsUpDown size={14} className="text-subtle" />
+          </>
+        )}
       </button>
       {open && (
-        <div className="anim-fade absolute top-full right-0 left-0 z-30 mt-1 rounded-lg border border-line bg-surface p-1 shadow-float">
+        <div
+          className={cn(
+            "anim-fade absolute top-full z-30 mt-1 rounded-lg border border-line bg-surface p-1 shadow-float",
+            narrow ? "left-0 w-60" : "right-0 left-0",
+          )}
+        >
           {groups.map((g) => (
             <div key={g.label}>
               <div className="px-2 pt-1 pb-0.5 text-[11px] font-medium tracking-[0.06em] text-subtle uppercase">{g.label}</div>
@@ -330,13 +399,17 @@ function OrgSwitcher() {
   );
 }
 
-function CommandPalette({ onClose, items }: { onClose: () => void; items: NavItem[] }) {
+/** Something the command menu does in place rather than a page it goes to, shown with its shortcut. */
+type PaletteAction = { label: string; key: string; run: () => void };
+
+function CommandPalette({ onClose, items, actions }: { onClose: () => void; items: NavItem[]; actions: PaletteAction[] }) {
   const [q, setQ] = useState("");
   const [idx, setIdx] = useState(0);
   const navigate = useNavigate();
   const { admin, partner } = useSession();
   const found = useMemo(() => {
-    const pages = [
+    const pages: { label: string; hint: string; to?: string; key?: string; run?: () => void }[] = [
+      ...actions.map((a) => ({ label: a.label, hint: "", key: a.key, run: a.run })),
       ...items.flatMap((i) =>
         i.within
           ? i.within.map((w) => ({ label: `${i.label} · ${w.label}`, hint: "Page", to: w.to }))
@@ -368,10 +441,11 @@ function CommandPalette({ onClose, items }: { onClose: () => void; items: NavIte
       { label: "New organization", hint: "Setup", to: "/onboarding" },
     ];
     return pages.filter((i) => i.label.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
-  }, [q, items, admin, partner]);
-  const go = (to: string) => {
-    navigate(to);
+  }, [q, items, actions, admin, partner]);
+  const go = (it: (typeof found)[number]) => {
     onClose();
+    if (it.run) it.run();
+    else if (it.to) void navigate(it.to);
   };
   return (
     <ModalDialog
@@ -396,7 +470,7 @@ function CommandPalette({ onClose, items }: { onClose: () => void; items: NavIte
               e.preventDefault();
               setIdx((i) => Math.max(0, i - 1));
             }
-            if (e.key === "Enter" && found[idx]) go(found[idx]!.to);
+            if (e.key === "Enter" && found[idx]) go(found[idx]!);
           }}
           placeholder="Go to…"
           aria-label="Search"
@@ -405,15 +479,15 @@ function CommandPalette({ onClose, items }: { onClose: () => void; items: NavIte
       </div>
       <ul className="max-h-80 overflow-y-auto p-1.5">
         {found.map((it, i) => (
-          <li key={it.to + it.label}>
+          <li key={(it.to ?? "") + it.label}>
             <button
               onMouseEnter={() => setIdx(i)}
-              onClick={() => go(it.to)}
+              onClick={() => go(it)}
               className={cn("flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-[13.5px]", i === idx && "bg-hover")}
             >
               {it.label.startsWith("New ") && <Plus size={13} className="shrink-0 text-subtle" />}
               <span className="flex-1 truncate">{it.label}</span>
-              <span className="text-[12px] text-subtle">{it.hint}</span>
+              {it.key ? <Kbd k={it.key} /> : <span className="text-[12px] text-subtle">{it.hint}</span>}
               {i === idx && <CornerDownLeft size={13} className="text-subtle" />}
             </button>
           </li>
@@ -429,21 +503,33 @@ export default function Layout() {
   const [cmd, setCmd] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [narrow, toggleNarrow] = useNarrowSidebar();
   const loc = useLocation();
   const navigate = useNavigate();
   const { loading, me, org, organizations, can, signOut, features, admin } = useSession();
   const brand = useBrand();
 
+  // Everyone who may chat has the widget, as long as the Organization has the assistant switched on.
+  const hasChat = modules.ai && can("ai", "chat") && features.assistant?.on !== false;
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
+      const k = e.key.toLowerCase();
+      if (k === shortcut.search.toLowerCase()) {
         e.preventDefault();
         setCmd((v) => !v);
+      } else if (k === shortcut.assistant.toLowerCase() && hasChat) {
+        e.preventDefault();
+        setCmd(false);
+        setChatOpen((v) => !v);
+      } else if (k === shortcut.sidebar) {
+        e.preventDefault();
+        toggleNarrow();
       }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
-  }, []);
+  }, [hasChat, toggleNarrow]);
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [loc.pathname]);
@@ -468,12 +554,46 @@ export default function Layout() {
   const switched = (n: NavItem) => !n.feature || features[n.feature]?.on !== false;
   const items = nav.filter((n) => (!n.when || n.when(can)) && switched(n));
   const offHere = nav.find((n) => n.feature && isHere(loc.pathname, n) && !switched(n));
-  // Everyone who may chat has the widget, as long as the Organization has the assistant switched on.
-  const hasChat = modules.ai && can("ai", "chat") && features.assistant?.on !== false;
   const chatButton = hasChat && !onPath(loc.pathname, "/widgets");
+  const openChat = () => {
+    setChatOpen(!chatOpen);
+    setMobileNav(false);
+  };
+  const actions: PaletteAction[] = [
+    ...(hasChat ? [{ label: `Ask ${brand.assistant}`, key: shortcut.assistant, run: () => setChatOpen(true) }] : []),
+    { label: narrow ? "Widen sidebar" : "Narrow sidebar", key: shortcut.sidebar, run: toggleNarrow },
+  ];
 
   const pages = items.filter((n) => !n.foot);
   const foot = items.filter((n) => n.foot);
+  const sidebarToggle = (
+    <button
+      onClick={toggleNarrow}
+      aria-label={narrow ? "Widen sidebar" : "Narrow sidebar"}
+      title={`${narrow ? "Widen sidebar" : "Narrow sidebar"} (${keys(shortcut.sidebar)})`}
+      className={cn(iconBtn, "hidden lg:grid")}
+    >
+      {narrow ? <PanelLeftOpen size={15} strokeWidth={1.75} /> : <PanelLeftClose size={15} strokeWidth={1.75} />}
+    </button>
+  );
+  const themeButton = (
+    <button
+      onClick={() => setDark(!dark)}
+      aria-label={dark ? "Light mode" : "Dark mode"}
+      title={dark ? "Light mode" : "Dark mode"}
+      className={iconBtn}
+    >
+      {dark ? <Sun size={15} strokeWidth={1.75} /> : <Moon size={15} strokeWidth={1.75} />}
+    </button>
+  );
+  const signOutButton = (
+    <button onClick={() => void signOut()} aria-label="Sign out" title="Sign out" className={iconBtn}>
+      <LogOut size={15} strokeWidth={1.75} />
+    </button>
+  );
+  const roleLine = `${roleName(org.role)}${admin ? ` · ${platformAdminLabel}` : ""}`;
+
+  // Search and the assistant are icons beside the logo; their tooltips and the command menu name the shortcuts.
   const sidebar = (
     <div className="flex h-full flex-col gap-1 px-2.5 py-2.5">
       <div className="flex h-8 items-center gap-0.5">
@@ -482,21 +602,19 @@ export default function Layout() {
         </NavLink>
         {hasChat && (
           <button
-            onClick={() => {
-              setChatOpen(!chatOpen);
-              setMobileNav(false);
-            }}
-            aria-label={brand.assistant}
+            onClick={openChat}
+            aria-label={`Ask ${brand.assistant}`}
             aria-pressed={chatOpen}
-            title={brand.assistant}
+            title={`Ask ${brand.assistant} (${keys(shortcut.assistant)})`}
             className={iconBtn}
           >
             <Sparkles size={15} strokeWidth={1.75} />
           </button>
         )}
-        <button onClick={() => setCmd(true)} aria-label="Search" title="Search (⌘K)" className={iconBtn}>
+        <button onClick={() => setCmd(true)} aria-label="Search" title={`Search (${keys(shortcut.search)})`} className={iconBtn}>
           <Search size={15} strokeWidth={1.75} />
         </button>
+        {sidebarToggle}
       </div>
       <OrgSwitcher />
       <nav className="mt-1 flex flex-1 flex-col gap-px overflow-y-auto" aria-label="Main">
@@ -522,31 +640,74 @@ export default function Layout() {
                 className="truncate text-[12px] text-muted"
                 title={`Your role in ${org.name}${admin ? `, and ${platformAdminLabel.toLowerCase()} of the whole app` : ""}`}
               >
-                {roleName(org.role)}
-                {admin && ` · ${platformAdminLabel}`}
+                {roleLine}
               </div>
             </div>
           </div>
-          <button
-            onClick={() => setDark(!dark)}
-            aria-label={dark ? "Light mode" : "Dark mode"}
-            title={dark ? "Light mode" : "Dark mode"}
-            className={iconBtn}
-          >
-            {dark ? <Sun size={15} strokeWidth={1.75} /> : <Moon size={15} strokeWidth={1.75} />}
-          </button>
-          <button onClick={() => void signOut()} aria-label="Sign out" title="Sign out" className={iconBtn}>
-            <LogOut size={15} strokeWidth={1.75} />
-          </button>
+          {themeButton}
+          {signOutButton}
         </div>
+      </div>
+    </div>
+  );
+
+  // The narrow sidebar: the same things as icons, their names and shortcuts in tooltips. Wide screens only.
+  const narrowSidebar = (
+    <div className="flex h-full flex-col items-center gap-1 px-2 py-2.5">
+      <NavLink
+        to="/"
+        aria-label={`${brand.name} home`}
+        title={brand.name}
+        className="grid h-8 w-9 place-items-center rounded-md hover:bg-hover"
+      >
+        <LogoMark size={18} />
+      </NavLink>
+      {sidebarToggle}
+      <OrgSwitcher narrow />
+      <button onClick={() => setCmd(true)} aria-label="Search" title={`Search (${keys(shortcut.search)})`} className={narrowRow(false)}>
+        <Search size={15} strokeWidth={1.75} />
+      </button>
+      {hasChat && (
+        <button
+          onClick={openChat}
+          aria-label={`Ask ${brand.assistant}`}
+          aria-pressed={chatOpen}
+          title={`Ask ${brand.assistant} (${keys(shortcut.assistant)})`}
+          className={narrowRow(chatOpen)}
+        >
+          <Sparkles size={15} strokeWidth={1.75} />
+        </button>
+      )}
+      <nav className="mt-1 flex w-full flex-1 flex-col items-center gap-px overflow-y-auto border-t border-line pt-2" aria-label="Main">
+        {pages.map((n, i) => {
+          if (n.group && pages[i - 1]?.group === n.group) return null;
+          if (n.group)
+            return <NarrowGroup key={n.group.label} info={n.group} items={pages.filter((p) => p.group === n.group)} path={loc.pathname} />;
+          return <SidebarLink key={n.to} item={n} path={loc.pathname} narrow />;
+        })}
+      </nav>
+      <div className="flex w-full flex-col items-center gap-1 border-t border-line pt-2">
+        {foot.map((n) => (
+          <SidebarLink key={n.to} item={n} path={loc.pathname} narrow />
+        ))}
+        <span title={`${me.name} · ${roleLine}`} className="py-0.5">
+          <Avatar name={me.name} className="size-7 text-[11px]" />
+        </span>
+        {themeButton}
+        {signOutButton}
       </div>
     </div>
   );
 
   return (
     <div className="flex min-h-full">
-      <aside className="sidebar-scope sticky top-0 hidden h-screen w-60 shrink-0 border-r border-line bg-sidebar lg:block print:hidden">
-        {sidebar}
+      <aside
+        className={cn(
+          "sidebar-scope sticky top-0 hidden h-screen shrink-0 border-r border-line bg-sidebar lg:block print:hidden",
+          narrow ? "w-14" : "w-60",
+        )}
+      >
+        {narrow ? narrowSidebar : sidebar}
       </aside>
       {mobileNav && (
         <ModalDialog
@@ -596,7 +757,7 @@ export default function Layout() {
           )}
         </main>
       </div>
-      {cmd && <CommandPalette onClose={() => setCmd(false)} items={items} />}
+      {cmd && <CommandPalette onClose={() => setCmd(false)} items={items} actions={actions} />}
       {AppChat && hasChat && (
         <Suspense fallback={null}>
           {/* No floating button on Widgets: the page has its own widget in the preview, and two would confuse. */}

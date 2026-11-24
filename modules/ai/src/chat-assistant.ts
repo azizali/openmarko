@@ -11,7 +11,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { authOrganization, newId, notFound, type AppContext } from "@app/kernel";
 import { readAppSetting, readSetting, writeAppSetting, writeSetting } from "@app/settings";
-import { DEFAULT_WIDGET, getAssistant, type Assistant } from "./assistants";
+import { BUILTIN_NAME, DEFAULT_WIDGET, getAssistant, type Assistant } from "./assistants";
 import { assistants } from "./schema";
 
 export const NAMESPACE = "ai.assistant";
@@ -29,6 +29,11 @@ export type InUse = {
   greeting: string;
   /** The widget's colour (#rrggbb). Null for an untouched built-in widget, so the chat keeps the app's own colour. */
   accent: string | null;
+  /**
+   * The name and greeting the chat shows. Null while the built-in widget still has its starter ones, so the chat keeps
+   * the app's own (a Partner's brand); once someone renames it or writes a greeting, those show.
+   */
+  shows: { name: string | null; greeting: string | null };
   level: ChatLevel;
   ownerOrganizationId: string;
 };
@@ -56,7 +61,7 @@ export async function ensureBuiltin(ctx: AppContext, orgId: string): Promise<Ass
   // Two first requests at once: the unique index lets one insert win and the other read it.
   await ctx.db
     .insert(assistants)
-    .values({ id: newId(), organizationId: orgId, name: "Assistant", builtin: true, widget: DEFAULT_WIDGET })
+    .values({ id: newId(), organizationId: orgId, name: BUILTIN_NAME, builtin: true, widget: DEFAULT_WIDGET })
     .onConflictDoNothing();
   return (await find())!;
 }
@@ -73,6 +78,10 @@ const asInUse = (a: Assistant, level: ChatLevel): InUse => ({
   name: a.name,
   greeting: a.widget.greeting,
   accent: level === "builtin" && a.widget.accent === DEFAULT_WIDGET.accent ? null : a.widget.accent,
+  shows: {
+    name: level === "builtin" && a.name === BUILTIN_NAME ? null : a.name,
+    greeting: level === "builtin" && a.widget.greeting === DEFAULT_WIDGET.greeting ? null : a.widget.greeting,
+  },
   level,
   ownerOrganizationId: a.organizationId,
 });

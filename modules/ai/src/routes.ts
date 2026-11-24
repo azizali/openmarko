@@ -100,15 +100,24 @@ export function aiRoutes(ctx: AppContext) {
         "/:conversationId/chat",
         ({ caller, params, body, request }) => {
           requireAllowed(caller, "ai", "chat");
-          return chat(ctx, caller, params.conversationId, body.text, request.signal);
+          return chat(ctx, caller, params.conversationId, body.text, request.signal, body.page ?? null);
         },
         {
           params: ids("conversationId"),
-          body: t.Object({ text: t.String({ minLength: 1, maxLength: 20000 }) }),
+          body: t.Object({
+            text: t.String({ minLength: 1, maxLength: 20000 }),
+            // Where the member is in the app, for the tools (ADR 0036). A hint: tools never trust it for access.
+            page: t.Optional(
+              t.Object({
+                path: t.String({ maxLength: 300 }),
+                params: t.Record(t.String({ maxLength: 40 }), t.String({ maxLength: 200 }), { maxProperties: 10 }),
+              }),
+            ),
+          }),
           detail: {
             summary: "Send a message and stream the answer (AI SDK UI message stream)",
             description:
-              "Checked against the Organization's Plan (meter llm.tokens) first; the answer and its usage are saved when it finishes.",
+              "Checked against the Organization's Plan (meter llm.tokens) first; the answer and its usage are saved when it finishes. The model may call the tools the member's Role allows (ADR 0036); their calls and results stream as tool parts and are saved with the answer.",
           },
         },
       )

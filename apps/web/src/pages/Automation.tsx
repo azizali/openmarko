@@ -7,6 +7,7 @@ import { Feedback, useFeedback, useToast } from "../components/Feedback";
 import { api, fmtTime, messageOf, money } from "../lib/api";
 import { useLoad } from "../lib/useLoad";
 import { useOrg, useSession } from "../lib/session";
+import { useTasksChanged } from "../lib/tasksChanged";
 
 type Tab = "tasks" | "schedules" | "runs" | "activity";
 
@@ -15,6 +16,8 @@ export default function Automation() {
   const { can } = useSession();
   const [tab, setTab] = useState<Tab>("tasks");
   const tasks = useLoad(() => api.api.v1.organizations({ orgId: org.id }).tasks.get({ query: {} }), [org.id]);
+  // The chat proposes and applies Tasks too.
+  useTasksChanged(() => void tasks.reload());
   const open = (tasks.data ?? []).filter((t) => t.status === "open").length;
   return (
     <>
@@ -50,6 +53,10 @@ type Task = {
   preview: { label: string; before?: string; after: string } | null;
   createdAt: string | Date;
   createdByType: string;
+  /** Applied by Autopilot, not by a person. */
+  autopilot: boolean;
+  /** Where it came from: `conversation` when the chat's tools proposed it (ADR 0036). */
+  sourceType: string | null;
 };
 
 function TasksView({ tasks, reload }: { tasks: Task[]; reload: () => void }) {
@@ -104,7 +111,8 @@ function TasksView({ tasks, reload }: { tasks: Task[]; reload: () => void }) {
               <div className="flex items-center gap-2">
                 <span className="text-[14px] font-medium">{t.title}</span>
                 <Badge tone={tone(t.status)}>{t.status}</Badge>
-                {t.createdByType === "assistant" && <Badge tone="accent">autopilot</Badge>}
+                {t.autopilot && <Badge tone="accent">autopilot</Badge>}
+                {t.sourceType === "conversation" && <Badge tone="neutral">from chat</Badge>}
               </div>
               {t.why && <p className="mt-1 text-[13px] text-muted">{t.why}</p>}
               {t.preview && (
