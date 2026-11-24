@@ -55,6 +55,14 @@ schema, and pauses for a person's approval.
 - **The chat shows tools** as a line each ("✓ recent activity") and a proposed Task as a card with **Apply** (the
   member's backend applies it through the Tasks route; Undo stays in Activity). Visitors' chats have no tools, so they
   show none.
+- **A member's chat knows what the app does.** A module's manifest may carry an `assistantBrief`: what it does for
+  members and which page shows what, by on-screen labels, never the app's name. A member's turn is told, after the
+  widget's own instructions: the Organization's name, the enabled modules' briefs, to answer from the app (a tool, or
+  the page that shows it) and never send the member to another product, then the tool rules and the page they're on.
+  A widget's own instructions still come first; without any, the built-in widget is a plain assistant plus this.
+- **Answers are Markdown, shown formatted.** The widget parses an answer (`packages/chat-widget/src/markdown.ts`) and
+  builds it with DOM calls, never innerHTML, so a model's text can't become markup on someone's website; links open
+  only http(s) and mailto. A person's message stays plain text.
 - **The stub model calls tools too:** a message `/tool <model name> {json}` calls that tool when the turn offers it,
   and the next step reports what it returned, so tools are tried and tested without a model key.
 - The boilerplate ships two examples in automation: `automation.recent_activity` (read) and
@@ -67,6 +75,7 @@ schema, and pauses for a person's approval.
 - A Task card (its title, "Proposed" or "Applied", Apply) is the way the chat shows a change: the same Task the
   Automation page lists.
 - Every tool step is model tokens, metered as `llm.tokens` like any turn; a step limit keeps one question from running long.
-- Next: the SEO tools (`seo.overview`, `seo.keyword_detail`, `seo.competitors`, `seo.ai_answers`, `seo.suggestions`,
-  and `seo.track_keyword` proposing a Task), read from `results/*`, once the Monitor/Improve split settles where the
-  Action plan lives.
+- SEO offers read tools (`modules/seo/src/tools.ts`): its Locations, the overview, Google Maps rankings and one Maps
+  keyword's board, Google search rankings, AI answers, competitors per channel, and open suggestions.
+- Next: SEO tools that propose (track a keyword or question, apply a suggestion) and read the Action plan and Site
+  audit, once Rankings / Actions (ADR 0037) is merged.

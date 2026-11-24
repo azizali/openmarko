@@ -3,9 +3,9 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { callerFor } from "@app/access";
 import { listTasks } from "@app/automation";
-import { toolsOf, type Caller } from "@app/kernel";
+import { appConfig, toolsOf, type Caller } from "@app/kernel";
 import { createTestDb, ownerSession, type TestDb } from "@app/testkit";
-import { modelToolName, toolsFor } from "../src";
+import { memberSystem, modelToolName, toolsFor } from "../src";
 
 let t: TestDb;
 let caller: Caller;
@@ -57,5 +57,24 @@ describe("tools in a member's chat", () => {
       createdByType: "assistant",
       createdBy: caller.userId,
     });
+  });
+});
+
+describe("what a member's chat is told", () => {
+  test("what the app does, from the enabled modules' briefs, and never the app's name", () => {
+    const briefs = t.ctx.catalog!.briefs;
+    expect(briefs.map((b) => b.module)).toEqual(expect.arrayContaining(["automation", "seo"]));
+    const system = memberSystem("Be brief.", {
+      organization: "Maple & Main",
+      briefs: briefs.map((b) => b.text),
+      hasTools: true,
+      page: { path: "/seo/maps", params: { location: "abc" } },
+    });
+    expect(system.startsWith("Be brief.")).toBe(true);
+    expect(system).toContain('for the organization "Maple & Main"');
+    expect(system).toContain("Google Maps");
+    expect(system).toContain("Never send them to another product");
+    expect(system).toContain("/seo/maps");
+    expect(system).not.toContain(appConfig.name);
   });
 });

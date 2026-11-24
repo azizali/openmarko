@@ -89,6 +89,26 @@ changes what checks cost and links the Google profile.
   in Activity and can be undone; Autopilot can apply a kind on its own.
 - **SEO costs** (Settings → App admin): this month's search-data spend per Organization, and each Location's monthly cost.
 
+## In the chat
+
+A member's chat knows what SEO does and which page shows what (the module's `assistantBrief`), and can read the same
+numbers as the pages, for members whose Role has SEO's View (ADR 0036, `modules/seo/src/tools.ts`):
+
+| Tool | Answers |
+|---|---|
+| `seo.list_locations` | the businesses tracked, where checks run and how often |
+| `seo.overview` | where a business stands on each channel, with changes over 30 days, and its Google profile's results |
+| `seo.maps_rankings` | each Maps keyword: top-3 spots on the grid, average position, change, who is first |
+| `seo.maps_keyword` | one Maps keyword's board: who ranks, with rating, reviews and categories |
+| `seo.search_rankings` | each search keyword: searches a month, position, change, who is first, map pack and AI Overview |
+| `seo.ai_answers` | each question per assistant: named or not, who else is named, which sites are cited |
+| `seo.competitors` | who is ahead on a channel, and on how many keywords |
+| `seo.suggestions` | the open suggestions, with what they'd improve and why |
+
+A tool works on the business it's asked about (by name), else the one on the member's page (`?location=`), else the
+only one; with several and none named, it asks which. Tracking keywords and applying suggestions from the chat come
+later, as tools that propose Tasks.
+
 ## How suggestions are made
 
 No model writes them: everything is rules and templates over data the providers return, so it is predictable and cheap.

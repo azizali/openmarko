@@ -4,6 +4,8 @@
 // (apps/web, components/AppChat.tsx). It lives in a shadow DOM, so a page's styles can't break it and it can't break
 // the page. No dependencies, so the embeddable script stays small.
 
+import { renderMarkdown } from "./markdown";
+
 export type Chat = { id: string; title: string };
 export type Line = { role: "user" | "assistant"; text: string; sources?: string[]; tools?: ToolUse[] };
 export type Reply = { onText: (delta: string) => void; onSources: (titles: string[]) => void; onTool?: (use: ToolUse) => void };
@@ -16,7 +18,8 @@ export type ToolUse = {
   id: string;
   /** What it does, in words: `automation__recent_activity` reads "recent activity". */
   label: string;
-  state: "running" | "done" | "failed";
+  /** `declined`: the app answered why not (no business set up, not tracked): expected, and the answer says so. */
+  state: "running" | "done" | "declined" | "failed";
   error?: string;
   task?: { id: string; title: string; applied: boolean };
 };
@@ -27,7 +30,7 @@ export function toolUse(id: string, toolName: string, outcome: { output?: unknow
   if (!outcome) return { id, label, state: "running" };
   if (outcome.errorText !== undefined) return { id, label, state: "failed", error: outcome.errorText };
   const out = (outcome.output ?? {}) as { error?: { message?: string }; taskId?: string; title?: string; applied?: boolean };
-  if (out.error) return { id, label, state: "failed", error: out.error.message ?? "It couldn't be done." };
+  if (out.error) return { id, label, state: "declined", error: out.error.message ?? "It couldn't be done." };
   const task = typeof out.taskId === "string" ? { id: out.taskId, title: out.title ?? label, applied: !!out.applied } : undefined;
   return { id, label, state: "done", ...(task ? { task } : {}) };
 }
@@ -146,7 +149,16 @@ header { display: flex; align-items: center; gap: 2px; min-height: 46px; padding
 .wide .msg { width: auto; max-width: 75%; }
 .msg { max-width: 85%; padding: 8px 12px; border-radius: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .user { align-self: flex-end; background: var(--cw-accent); color: var(--cw-on-accent); }
-.assistant { align-self: flex-start; background: var(--cw-soft); }
+.assistant { align-self: flex-start; background: var(--cw-soft); white-space: normal; }
+.assistant > :first-child { margin-top: 0; }
+.assistant > :last-child { margin-bottom: 0; }
+.assistant p, .assistant ul, .assistant ol, .assistant pre { margin: 0 0 8px; }
+.assistant h4 { margin: 10px 0 4px; font-size: 14px; font-weight: 650; }
+.assistant ul, .assistant ol { padding-left: 20px; }
+.assistant li + li { margin-top: 3px; }
+.assistant code { padding: 1px 4px; font: 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--cw-bg); border: 1px solid var(--cw-line); border-radius: 4px; }
+.assistant pre { padding: 8px 10px; overflow-x: auto; font: 12.5px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--cw-bg); border: 1px solid var(--cw-line); border-radius: 8px; white-space: pre; }
+.assistant a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .sources { margin-top: 5px; font-size: 12px; color: var(--cw-muted); }
 .tools { display: grid; gap: 6px; margin-top: 6px; white-space: normal; }
 .tool { font-size: 12px; color: var(--cw-muted); }
@@ -551,7 +563,11 @@ class ChatView implements ChatHandle {
   private bubble(line: Line) {
     const el = document.createElement("div");
     el.className = `msg ${line.role}`;
-    if (line.text) el.textContent = line.text;
+    // An answer is Markdown, shown formatted (markdown.ts builds it without innerHTML); a person's message is plain text.
+    if (line.text) {
+      if (line.role === "assistant") el.appendChild(renderMarkdown(document, line.text));
+      else el.textContent = line.text;
+    }
     // Still thinking, unless the answer so far is a tool that has finished (a step limit can end a turn there).
     else if (!line.tools?.some((u) => u.state !== "running"))
       el.innerHTML = '<span class="dots" aria-label="Thinking"><i></i><i></i><i></i></span>';
@@ -579,7 +595,9 @@ class ChatView implements ChatHandle {
         ? `Looking up ${use.label}…`
         : use.state === "done"
           ? `✓ ${use.label}`
-          : `✕ ${use.label}: ${use.error ?? "failed"}`;
+          : use.state === "declined"
+            ? `· ${use.label}: ${use.error}`
+            : `✕ ${use.label}: ${use.error ?? "failed"}`;
     return el;
   }
 

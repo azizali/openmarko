@@ -4,7 +4,17 @@
 // "bring your own key" when the key is the Organization's own.
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { convertToModelMessages, stepCountIs, streamText, type StepResult, type ToolSet, type UIMessage } from "ai";
-import { AppError, billingOf, forbidden, newId, notFound, type AppContext, type Caller, type ToolPage } from "@app/kernel";
+import {
+  AppError,
+  authOrganization,
+  billingOf,
+  forbidden,
+  newId,
+  notFound,
+  type AppContext,
+  type Caller,
+  type ToolPage,
+} from "@app/kernel";
 import { LLM_COST_PER_1K_TOKENS_MICROS } from "@app/integrations";
 import { allows } from "@app/shared";
 import { conversations, messages } from "./schema";
@@ -129,18 +139,42 @@ export type Turn = {
   page?: ToolPage | null;
 };
 
+/** The Organization's name, for the member's chat. */
+async function organizationName(ctx: AppContext, orgId: string): Promise<string> {
+  const [org] = await ctx.db.select({ name: authOrganization.name }).from(authOrganization).where(eq(authOrganization.id, orgId));
+  return org?.name ?? "this organization";
+}
+
 /** Model calls one turn may make: tool calls and their answers. Past it the turn ends with what it has. */
 export const TOOL_STEPS = 5;
 
-/** What the model is told when it has tools: changes are proposals, and it must say whether one was applied. */
-function withTools(system: string | undefined, page: ToolPage | null): string {
-  const lines = [
-    system?.trim() || "You are a helpful assistant.",
-    "You can use tools to look up this organization's data and to propose changes. Prefer a tool over guessing about the organization.",
-    "A tool that proposes a change returns whether it was applied. If not, it waits for a member to apply it: say so, and never say a change was made when it wasn't.",
-  ];
-  if (page)
-    lines.push(`The member is on the page ${page.path}${Object.keys(page.params).length ? ` (${JSON.stringify(page.params)})` : ""}.`);
+/**
+ * What the model is told in a member's chat (ADR 0036): the widget's own instructions, then what this app does for
+ * them, from the enabled modules' briefs, then how to use its tools and where the member is. Never the app's name:
+ * a Partner may whitelabel it. A visitor's chat on a website gets only the widget's instructions.
+ */
+export function memberSystem(
+  base: string | undefined,
+  m: { organization: string; briefs: string[]; hasTools: boolean; page: ToolPage | null },
+): string {
+  const lines = [base?.trim() || "You are a helpful assistant."];
+  lines.push(
+    [
+      `You are the assistant inside the app the member is using, for the organization "${m.organization}".`,
+      ...(m.briefs.length ? ["What the app does:", ...m.briefs] : []),
+      "When the member asks about something this app does, answer from it: use a tool when one reaches it, and otherwise say which page of the app shows it. Never send them to another product or tool for something this app does.",
+    ].join("\n\n"),
+  );
+  if (m.hasTools)
+    lines.push(
+      "You can use tools to look up this organization's data and to propose changes. Prefer a tool over guessing about the organization.",
+      "A tool that proposes a change returns whether it was applied. If not, it waits for a member to apply it: say so, and never say a change was made when it wasn't.",
+    );
+  if (m.page)
+    lines.push(
+      `The member is on the page ${m.page.path}${Object.keys(m.page.params).length ? ` (${JSON.stringify(m.page.params)})` : ""}.`,
+    );
+  lines.push("Write in Markdown: short paragraphs, lists for several items, bold for what matters most.");
   return lines.join("\n\n");
 }
 
@@ -196,6 +230,14 @@ export async function runTurn(ctx: AppContext, t: Turn): Promise<Response> {
   const byok = chosen.keyOrganizationId === orgId;
   const tools = t.caller ? toolsFor(ctx, t.caller, { conversationId, page: t.page ?? null, signal }) : {};
   const hasTools = Object.keys(tools).length > 0;
+  const system = t.caller
+    ? memberSystem(turn.system, {
+        organization: await organizationName(ctx, t.caller.orgId),
+        briefs: (ctx.catalog?.briefs ?? []).map((b) => b.text),
+        hasTools,
+        page: t.page ?? null,
+      })
+    : turn.system;
 
   const history = await ctx.db
     .select()
@@ -218,7 +260,7 @@ export async function runTurn(ctx: AppContext, t: Turn): Promise<Response> {
 
     result = streamText({
       model: chosen.model,
-      system: hasTools ? withTools(turn.system, t.page ?? null) : turn.system,
+      system,
       messages: await convertToModelMessages(ui),
       ...(hasTools ? { tools, stopWhen: stepCountIs(TOOL_STEPS) } : {}),
       temperature: chosen.settings.temperature,

@@ -62,6 +62,8 @@ export const automationModule = defineModule({
   id: "automation",
   apiGroup: { name: "Automation", description: "Activity, runs, schedules and tasks (apply, undo, dismiss)." },
   dependsOn: ["organizations", "settings"],
+  assistantBrief:
+    "Automation (in the sidebar) lists Tasks: changes proposed by the app, its suggestions or this chat, applied with one click and undone with another. Autopilot applies the kinds an organization allows on its own. Its other tabs are Schedules, Runs (each job that ran, with its cost) and Activity (who changed what).",
   events: [{ id: "task.applied", label: "A task's change was applied" }],
   settings: [
     { id: "autopilot", label: "Per action, what the assistant may do on its own", schema: autopilotSchema, scopes: ["organization"] },
