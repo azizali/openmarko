@@ -77,7 +77,7 @@ export const nav: NavItem[] = [
           ["/seo/keywords", "Google search", Search],
           ["/seo/ai", "AI answers", Sparkles],
           ["/seo/competitors", "Competitors", UsersRound],
-          ["/seo/settings", "Settings", Settings],
+          ["/seo/settings", "SEO settings", Settings],
         ] as const
       ).map(([to, label, icon]): NavItem => ({
         to,
