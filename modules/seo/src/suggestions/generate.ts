@@ -8,6 +8,7 @@
 //   question     Google's "People also ask" for your keywords                                  → track_question
 //   post         you haven't posted on the profile in a month (profile linked)                 → post
 //   site         the latest site audit's errors and warnings, one per kind of issue            → site_fix
+//   link         pages about a key page's keywords that don't link to it                     → add_link
 // When the Organization's Autopilot is On for a suggestion's action, it's applied straight away, unless it's done by
 // hand (a listing, a site fix): marking those done would claim work nobody did.
 //
@@ -36,6 +37,8 @@ import { auditIssues, auditPages, competitorOverrides, places, profileSearchTerm
 import { fixFor } from "../audit/fixes";
 import { issueOf, issues, sortFindings, type IssueCode } from "../audit/issues";
 import { fixFactsFor, latestAudits } from "../audit/results";
+import { pathOf } from "../key-pages/logic";
+import { expireAdded, keyPageFacts, linkFingerprint } from "../key-pages/service";
 import { kindInfo, payloadSchemas, type Helps, type Payload, type SuggestionKind } from "./kinds";
 import { applySuggestion } from "./service";
 
@@ -384,6 +387,44 @@ async function siteRule(ctx: AppContext, c: Context): Promise<Draft<"site_fix">[
   return drafts;
 }
 
+/**
+ * Links worth adding, from the latest crawl: one suggestion per key page, naming up to three pages about its keywords
+ * that don't link to it, and the words to link with. While it's open it takes the latest pages; once the crawl finds
+ * the links (or the page stops being a key page, or its keywords change) it expires.
+ */
+async function linkRule(ctx: AppContext, l: LocationRow): Promise<Draft<"add_link">[]> {
+  const facts = await keyPageFacts(ctx.db, l);
+  if (!facts) return [];
+  const when = facts.audit.checkedAt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const drafts = facts.keyPages.flatMap((k): Draft<"add_link">[] => {
+    if (!k.url || !k.keyword || !k.from.length) return [];
+    const n = k.from.length;
+    const payload = { keyword: k.keyword, monthlySearches: k.monthlySearches, to: k.url, from: k.from };
+    return [
+      {
+        kind: "add_link",
+        title: `Link to ${k.path} from ${n} ${n === 1 ? "page" : "pages"} about "${k.keyword}"`,
+        why: `${k.path} is a key page, and pages about "${k.keyword}" don't link to it. Links whose words name the keyword tell Google which page to show for it, and pass on some of the linking page's weight.`,
+        evidence: [
+          `${k.path} is a key page for "${k.keyword}", with ${k.linksIn} ${k.linksIn === 1 ? "page" : "pages"} of ${facts.audit.domain} linking to it.`,
+          ...(k.monthlySearches ? [`About ${fmt(k.monthlySearches)} searches a month.`] : []),
+          `Found in the crawl of ${facts.audit.domain} on ${when}: ${list(k.from.map((f) => pathOf(f.url)))} ${n === 1 ? "doesn't" : "don't"} link there.`,
+        ],
+        payload,
+        fingerprint: linkFingerprint({ path: k.path, keyword: k.keyword }),
+        score: 45 + Math.min(15, Math.round((k.monthlySearches ?? 0) / 200)),
+        checkId: facts.audit.checkId,
+      },
+    ];
+  });
+  await expireAdded(
+    ctx.db,
+    l.id,
+    drafts.map((d) => d.fingerprint),
+  );
+  return drafts;
+}
+
 /** Open site fixes for issues the latest audit no longer found: fixed, so they leave the plan. */
 async function expireFixed(ctx: AppContext, locationId: string): Promise<void> {
   const [now] = await latestAudits(ctx.db, locationId, 1);
@@ -422,8 +463,14 @@ export async function generateSuggestions(
     ...(await questionRule(ctx, c)),
     ...(await postRule(ctx, c)),
     ...(await siteRule(ctx, c)),
+    ...(await linkRule(ctx, c.l)),
   ];
   await expireFixed(ctx, locationId);
+  return store(ctx, orgId, locationId, drafts);
+}
+
+/** Stores new suggestions, refreshes ones still open, and applies the new ones Autopilot is On for. Returns how many were added. */
+async function store(ctx: AppContext, orgId: string, locationId: string, drafts: Draft[]): Promise<number> {
   let added = 0;
   for (const d of drafts) {
     const payload = payloadSchemas[d.kind].parse(d.payload) as Record<string, unknown>;
@@ -448,8 +495,8 @@ export async function generateSuggestions(
       .onConflictDoNothing()
       .returning({ id: suggestions.id });
     if (!row) {
-      // Still found: an open site fix takes the latest counts, pages and fix.
-      if (d.kind === "site_fix")
+      // Still found: an open site fix takes the latest counts, pages and fix; a link to add, the latest pages.
+      if (d.kind === "site_fix" || d.kind === "add_link")
         await ctx.db
           .update(suggestions)
           .set({ title: d.title, evidence: d.evidence, payload, score: d.score, checkId: d.checkId ?? null })
@@ -461,4 +508,10 @@ export async function generateSuggestions(
       await applySuggestion(ctx, { organizationId: orgId, userId: null, actorType: "assistant" }, row.id).catch(() => undefined);
   }
   return added;
+}
+
+/** Refreshes the links to add after the key pages change, without the other rules (some of which ask the providers). */
+export async function refreshLinksToAdd(ctx: AppContext, orgId: string, locationId: string): Promise<number> {
+  const l = await getLocation(ctx, orgId, locationId);
+  return store(ctx, orgId, locationId, await linkRule(ctx, l));
 }

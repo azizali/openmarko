@@ -37,6 +37,7 @@ The first ones (from 0002) were written on 2026-10-31 to record decisions alread
 | [0035](0035-keep-provider-responses-as-files.md) | Keep providers' untrimmed responses as files | Accepted |
 | [0036](0036-modules-offer-tools-to-the-assistant.md) | Modules offer tools to the assistant; changes it makes are Tasks | Proposed |
 | [0037](0037-rankings-and-actions.md) | SEO is Rankings and Actions; the site audit is a check whose fixes are suggestions | Accepted |
+| [0038](0038-key-pages-from-the-audit-crawl.md) | Key pages, chosen by a member, get the links to add; both come from the site audit's crawl | Accepted |
 
 ## Template
 

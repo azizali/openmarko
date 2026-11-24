@@ -1,6 +1,6 @@
 // Actions: the suggestions every Improve tool writes, as cards to act on. The Action plan (/seo/plan) lists them all
 // with filters; the overview shows the first few. Each card says what to do, why, which checks it should move and
-// where it came from, and is applied with its button right on the card. One done by hand (a listing, a site fix) is
+// where it came from, and is applied with its button right on the card. One done by hand (a listing, a site fix, links) is
 // marked done instead. An applied one stays in place saying so, with Undo, and is listed under Done from the next visit.
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router";
@@ -23,6 +23,7 @@ export const sourceNames: Record<Source, string> = {
   profile: "Google profile",
   tracking: "Tracking",
   listings: "Listings",
+  key_pages: "Key pages",
 };
 
 /** What each kind of action is called, its button, and what it says once done. */
@@ -61,6 +62,12 @@ const kinds: Record<string, { label: string; action: string; done: string; needs
     label: "Fix your website",
     action: "Mark as done",
     done: "Marked as done. The next site audit checks it.",
+    needs: "track",
+  },
+  add_link: {
+    label: "Add links on your website",
+    action: "Mark as done",
+    done: "Marked as done. The next site audit finds the links.",
     needs: "track",
   },
 };
@@ -182,6 +189,7 @@ function SuggestionCard({
           </ul>
           {s.kind === "profile_change" && <BeforeAfter payload={s.payload as ProfileChange} />}
           {s.kind === "site_fix" && <SiteFixSteps fix={s.payload as SiteFix} />}
+          {s.kind === "add_link" && <LinkSteps link={s.payload as LinkToAdd} />}
           {draft !== null && (
             <label className="mt-4 block">
               <span className="text-[12.5px] font-medium">The post (edit it if you like)</span>
@@ -240,7 +248,7 @@ function SuggestionCard({
               aria-expanded={details}
               className="ml-auto inline-flex min-h-9 items-center gap-1 text-[13px] text-muted hover:text-fg"
             >
-              {details ? "Hide details" : s.kind === "site_fix" ? "How to fix it" : "Details"}
+              {details ? "Hide details" : s.kind === "site_fix" ? "How to fix it" : s.kind === "add_link" ? "How to add them" : "Details"}
               <ChevronRight size={14} aria-hidden className={cn("transition-transform", details && "rotate-90")} />
             </button>
             <Feedback {...fb.props} />
@@ -298,6 +306,46 @@ export function SiteFixSteps({ fix, linkToIssue = true }: { fix: SiteFix; linkTo
           <ChevronRight size={13} aria-hidden />
         </Link>
       )}
+    </div>
+  );
+}
+
+export type LinkToAdd = { keyword: string; to: string; from: { url: string; title: string | null }[] };
+
+const pathOf = (url: string) => {
+  try {
+    return new URL(url).pathname.replace(/\/$/, "") || "/";
+  } catch {
+    return url;
+  }
+};
+const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+
+/** Links to add: the pages to edit (each opens), what to do on each, and the link to paste. */
+export function LinkSteps({ link }: { link: LinkToAdd }) {
+  const to = pathOf(link.to);
+  return (
+    <div className="mt-4 border-t border-line pt-3">
+      <p className="text-[12.5px] font-medium">How to add them</p>
+      <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-[13.5px] text-muted">
+        <li>
+          On each page below, find words about “{link.keyword}” and make them a link to {to}.
+        </li>
+        <li>If none fit, add a sentence that names it, and link that. Keep the words natural, not the exact keyword every time.</li>
+        <li>Mark this done. The next site audit finds the links and checks them off.</li>
+      </ol>
+      <p className="mt-3 text-[12.5px] text-muted">Pages to link from</p>
+      <ul className="mt-1 space-y-1 text-[13.5px]">
+        {link.from.map((f) => (
+          <li key={f.url} className="flex min-w-0 items-baseline gap-2">
+            <a href={f.url} target="_blank" rel="noreferrer" className="truncate underline-offset-2 hover:underline">
+              {pathOf(f.url)}
+            </a>
+            {f.title && <span className="truncate text-[12.5px] text-muted">{f.title}</span>}
+          </li>
+        ))}
+      </ul>
+      <Snippet label="The link, as HTML" text={`<a href="${escapeHtml(to)}">${escapeHtml(link.keyword)}</a>`} />
     </div>
   );
 }

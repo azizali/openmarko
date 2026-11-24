@@ -4,7 +4,7 @@
 import { z } from "zod";
 import type { SeoAction } from "../access";
 
-export const suggestionKinds = ["track_keyword", "track_question", "profile_change", "post", "listing", "site_fix"] as const;
+export const suggestionKinds = ["track_keyword", "track_question", "profile_change", "post", "listing", "site_fix", "add_link"] as const;
 export type SuggestionKind = (typeof suggestionKinds)[number];
 
 /** The check a suggestion should move. */
@@ -12,7 +12,7 @@ export type Helps = "maps" | "keywords" | "ai";
 const helps = z.enum(["maps", "keywords", "ai"]);
 
 /** Where a suggestion comes from, as the Action plan groups them. */
-export type Source = "tracking" | "profile" | "listings" | "audit";
+export type Source = "tracking" | "profile" | "listings" | "audit" | "key_pages";
 
 export const payloadSchemas = {
   track_keyword: z.object({ term: z.string().min(2), monthlySearches: z.number().nullable() }),
@@ -32,6 +32,13 @@ export const payloadSchemas = {
     helps: z.array(helps).min(1),
     steps: z.array(z.string()).min(1),
     snippet: z.object({ label: z.string(), text: z.string() }).nullable(),
+  }),
+  // Links to a key page from pages about its keywords (key-pages/logic.ts). `keyword` is the words to link with.
+  add_link: z.object({
+    keyword: z.string(),
+    monthlySearches: z.number().nullable(),
+    to: z.string(),
+    from: z.array(z.object({ url: z.string(), title: z.string().nullable() })).min(1),
   }),
 } satisfies Record<SuggestionKind, z.ZodType>;
 
@@ -54,4 +61,6 @@ export const kindInfo: Record<
   listing: { helps: "ai", source: "listings", action: "track", task: "seo.listing", needsProfile: false, byHand: true },
   // The site is the customer's own: the fix is made there, marked done here, and checked by the next audit.
   site_fix: { helps: "keywords", source: "audit", action: "track", task: "seo.site_fix", needsProfile: false, byHand: true },
+  // A link to a key page is added on the customer's site, by hand like a fix; the next crawl finds it and it expires.
+  add_link: { helps: "keywords", source: "key_pages", action: "track", task: "seo.add_link", needsProfile: false, byHand: true },
 };

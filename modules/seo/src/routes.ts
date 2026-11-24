@@ -22,6 +22,8 @@ import { mapsKeyword, mapsSummary } from "./results/maps";
 import { overview } from "./results/overview";
 import { placeInsight } from "./results/place";
 import { auditIssue, auditPage } from "./audit/results";
+import { declineKeyPage, keyPagesView, removeKeyPage, setKeyPage } from "./key-pages/service";
+import { refreshLinksToAdd } from "./suggestions/generate";
 import { actionFor, applySuggestion, dismissSuggestion, listSuggestions, undoSuggestion } from "./suggestions/service";
 import {
   addKeywords,
@@ -471,6 +473,61 @@ export function seoRoutes(ctx: AppContext) {
         {
           params: t.Object({ ...loc.properties, code: t.String({ pattern: "^[a-z_]{2,40}$" }) }),
           detail: { summary: "One kind of site issue: how to fix it, since when, and every page it's on" },
+        },
+      )
+      // ---------- Key pages ----------
+      .get(
+        "/locations/:locationId/results/key-pages",
+        async ({ caller, params }) => {
+          await gate(caller, "view");
+          return keyPagesView(ctx, caller.orgId, params.locationId);
+        },
+        {
+          params: loc,
+          detail: { summary: "Key pages: each with its keywords, links in and links to add, and the pages worth making key pages" },
+        },
+      )
+      .put(
+        "/locations/:locationId/key-pages",
+        async ({ caller, params, body }) => {
+          await gate(caller, "track");
+          const r = await setKeyPage(ctx, caller.orgId, caller.userId, params.locationId, body);
+          await refreshLinksToAdd(ctx, caller.orgId, params.locationId);
+          return r;
+        },
+        {
+          params: loc,
+          body: t.Object({
+            path: t.String({ minLength: 1, maxLength: 2000 }),
+            keywordIds: t.Array(t.String({ format: "uuid" }), { maxItems: 100 }),
+          }),
+          detail: { summary: "Make a page a key page for some tracked keywords, or change its keywords" },
+        },
+      )
+      .post(
+        "/locations/:locationId/key-pages/decline",
+        async ({ caller, params, body }) => {
+          await gate(caller, "track");
+          await declineKeyPage(ctx, caller.orgId, caller.userId, params.locationId, body.path);
+          return { ok: true };
+        },
+        {
+          params: loc,
+          body: t.Object({ path: t.String({ minLength: 1, maxLength: 2000 }) }),
+          detail: { summary: "Turn down a page suggested as a key page" },
+        },
+      )
+      .delete(
+        "/locations/:locationId/key-pages/:keyPageId",
+        async ({ caller, params }) => {
+          await gate(caller, "track");
+          await removeKeyPage(ctx, caller.orgId, params.locationId, params.keyPageId);
+          await refreshLinksToAdd(ctx, caller.orgId, params.locationId);
+          return { ok: true };
+        },
+        {
+          params: ids("locationId", "keyPageId"),
+          detail: { summary: "Stop a page being a key page" },
         },
       )
       // ---------- Suggestions ----------

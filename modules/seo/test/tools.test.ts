@@ -130,9 +130,14 @@ describe("SEO tools in a member's chat", () => {
     expect(schema).toMatchObject({ severity: "error", inActionPlan: "open" });
     const issue = await run("seo.site_audit_issue", { code: "no_local_schema" });
     expect(issue.paste.text).toContain("Maple & Main Dental");
+    const links = await run("seo.key_pages");
+    expect(links).toMatchObject({ linksRead: true, keyPages: [] });
+    expect(links.suggestedKeyPages).toContainEqual(
+      expect.objectContaining({ page: "/services/whitening", forKeywords: ["teeth whitening austin"] }),
+    );
 
     // Summaries, not pages: each answer stays small enough to send to a model many times a turn.
-    for (const [name, out] of Object.entries({ o, maps, detail, search, ai, plan, audit, issue })) {
+    for (const [name, out] of Object.entries({ o, maps, detail, search, ai, plan, audit, issue, links })) {
       const size = JSON.stringify(out).length;
       if (process.env.SHOW_SIZES) console.log(name, size);
       expect(size).toBeLessThan(8000);

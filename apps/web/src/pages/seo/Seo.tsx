@@ -1,5 +1,5 @@
 // Search (/seo, the SEO module): the overview, then Rankings (one page per check, and competitors) and Actions (the
-// Action plan, and the Site audit that feeds it), for one Location at a time. Rankings and Actions are one sidebar entry
+// Action plan, and the Site audit with its Key pages that feed it), for one Location at a time. Rankings and Actions are one sidebar entry
 // each; their pages are tabs across the top of each other (SectionTabs), and a deep page has breadcrumbs instead. A page may have deeper pages under it
 // (/seo/maps/<keyword>, /seo/site-audit/<issue>), read from the rest of the path by the page itself. The Location comes from `?location=`,
 // else the one last opened in this Organization, else the first; a switcher shows only when there's more than one.

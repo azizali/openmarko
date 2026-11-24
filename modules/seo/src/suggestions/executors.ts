@@ -110,9 +110,9 @@ export function registerExecutors(): void {
     },
   });
 
-  // Getting listed on a directory, and fixing the website, are done by hand: applying marks it done, Undo marks it
-  // not done. The next audit says whether a site fix took.
-  for (const kind of ["seo.listing", "seo.site_fix"])
+  // Getting listed on a directory, fixing the website and adding links to it are done by hand: applying marks it
+  // done, Undo marks it not done. The next audit says whether a site fix or a link took.
+  for (const kind of ["seo.listing", "seo.site_fix", "seo.add_link"])
     registerExecutor(kind, {
       apply: async () => ({}),
       revert: async () => undefined,

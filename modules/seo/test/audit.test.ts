@@ -60,7 +60,7 @@ describe("robots.txt", () => {
 describe("finding issues", () => {
   test("a clean site has none and full health", () => {
     const found = findIssues(
-      { pagesCrawled: 2, site: site(), pages: [page(""), page("services/teeth-whitening")] },
+      { pagesCrawled: 2, site: site(), pages: [page(""), page("services/teeth-whitening")], links: [] },
       {
         phone: "+1 512-555-0142",
         services: ["Teeth whitening"],
@@ -83,6 +83,7 @@ describe("finding issues", () => {
         pagesCrawled: 5,
         site: site({ schemaTypes: ["WebSite"], phones: ["512 555 0199"], robotsTxt: "User-agent: GPTBot\nDisallow: /", llmsTxt: false }),
         pages,
+        links: [],
       },
       { phone: "(512) 555-0142", services: ["Teeth whitening", "Emergency visits"] },
     );
@@ -107,14 +108,19 @@ describe("finding issues", () => {
 
   test("a service is covered by a page with its main word", () => {
     const found = findIssues(
-      { pagesCrawled: 2, site: site(), pages: [page(""), page("services/whitening", { title: "Whitening in Austin", h1: "Whitening" })] },
+      {
+        pagesCrawled: 2,
+        site: site(),
+        pages: [page(""), page("services/whitening", { title: "Whitening in Austin", h1: "Whitening" })],
+        links: [],
+      },
       { phone: null, services: ["Teeth whitening", "Emergency visits"] },
     );
     expect(found.findings.find((f) => f.code === "service_without_page")?.items).toEqual(["Emergency visits"]);
   });
 
   test("with no phone on the profile, the site's phone isn't judged", () => {
-    const found = findIssues({ pagesCrawled: 1, site: site({ phones: [] }), pages: [page("")] }, { phone: null, services: [] });
+    const found = findIssues({ pagesCrawled: 1, site: site({ phones: [] }), pages: [page("")], links: [] }, { phone: null, services: [] });
     expect(found.findings).toEqual([]);
   });
 

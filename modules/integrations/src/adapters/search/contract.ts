@@ -119,7 +119,13 @@ export type AuditSite = {
   llmsTxt: boolean;
 };
 
-export type AuditResult = { pagesCrawled: number; site: AuditSite; pages: AuditPage[] };
+/** A link from one of the site's pages to another of its own, with the words it's on (null: an image, or none). */
+export type AuditLink = { from: string; to: string; anchor: string | null };
+
+/** At most this many internal links are read from a crawl. */
+export const AUDIT_LINKS = 5000;
+
+export type AuditResult = { pagesCrawled: number; site: AuditSite; pages: AuditPage[]; links: AuditLink[] };
 
 // ---------- The two-step protocol ----------
 

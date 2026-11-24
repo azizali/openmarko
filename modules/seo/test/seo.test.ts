@@ -2,14 +2,14 @@
 // Location, launching it, the worker collecting and filing results, every page's numbers, suggestions with Apply and
 // Undo through automation Tasks, and who may do what.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { assignPlanManually, upsertPlan } from "@app/billing";
 import { connect } from "@app/integrations";
 import { addMember } from "@app/organizations";
 import { adminSession, composedApp, createTestDb, ownerSession, requester, userSession, type Session, type TestDb } from "@app/testkit";
 import { collectCheck, COLLECT_JOB, CHECK_JOB, dueChecks, startCycle, generateSuggestions } from "../src";
 import { writeSetting } from "@app/settings";
-import { auditIssues, checks, keywords, mapPoints, mapScans, places, siteAudits, suggestions } from "../src/schema";
+import { auditIssues, auditLinks, checks, keywords, mapPoints, mapScans, places, siteAudits, suggestions } from "../src/schema";
 
 let t: TestDb;
 let call: ReturnType<typeof requester>;
@@ -593,6 +593,109 @@ describe("the site audit", () => {
     await drain();
     await writeSetting(t.ctx, "organization", owner.orgId, "autopilot", {});
     expect((await siteFixes("broken_page")).map((s) => s.status).sort()).toEqual(["expired", "open"]);
+  });
+});
+
+describe("key pages", () => {
+  const url = () => `${base(owner)}/locations/${locationId}`;
+  const view = async () => (await call("GET", `${url()}/results/key-pages`, { headers: owner.headers })).body;
+  const termId = async (term: string) => (await view()).keywords.find((k: { term: string }) => k.term === term).id as string;
+
+  test("before any key page: the crawl's links are read, and pages are suggested from the keywords, never the home page", async () => {
+    const res = await call("GET", `${url()}/results/key-pages`, { headers: owner.headers });
+    expect(res.status).toBe(200);
+    if (process.env.SHOW_KEY_PAGES) console.log(JSON.stringify({ ...res.body, pages: res.body.pages.length }, null, 1));
+    expect(res.body.audit.links).toBeGreaterThan(10);
+    expect(res.body.keyPages).toEqual([]);
+    expect(res.body.ideas.length).toBeGreaterThan(0);
+    expect(res.body.ideas.map((i: { path: string }) => i.path)).not.toContain("/");
+    // "dentist austin" is the home page's to rank for: no page is suggested for it.
+    const terms = res.body.ideas.flatMap((i: { keywords: { term: string }[] }) => i.keywords.map((k) => k.term));
+    expect(terms).not.toContain("dentist austin");
+    expect(res.body.pages.length).toBeGreaterThan(5);
+  });
+
+  test("making a page a key page finds the pages about its keywords that don't link to it, as one Action plan item", async () => {
+    const whitening = await termId("teeth whitening austin");
+    const put = await call("PUT", `${url()}/key-pages`, {
+      headers: owner.headers,
+      body: { path: "https://mapleandmaindental.com/services/whitening/", keywordIds: [whitening] },
+    });
+    expect(put.status).toBe(200);
+    const v = await view();
+    expect(v.keyPages).toHaveLength(1);
+    const [k] = v.keyPages;
+    expect(k).toMatchObject({ path: "/services/whitening", keyword: "teeth whitening austin" });
+    expect(k.keywords).toEqual([{ id: whitening, term: "teeth whitening austin" }]);
+    expect(k.linksIn).toBeGreaterThan(0);
+    expect(k.toAdd).toMatchObject({ kind: "add_link", source: "key_pages", byHand: true, helps: "keywords" });
+    expect(k.toAdd.title).toBe('Link to /services/whitening from 1 page about "teeth whitening austin"');
+    expect(k.toAdd.payload.from).toEqual([
+      { url: "https://mapleandmaindental.com/blog/post-2", title: "Teeth Whitening: what to know (2)" },
+    ]);
+    // It's no longer suggested, and neither is its keyword.
+    expect(v.ideas.map((i: { path: string }) => i.path)).not.toContain("/services/whitening");
+    expect(v.keywords.find((kw: { id: string }) => kw.id === whitening).keyPageId).toBe(k.id);
+    const plan = await call("GET", `${url()}/suggestions`, { headers: owner.headers });
+    expect(plan.body.open.map((s: { id: string }) => s.id)).toContain(k.toAdd.id);
+  });
+
+  test("a suggested page turned down isn't suggested again; the home page and others' keywords are refused", async () => {
+    const [idea] = (await view()).ideas;
+    expect(idea).toBeDefined();
+    expect((await call("POST", `${url()}/key-pages/decline`, { headers: owner.headers, body: { path: idea.path } })).status).toBe(200);
+    expect((await view()).ideas.map((i: { path: string }) => i.path)).not.toContain(idea.path);
+    const home = await call("PUT", `${url()}/key-pages`, { headers: owner.headers, body: { path: "/", keywordIds: [] } });
+    expect(home.status).toBe(422);
+    const stranger = await call("PUT", `${url()}/key-pages`, {
+      headers: owner.headers,
+      body: { path: "/about", keywordIds: ["01900000-0000-7000-8000-000000000000"] },
+    });
+    expect(stranger.status).toBe(422);
+  });
+
+  test("a link to add is marked done by hand; the crawl that finds it takes it out of the plan", async () => {
+    const [k] = (await view()).keyPages;
+    const first = k.toAdd;
+    expect((await call("POST", `${base(owner)}/suggestions/${first.id}/apply`, { headers: owner.headers, body: {} })).status).toBe(200);
+    expect((await view()).keyPages[0].done.id).toBe(first.id);
+    expect((await call("POST", `${base(owner)}/suggestions/${first.id}/undo`, { headers: owner.headers })).status).toBe(200);
+
+    // The site adds the links: the next crawl finds them, and the open suggestion leaves the plan.
+    const [audit] = await t.ctx.db
+      .select()
+      .from(siteAudits)
+      .where(eq(siteAudits.locationId, locationId))
+      .orderBy(desc(siteAudits.checkedAt))
+      .limit(1);
+    await t.ctx.db.insert(auditLinks).values(
+      first.payload.from.map((f: { url: string }) => ({
+        checkId: audit!.checkId,
+        fromUrl: f.url,
+        toUrl: first.payload.to,
+        anchor: first.payload.keyword,
+      })),
+    );
+    await generateSuggestions(t.ctx, owner.orgId, locationId);
+    const [row] = await t.ctx.db.select().from(suggestions).where(eq(suggestions.id, first.id));
+    expect(row!.status).toBe("expired");
+  });
+
+  test("a page turned down can still be made a key page; removed, it frees its keywords and its links to add", async () => {
+    const freed = await termId("emergency dentist austin");
+    const { id } = (
+      await call("PUT", `${url()}/key-pages`, { headers: owner.headers, body: { path: "/blog/post-1", keywordIds: [freed] } })
+    ).body;
+    expect((await view()).keyPages.map((k: { path: string }) => k.path)).toContain("/blog/post-1");
+    const open = (await view()).keyPages.find((k: { id: string }) => k.id === id).toAdd;
+    expect((await call("DELETE", `${url()}/key-pages/${id}`, { headers: owner.headers })).status).toBe(200);
+    const v = await view();
+    expect(v.keyPages.map((k: { id: string }) => k.id)).not.toContain(id);
+    expect(v.keywords.find((kw: { id: string }) => kw.id === freed).keyPageId).toBeNull();
+    if (open) {
+      const [row] = await t.ctx.db.select().from(suggestions).where(eq(suggestions.id, open.id));
+      expect(row!.status).toBe("expired");
+    }
   });
 });
 

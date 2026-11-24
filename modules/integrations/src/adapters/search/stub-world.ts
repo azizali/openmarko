@@ -8,6 +8,7 @@
 import type {
   AiQuery,
   AiResult,
+  AuditLink,
   AuditPage,
   AuditQuery,
   AuditResult,
@@ -456,7 +457,7 @@ export function stubAudit(q: AuditQuery, now = Date.now()): AuditResult {
   const weekly = (k: string) => hash(`${k}|${r}|audit|${q.domain}`);
   const home = `https://${q.domain}/`;
 
-  type Draft = { path: string; title: string; words: number; depth: number };
+  type Draft = { path: string; title: string; words: number; depth: number; heading?: string };
   const drafts: Draft[] = [
     { path: "", title: `${name} | Dentist in ${CITY.name}`, words: 640, depth: 0 },
     { path: "about", title: `About ${name}`, words: 420, depth: 1 },
@@ -475,7 +476,8 @@ export function stubAudit(q: AuditQuery, now = Date.now()): AuditResult {
       })),
     ...Array.from({ length: 6 + Math.floor(roll("blog") * 14) }, (_, i) => ({
       path: `blog/post-${i + 1}`,
-      // Some posts kept the template's title: duplicates.
+      // Some posts kept the template's title (duplicates), though their heading still names the topic.
+      heading: `${titleCase(ideaTopics[i % ideaTopics.length]!)}: what to know (${i + 1})`,
       title: roll(`dup|${i}`) < 0.3 ? `Blog | ${name}` : `${titleCase(ideaTopics[i % ideaTopics.length]!)}: what to know (${i + 1})`,
       words: 150 + Math.floor(roll(`bw|${i}`) * 1300),
       depth: 3 + (i > 8 ? 1 : 0),
@@ -489,15 +491,38 @@ export function stubAudit(q: AuditQuery, now = Date.now()): AuditResult {
       depth: d.depth,
       title: i > 0 && roll(`notitle|${k}`) < 0.03 ? null : d.title,
       description: i > 0 && weekly(`desc|${k}`) < 0.3 ? null : `${d.title}. Book online or call us.`,
-      h1: roll(`h1|${k}`) < 0.1 ? null : d.title.split(" | ")[0]!,
+      h1: roll(`h1|${k}`) < 0.1 ? null : (d.heading ?? d.title.split(" | ")[0]!),
       wordCount: d.words,
       imagesMissingAlt: roll(`alt|${k}`) < 0.35,
       loadMs: Math.round(800 + weekly(`speed|${k}`) * (i === 0 ? 3600 : 2600)),
       linksIn: i === 0 ? null : roll(`orphan|${k}`) < 0.08 ? 0 : 1 + Math.floor(roll(`in|${k}`) * 12),
     };
   });
+  // How the pages link to each other: the home page to the top pages, Services to each service, each post home and on
+  // to the next. Some posts link to the service they're about; the rest are the links worth adding. A page drawn as an
+  // orphan gets no links in.
+  const links: AuditLink[] = [];
+  const at = (path: string) => `${home}${path}`;
+  const link = (from: string, to: string, anchor: string | null) => {
+    if (pages.some((p) => p.url === at(to) && p.linksIn === 0)) return;
+    links.push({ from: at(from), to: at(to), anchor });
+  };
+  for (const d of drafts) if (d.depth === 1) link("", d.path, d.title.split(" | ")[0]!);
+  link("new-patients", "insurance", "insurance we accept");
+  const servicePages = drafts.filter((d) => d.path.startsWith("services/"));
+  for (const d of servicePages) link("services", d.path, d.title.split(" in ")[0]!);
+  const posts = drafts.filter((d) => d.path.startsWith("blog/"));
+  posts.forEach((d, i) => {
+    link(d.path, "", "Book an appointment");
+    if (posts[i + 1]) link(d.path, posts[i + 1]!.path, "Next post");
+    const topic = ideaTopics[i % ideaTopics.length]!;
+    const service = servicePages.find((x) => topic.includes(x.path.slice("services/".length).replace(/-/g, " ")));
+    if (service && roll(`link|${d.path}`) < 0.35) link(d.path, service.path, topic);
+  });
   // A page the site still links to but that's gone.
-  if (roll("broken") < 0.7)
+  if (roll("broken") < 0.7) {
+    for (const from of ["", "services", posts[0]?.path ?? "about"])
+      links.push({ from: at(from), to: at("summer-offer"), anchor: "Summer offer" });
     pages.push({
       url: `${home}summer-offer`,
       statusCode: 404,
@@ -510,6 +535,8 @@ export function stubAudit(q: AuditQuery, now = Date.now()): AuditResult {
       loadMs: 240,
       linksIn: 3,
     });
+  }
+  for (const p of pages) if (p.url !== home) p.linksIn = links.filter((x) => x.to === p.url).length;
   const phone = biz?.phone ?? "(512) 555-0100";
   const blocksAi = roll("robots") < 0.6;
   return {
@@ -525,6 +552,7 @@ export function stubAudit(q: AuditQuery, now = Date.now()): AuditResult {
       llmsTxt: roll("llms") > 0.85,
     },
     pages: pages.slice(0, q.maxPages),
+    links,
   };
 }
 

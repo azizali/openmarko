@@ -143,6 +143,9 @@ erDiagram
     locations ||--o{ keywords : ""
     locations ||--o{ questions : ""
     locations ||--o{ competitor_overrides : ""
+    locations ||--o{ key_pages : ""
+    key_pages ||--o{ key_page_keywords : ""
+    keywords ||--o| key_page_keywords : "for one key page at most"
 
     websites {
         uuid id PK
@@ -208,6 +211,19 @@ erDiagram
         text created_by
         timestamptz created_at
     }
+    key_pages {
+        uuid id PK
+        text organization_id FK
+        uuid location_id FK
+        text path "unique per Location: /services/whitening"
+        text status "key | declined"
+        text created_by
+        timestamptz created_at
+    }
+    key_page_keywords {
+        uuid keyword_id PK "FK keywords"
+        uuid key_page_id FK
+    }
 ```
 
 - A Location is the business being tracked (Q1: several per Organization). Its status is `draft` through
@@ -215,6 +231,9 @@ erDiagram
 - A Website can serve several Locations (Q2). Google search positions are read for the Website's domain.
 - Competitors found in results are never stored as tracked rows. `competitor_overrides` holds only the exceptions:
   added by hand (shown as **Added by you** until the next check) or hidden.
+- `key_pages` are the pages a Member chose as the Website's key pages, by path so a crawl over http or www still finds
+  them, and `key_page_keywords` the tracked keywords each is for (ADR 0038). A page suggested and turned down is kept
+  as `declined`, so it isn't suggested again.
 - Plan limits count rows here: `limit.seo_locations`, `limit.seo_keywords` (active keywords per Location),
   `limit.seo_questions`.
 
@@ -385,6 +404,7 @@ erDiagram
     checks ||--o| site_audits : "an audit check is the audit"
     site_audits ||--o{ audit_pages : "crawled"
     site_audits ||--o{ audit_issues : "found"
+    site_audits ||--o{ audit_links : "links between pages"
 
     site_audits {
         uuid check_id PK,FK
@@ -406,6 +426,7 @@ erDiagram
         smallint status_code
         smallint depth "clicks from home"
         text title
+        text h1 "main heading"
         int word_count
         int load_ms
         text_array issues "codes, audit/issues.ts"
@@ -416,11 +437,20 @@ erDiagram
         int count "pages, or items for a site-wide issue"
         text_array items "the services, crawlers or phones it's about"
     }
+    audit_links {
+        uuid check_id PK,FK
+        text from_url PK
+        text to_url PK
+        text anchor "the link's words, first found"
+    }
 ```
 
 - The crawl's facts are kept per page; what counts as an issue is decided when it's filed (`audit/issues.ts`), so the
   rules can change without a new crawl. A site-wide issue is listed on the home page's row.
 - `audit_issues` is the summary the Site audit page reads, and what the `site` suggestion rule compares between audits.
+- `audit_links` holds the links between the site's own pages (5,000 at most per crawl): how many pages link to each
+  key page, and what the `link` rule checks before suggesting a link that's already there. A page's `title`, `h1` and
+  address say what it's about (`key-pages/logic.ts`).
 
 ### Competitors check
 
@@ -439,7 +469,7 @@ erDiagram
         uuid id PK
         text organization_id FK
         uuid location_id FK
-        text kind "track_keyword | track_question | profile_change | post | listing | site_fix"
+        text kind "track_keyword | track_question | profile_change | post | listing | site_fix | add_link"
         text helps "maps | keywords | ai: the check it moves most"
         text title
         text why
@@ -458,10 +488,11 @@ erDiagram
 
 - `payload` is a union checked by a zod schema per `kind`: a term to track; a profile field before and after; a
   post's text; a directory to get listed on; a site audit issue with its count, sample pages, every check it holds
-  back (`helps`), the steps and what to paste.
+  back (`helps`), the steps and what to paste; links to add: a key page's URL, the words to link with and the pages to link from.
 - `fingerprint` (kind plus its subject, such as `track_keyword:emergency dentist austin`) stops a dismissed or
   applied suggestion coming back each week. A site fix's is `site_fix:<code>:<audit check id>`, the audit where the
-  issue's current run began, so an issue that's fixed and then comes back is a new suggestion.
+  issue's current run began, so an issue that's fixed and then comes back is a new suggestion. A link to add's is
+  `add_link:<key page's path>:<words to link with>`.
 - Apply and Undo go through an automation Task executor, which keeps the revert data, writes Activity and lets
   Autopilot act (Q4). `listing` and profile gaps (a `profile_change` with an empty before) come from the
   improvements (Q12); question ideas from "People also ask" are `track_question` suggestions.

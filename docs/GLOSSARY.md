@@ -108,12 +108,16 @@ _Avoid_: scan (except for one keyword's map grid)
 A crawl of a Location's Website and the issues found in it, each with its severity, the checks it holds back and how to fix it. Its errors and warnings become Suggestions. Health (0 to 100) sums it up.
 _Avoid_: site scan, SEO audit (for the whole SEO section)
 
+**Key page**:
+A page of a Location's Website it most wants customers to land on, chosen by a Member for some tracked keywords. Pages of the site about those keywords should link to it; the links to add (a Suggestion, done by hand) come from the Site audit's crawl.
+_Avoid_: money page, landing page (an ad's), link building (that's links from other sites: backlinks)
+
 **Rankings**:
 The half of SEO that says where a Location stands and who beats it: Google Maps, Google search, AI answers, Competitors.
 _Avoid_: monitoring
 
 **Action plan**:
-A Location's open Suggestions from every source (the Site audit, the Google profile, what to track, where to get listed), most useful first. The half of SEO it heads, with the Site audit, is **Actions** in the sidebar.
+A Location's open Suggestions from every source (the Site audit, Key pages, the Google profile, what to track, where to get listed), most useful first. The half of SEO it heads, with the Site audit, is **Actions** in the sidebar.
 
 **Grid**:
 The spots around a Location that Google Maps is searched from, 5, 7 or 9 a side. "Top 3 in 31 of 49 spots" counts them.

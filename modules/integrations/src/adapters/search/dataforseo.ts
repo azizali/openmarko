@@ -15,6 +15,8 @@ import {
   type AiEngine,
   type AiQuery,
   type AiResult,
+  AUDIT_LINKS,
+  type AuditLink,
   type AuditPage,
   type AuditQuery,
   type AuditResult,
@@ -456,6 +458,7 @@ async function readAudit(c: CallContext, id: string, query: AuditQuery, summary:
   );
   return {
     pagesCrawled: num(summary?.crawl_status?.pages_crawled) ?? pages.length,
+    links: await readLinks(c, id),
     site: {
       homeUrl: home,
       schemaTypes,
@@ -483,6 +486,26 @@ function parseAuditPage(i: any): AuditPage | null {
     loadMs: num(i.page_timing?.duration_time),
     linksIn: num(meta.inbound_links_count),
   };
+}
+
+/** The crawl's links between the site's own pages, a page of a thousand at a time, up to AUDIT_LINKS. */
+async function readLinks(c: CallContext, id: string): Promise<AuditLink[]> {
+  const links: AuditLink[] = [];
+  for (let offset = 0; offset < AUDIT_LINKS; offset += 1000) {
+    const task = (
+      await request(c, "POST", "on_page/links", [{ id, filters: [["direction", "=", "internal"]], limit: 1000, offset }]).catch(() => null)
+    )?.tasks?.[0];
+    const got = items(task ?? ({} as Task));
+    for (const i of got) {
+      const from = str(i?.link_from);
+      const to = str(i?.link_to);
+      // Anchors only: a stylesheet or script isn't a link a person follows.
+      if (from && to && from !== to && (i?.type ?? "anchor") === "anchor")
+        links.push({ from, to: to.split("#")[0]!, anchor: str(i?.text)?.trim() || null });
+    }
+    if (got.length < 1000) break;
+  }
+  return links.slice(0, AUDIT_LINKS);
 }
 
 /** A small text file from the site itself (robots.txt, llms.txt). Null when it isn't there. */

@@ -17,8 +17,8 @@ Perplexity), who beats it keyword by keyword, and what to do next.
 
 In the sidebar it's **Search**, four rows (ADR 0037): Overview; **Rankings**, where you stand and who beats you
 (Google Maps, Google search, AI answers, Competitors as tabs); **Actions**, what to change to move them (the **Action
-plan**, one queue of every suggestion from every source, and the **Site audit** that feeds it, as tabs); and Search
-settings. Built from the mock at `apps/mock/src/pages/seo`.
+plan**, one queue of every suggestion from every source, and the **Site audit** that feeds it, with
+its **Key pages**, as tabs); and Search settings. Built from the mock at `apps/mock/src/pages/seo`.
 
 ## Who uses it
 
@@ -88,10 +88,10 @@ changes what checks cost and links the Google profile.
   and their Google profile is linked beside the badges when they have one.
 - **Settings** (`/seo/settings`): one card of sections (business details; checks within the Plan, with the grid's shape and each assistant's mark; the Google profile link; pause; remove), each with its one action, and the grid size and reach edited with the same map preview as setup. With two or more Locations, a list beside the settings picks which one you're viewing, and
   Select pauses, resumes or removes several together.
-- **Action plan** (`/seo/plan`): every open suggestion, most useful first, from every source: the site audit, the Google
-  profile (categories, description, posts), what to track, and where to get listed. Two filters: the check it should
+- **Action plan** (`/seo/plan`): every open suggestion, most useful first, from every source: the site audit, key
+  pages, the Google profile (categories, description, posts), what to track, and where to get listed. Two filters: the check it should
   move (`?helps=maps|keywords|ai`, where each Rankings page's "· 3 actions" link lands; a site fix moving two checks
-  shows under both) and where it came from (`?from=audit|profile|tracking|listings`). Done in the last 30 days is
+  shows under both) and where it came from (`?from=audit|key_pages|profile|tracking|listings`). Done in the last 30 days is
   listed under it, with Undo. The overview shows the first three, with "All 12 actions" and the site's health in its line.
 - **Site audit** (`/seo/site-audit`): one table of each kind of issue the latest audit of the Location's website found,
   worst first: severity, how many pages (or services, or AI crawlers) it's on, the change since the audit before, the
@@ -100,11 +100,18 @@ changes what checks cost and links the Google profile.
   markup built from the Location and its Google profile, robots.txt lines, an llms.txt), since when it's been found,
   and every page it's on, with Mark as done. **Audit now** in the header crawls the site; scheduled cycles audit it
   once a week at most. A Location with no website has nothing to audit and says so.
+- **Key pages** (Site audit → Key pages, `/seo/site-audit?view=key-pages`): the pages of the website the Location most
+  wants customers to land on, each for some tracked keywords (ADR 0038). One table: each key page, the keywords it's
+  for, how many of the site's pages link to it, and its links to add; a row opens the links to add as the Action plan
+  card (the pages to link from and the link to paste), with Change keywords and Remove. Below it, up to three
+  suggested key pages (the page Google shows for a keyword no key page is for), each with Make it a key page or No.
+  Add a key page opens a panel: the page (from the crawled ones, or typed) and the tracked keywords it's for. Until the
+  audit has read the site's links it says so, with Audit now.
 - **Suggestions**, each saying what it was based on: add categories competitors ahead of you list; get listed on a site
   AI answers cite; track a keyword your profile is found for or a competitor ranks for; say your services in your
   description; track a "People also ask" question; post on your profile; fix the website (one per kind of error or
-  warning the site audit found). Applying one is an automation Task, so it shows in Activity and can be undone;
-  Autopilot can apply a kind on its own, except the ones done by hand (getting listed, fixing the website), which are
+  warning the site audit found); link to a key page from the pages about its keywords. Applying one is an automation Task, so it shows in Activity and can be undone;
+  Autopilot can apply a kind on its own, except the ones done by hand (getting listed, fixing the website, adding links), which are
   only ever marked done by a person.
 - **SEO costs** (Settings → App admin): this month's search-data spend per Organization, and each Location's monthly cost.
 
@@ -125,6 +132,7 @@ numbers as the pages, for members whose Role has SEO's View (ADR 0036, `modules/
 | `seo.suggestions` | the Action plan: open suggestions, with every ranking they'd improve, where they came from, and why |
 | `seo.site_audit` | the website's health and each kind of issue, with how many pages, what it holds back, and its plan state |
 | `seo.site_audit_issue` | one issue: why it matters, the steps, what to paste, and its pages |
+| `seo.key_pages` | each key page: its keywords, pages linking to it, and its links to add; and the pages suggested as key pages |
 
 A tool works on the business it's asked about (by name), else the one on the member's page (`?location=`), else the
 only one; with several and none named, it asks which.
@@ -139,7 +147,7 @@ the Action plan), and it can be undone.
 | `seo.track_question` | asking the AI assistants a question (refused when it's asked already) |
 | `seo.apply_suggestion` | applying a suggestion by its id; a Google profile change or post also needs Publish |
 
-Website fixes and listings are done by hand, so the assistant can't apply them: it gives the steps and says to mark
+Website fixes, links to add and listings are done by hand, so the assistant can't apply them: it gives the steps and says to mark
 it done on the Action plan. However a suggestion's Task is applied or undone (the Action plan, Automation, the chat),
 the suggestion follows it: applied, or back in the list. Asking twice for the same suggestion returns the Task
 already waiting.
@@ -208,11 +216,23 @@ pointless never returns):
 | question | Google's "People also ask" for your keywords | track the question |
 | post | no post on the profile in a month | post |
 | site | the latest site audit's errors and warnings | fix the website, one per kind of issue |
+| link | the key pages, and the latest crawl's pages and links | add links to a key page |
 
 A **site fix** is about the customer's own website, so the app can't make it: it carries the steps and what to paste,
 and applying it marks it done. Its fingerprint names the audit where the issue's current run of audits began: while
 audits keep finding it, it's one suggestion (an open one takes the latest counts); when an audit no longer finds it, an
 open one expires; if it comes back later, that's a new suggestion, even if the old one was marked done.
+
+A **link to add** (`key-pages/logic.ts`, pure) is per key page. The pages to link from (three at most, the most
+linked-to first) are the live pages about one of its keywords that don't link to it yet, and the words to link with
+are its keyword with the most searches that has such pages. What a page is about is read from its address, title and
+main heading, leaving out the city and words that describe the whole site (in the home page's title or heading, or on
+most pages), so "dentist austin" on a dentist's site is the home page's to rank for and "teeth whitening austin" isn't.
+It's done by hand on the site, so applying it marks it done; while open it takes the latest pages, and once a crawl
+finds the links (or the page stops being a key page, or its keywords change) it expires. Choosing or changing a key
+page refreshes the links to add at once (`refreshLinksToAdd`). Orphan and deep pages stay site audit issues, so they
+aren't suggested twice. **Suggested key pages** use the same reader: for each keyword no key page is for, the page
+Google shows for it (not the home page), else the shallowest page about it; pages turned down aren't suggested again.
 
 ## How the site audit works
 
@@ -221,18 +241,19 @@ Run with its cost, one provider task, collection by pingback or the every-minute
 1. **Crawl** (`site.audit`, DataForSEO's On-Page API): the site from its home page, following its own links, without
    running JavaScript, up to 500 pages (or the Plan's `seo_audit_pages`). The adapter returns facts per page (status,
    title, description, main heading, words, load time, links in, clicks from home) and about the site (structured
-   data types and phone numbers on the home page, robots.txt, whether /llms.txt exists). The stub makes up a site per
-   domain with the usual problems.
+   data types and phone numbers on the home page, robots.txt, whether /llms.txt exists), and the links between its
+   own pages with their words (5,000 at most, read from the same crawl). The stub makes up a site per domain with the
+   usual problems, and links its pages the way a small site does.
 2. **Issues** (`modules/seo/src/audit/issues.ts`, pure): the facts become issues in five groups (local signals, AI
    readiness, crawl and index, on-page, speed), each with a severity and the checks it holds back. Local signals
    compare the site with the business: its phone against the Google profile's, and a page for each tracked service.
    **Health** is 100 less 10 per kind of error, 4 per warning and 1 per notice, however many pages each is on.
 3. **Fixes** (`audit/fixes.ts`, pure): steps per issue, and what to paste where the business's facts are enough.
 4. **Filing** (`checks/file-audit.ts`): `site_audits` (the audit and its health), `audit_pages` (each page and its
-   issues) and `audit_issues` (each kind of issue and how many), written once.
+   issues), `audit_issues` (each kind of issue and how many) and `audit_links` (the links between pages), written once.
 
 When: the first cycle at launch, then a scheduled cycle includes it once the last audit is a week old; Check now on
-the Site audit page asks for it outright. Check now elsewhere checks the rankings only.
+the Site audit (and its Key pages) asks for it outright. Check now elsewhere checks the rankings only.
 
 **Ideas for later**
 - **Search Console and Analytics** as sources: keywords with real impressions and clicks (a keyword you get clicks for
@@ -263,6 +284,5 @@ and check one real response of each kind against the parsers in `modules/integra
 ## Later
 
 Search Console and Analytics (clicks and calls behind each keyword), replying to reviews, articles, drafts written by
-a model rather than templates, and a real map under the grid. The other Actions tools from ADR 0037: Internal links
-(from the audit's crawl), Backlinks (the link gap against competitors), and Content (pages to write or refresh, drafted
+a model rather than templates, and a real map under the grid. The other Actions tools from ADR 0037: Backlinks (the link gap against competitors), and Content (pages to write or refresh, drafted
 through `llm.complete`). Applying a site fix to a connected site (WordPress, Webflow) instead of marking it done.

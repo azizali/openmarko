@@ -2,11 +2,12 @@
 // audit found, worst first: how many pages (or things) each was found on, the change since the audit before, the
 // checks it holds back, and where its fix stands in the Action plan. The header's line is the site's health. A row
 // opens the issue's own page (/seo/site-audit/<code>): why it matters, how to fix it (with what to paste), since when
-// it's been found, and every page it's on.
-import { Link, useNavigate, useParams } from "react-router";
+// it's been found, and every page it's on. A switch above the table shows the Key pages instead (KeyPages.tsx), kept in
+// `?view=key-pages`: they're read from the same crawl.
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { ChevronRight, ExternalLink } from "lucide-react";
 import { useState } from "react";
-import { Badge, Button, Card, cn, fmt } from "../../components/ui";
+import { Badge, Button, Card, Segmented, cn, fmt } from "../../components/ui";
 import { Feedback, LoadError, useFeedback } from "../../components/Feedback";
 import { fmtDate, messageOf } from "../../lib/api";
 import { useLoad } from "../../lib/useLoad";
@@ -14,6 +15,7 @@ import { locationApi, seoApi } from "./api";
 import { SiteFixSteps, type Helps } from "./actions";
 import { kindsOf, useAfterCheck } from "./checks";
 import { CheckIcon, Source, stack } from "./parts";
+import KeyPages from "./KeyPages";
 import { SeoHeader, useSeo, useSeoHref } from "./Seo";
 
 type Severity = "error" | "warning" | "notice";
@@ -86,6 +88,17 @@ function IssueList() {
   const data = page.data;
   const a = data?.audit;
   const change = a?.before ? a.health - a.before.health : null;
+  const [params, setParams] = useSearchParams();
+  const view = params.get("view") === "key-pages" ? "key-pages" : "issues";
+  const show = (v: "issues" | "key-pages") =>
+    setParams(
+      (p) => {
+        if (v === "issues") p.delete("view");
+        else p.set("view", v);
+        return p;
+      },
+      { replace: true },
+    );
 
   return (
     <>
@@ -131,6 +144,20 @@ function IssueList() {
         </Card>
       )}
       {data && a && (
+        <div className="mb-4">
+          <Segmented
+            label="Show"
+            value={view}
+            onChange={show}
+            options={[
+              { id: "issues", label: `Issues (${data.issues.length})` },
+              { id: "key-pages", label: "Key pages" },
+            ]}
+          />
+        </div>
+      )}
+      {data && a && view === "key-pages" && <KeyPages />}
+      {data && a && view === "issues" && (
         <Card pad={false} className="overflow-x-auto">
           <table role="table" className={stack.table}>
             <thead role="rowgroup" className={stack.head}>

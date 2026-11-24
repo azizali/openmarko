@@ -237,6 +237,38 @@ export const keywords = seo.table(
   (t) => [uniqueIndex("keywords_term").on(t.locationId, t.term)],
 );
 
+/**
+ * A key page: a page of the Location's website it most wants customers to land on (a service, a booking page), for
+ * the keywords in key_page_keywords. Other pages about the same thing should link to it (key-pages/logic.ts). A page
+ * suggested as one and turned down is kept as `declined`, so it isn't suggested again. `path` is the page's address
+ * without the domain ("/termite-control"), so a crawl over http or www still finds it.
+ */
+export const keyPages = seo.table(
+  "key_pages",
+  {
+    id: uuid("id").primaryKey(),
+    organizationId: org(),
+    locationId: uuid("location_id")
+      .notNull()
+      .references(() => locations.id, { onDelete: "cascade" }),
+    path: text("path").notNull(),
+    status: text("status").notNull().default("key"), // 'key' | 'declined'
+    createdBy: text("created_by"),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("key_pages_path").on(t.locationId, t.path)],
+);
+
+/** The tracked keywords a key page is for. A keyword is for one key page at most. */
+export const keyPageKeywords = seo.table("key_page_keywords", {
+  keywordId: uuid("keyword_id")
+    .primaryKey()
+    .references(() => keywords.id, { onDelete: "cascade" }),
+  keyPageId: uuid("key_page_id")
+    .notNull()
+    .references(() => keyPages.id, { onDelete: "cascade" }),
+});
+
 /** A question asked of the AI assistants for a Location, the way a customer would ask it. */
 export const questions = seo.table(
   "questions",
@@ -555,6 +587,8 @@ export const auditPages = seo.table(
     statusCode: smallint("status_code").notNull(),
     depth: smallint("depth"),
     title: text("title"),
+    /** The page's main heading: with its title and address, what the page is about (key-pages/logic.ts). */
+    h1: text("h1"),
     wordCount: integer("word_count"),
     loadMs: integer("load_ms"),
     issues: text("issues")
@@ -585,6 +619,23 @@ export const auditIssues = seo.table(
   (t) => [primaryKey({ columns: [t.checkId, t.code] })],
 );
 
+/**
+ * The links between the site's own pages that one crawl found (at most AUDIT_LINKS): what Key pages reads, to
+ * see which pages already link where. One row per pair; the first anchor wins.
+ */
+export const auditLinks = seo.table(
+  "audit_links",
+  {
+    checkId: uuid("check_id")
+      .notNull()
+      .references(() => siteAudits.checkId, { onDelete: "cascade" }),
+    fromUrl: text("from_url").notNull(),
+    toUrl: text("to_url").notNull(),
+    anchor: text("anchor"),
+  },
+  (t) => [primaryKey({ columns: [t.checkId, t.fromUrl, t.toUrl] })],
+);
+
 // ---------- Suggestions ----------
 
 /** What to do next. Applying one goes through an automation Task, which keeps what Undo needs. */
@@ -596,7 +647,7 @@ export const suggestions = seo.table(
     locationId: uuid("location_id")
       .notNull()
       .references(() => locations.id, { onDelete: "cascade" }),
-    kind: text("kind").notNull(), // 'track_keyword' | 'track_question' | 'profile_change' | 'post' | 'listing' | 'site_fix'
+    kind: text("kind").notNull(), // 'track_keyword' | 'track_question' | 'profile_change' | 'post' | 'listing' | 'site_fix' | 'add_link'
     /** The check it should move most. A site fix may move others too (its payload's `helps`). */
     helps: text("helps").notNull(), // 'maps' | 'keywords' | 'ai'
     title: text("title").notNull(),

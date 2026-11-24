@@ -19,6 +19,8 @@ import { aiPage } from "./results/ai";
 import { channels, competitorsPage } from "./results/competitors";
 import { actionFor, listSuggestions, proposeSuggestion } from "./suggestions/service";
 import { auditIssue, auditPage } from "./audit/results";
+import { keyPagesView } from "./key-pages/service";
+import { pathOf } from "./key-pages/logic";
 
 const requires = { resource: "seo", action: "view" };
 
@@ -351,6 +353,41 @@ export const siteAuditIssue = defineTool({
   },
 });
 
+export const keyPages = defineTool({
+  name: "seo.key_pages",
+  description:
+    "The business's key pages (the pages of its website it most wants customers to land on, each for some tracked keywords), from the latest site audit's crawl: how many of the site's pages link to each, and the links to add to it (pages about its keywords that don't link there yet; an Action plan item with its id). Also the pages worth making key pages. Members choose key pages in Site audit → Key pages; adding links is done by hand on the site and marked done.",
+  input: z.object({ location }),
+  requires,
+  effect: "read",
+  run: async (ctx, caller, input, call) => {
+    const l = await locationFor(ctx, caller, input.location, call);
+    const p = await keyPagesView(ctx, caller.orgId, l.id);
+    if (!p.audit)
+      return {
+        business: l.name,
+        website: p.website,
+        crawled: null,
+        note: p.website ? "Not crawled yet: the site audit reads its pages and links." : "No website set.",
+      };
+    return {
+      business: l.name,
+      website: p.audit.domain,
+      crawled: { at: p.audit.checkedAt, pages: p.audit.pagesCrawled, links: p.audit.links },
+      linksRead: p.audit.links > 0,
+      keyPages: p.keyPages.slice(0, 20).map((k) => ({
+        page: k.path,
+        title: k.title,
+        foundInCrawl: !!k.url,
+        keywords: k.keywords.map((kw) => kw.term),
+        pagesLinkingToIt: k.linksIn,
+        linksToAdd: k.toAdd ? { suggestionId: k.toAdd.id, linkWords: k.keyword, linkFrom: k.from.map((f) => pathOf(f.url)) } : null,
+      })),
+      suggestedKeyPages: p.ideas.map((i) => ({ page: i.path, title: i.title, forKeywords: i.keywords.map((k) => k.term) })),
+    };
+  },
+});
+
 // ---------- Changes, proposed as Tasks ----------
 
 const tracks = { resource: "seo", action: "track" };
@@ -438,7 +475,7 @@ export const trackQuestion = defineTool({
 
 export const applySuggestion = defineTool({
   name: "seo.apply_suggestion",
-  description: `Proposes applying one suggestion from the Action plan, by its id from seo.suggestions: tracking a keyword or question, a change to the Google profile (needs it linked), or a post. ${waits} Undo is on the Action plan. Website fixes and listings are done by hand and can't be applied: give the member the steps (seo.site_audit_issue), and say they mark it done on Search → Actions → Action plan.`,
+  description: `Proposes applying one suggestion from the Action plan, by its id from seo.suggestions: tracking a keyword or question, a change to the Google profile (needs it linked), or a post. ${waits} Undo is on the Action plan. Website fixes, links to add and listings are done by hand and can't be applied: give the member the steps (seo.site_audit_issue), and say they mark it done on Search → Actions → Action plan.`,
   input: z.object({ suggestion: z.uuid().describe("The suggestion's id, from seo.suggestions.") }),
   requires: tracks,
   effect: "propose",
@@ -466,6 +503,7 @@ export const seoTools = [
   suggestions,
   siteAudit,
   siteAuditIssue,
+  keyPages,
   trackKeyword,
   trackQuestion,
   applySuggestion,

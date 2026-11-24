@@ -14,7 +14,7 @@ import { SeoHeader, useSeo } from "./Seo";
 type HelpsFilter = "all" | Helps;
 type SourceFilter = "all" | Source;
 const helpsFilters = new Set<string>(["all", "maps", "keywords", "ai"]);
-const sourceOrder: Source[] = ["audit", "profile", "tracking", "listings"];
+const sourceOrder: Source[] = ["audit", "key_pages", "profile", "tracking", "listings"];
 
 export default function Plan() {
   const { orgId, location } = useSeo();
