@@ -29,6 +29,7 @@ import {
   Sun,
 } from "lucide-react";
 import { Avatar, cn, ModalDialog, navRow } from "./ui";
+import { RailTips, railTip } from "./RailTips";
 import { Logo, LogoMark } from "./Logo";
 import { useTheme } from "../lib/theme";
 import { platformAdminLabel, roleName } from "@app/shared/access";
@@ -204,7 +205,7 @@ function storedOpen(label: string) {
   }
 }
 
-/** A row in the narrow sidebar: just the icon, its name in the tooltip and for screen readers. */
+/** A row in the narrow sidebar: just the icon, its name in the tooltip (RailTips) and for screen readers. */
 const narrowRow = (active: boolean) => cn(navRow(active), "w-9 justify-center px-0 pointer-coarse:w-9");
 
 function SidebarLink({ item, path, narrow }: { item: NavItem; path: string; narrow?: boolean }) {
@@ -213,7 +214,7 @@ function SidebarLink({ item, path, narrow }: { item: NavItem; path: string; narr
     <Link
       to={item.to}
       aria-current={here ? "page" : undefined}
-      title={narrow ? item.label : undefined}
+      {...(narrow ? railTip(item.label, { group: item.group?.label }) : {})}
       className={narrow ? narrowRow(here) : navRow(here)}
     >
       <item.icon size={15} strokeWidth={1.75} className="shrink-0" />
@@ -222,7 +223,7 @@ function SidebarLink({ item, path, narrow }: { item: NavItem; path: string; narr
   );
 }
 
-/** A group in the narrow sidebar: its pages as icons, set apart by a rule instead of a label. */
+/** A group in the narrow sidebar: its pages as icons, set apart by a rule instead of a label; their tooltips name it. */
 function NarrowGroup({ info, items, path }: { info: NavGroupInfo; items: NavItem[]; path: string }) {
   return (
     <div role="group" aria-label={info.label} className="my-1 flex flex-col items-center gap-px border-y border-line py-1">
@@ -331,7 +332,7 @@ function OrgSwitcher({ narrow }: { narrow?: boolean }) {
         className={cn("flex min-h-10 items-center gap-2.5 rounded-md p-1 text-left hover:bg-hover", narrow ? "mx-auto" : "w-full")}
         aria-expanded={open}
         aria-label={narrow ? `Organization: ${org?.name ?? "none"}` : undefined}
-        title={narrow ? (org?.name ?? "No organization") : undefined}
+        {...(narrow ? railTip(org?.name ?? "No organization", { group: "Organization" }) : {})}
       >
         <span className="grid size-7 shrink-0 place-items-center rounded-md bg-ink text-[13px] font-semibold text-on-ink">{initial}</span>
         {!narrow && (
@@ -347,8 +348,9 @@ function OrgSwitcher({ narrow }: { narrow?: boolean }) {
       {open && (
         <div
           className={cn(
-            "anim-fade absolute top-full z-30 mt-1 rounded-lg border border-line bg-surface p-1 shadow-float",
-            narrow ? "left-0 w-60" : "right-0 left-0",
+            "anim-fade absolute z-30 rounded-lg border border-line bg-surface p-1 shadow-float",
+            // In the narrow sidebar it opens beside the rail rather than under it: there's no room below.
+            narrow ? "top-0 left-full ml-2 w-60" : "top-full right-0 left-0 mt-1",
           )}
         >
           {groups.map((g) => (
@@ -566,28 +568,31 @@ export default function Layout() {
 
   const pages = items.filter((n) => !n.foot);
   const foot = items.filter((n) => n.foot);
-  const sidebarToggle = (
+  /** A tooltip in the narrow sidebar (RailTips), a plain `title` in the wide one. */
+  const named = (rail: boolean, name: string, key?: string) =>
+    rail ? railTip(name, { shortcut: key && keys(key) }) : { title: key ? `${name} (${keys(key)})` : name };
+  const sidebarToggle = (rail: boolean) => (
     <button
       onClick={toggleNarrow}
       aria-label={narrow ? "Widen sidebar" : "Narrow sidebar"}
-      title={`${narrow ? "Widen sidebar" : "Narrow sidebar"} (${keys(shortcut.sidebar)})`}
+      {...named(rail, narrow ? "Widen sidebar" : "Narrow sidebar", shortcut.sidebar)}
       className={cn(iconBtn, "hidden lg:grid")}
     >
       {narrow ? <PanelLeftOpen size={15} strokeWidth={1.75} /> : <PanelLeftClose size={15} strokeWidth={1.75} />}
     </button>
   );
-  const themeButton = (
+  const themeButton = (rail: boolean) => (
     <button
       onClick={() => setDark(!dark)}
       aria-label={dark ? "Light mode" : "Dark mode"}
-      title={dark ? "Light mode" : "Dark mode"}
+      {...named(rail, dark ? "Light mode" : "Dark mode")}
       className={iconBtn}
     >
       {dark ? <Sun size={15} strokeWidth={1.75} /> : <Moon size={15} strokeWidth={1.75} />}
     </button>
   );
-  const signOutButton = (
-    <button onClick={() => void signOut()} aria-label="Sign out" title="Sign out" className={iconBtn}>
+  const signOutButton = (rail: boolean) => (
+    <button onClick={() => void signOut()} aria-label="Sign out" {...named(rail, "Sign out")} className={iconBtn}>
       <LogOut size={15} strokeWidth={1.75} />
     </button>
   );
@@ -614,7 +619,7 @@ export default function Layout() {
         <button onClick={() => setCmd(true)} aria-label="Search" title={`Search (${keys(shortcut.search)})`} className={iconBtn}>
           <Search size={15} strokeWidth={1.75} />
         </button>
-        {sidebarToggle}
+        {sidebarToggle(false)}
       </div>
       <OrgSwitcher />
       <nav className="mt-1 flex flex-1 flex-col gap-px overflow-y-auto" aria-label="Main">
@@ -644,8 +649,8 @@ export default function Layout() {
               </div>
             </div>
           </div>
-          {themeButton}
-          {signOutButton}
+          {themeButton(false)}
+          {signOutButton(false)}
         </div>
       </div>
     </div>
@@ -653,18 +658,18 @@ export default function Layout() {
 
   // The narrow sidebar: the same things as icons, their names and shortcuts in tooltips. Wide screens only.
   const narrowSidebar = (
-    <div className="flex h-full flex-col items-center gap-1 px-2 py-2.5">
+    <RailTips className="flex h-full flex-col items-center gap-1 px-2 py-2.5">
       <NavLink
         to="/"
         aria-label={`${brand.name} home`}
-        title={brand.name}
+        {...named(true, brand.name)}
         className="grid h-8 w-9 place-items-center rounded-md hover:bg-hover"
       >
         <LogoMark size={18} />
       </NavLink>
-      {sidebarToggle}
+      {sidebarToggle(true)}
       <OrgSwitcher narrow />
-      <button onClick={() => setCmd(true)} aria-label="Search" title={`Search (${keys(shortcut.search)})`} className={narrowRow(false)}>
+      <button onClick={() => setCmd(true)} aria-label="Search" {...named(true, "Search", shortcut.search)} className={narrowRow(false)}>
         <Search size={15} strokeWidth={1.75} />
       </button>
       {hasChat && (
@@ -672,7 +677,7 @@ export default function Layout() {
           onClick={openChat}
           aria-label={`Ask ${brand.assistant}`}
           aria-pressed={chatOpen}
-          title={`Ask ${brand.assistant} (${keys(shortcut.assistant)})`}
+          {...named(true, `Ask ${brand.assistant}`, shortcut.assistant)}
           className={narrowRow(chatOpen)}
         >
           <Sparkles size={15} strokeWidth={1.75} />
@@ -690,20 +695,22 @@ export default function Layout() {
         {foot.map((n) => (
           <SidebarLink key={n.to} item={n} path={loc.pathname} narrow />
         ))}
-        <span title={`${me.name} · ${roleLine}`} className="py-0.5">
+        <span {...railTip(`${me.name} · ${roleLine}`)} className="py-0.5">
           <Avatar name={me.name} className="size-7 text-[11px]" />
         </span>
-        {themeButton}
-        {signOutButton}
+        {themeButton(true)}
+        {signOutButton(true)}
       </div>
-    </div>
+    </RailTips>
   );
 
   return (
     <div className="flex min-h-full">
+      {/* Sticky makes the sidebar its own stacking context, so without a z-index the page (later in the DOM) paints over
+          anything that spills out of it, like the Organization menu in the narrow sidebar. */}
       <aside
         className={cn(
-          "sidebar-scope sticky top-0 hidden h-screen shrink-0 border-r border-line bg-sidebar lg:block print:hidden",
+          "sidebar-scope sticky top-0 z-30 hidden h-screen shrink-0 border-r border-line bg-sidebar lg:block print:hidden",
           narrow ? "w-14" : "w-60",
         )}
       >

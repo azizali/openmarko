@@ -270,6 +270,16 @@ button:disabled {
 .anim-slide {
   animation: slide-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
+/* A tooltip beside the narrow sidebar: quick, and a nudge away from the rail it names. */
+@keyframes tip-in {
+  from {
+    opacity: 0;
+    transform: translateX(-3px);
+  }
+}
+.anim-tip {
+  animation: tip-in 120ms ease-out both;
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
