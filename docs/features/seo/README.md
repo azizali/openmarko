@@ -64,6 +64,13 @@ changes what checks cost and links the Google profile.
 - **Google search ranking** (`/seo/keywords`, "Google search" in the sidebar): one table with, per keyword, searches a month, your position, its change in 30 days
   and who's first. A keyword (`/seo/keywords/:keywordId`) shows those facts, whether Google's results page showed a map
   pack and an AI Overview (and whether it cites you), your ranking page, your position by week over 90 days and Google's whole first page.
+  Google serves scrapers "poisoned" pages (the usual layout, most organic results swapped for loosely related ones), so
+  the search asks DataForSEO to `resolve_poisoned_results`: it checks the first page against Google's Web-only results
+  and takes the organic list from there when they differ, for one page's extra cost. It also asks it to
+  `resolve_goto_urls` (Google's redirect links, otherwise left wrapped on the priority queue), and each Maps spot is
+  asked with `search_places: false`, so a place named in the keyword can't move the search away from the spot.
+  What a request costs (`searchPriceUsd`: Google search per 10 results plus a page each for the AI Overview and the
+  poisoned-page check, Maps per 100 places) prices both stub checks and the admin's monthly estimate.
 - **AI answers** (`/seo/ai`): one table of question × assistant (whether you're named and where, and the sites cited),
   a last row with each assistant's total, and the sites answers lean on most. A question (`/seo/ai/:questionId`) shows
   a card per assistant with its mark: whether it names you and where, its answer with your name highlighted, who else

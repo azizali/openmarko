@@ -92,12 +92,12 @@ export default function SeoCosts() {
       <Card>
         <CardHeader
           title="Prices per search"
-          sub="What the search-data provider charges per request on its standard queue. The priority queue, used for a location's first check, costs twice as much for Google Maps and Google search."
+          sub="What the search-data provider charges per request as our checks send it, on its standard queue. The priority queue, used for a location's first check, costs twice as much for Google Maps, Google search and Google AI Overview. Perplexity is billed by the tokens its answer takes; its price here is typical."
         />
         <dl className="grid gap-x-8 gap-y-2 text-[13.5px] sm:grid-cols-2">
           {[
             ["Google Maps, one spot", d.unitPricesUsd.maps],
-            ["Google search, one keyword", d.unitPricesUsd.organic],
+            ["Google search, one keyword (100 results)", d.unitPricesUsd.organic],
             ...Object.entries(d.unitPricesUsd.ai).map(([e, p]) => [`${engineNames[e] ?? e}, one question`, p] as const),
             ["Keyword volumes, up to 1,000 keywords", d.unitPricesUsd.volume],
             ["Keyword ideas, per request", d.unitPricesUsd.labsTask],

@@ -12,6 +12,7 @@ import type { CapabilityId } from "@app/shared";
 import type { Adapter, CallContext, CallResult } from "../types";
 import {
   domainOf,
+  type AiEngine,
   type AiQuery,
   type AiResult,
   type BusinessDetails,
@@ -38,11 +39,20 @@ import { stubAi, stubCategories, stubDetails, stubLocations, stubIdeas, stubMaps
 const BASE = "https://api.dataforseo.com/v3";
 const micros = (usd: number) => Math.round(usd * 1_000_000);
 
-/** What one request costs, by capability (and engine), on the standard queue. */
+/**
+ * DataForSEO's own prices on the standard queue (dataforseo.com/pricing, checked 2026-11-23). The priority queue costs
+ * twice as much for SERP tasks. What one of our requests costs is `searchPriceUsd`, which knows what we ask for.
+ */
 export const unitPriceUsd = {
-  maps: 0.0006,
-  organic: 0.0006,
-  ai: { chatgpt: 0.0012, google_ai: 0.0012, perplexity: 0.04 },
+  /** One Google results page of 10; also each extra: async AI Overview, the poisoned-page check. */
+  serpPage: 0.0006,
+  /** One Google Maps list of up to 100 places. */
+  mapsList: 0.0006,
+  /** ChatGPT's scraper, per answer (we post it without priority). */
+  chatgpt: 0.0012,
+  /** Perplexity: $0.0006 plus the model's tokens, so it varies; this is a typical answer. The real cost comes back. */
+  perplexity: 0.0065,
+  /** Google Ads volumes, live, per request of up to 1,000 keywords. */
   volume: 0.09,
   labsTask: 0.012,
   labsRow: 0.00012,
@@ -52,9 +62,21 @@ export const unitPriceUsd = {
 type Kind = "maps" | "organic" | "ai";
 const kindOf: Partial<Record<CapabilityId, Kind>> = { "search.maps": "maps", "search.organic": "organic", "search.ai": "ai" };
 
-function priceOf(kind: Kind, query: unknown, priority: boolean): number {
-  const usd = kind === "ai" ? unitPriceUsd.ai[(query as AiQuery).engine] : unitPriceUsd[kind];
-  return micros(usd * (priority && kind !== "ai" ? 2 : 1));
+/** Pages of Google results a Google AI Overview question reads: the first only. */
+const AI_OVERVIEW_DEPTH = 10;
+
+/**
+ * What one request costs, as `taskFor` builds it. A Google search is billed per 10 results, plus a page for loading the
+ * AI Overview and a page for the poisoned-page check; a Google AI Overview question is one page plus its AI Overview;
+ * Maps is billed per 100 places.
+ */
+export function searchPriceUsd(kind: Kind, query: { depth?: number; engine?: AiEngine }, priority: boolean): number {
+  const x = priority ? 2 : 1;
+  const p = unitPriceUsd;
+  if (kind === "maps") return p.mapsList * Math.ceil((query.depth ?? 100) / 100) * x;
+  if (kind === "organic") return p.serpPage * (Math.ceil((query.depth ?? 10) / 10) + 2) * x;
+  if (query.engine === "google_ai") return p.serpPage * (Math.ceil(AI_OVERVIEW_DEPTH / 10) + 1) * x;
+  return query.engine === "perplexity" ? p.perplexity : p.chatgpt;
 }
 
 // ---------- HTTP ----------
@@ -97,14 +119,35 @@ function taskFor(kind: Kind, query: any, priority: boolean): { path: string; bod
     const q = query as MapsQuery;
     return {
       path: "serp/google/maps",
-      body: { ...common, keyword: q.keyword, location_coordinate: coordinate(q, `${q.zoom}z`), depth: q.depth },
+      body: {
+        ...common,
+        keyword: q.keyword,
+        location_coordinate: coordinate(q, `${q.zoom}z`),
+        depth: q.depth,
+        // On by default, it lets Google move the search to another place it reads in the query, which a grid of
+        // spots must not: each spot is asked from where it stands.
+        search_places: false,
+      },
     };
   }
   if (kind === "organic") {
     const q = query as OrganicQuery;
     return {
       path: "serp/google/organic",
-      body: { ...common, keyword: q.keyword, location_coordinate: coordinate(q, "1000"), depth: q.depth, load_async_ai_overview: true },
+      body: {
+        ...common,
+        keyword: q.keyword,
+        location_coordinate: coordinate(q, "1000"),
+        depth: q.depth,
+        load_async_ai_overview: true,
+        // Google serves scrapers "poisoned" pages: the usual layout with most organic results swapped for loosely
+        // related ones (a business's own site at #57 for its own name). DataForSEO checks the first page against
+        // Google's Web-only results and, when poisoned, takes the organic results from there. Costs one page more.
+        resolve_poisoned_results: true,
+        // Google wraps result links in its own redirect; DataForSEO follows them only on the standard queue unless
+        // asked (free; some stay wrapped under Google's limits, and `siteOf` reads those from the breadcrumb).
+        resolve_goto_urls: true,
+      },
     };
   }
   const q = query as AiQuery;
@@ -112,7 +155,14 @@ function taskFor(kind: Kind, query: any, priority: boolean): { path: string; bod
   if (q.engine === "google_ai")
     return {
       path: "serp/google/organic",
-      body: { ...common, keyword: q.question, location_coordinate: coordinate(q, "1000"), depth: 10, load_async_ai_overview: true },
+      // Only the AI Overview is read, so the poisoned-page check (organic results only) isn't asked for.
+      body: {
+        ...common,
+        keyword: q.question,
+        location_coordinate: coordinate(q, "1000"),
+        depth: AI_OVERVIEW_DEPTH,
+        load_async_ai_overview: true,
+      },
     };
   return {
     path: "ai_optimization/chat_gpt/llm_scraper",
@@ -137,7 +187,7 @@ async function post(kind: Kind, input: PostInput<unknown>, c: CallContext): Prom
     const posted = input.queries.map(({ tag, query }) => ({
       tag,
       externalId: `stub_${crypto.randomUUID()}`,
-      costMicros: priceOf(kind, query, priority),
+      costMicros: micros(searchPriceUsd(kind, query as { depth?: number; engine?: AiEngine }, priority)),
     }));
     return { output: { posted }, quantity: posted.length, costMicros: posted.reduce((n, p) => n + p.costMicros, 0) };
   }

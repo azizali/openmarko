@@ -41,9 +41,9 @@ export type CycleOptions = {
 };
 
 /** Google Maps results read per spot: the first screen of the list. */
-const MAPS_DEPTH = 20;
+export const MAPS_DEPTH = 20;
 /** Google search results read per keyword: ten pages, so a position past the first page is still known. */
-const ORGANIC_DEPTH = 100;
+export const ORGANIC_DEPTH = 100;
 
 /** Where the provider says a task is ready. Only an address the provider can reach: none in development. */
 export function pingbackUrl(ctx: AppContext, checkId: string): string | null {

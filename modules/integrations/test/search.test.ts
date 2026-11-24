@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import {
   adapterFor,
   connect,
+  searchPriceUsd,
   finishOAuth,
   invoke,
   listConnections,
@@ -154,7 +155,45 @@ describe("DataForSEO, live", () => {
       location_coordinate: "30.2509000,-97.7497000,15z",
       priority: 2,
       pingback_url: "https://api.test/ready?id=$id",
+      search_places: false,
     });
+  });
+
+  test("posts Google search tasks asking DataForSEO to repair a poisoned page and unwrap Google's links", async () => {
+    fakeFetch({
+      status_code: 20000,
+      status_message: "Ok.",
+      tasks: [{ id: "t-1", status_code: 20100, status_message: "Task Created.", cost: 0.0012, data: { tag: "a" } }],
+    });
+    await adapterFor("dataforseo")!.call(
+      "search.organic",
+      {
+        op: "post",
+        queue: "standard",
+        queries: [{ tag: "a", query: { keyword: "dentist austin", at: query.at, languageCode: "en", depth: 100 } }],
+      },
+      liveCtx("dataforseo", { password: "p" }, { login: "l" }),
+    );
+    expect(seen[0]!.url).toBe("https://api.dataforseo.com/v3/serp/google/organic/task_post");
+    const [body] = JSON.parse(String(seen[0]!.init.body));
+    expect(body).toMatchObject({
+      keyword: "dentist austin",
+      location_coordinate: "30.2509000,-97.7497000,1000",
+      depth: 100,
+      resolve_poisoned_results: true,
+      resolve_goto_urls: true,
+    });
+  });
+
+  test("prices a request as it's sent, matching what DataForSEO charged", () => {
+    const at = (usd: number) => Math.round(usd * 1_000_000);
+    // Charged on the priority queue: Maps at 20 places, Google search at 100 results with its AI Overview (before the
+    // poisoned-page check, one page more), a Google AI Overview question.
+    expect(at(searchPriceUsd("maps", { depth: 20 }, true))).toBe(1200);
+    expect(at(searchPriceUsd("organic", { depth: 100 }, true))).toBe(13200 + 1200);
+    expect(at(searchPriceUsd("ai", { engine: "google_ai" }, true))).toBe(2400);
+    expect(at(searchPriceUsd("ai", { engine: "chatgpt" }, true))).toBe(1200);
+    expect(at(searchPriceUsd("organic", { depth: 100 }, false))).toBe(7200);
   });
 
   test("reads a business's profile: every category, attributes, and what customers mention", async () => {
