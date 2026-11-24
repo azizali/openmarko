@@ -1,6 +1,6 @@
 // Motion helpers for the marketing pages: run something once when it scrolls into view, and count a number up.
 // Both respect reduced motion: the element counts as seen at once and the number shows its final value.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 export const reducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -47,3 +47,34 @@ export function useCountUp(to: number, run: boolean, ms = 1200) {
   }, [to, run, ms]);
   return value;
 }
+
+/**
+ * Scroll reveal for a page: every `[data-reveal]` below `root` fades up the first time it comes into view, after its
+ * own `--reveal-delay`. Hidden only while this runs (the `reveal-on` class), so without JS or under reduced motion
+ * everything simply shows.
+ */
+export function useReveal() {
+  useLayoutEffect(() => {
+    if (reducedMotion()) return;
+    const html = document.documentElement;
+    html.classList.add("reveal-on");
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          (e.target as HTMLElement).dataset.shown = "";
+          io.unobserve(e.target);
+        }
+      },
+      { threshold: 0.15, rootMargin: "0px 0px -8% 0px" },
+    );
+    for (const el of document.querySelectorAll("[data-reveal]")) io.observe(el);
+    return () => {
+      io.disconnect();
+      html.classList.remove("reveal-on");
+    };
+  }, []);
+}
+
+/** Style for a `[data-reveal]` element that should wait `ms` after its neighbours. */
+export const revealDelay = (ms: number) => ({ ["--reveal-delay" as string]: `${ms}ms` });

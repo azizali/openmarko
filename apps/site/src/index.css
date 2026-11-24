@@ -503,3 +503,25 @@ button {
     transform: scale(5);
   }
 }
+
+/* Scroll reveal (useReveal in lib/motion.ts): fades up once, 700ms strong ease-out, after --reveal-delay. */
+.reveal-on [data-reveal] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 700ms var(--ease-out) var(--reveal-delay, 0ms),
+    transform 700ms var(--ease-out) var(--reveal-delay, 0ms);
+}
+.reveal-on [data-reveal][data-shown] {
+  opacity: 1;
+  transform: none;
+}
+/* A rule that draws itself left to right once its revealed parent shows. */
+.reveal-on [data-reveal] .draw-line {
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 900ms var(--ease-out) calc(var(--reveal-delay, 0ms) + 200ms);
+}
+.reveal-on [data-reveal][data-shown] .draw-line {
+  transform: none;
+}

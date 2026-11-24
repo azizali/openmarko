@@ -1,7 +1,7 @@
 // The home page's middle: where the visitor's customers search, what an agency report leaves out, four benefits each
 // with a piece of the product, the three steps to a first check, and what owners say.
 import { useEffect, useState, type ReactNode } from "react";
-import { reducedMotion, useSeenOnce } from "../../lib/motion";
+import { reducedMotion, revealDelay, useSeenOnce } from "../../lib/motion";
 import { Check, Quote } from "lucide-react";
 import { cn } from "../ui";
 import { GridThumb } from "./MapGrid";
@@ -20,8 +20,8 @@ export const channels = [
 export function ChannelRow({ className }: { className?: string }) {
   return (
     <ul className={cn("flex flex-wrap items-center justify-center gap-x-7 gap-y-3", className)}>
-      {channels.map((c) => (
-        <li key={c.name} className="inline-flex items-center gap-2 text-[14.5px] text-fg/80">
+      {channels.map((c, i) => (
+        <li key={c.name} data-reveal style={revealDelay(60 + i * 60)} className="inline-flex items-center gap-2 text-[14.5px] text-fg/80">
           <img src={c.icon} alt="" width={20} height={20} className={cn("size-5 object-contain", c.ink && "dark:invert")} />
           {c.name}
         </li>
@@ -72,14 +72,17 @@ export function Problem() {
   );
 }
 
-function Card({ title, body, children }: { title: string; body: string; children: ReactNode }) {
+/** A benefit with its piece of the product. Reveals with the right-hand column a beat late; lifts 2px under a mouse. */
+function Card({ i, title, body, children }: { i: number; title: string; body: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-5 rounded-2xl border border-line bg-surface p-5 sm:p-7">
-      <h3 className="text-[16px] leading-[1.55] font-normal text-muted">
-        <span className="font-medium text-fg">{title}.</span> {body}
-      </h3>
-      <div className="grid-fine flex min-h-[200px] flex-1 items-center justify-center rounded-xl border border-line bg-sunken p-5">
-        {children}
+    <div data-reveal style={revealDelay((i % 2) * 100)} className="flex">
+      <div className="flex flex-1 flex-col gap-5 rounded-2xl border border-line bg-surface p-5 transition-[transform,box-shadow] duration-200 ease-[var(--ease-out)] hover:-translate-y-0.5 hover:shadow-float sm:p-7">
+        <h3 className="text-[16px] leading-[1.55] font-normal text-muted">
+          <span className="font-medium text-fg">{title}.</span> {body}
+        </h3>
+        <div className="grid-fine flex min-h-[200px] flex-1 items-center justify-center rounded-xl border border-line bg-sunken p-5">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -200,18 +203,27 @@ export function BenefitGrid() {
   return (
     <div className="grid gap-5 md:grid-cols-2">
       <Card
+        i={0}
         title="Every street"
         body="Google ranks you differently three blocks away. See where customers find you, and where they find someone else."
       >
         <EveryStreet />
       </Card>
-      <Card title="AI answers" body="Whether ChatGPT, Perplexity and AI Overviews name you, what they say, and which sites they read.">
+      <Card
+        i={1}
+        title="AI answers"
+        body="Whether ChatGPT, Perplexity and AI Overviews name you, what they say, and which sites they read."
+      >
         <AiAnswer />
       </Card>
-      <Card title="Why they're ahead" body="Their Google profile next to yours, so you know what to close first.">
+      <Card i={2} title="Why they're ahead" body="Their Google profile next to yours, so you know what to close first.">
         <WhyAhead />
       </Card>
-      <Card title="One-click fixes" body="A short list each week, each with its reason. Apply one, undo it, or hand a kind to Autopilot.">
+      <Card
+        i={3}
+        title="One-click fixes"
+        body="A short list each week, each with its reason. Apply one, undo it, or hand a kind to Autopilot."
+      >
         <ApplyLoop />
       </Card>
     </div>
@@ -237,7 +249,8 @@ export function Steps() {
   return (
     <ol className="grid gap-8 lg:grid-cols-3">
       {steps.map((s, i) => (
-        <li key={s.title} className="flex flex-col gap-3 border-t border-line pt-5">
+        <li key={s.title} data-reveal style={revealDelay(i * 140)} className="relative flex flex-col gap-3 pt-5">
+          <span aria-hidden className="draw-line absolute inset-x-0 top-0 h-px bg-fg/20" />
           <span className="font-display text-[44px] leading-none text-accent">{i + 1}</span>
           <h3 className="text-[19px] font-medium">{s.title}</h3>
           <p className="text-[15.5px] leading-[1.6] text-muted">{s.body}</p>
@@ -257,8 +270,13 @@ export const hasProof = shown.length > 0;
 export function Testimonials() {
   return (
     <ul className="grid gap-5 lg:grid-cols-3">
-      {shown.map((t) => (
-        <li key={t.name} className="flex flex-col gap-5 rounded-2xl border border-line bg-surface p-6 sm:p-7">
+      {shown.map((t, i) => (
+        <li
+          key={t.name}
+          data-reveal
+          style={revealDelay(i * 100)}
+          className="flex flex-col gap-5 rounded-2xl border border-line bg-surface p-6 sm:p-7"
+        >
           <div className="flex items-center justify-between">
             <Quote size={22} className="text-accent" />
             {t.sample && (

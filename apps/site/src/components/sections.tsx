@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { reducedMotion } from "../lib/motion";
 import { ChevronDown } from "lucide-react";
 import { Button, CheckList, Container, Heading, cn } from "./ui";
 import { APP_URL, CONTACT_EMAIL, faqs as defaultFaqs, features, plans, steps } from "../data/site";
@@ -82,18 +83,69 @@ export function Faq({ items = defaultFaqs }: { items?: { q: string; a: string }[
             className="flex w-full items-center justify-between gap-4 py-4 text-left text-[16.5px] font-medium"
           >
             {f.q}
-            <ChevronDown size={18} className={cn("shrink-0 text-muted transition-transform", open === i && "rotate-180")} />
+            <ChevronDown
+              size={18}
+              className={cn("shrink-0 text-muted transition-transform duration-300 ease-[var(--ease-out)]", open === i && "rotate-180")}
+            />
           </button>
-          {open === i && <p className="rise pb-5 text-[15.5px] leading-[1.65] text-muted">{f.a}</p>}
+          {/* The answer opens to its own height (grid rows 0fr → 1fr) and stays out of the tab order while closed. */}
+          <div
+            inert={open !== i}
+            className={cn(
+              "grid transition-[grid-template-rows,opacity] duration-300 ease-[var(--ease-out)]",
+              open === i ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+            )}
+          >
+            <div className="overflow-hidden">
+              <p className="pb-5 text-[15.5px] leading-[1.65] text-muted">{f.a}</p>
+            </div>
+          </div>
         </li>
       ))}
     </ul>
   );
 }
 
+/**
+ * The closing band. As it scrolls into view it opens from a rounded card inset from the page's edges to the full
+ * width, meeting the footer below it (off under reduced motion).
+ */
+function useWidenOnScroll() {
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || reducedMotion()) return;
+    let frame = 0;
+    const apply = () => {
+      frame = 0;
+      const r = el.getBoundingClientRect();
+      const vh = window.innerHeight;
+      // 0 as its top enters the bottom of the screen, 1 once the whole band is in view.
+      const t = 1 - Math.min(1, Math.max(0, (vh - r.top) / Math.min(r.height, vh)));
+      el.style.setProperty(
+        "clip-path",
+        t ? `inset(0px max(${16 * t}px, calc(${t} * (100% - 1200px) / 2)) round ${24 * t}px ${24 * t}px 0px 0px)` : "none",
+      );
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(apply);
+    };
+    apply();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+  return ref;
+}
+
 export function FinalCta() {
+  const ref = useWidenOnScroll();
   return (
-    <section className="relative bg-band text-white">
+    <section ref={ref} className="relative bg-band text-white">
       <div aria-hidden className="grid-band absolute inset-0" />
       <Container className="relative flex flex-col items-start gap-6 pt-20 pb-16 sm:pt-24 lg:flex-row lg:items-center lg:justify-between">
         <Heading
