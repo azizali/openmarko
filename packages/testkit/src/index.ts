@@ -23,6 +23,13 @@ export async function createEmptyDb(): Promise<EmptyDb> {
     url: url.toString(),
     drop: async () => {
       const a = new Pool({ connectionString: adminUrl, max: 1 });
+      // `pool.end()` resolves before its connections have closed. Forcing the drop while one is still closing
+      // terminates it, and that surfaces as an unhandled error between tests. So wait (briefly) for them to go.
+      for (let i = 0; i < 50; i++) {
+        const { rows } = await a.query("select count(*)::int as n from pg_stat_activity where datname = $1", [name]);
+        if (rows[0].n === 0) break;
+        await Bun.sleep(20);
+      }
       await a.query(`drop database if exists ${name} with (force)`);
       await a.end();
     },
