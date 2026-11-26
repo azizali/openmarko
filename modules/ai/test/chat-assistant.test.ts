@@ -9,6 +9,7 @@ import { authOrganization } from "@app/kernel";
 import { addMember } from "@app/organizations";
 import { writeAppSetting } from "@app/settings";
 import { addDocument, createBase, ingest, INGEST_JOB } from "@app/knowledge";
+import { getAssistant, prepareTurn } from "../src";
 import { adminSession, composedApp, createTestDb, ownerSession, requester, type Session, type TestDb } from "@app/testkit";
 
 let t: TestDb;
@@ -94,6 +95,24 @@ describe("the built-in widget", () => {
     const s = await status(org);
     expect(s.inUse).toMatchObject({ level: "builtin", name: "Assistant" });
     expect(s).toMatchObject({ own: null, partner: null, app: null });
+  });
+
+  test("untouched, it shows the app's own name and greeting; renamed, it shows its own and answers to it", async () => {
+    const org = await customer("Renamer");
+    expect((await status(org)).inUse.shows).toEqual({ name: null, greeting: null });
+    const list = (await call("GET", `${ai(org)}/assistants`, { headers: org.headers })).body as { id: string; builtin: boolean }[];
+    const id = list.find((a) => a.builtin)!.id;
+    await call("PATCH", `${ai(org)}/assistants/${id}`, {
+      headers: org.headers,
+      body: { name: "Marko", widget: { greeting: "Hi, I'm Marko." } },
+    });
+    expect((await status(org)).inUse.shows).toEqual({ name: "Marko", greeting: "Hi, I'm Marko." });
+
+    const marko = await getAssistant(t.ctx, org.orgId, id);
+    expect((await prepareTurn(t.ctx, marko, "who are you?")).system).toContain("Your name is Marko.");
+    // An untouched built-in isn't told a name: the app's own shows instead.
+    const builtin = { ...marko, name: "Assistant" };
+    expect((await prepareTurn(t.ctx, builtin, "who are you?")).system).not.toContain("Your name is");
   });
 });
 

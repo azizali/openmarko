@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-31
-- Affects: platform/backend, platform/app-shell (Plan & billing), platform/feature-switches, platform/access-roles
+- Affects: billing, features, access, web (Plan & billing)
 
 ## Context
 
@@ -20,7 +20,7 @@ The mock has `member.plan` (`local` | `agency`) as a constant and `agencyOnly` f
 - The subscription belongs to whoever pays: an Organization, or a Partner (whose Plan covers its Clients). Resolution: own subscription → else Partner's → plus `entitlement_overrides`.
 - **Metering rule:** every integration that costs us money per use is metered; every integration that is free to use is not. Metered today: DataForSEO, LLM calls, email sending, SMS and calls, ad-platform API calls where priced, and any provider that charges per request or per unit. Free integrations (for example Google Search Console, GA4, and sign-in) write no `usage_events`.
 - Each provider adapter declares its cost model in the catalog: `metered: true` with a meter id, or `metered: false`. A new paid provider can't be added without choosing one. Stubs meter the same way, so the numbers can be tested.
-- What a Plan charges for a meter is `billing.plan_meters` ([schema](../../platform/docs/backend/schema.md)); recording the cost and charging for it are separate.
+- What a Plan charges for a meter is `billing.plan_meters`; recording the cost and charging for it are separate.
 
 ## Consequences
 

@@ -11,6 +11,7 @@ How documentation is organised, and the rules for keeping it current. People and
 | [GLOSSARY.md](GLOSSARY.md) | The words the code and docs use. |
 | [../apps/web/DESIGN.md](../apps/web/DESIGN.md) | The web app's design system: tokens, components and the rules for new screens. |
 | [decisions/](decisions/) | Architecture decision records (ADRs), one numbered log. |
+| [features/](features/) | One folder per product feature: what it does, its data model. [SEO](features/seo/README.md) is the first. |
 | [_template/](_template/) | What a feature folder's docs start from, for products with many features. |
 
 Module behaviour is documented in the module itself: a header comment in `src/module.ts` says what it owns, and each service file says what it does. Tests in `modules/<id>/test` are the executable spec.

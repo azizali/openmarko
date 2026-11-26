@@ -7,6 +7,6 @@ export default defineConfig({
   dialect: "postgresql",
   schema: ["./modules/*/src/schema.ts", "./packages/kernel/src/schema.ts"],
   out: "./packages/kernel/drizzle",
-  schemaFilter: ["core", "billing", "integrations", "automation", "ai", "knowledge"],
+  schemaFilter: ["core", "billing", "integrations", "automation", "ai", "knowledge", "seo"],
   dbCredentials: { url: process.env.DATABASE_URL ?? "postgres://postgres:dev@localhost:5433/app" },
 });

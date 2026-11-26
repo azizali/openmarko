@@ -20,6 +20,81 @@
         ],
         "createdAt": "2026-11-08T10:22:19.050Z",
         "reason": "user asked to keep OpenMarko's design as is; the ink-sheen headline sweep is part of it"
+      },
+      {
+        "rule": "overused-font",
+        "value": "geist",
+        "createdAt": "2026-11-24T17:02:25.782Z",
+        "reason": "Claude: Geist is the site's existing display face (apps/site/src/index.css --font-display); the preview matches the brand"
+      },
+      {
+        "rule": "overused-font",
+        "value": "roboto flex",
+        "createdAt": "2026-11-24T17:02:25.807Z",
+        "reason": "Claude: Roboto Flex is the site's existing body face (apps/site/src/index.css --font-sans); the preview matches the brand"
+      },
+      {
+        "rule": "marquee",
+        "value": "*",
+        "files": [
+          "apps/site/home-preview.html"
+        ],
+        "createdAt": "2026-11-24T18:18:44.741Z",
+        "reason": "user confirmed: asked for the business names to move like origami.chat and the original site; it has a pause button"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "apps/site/home-preview.html"
+        ],
+        "createdAt": "2026-11-24T18:18:44.763Z",
+        "reason": "Claude: remaining hits are full-width sections, rows and the footer legal line whose only boundary is a top hairline; text is inset by section padding-block and the wrap's side padding"
+      },
+      {
+        "rule": "overused-font",
+        "value": "geist mono",
+        "files": [
+          "apps/site/home-preview.html"
+        ],
+        "createdAt": "2026-11-24T18:18:44.786Z",
+        "reason": "Claude: Geist Mono is the site's mono face; the Instrument faces are options in the preview-only font panel the user asked for"
+      },
+      {
+        "rule": "overused-font",
+        "value": "instrument sans",
+        "files": [
+          "apps/site/home-preview.html"
+        ],
+        "createdAt": "2026-11-24T18:18:44.809Z",
+        "reason": "Claude: Geist Mono is the site's mono face; the Instrument faces are options in the preview-only font panel the user asked for"
+      },
+      {
+        "rule": "overused-font",
+        "value": "instrument serif",
+        "files": [
+          "apps/site/home-preview.html"
+        ],
+        "createdAt": "2026-11-24T18:18:44.836Z",
+        "reason": "Claude: Geist Mono is the site's mono face; the Instrument faces are options in the preview-only font panel the user asked for"
+      },
+      {
+        "rule": "icon-tile-stack",
+        "value": "*",
+        "files": [
+          "apps/site/home-preview.html"
+        ],
+        "createdAt": "2026-11-24T18:18:50.176Z",
+        "reason": "Claude: source and trust cards now set the icon beside the heading in a 2-column grid; the static scan reads markup order"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "apps/site/home-preview.html"
+        ],
+        "createdAt": "2026-11-24T18:18:50.206Z",
+        "reason": "Claude: the repeating gradient draws the dashed line joining steps 1-2-3, which the user asked for"
       }
     ]
   }

@@ -132,3 +132,35 @@ describe("module loading", () => {
     expect(() => resolveModules([mod("a", ["b"]), mod("b", ["a"])])).toThrow("cycle");
   });
 });
+
+describe("files", () => {
+  test("development keeps files in the repository's .data/files; test and production keep none unless told", () => {
+    const dev = loadConfig({ ...base, NODE_ENV: "development" }).files;
+    expect(dev).toMatchObject({ kind: "disk" });
+    expect(dev?.kind === "disk" && dev.dir.endsWith("/.data/files")).toBe(true);
+    expect(loadConfig({ ...base, NODE_ENV: "test" }).files).toBeNull();
+    expect(loadConfig({ ...base, NODE_ENV: "production", FILES_DIR: "/var/app/files" }).files).toEqual({
+      kind: "disk",
+      dir: "/var/app/files",
+    });
+  });
+
+  test("a bucket needs its keys, and takes the place of a folder", () => {
+    const s3 = { FILES_S3_BUCKET: "b", FILES_S3_ACCESS_KEY_ID: "id", FILES_S3_SECRET_ACCESS_KEY: "secret" };
+    expect(loadConfig({ ...base, ...s3, FILES_S3_ENDPOINT: "https://x.r2.cloudflarestorage.com" }).files).toMatchObject({
+      kind: "s3",
+      bucket: "b",
+      endpoint: "https://x.r2.cloudflarestorage.com",
+      region: null,
+    });
+    expect(problemsOf({ ...base, FILES_S3_BUCKET: "b" })).toContain(
+      "FILES_S3_BUCKET, FILES_S3_ACCESS_KEY_ID, FILES_S3_SECRET_ACCESS_KEY go together",
+    );
+    expect(problemsOf({ ...base, ...s3, FILES_DIR: "/x" })).toContain("FILES_DIR and FILES_S3_BUCKET: choose one place for files");
+  });
+
+  test("provider responses are kept 400 days unless told; 0 keeps them for good", () => {
+    expect(loadConfig(base).providerOriginalsDays).toBe(400);
+    expect(loadConfig({ ...base, PROVIDER_ORIGINALS_DAYS: "0" }).providerOriginalsDays).toBe(0);
+  });
+});

@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-31 (recorded)
-- Affects: platform/automation, features/marko, every feature that applies changes
+- Affects: automation, ai, every module that applies changes
 
 ## Context
 

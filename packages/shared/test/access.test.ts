@@ -11,7 +11,7 @@ const r = (module: string, id: string, group: string, actions: ResourceEntry["ac
   actions,
 });
 
-// A Project with the organization basics and one feature module.
+// An app with the organization basics and one feature module.
 const access: AccessCatalog = {
   groups: [
     { module: "identity", id: "organization", label: "Organization" },
@@ -81,7 +81,7 @@ describe("roles compile to permissions over the catalog (ADR 0003)", () => {
     expect(allows(p, "reviews", "post")).toBe(false);
   });
 
-  test("a Project without a module gets none of its resources, whatever the Role says", () => {
+  test("an app without a module gets none of its resources, whatever the Role says", () => {
     const withoutSeo: AccessCatalog = {
       groups: access.groups.filter((g) => g.module !== "seo"),
       resources: access.resources.filter((x) => x.module !== "seo"),

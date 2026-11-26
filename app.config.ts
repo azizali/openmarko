@@ -16,7 +16,7 @@ export const appConfig = {
   modules: {
     /** Plans, Entitlements, metering and Stripe. Off: every Organization has every feature, unlimited. */
     billing: true,
-    /** Partners managing Client Organizations, consent and whitelabel brand. */
+    /** Partners creating and managing Client Organizations, and their whitelabel brand. */
     partners: true,
     /** Models by name through many vendors, conversations, assistants and the embeddable chat widget. */
     ai: true,
@@ -24,6 +24,8 @@ export const appConfig = {
     knowledge: true,
     /** Runs, schedules, Tasks with Apply and Undo, Autopilot and the Activity log. */
     automation: true,
+    /** Local SEO: Google Maps rankings, Google search, AI answers, competitors and suggestions; needs `automation`. */
+    seo: true,
   },
 
   /**
@@ -47,6 +49,12 @@ export const appConfig = {
     { id: "assistant", label: "AI assistant", description: "Chat with the app's assistants.", module: "ai" },
     { id: "knowledge", label: "Knowledge bases", description: "Documents the assistant answers from.", module: "knowledge" },
     { id: "automation", label: "Automation", description: "Scheduled runs, tasks and autopilot.", module: "automation" },
+    {
+      id: "seo",
+      label: "SEO",
+      description: "Where you show on Google Maps, Google search and AI answers, with suggestions each week.",
+      module: "seo",
+    },
   ],
 } as const;
 

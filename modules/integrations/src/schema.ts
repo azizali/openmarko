@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, jsonb, pgSchema, text, timestamp, uuid, uniqueIndex, customType } from "drizzle-orm/pg-core";
+import { index, integer, jsonb, pgSchema, text, timestamp, uuid, uniqueIndex, customType } from "drizzle-orm/pg-core";
 import { authOrganization } from "@app/kernel";
 
 export const integrations = pgSchema("integrations");
@@ -80,4 +80,28 @@ export const webhookEvents = integrations.table(
     error: text("error"),
   },
   (t) => [uniqueIndex("webhook_events_external").on(t.providerId, t.externalId)],
+);
+
+/**
+ * A provider's untrimmed response, kept as a gzipped JSON file in the file store (ADR 0035): what's there to read
+ * later that we don't read yet. One row per response, so a file is found by the provider's own id for it, and
+ * dropped after `PROVIDER_ORIGINALS_DAYS`.
+ */
+export const providerOriginals = integrations.table(
+  "provider_originals",
+  {
+    id: uuid("id").primaryKey(),
+    providerId: text("provider_id").notNull(),
+    capability: text("capability").notNull(),
+    /** The provider's own id for the response (DataForSEO: the task id). */
+    ref: text("ref").notNull(),
+    /** Whose call it was; null for the app's own, or once the Organization is gone. */
+    organizationId: text("organization_id").references(() => authOrganization.id, { onDelete: "set null" }),
+    fileKey: text("file_key").notNull(),
+    bytes: integer("bytes").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => [index("provider_originals_ref").on(t.providerId, t.ref), index("provider_originals_created").on(t.createdAt)],
 );

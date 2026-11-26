@@ -8,6 +8,8 @@ import type { AdminGuard, OrgGuard } from "./guard";
 import type { Catalog, Declared, DeclaredResource, DeclaredSetting } from "./catalog";
 import type { Billing } from "./billing";
 import type { Knowledge } from "./knowledge";
+import type { FileStore } from "./files";
+import type { AssistantTool } from "./tools";
 
 /** What every module can reach. Built once at boot by apps/api and apps/worker. */
 export type AppContext = {
@@ -16,6 +18,8 @@ export type AppContext = {
   /** The application's pool. Modules that need their own search_path (identity) make their own. */
   pool: Pool;
   masterKeys: MasterKeys;
+  /** Files kept outside the database (`cfg.files`): null when the app has nowhere to put them, so nothing is kept. */
+  files: FileStore | null;
   /**
    * Derives `caller` for routes inside an Organization (`/organizations/:orgId/...`).
    * Set by the composition root, which owns sessions. Modules use it with `.use(ctx.orgGuard)`, never import it.
@@ -32,6 +36,8 @@ export type AppContext = {
   knowledge?: Knowledge;
   /** What the composed modules offer (their manifests). Set by the composition root; read it with `catalogOf`. */
   catalog?: Catalog;
+  /** The tools the enabled modules offer the assistant. Set by the composition root; read it with `toolsOf`. */
+  tools?: AssistantTool[];
   /**
    * Queues an email, when the messaging module runs: sign-in emails from identity go through it.
    * Resolves `false` when the app can't send yet (no sender or no provider), so callers carry on without it.
@@ -78,11 +84,13 @@ export type ModuleParts = {
   routes?: Elysia<any, any, any, any, any, any, any>;
   handlers?: { event: string; name: string; fn: Handler }[];
   jobs?: JobDefinition[];
+  /** Tools a member's chat may call (ADR 0036). Named `<module id>.<verb_noun>`, each needing a declared permission. */
+  tools?: AssistantTool[];
 };
 
 /**
  * A module's manifest: what it is and what it offers, readable without booting it. The composition root gathers
- * manifests into the catalog; settings, Roles, the admin area and the API docs read from it, so adding a module
+ * manifests into the catalog; settings, Roles, the platform admin area and the API docs read from it, so adding a module
  * changes none of those by hand.
  */
 export type ModuleDefinition = {
@@ -99,6 +107,11 @@ export type ModuleDefinition = {
   permissions?: DeclaredResource[];
   /** Role editor groups this module introduces. A resource may sit in any group in the catalog. */
   roleGroups?: Declared[];
+  /**
+   * What a member's chat should know about this module (ADR 0036): what it does for them and which page shows what,
+   * by the pages' on-screen labels. Never the app's name: a Partner may whitelabel it. A few sentences at most.
+   */
+  assistantBrief?: string;
   setup: (ctx: AppContext) => ModuleParts;
 };
 

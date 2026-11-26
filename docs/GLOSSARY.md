@@ -1,14 +1,14 @@
 # Glossary
 
-The words the code, the docs and the screens use. Each Project built on the boilerplate adds its own below these.
+The words the code, the docs and the screens use. Each app forked from the boilerplate adds its own below these.
 
 **App**:
-The product this repository is: one deploy, one database. In the Admin area, "the app's own" means something that belongs to the app rather than to an Organization: its email provider, its default model key.
-_Avoid_: platform, project, tenant
+The product this repository is: one deploy, one database. In the platform admin area, "the app's own" means something that belongs to the app rather than to an Organization: its email provider, its default model key.
+_Avoid_: project, tenant
 
-**Admin**:
-A person with the `admin` role on their user: they see the Admin area (users, Organizations, the app's connections and settings). Made by `ADMIN_EMAILS` or by another admin. Independent of any Organization Role.
-_Avoid_: operator, superuser
+**Platform admin**:
+A person with the `admin` role on their user: they see the platform admin area (users, Organizations, the app's connections and settings). Made by `ADMIN_EMAILS` or by another platform admin. Independent of any Organization Role. The sidebar shows it beside their Role.
+_Avoid_: admin (alone, it is easily taken for the Organization Role), operator, superuser
 
 **Organization**:
 The space a customer works in: its people, Roles, settings, connections and data. A person can belong to several.
@@ -19,7 +19,7 @@ A person with access to an Organization, with a Role in it.
 _Avoid_: user (for a member), seat
 
 **Role**:
-What a Member may do in an Organization: a level (None, View, Edit, Publish or Full) for everything, per group and per resource, or a hand-picked list of actions. Owner, Admin, Editor and Viewer are built in; each Organization can add its own. One Role per Member, no exceptions.
+What a Member may do in an Organization: a level (None, View, Edit, Publish or Full) for everything, per group and per resource, or a hand-picked list of actions. Owner, Manager, Editor and Viewer are built in (Manager is stored as `admin`; it is not the Platform admin); each Organization can add its own. One Role per Member, no exceptions.
 _Avoid_: permission set, access level
 
 **Action**:
@@ -58,12 +58,16 @@ One connected Provider, with its encrypted credentials. An Organization's own, o
 A model, instructions and the knowledge bases it answers from, owned by an Organization. Its chat widget can answer on websites it allows.
 _Avoid_: bot, agent
 
+**Tool**:
+Something a Module lets the Assistant do in a Member's chat: read the Organization's data, or propose a Task. Offered only when the Member's Role allows its Action; visitors on a website get none.
+_Avoid_: function, skill, action (an Action is what a Role allows)
+
 **Chat widget**:
 The floating chat button and its panel, with past chats and a new chat. The panel floats, docks to the side of the page, or goes wide over most of the screen. Members have one in the app, answering as the widget their Organization is offered (the **in-app widget**); a website embeds an Assistant's with one script tag, for its anonymous visitors. The button can be dragged anywhere on the page. The app's Widgets page is where an Organization makes them: on screen a widget and its Assistant are one thing.
 _Avoid_: chatbot, copilot, bubble
 
 **In-app widget**:
-The widget the chat button inside the app answers as. The nearest choice wins: the Organization's own, its Partner's (reaching its Clients), the app's (reaching everyone), then the Organization's **built-in widget**, a starter with no instructions and the default model that every Organization has and none can delete. A widget chosen from another Organization answers with its owner's knowledge and model, and its owner is metered.
+The widget the chat button inside the app answers as. The nearest choice wins: the Organization's own, its Partner's (reaching its Clients), the app's (reaching everyone), then the Organization's **built-in widget**, a starter with no instructions and the default model that every Organization has and none can delete. Until it is renamed or given a greeting, the chat shows the app's own assistant name and greeting; after, its own, and the model answers to its name. A widget chosen from another Organization answers with its owner's knowledge and model, and its owner is metered.
 
 **Knowledge base**:
 An Organization's documents, chunked and embedded, searched by meaning and by words.
@@ -86,3 +90,45 @@ What a Partner calls an Organization it manages. It is an Organization, not a se
 
 **Whitelabel**:
 A Partner's name, logo, colour and assistant name in place of ours, on everything its Clients and its own people see.
+
+## SEO
+
+**Location**:
+A business an Organization tracks in SEO: a place customers visit, with at most one Google Business Profile. An Organization can have several. A draft until it's launched.
+_Avoid_: business (in code), store, branch
+
+**Website**:
+A domain one or more Locations use. Google search positions are read for it.
+
+**Check**:
+One look at where a Location shows: Google Maps (a grid of searches around it), Google search, or AI answers; or one Site audit of its Website. A cycle of checks runs on the Location's schedule and is one Run.
+_Avoid_: scan (except for one keyword's map grid)
+
+**Site audit**:
+A crawl of a Location's Website and the issues found in it, each with its severity, the checks it holds back and how to fix it. Its errors and warnings become Suggestions. Health (0 to 100) sums it up.
+_Avoid_: site scan, SEO audit (for the whole SEO section)
+
+**Key page**:
+A page of a Location's Website it most wants customers to land on, chosen by a Member for some tracked keywords. Pages of the site about those keywords should link to it; the links to add (a Suggestion, done by hand) come from the Site audit's crawl.
+_Avoid_: money page, landing page (an ad's), link building (that's links from other sites: backlinks)
+
+**Rankings**:
+The half of SEO that says where a Location stands and who beats it: Google Maps, Google search, AI answers, Competitors.
+_Avoid_: monitoring
+
+**Action plan**:
+A Location's open Suggestions from every source (the Site audit, Key pages, the Google profile, what to track, where to get listed), most useful first. The half of SEO it heads, with the Site audit, is **Actions** in the sidebar.
+
+**Grid**:
+The spots around a Location that Google Maps is searched from, 5, 7 or 9 a side. "Top 3 in 31 of 49 spots" counts them.
+
+**Competitor**:
+A business or site that shows up for a Location's keywords or questions. Found, not typed in; a Member can add one by hand or hide one. Different per channel (Maps, Google search, AI answers) and per keyword.
+
+**Question**:
+What a Location asks the AI assistants, the way a customer would ask it.
+_Avoid_: prompt (in what people read)
+
+**Suggestion**:
+Something to do next for a Location, made from what the checks found, saying what it was based on. Applying one is a Task, so it can be undone. People see it as "an action" in the Action plan; that's not a Role's Action.
+_Avoid_: recommendation, insight, action item

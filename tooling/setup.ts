@@ -109,6 +109,7 @@ const optional = [
   { value: "knowledge", label: "Knowledge bases", hint: "needs AI" },
   { value: "automation", label: "Automation", hint: "schedules, Tasks, Activity" },
   { value: "partners", label: "Partners", hint: "agencies managing Clients, whitelabel" },
+  { value: "seo", label: "SEO", hint: "Maps, Google search, AI answers; needs Automation" },
 ] as const;
 type Optional = (typeof optional)[number]["value"];
 const on = await ask.some<Optional>(
@@ -121,6 +122,10 @@ const modules = Object.fromEntries(optional.map((m) => [m.value, on.includes(m.v
 if (modules.knowledge && !modules.ai) {
   modules.knowledge = false;
   p.log.warn("Knowledge bases need AI, so I turned them off.");
+}
+if (modules.seo && !modules.automation) {
+  modules.seo = false;
+  p.log.warn("SEO needs Automation, so I turned it off.");
 }
 
 const email = await ask.text("email", "Your email (your admin account)", {

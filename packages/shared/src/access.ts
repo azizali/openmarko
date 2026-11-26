@@ -3,17 +3,17 @@
 // Who can do what (ADR 0003). Each module declares, in its manifest, the permission resources
 // its routes check and their actions, and each action sits at a level:
 //   view → edit (draft, change) → publish (goes live, sends, spends) → manage (connect, delete, admin)
-// A Project's Roles are built from the resources of the modules it uses: its AccessCatalog (`caller.access`).
+// The app's Roles are built from the resources of the modules it has switched on: its AccessCatalog (`caller.access`).
 // A Role says a level per group, optionally a different level (or a hand-picked list of actions) per resource,
 // and a level for everything else. Roles compile to a plain { resource: actions[] } permission, so checks stay
 // fine-grained while editing a Role stays a handful of clicks, and a new module's resources pick up their group's
 // level in every Role without touching any of them.
 //
-// Better Auth: each Project's instance gets its own statement from its catalog (identity/auth.ts):
+// Better Auth gets its statement from the catalog (identity/auth.ts):
 //   const ac = createAccessControl(statementOf(access));
 //   organization({ ac, roles: presetRoles(access), dynamicAccessControl: { enabled: true } })
 // Custom Roles are Better Auth dynamic roles with the spec saved beside them (an additional field on
-// organizationRole), so the editor can reopen it and the grant recompiles against the Project's current catalog.
+// organizationRole), so the editor can reopen it and the grant recompiles against the app's current catalog.
 // `member`, `invitation`, `team`, `ac` and `organization` are Better Auth's own resources with its action names
 // (declared by the identity module), so its built-in endpoints are guarded by the same Roles.
 
@@ -36,7 +36,7 @@ const rank = (l: Level) => levels.indexOf(l);
 export type Resource = string;
 export type Permission = Record<Resource, string[]>;
 
-/** Better Auth's statement for a Project: every resource it has and that resource's actions. */
+/** Better Auth's statement for the app: every resource it has and that resource's actions. */
 export const statementOf = (access: AccessCatalog): Record<Resource, string[]> =>
   Object.fromEntries(access.resources.map((r) => [r.id, r.actions.map((a) => a.id)]));
 
@@ -48,9 +48,9 @@ export type RoleSpec = {
   preset?: boolean;
   /** Level for anything without its own. */
   base: Level;
-  /** Levels per Role editor group. Groups the Project doesn't have are ignored. */
+  /** Levels per Role editor group. Groups the app doesn't have are ignored. */
   groups: Partial<Record<string, Level>>;
-  /** A level, or exactly these actions. Resources the Project doesn't have are ignored. */
+  /** A level, or exactly these actions. Resources the app doesn't have are ignored. */
   resources: Partial<Record<Resource, Level | string[]>>;
 };
 
@@ -67,7 +67,7 @@ export function actionsFor(spec: RoleSpec, r: ResourceEntry): string[] {
     : allowed.filter((a) => rank(a.tier) <= rank(s)).map((a) => a.id);
 }
 
-/** The Role as Better Auth stores it, for one Project. Resources with nothing allowed are left out. */
+/** The Role as Better Auth stores it. Resources with nothing allowed are left out. */
 export function compile(access: AccessCatalog, spec: RoleSpec): Permission {
   const out: Permission = {};
   for (const r of access.resources) {
@@ -88,7 +88,13 @@ export const reach = (access: AccessCatalog, p: Permission, r: Resource): Level 
     "none",
   );
 
-/** The built-in Roles every Organization has, in every Project. Names they use that a Project lacks are ignored. */
+/** What the app calls a person with the user-level `admin` role. Never "Admin" alone: that reads as an Organization Role. */
+export const platformAdminLabel = "Platform admin";
+
+/** A Role's name for people: a built-in's own name, else the id (a custom Role's id is its name). */
+export const roleName = (id: string) => presets.find((r) => r.id === id)?.name ?? id;
+
+/** The built-in Roles every Organization has. Names they use that the app lacks (a module switched off) are ignored. */
 export const presets: RoleSpec[] = [
   {
     id: "owner",
@@ -100,8 +106,8 @@ export const presets: RoleSpec[] = [
     resources: {},
   },
   {
-    id: "admin",
-    name: "Admin",
+    id: "admin", // the stored id stays `admin`; only the name changed, so it isn't confused with the Platform admin
+    name: "Manager",
     description: "Everything except billing and deleting the organization.",
     preset: true,
     base: "manage",
@@ -128,6 +134,6 @@ export const presets: RoleSpec[] = [
   },
 ];
 
-/** The preset Roles compiled for one Project. */
+/** The preset Roles compiled against the app's catalog. */
 export const presetPermissions = (access: AccessCatalog): Record<string, Permission> =>
   Object.fromEntries(presets.map((p) => [p.id, compile(access, p)]));

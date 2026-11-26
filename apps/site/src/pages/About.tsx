@@ -1,5 +1,4 @@
 import { Container, Heading, Prose } from "../components/ui";
-import { FinalCta } from "../components/sections";
 import { APP_NAME, CONTACT_EMAIL } from "../data/site";
 import { useTitle } from "../lib/useTitle";
 
@@ -24,7 +23,6 @@ export default function About() {
           </p>
         </Prose>
       </Container>
-      <FinalCta />
     </>
   );
 }

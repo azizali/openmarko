@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-31
-- Affects: platform/backend, every module that emits or handles events
+- Affects: kernel, every module that emits or handles events
 
 ## Context
 

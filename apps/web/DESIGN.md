@@ -55,6 +55,11 @@ typography:
     fontWeight: 400
     lineHeight: 1
     letterSpacing: "-0.015em"
+  section-title:
+    fontFamily: "Roboto Flex, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "15px"
+    fontWeight: 500
+    lineHeight: 1.4
   title:
     fontFamily: "Roboto Flex, ui-sans-serif, system-ui, sans-serif"
     fontSize: "14px"
@@ -219,6 +224,7 @@ The `night-*` tokens are the same roles in dark mode. Dark mode is designed as i
 - **Display** (page titles only, one per page): the page's name, in the serif.
 - **Headline** (panel titles; the sign-in card goes a step larger): names an overlay or account screen.
 - **Figure** (headline numbers in Stat tiles and plan prices): serif with tabular numerals.
+- **Section Title** (15px, the heading of a part of a long page or form, such as each list on SEO setup's What to track): sans at medium weight, one step above Title so a long page reads in parts.
 - **Title** (card and list-section headings): sans at medium weight, so a card never competes with the page title.
 - **Body** (default text) and **Control** (buttons, fields, tables at 13.5px): the working layer. Descriptions stay under about 42rem wide.
 - **Label** (field labels, table headers from 12px up): medium weight in Pencil Gray.
@@ -269,6 +275,8 @@ Controls are exact and unfussy: small, tight and high in contrast, with precise 
 - **Secondary:** Clean Sheet with a hairline border; hover firms the border and adds Hover Wash.
 - **Ghost, Accent, Danger:** Ghost for row actions, Accent used sparingly, Danger a bordered button with red text.
 - **New:** anything that starts something new ("New role", "Add document", "Invite") is a `NewButton`: primary with a plus in front. A form's own submit ("Create", "Save") has no plus.
+- **Which variant:** primary for the page's own action (its `NewButton`, a suggestion's Apply) and a form's submit; secondary for everything else that does something (Check now, Change, Pause); danger only for what removes; ghost for row actions and for backing out of something done (Not now, Undo, Stop tracking). Cancel is always secondary.
+- **Form footer:** a side panel's or form's closing pair is `FormFooter`: Cancel (secondary) then the action (primary), with an optional note on the left.
 - **Press / Focus / Disabled:** presses scale to 97% over 150ms. Focus is a 2px Focus Pink outline at a 2px offset. Disabled drops to 50% opacity.
 
 ### Inputs / Fields
@@ -307,6 +315,16 @@ Every success or failure message is one `Feedback` (ADR 0030), a soft Good or Ba
 - **Menu list (phones):** a `MenuGroup` per group, with its Section Label and hint above a bordered card of `MenuLink` rows: icon, name and a chevron, at least 44px tall. Sideways-scrolling strips of links are not used for navigation.
 - **Tabs:** text with a 2px ink underline on the current tab. Arrow keys move between them.
 - **Segmented control:** a Hover Wash track with the current option lifted on a Clean Sheet.
+
+### Check marks (SEO)
+
+Each SEO check has its own colour, used only for its icon (`CheckIcon`): Google Maps teal, Google search blue, AI answers violet, Competitors orange (tokens `--check-*`, light and dark). Icons come in three looks (`CheckIcon`): `duotone` (the outline in the colour, its shape filled faintly with it, no box) where a check is introduced, in the overview's figures and section headings; `line` (the outline alone) beside a line of text, such as a suggestion's; `solid` (a tile of the colour, the icon in the page's own colour) is kept for a lone mark that has to carry a check by itself. No pale tinted tiles.
+
+A figure pops through its own data rather than decoration: under each overview figure, a small picture of it in the check's colour, pushed to the foot of the cell so the four line up. `Meter` for a share ("31% of your area"), `Units` for a count out of a few (a square per keyword or answer, filled for the ones that count; a `Meter` past 30), `Split` for where a total comes from (competitors by channel, each part in its channel's check colour, with a legend). These hues never carry status: good, bad, warn and info keep that job, so a teal pin never reads as "fine".
+
+### Settings sections
+
+A settings page is one card of `SettingsSection`s divided by hairlines. Each has its title, a line on why it matters and its one action (secondary `Change`, or danger to remove) on the left, and what's set on the right as `Facts`: a muted label beside each value, left-aligned so the eye doesn't cross the page. A setting with nothing in it says so in Pencil Gray. On a phone the action sits beside the title and the facts follow.
 
 ### Side Panel
 

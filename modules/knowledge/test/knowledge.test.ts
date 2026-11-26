@@ -242,7 +242,7 @@ describe("knowledge bases", () => {
   });
 });
 
-describe("the Admin area's view", () => {
+describe("the platform admin area's view", () => {
   test("an admin sees every base with its Organization, and can try a search", async () => {
     const admin = await adminSession(t.ctx);
     const list = (await call("GET", "/api/v1/admin/knowledge", { headers: admin.headers })).body as {

@@ -3,7 +3,7 @@
 - Status: Accepted
 - Date: 2026-11-08
 - Affects: everything
-- Supersedes: [0017](0017-one-backend-many-projects.md), [0018](0018-isolation-by-process-groups-and-cells.md), [0019](0019-a-request-is-named-by-its-key-or-its-domain.md), [0021](0021-roles-are-built-from-each-projects-modules.md); retires [0001](0001-mock-first.md) and [0016](0016-websites-connect-through-a-cms-contract.md)
+- Supersedes: the platform-era ADRs 0017, 0018, 0019 and 0021, and retires 0001 and 0016 (all since deleted)
 
 ## Context
 

@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-31 (recorded)
-- Affects: platform/integrations and every feature that sends, publishes or reads outside data
+- Affects: integrations, every module that sends, publishes or reads outside data
 
 ## Context
 

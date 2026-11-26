@@ -83,7 +83,7 @@ describe("models", () => {
     expect((await call("GET", "/api/v1/admin/ai/vendors/mistral/models", { headers: admin.headers })).status).toBe(422);
   });
 
-  test("the Admin area sees which vendors the app can reach", async () => {
+  test("the platform admin area sees which vendors the app can reach", async () => {
     const { body } = await call("GET", "/api/v1/admin/ai", { headers: admin.headers });
     const by = Object.fromEntries((body.vendors as { vendor: string; connected: boolean }[]).map((v) => [v.vendor, v.connected]));
     expect(by).toEqual({ anthropic: true, openai: true, google: false, openrouter: false });

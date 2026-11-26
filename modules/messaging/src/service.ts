@@ -1,15 +1,16 @@
 // Sending the app's email. The app sends from its sender (the `messaging` app setting) through an email Connection
 // (an Organization's own, else the app's). Mail is queued and sent by the worker, retried with backoff; while the
-// app can't send yet (no sender or no provider) it skips it, so sign-up still works and Admin → Email says why.
+// app can't send yet (no sender or no provider) it skips it, so sign-up still works and Platform admin → Email says why.
 import { z } from "zod";
 import { appConfig, AppError, type AppContext, type OutgoingEmail } from "@app/kernel";
+import { platformAdminLabel } from "@app/shared";
 import { readAppSetting } from "@app/settings";
 import { invoke, pickConnection } from "@app/integrations";
 import { render } from "./templates";
 
 const optionalEmail = z.union([z.literal(""), z.email()]).default("");
 
-/** The app's sender: edited in Admin → Email (a form from this schema). */
+/** The app's sender: edited in Platform admin → Email (a form from this schema). */
 export const senderSchema = z.object({
   fromEmail: z
     .union([z.literal(""), z.email()])
@@ -40,7 +41,7 @@ export async function emailStatus(ctx: AppContext) {
 /** Renders and sends one email now, through the Organization's provider if it has one, else the app's. */
 export async function sendNow(ctx: AppContext, msg: OutgoingEmail): Promise<{ messageId: string }> {
   const sender = await senderOf(ctx);
-  if (!sender) throw new AppError(409, "no_sender", "Set the app's sender (Admin → Email) first.");
+  if (!sender) throw new AppError(409, "no_sender", `Set the app's sender (${platformAdminLabel} → Email) first.`);
   // An invitation links to the app, where the person accepts it.
   const data =
     msg.template === "invitation" && msg.data.invitationId

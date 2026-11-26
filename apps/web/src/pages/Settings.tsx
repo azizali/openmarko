@@ -18,6 +18,7 @@ import {
   Paintbrush,
   Palette,
   Plug,
+  SearchCheck,
   SlidersHorizontal,
   ToggleRight,
   UserRound,
@@ -25,6 +26,7 @@ import {
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
+import { platformAdminLabel } from "@app/shared/access";
 import { Badge, Button, Card, Field, Input, MenuGroup, MenuLink, PageHeader, RailGroup, Select, Toggle } from "../components/ui";
 import { Table } from "../components/Table";
 import { Feedback, useFeedback, useToast } from "../components/Feedback";
@@ -172,6 +174,17 @@ const adminSections: Section[] = [
         },
       ]
     : []),
+  ...(__MODULE_SEO__
+    ? [
+        {
+          id: "admin-seo",
+          label: "SEO costs",
+          icon: SearchCheck,
+          page: lazy(() => import("./admin/SeoCosts")),
+          sub: "What search data costs: this month per organization, and per location at its settings.",
+        },
+      ]
+    : []),
   ...(__MODULE_KNOWLEDGE__
     ? [
         {
@@ -201,7 +214,9 @@ function useSettingsGroups() {
       ? [{ id: "partner", title: partner.name, hint: "Partner settings, for every client", sections: visible(partnerSections) }]
       : []),
     { id: "you", title: "You", hint: "Just for you, in every organization", sections: visible(yourSections) },
-    ...(admin ? [{ id: "admin", title: "App admin", hint: "The whole app, not this organization", sections: visible(adminSections) }] : []),
+    ...(admin
+      ? [{ id: "admin", title: platformAdminLabel, hint: "The whole app, not this organization", sections: visible(adminSections) }]
+      : []),
   ];
 }
 

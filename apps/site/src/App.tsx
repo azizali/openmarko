@@ -5,6 +5,7 @@ import Pricing from "./pages/Pricing";
 import About from "./pages/About";
 import { BlogIndex, BlogPost } from "./pages/Blog";
 import { Privacy, Terms } from "./pages/Legal";
+import { IndustriesIndex, IndustryPage } from "./pages/Industries";
 
 // Clean URLs for search engines. Static hosts rewrite unknown paths to /index.html (vercel.json).
 export default function App() {
@@ -14,6 +15,8 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="pricing" element={<Pricing />} />
+          <Route path="for" element={<IndustriesIndex />} />
+          <Route path="for/:slug" element={<IndustryPage />} />
           <Route path="about" element={<About />} />
           <Route path="blog" element={<BlogIndex />} />
           <Route path="blog/:slug" element={<BlogPost />} />

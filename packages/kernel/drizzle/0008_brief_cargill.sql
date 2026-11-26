@@ -1,0 +1,1 @@
+ALTER TABLE "seo"."place_categories" ADD COLUMN "businesses" integer DEFAULT 0 NOT NULL;

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { platformAdminLabel } from "@app/shared/access";
 import { Badge, Button, Card, CardHeader, SearchInput } from "../../components/ui";
 import { Row, Table } from "../../components/Table";
 import { useToast } from "../../components/Feedback";
@@ -47,7 +48,7 @@ export default function Users() {
             <span className="block text-[12.5px] text-muted">{u.email}</span>
           </button>,
           <span key="r" className="flex gap-1">
-            {u.role === "admin" && <Badge tone="accent">Admin</Badge>}
+            {u.role === "admin" && <Badge tone="accent">{platformAdminLabel}</Badge>}
             {u.banned && <Badge tone="bad">Banned</Badge>}
             {!u.emailVerified && <Badge>unverified</Badge>}
           </span>,

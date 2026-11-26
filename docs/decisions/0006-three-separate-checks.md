@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-31 (recorded)
-- Affects: platform/feature-switches, platform/access-roles, platform/integrations, platform/app-shell
+- Affects: features, access, integrations, web
 
 ## Context
 

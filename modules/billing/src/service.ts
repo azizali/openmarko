@@ -32,7 +32,7 @@ async function activePlan(db: Db | Tx, planId: string) {
 /** Creates or replaces a Plan. Replacing keeps existing subscriptions; only the definition changes. */
 /**
  * The Plan a new app starts with, so Organizations have entitlements from the first sign-up. Only into an empty table:
- * once any Plan exists, Plans are the admins' (Admin → Plans & usage) and this never touches them.
+ * once any Plan exists, Plans are the admins' (Platform admin → Plans & usage) and this never touches them.
  * Returns whether it made one.
  */
 export async function ensureFirstPlan(ctx: AppContext): Promise<boolean> {
@@ -97,7 +97,7 @@ export async function upsertPlan(ctx: AppContext, input: PlanInput): Promise<voi
   });
 }
 
-/** Every Plan with what it grants and meters, and how many Organizations are on it: the Admin area's Plans screen. */
+/** Every Plan with what it grants and meters, and how many Organizations are on it: the platform admin area's Plans screen. */
 export async function listPlans(ctx: AppContext) {
   const { rows } = await ctx.pool.query(
     `select p.id, p.name, p.description, p.active, p.sort, p.is_default as "isDefault",

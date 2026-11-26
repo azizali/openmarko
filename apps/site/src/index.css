@@ -8,10 +8,10 @@
   --surface: #ffffff;
   --sunken: #f4f4f5;
   --hover: #f4f4f5;
-  --border: #e4e4e7;
+  --border: #e8e8ec;
   --border-strong: #d4d4d8;
   --text: #09090b;
-  --muted: #71717a;
+  --muted: #66666f;
   --subtle: #9a9aa3;
   --ink: #09090b;
   --on-ink: #fafafa;
@@ -41,6 +41,20 @@
   --map-road: #ffffff;
   --map-water: #dde6ee;
   --map-park: #e3ece0;
+  /* The closing band and the footer: one dark ground in both themes, so they read as one block. */
+  --band: #0c0c0e;
+  /* The hero's sky and its folded paper pins. */
+  --sky-1: #fde3f1;
+  --sky-2: #fdf5fa;
+  --pin-a: #ffffff;
+  --pin-b: #fbd5ea;
+  --pin-c: #e84f98;
+  --pin-d: #a3195b;
+  --pin-glow: rgb(219 39 119 / 0.22);
+  /* Pink for small text on light grounds: --accent is a step too light for 4.5:1 there. */
+  --accent-ink: #be185d;
+  /* Strong ease-out for things that arrive. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   color-scheme: light;
 }
 
@@ -80,6 +94,14 @@
   --map-road: #27272a;
   --map-water: #172029;
   --map-park: #18241b;
+  --sky-1: #3b1230;
+  --sky-2: #140a14;
+  --pin-a: #ffe4f3;
+  --pin-b: #f9b6dc;
+  --pin-c: #fe7bcd;
+  --pin-d: #c2367f;
+  --pin-glow: rgb(254 123 205 / 0.45);
+  --accent-ink: #fe7bcd;
   color-scheme: dark;
 }
 
@@ -97,6 +119,7 @@
   --color-on-ink: var(--on-ink);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
   --color-good: var(--good);
   --color-good-soft: var(--good-soft);
   --color-bad: var(--bad);
@@ -105,9 +128,10 @@
   --color-warn-soft: var(--warn-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
+  --color-band: var(--band);
   --font-sans: "Roboto Flex", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Frank Ruhl Libre", ui-serif, Georgia, serif;
-  --font-display: "Archivo", "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --shadow-float: 0 24px 64px -16px rgb(0 0 0 / 0.16), 0 4px 12px rgb(0 0 0 / 0.04);
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04);
@@ -133,13 +157,11 @@ h3 {
   letter-spacing: -0.02em;
   font-optical-sizing: auto;
 }
-/* Display role: condensed, heavy, tight. In the base layer so weight utilities can still override it. */
+/* Display role: Geist, semibold and tight. In the base layer so weight utilities can still override it. */
 @layer base {
   .font-display {
-    font-stretch: 75%;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    word-spacing: 0.06em;
+    font-weight: 600;
+    letter-spacing: -0.045em;
   }
 }
 /* A phrase Marko delivers: ink text on a brand-pink underline, the counterpart to the agency strike. */
@@ -176,10 +198,117 @@ button {
     100% 100%;
   mask-image: linear-gradient(black 40%, transparent);
 }
+/* Faint grid on the dark closing band. */
+.grid-band {
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.05) 1px, transparent 0), linear-gradient(90deg, rgb(255 255 255 / 0.05) 1px, transparent 0);
+  background-size: 80px 80px;
+  mask-image: linear-gradient(black, transparent);
+}
+/* Home feature pictures stand on a fine dot ground. */
+.dot-ground {
+  background-image: radial-gradient(color-mix(in srgb, var(--text) 8%, transparent) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
 /* Small grid used inside visual panels. */
 .grid-fine {
   background-image: linear-gradient(var(--grid-line) 1px, transparent 0), linear-gradient(90deg, var(--grid-line) 1px, transparent 0);
   background-size: 24px 24px;
+}
+/* Home hero: a soft pink sky that brightens behind the app window. */
+.hero-sky {
+  background: radial-gradient(90% 60% at 50% 70%, var(--sky-1), var(--sky-2) 55%, var(--bg));
+}
+/* Folded paper pins rising like lanterns (Lanterns.tsx). Each sets --x, --w, --d, --delay, --o and --s. */
+.lantern {
+  position: absolute;
+  bottom: -80px;
+  left: var(--x);
+  width: var(--w);
+  opacity: 0;
+  animation: lantern-rise var(--d) linear var(--delay) infinite;
+}
+.lantern > span {
+  display: block;
+  animation: lantern-sway var(--s) ease-in-out infinite alternate;
+}
+.lantern svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 6px 14px var(--pin-glow));
+}
+@keyframes lantern-rise {
+  10%,
+  75% {
+    opacity: var(--o);
+  }
+  to {
+    transform: translateY(-720px);
+    opacity: 0;
+  }
+}
+@keyframes lantern-sway {
+  from {
+    transform: translateX(-14px) rotate(-6deg);
+  }
+  to {
+    transform: translateX(14px) rotate(6deg);
+  }
+}
+/* The dark band keeps the dark pins in either theme. */
+.bg-band .lantern {
+  --pin-a: #ffe4f3;
+  --pin-b: #f9b6dc;
+  --pin-c: #fe7bcd;
+  --pin-d: #c2367f;
+  --pin-glow: rgb(254 123 205 / 0.45);
+}
+/* Home steps: three stops on one dashed path, a dot running 1 → 2 → 3 every 4 s. Down the left on narrow screens. */
+.step-path::before {
+  content: "";
+  position: absolute;
+  left: calc(100% / 6);
+  right: calc(100% / 6);
+  top: 19px;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, var(--border-strong) 0 6px, transparent 6px 12px);
+}
+.step-runner {
+  position: absolute;
+  top: 12px;
+  left: calc(100% / 6);
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 6px var(--accent-soft);
+  animation: step-run 4s var(--ease-out) infinite;
+}
+@keyframes step-run {
+  40%,
+  50% {
+    left: 50%;
+  }
+  90%,
+  to {
+    left: calc(500% / 6);
+  }
+}
+@media (max-width: 1023px) {
+  .step-path::before {
+    left: 19px;
+    right: auto;
+    top: 20px;
+    bottom: 20px;
+    width: 2px;
+    height: auto;
+    background: repeating-linear-gradient(180deg, var(--border-strong) 0 6px, transparent 6px 12px);
+  }
+  .step-runner {
+    display: none;
+  }
 }
 /* Dithered pixel band, like a map seen from far away. Used as a section divider. */
 .pixel-band {
@@ -205,12 +334,6 @@ button {
   to {
     background-position: 100% 0;
   }
-}
-
-/* Notched section tag, the Chatwoot "label" shape. */
-.tag {
-  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%);
-  padding-right: 18px;
 }
 
 /* Tilted callout stuck onto a product visual. */
@@ -270,6 +393,7 @@ button {
   *::after {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
     transition-duration: 1ms !important;
   }
 }
@@ -328,4 +452,157 @@ button {
 ::selection {
   background: var(--accent-soft);
   color: var(--text);
+}
+
+/* Home: a grid's dots appear from the door outwards, once. */
+@keyframes dot-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+.dot-in {
+  animation: dot-in 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Home: a suggestion applies itself, shows Undo, then rests again. 3.6 s; hovering the card starts it over. */
+@keyframes apply-a {
+  0%,
+  38% {
+    opacity: 1;
+    transform: none;
+  }
+  44%,
+  92% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes apply-b {
+  0%,
+  38% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  44%,
+  92% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.apply-loop .apply-a {
+  animation: apply-a 3.6s ease-in-out infinite;
+}
+.apply-loop .apply-b {
+  animation: apply-b 3.6s ease-in-out infinite;
+}
+/* Same frames under a second name: switching names on hover restarts the loop from the start. */
+@keyframes apply-a-hover {
+  0%,
+  38% {
+    opacity: 1;
+    transform: none;
+  }
+  44%,
+  92% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes apply-b-hover {
+  0%,
+  38% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  44%,
+  92% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.apply-loop:hover .apply-a {
+  animation-name: apply-a-hover;
+}
+.apply-loop:hover .apply-b {
+  animation-name: apply-b-hover;
+}
+@media (prefers-reduced-motion: reduce) {
+  .apply-loop .apply-a,
+  .apply-loop .apply-b {
+    animation: none;
+  }
+  .apply-loop .apply-b {
+    opacity: 0;
+  }
+}
+
+/* Hero entrance: the headline, then the field, then the app window, once on load. */
+.enter {
+  animation: rise 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Home: an AI answer arriving word by word. Each word fades in; the caret blinks while it streams. */
+.stream-caret::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: var(--accent);
+  animation: caret 900ms steps(1) infinite;
+}
+@keyframes caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Proof strip: business names drift past; pausing stops them where they are. */
+.marquee[data-paused] {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    animation: none;
+  }
+}
+
+/* Scroll reveal (useReveal in lib/motion.ts): fades up once, 700ms strong ease-out, after --reveal-delay. */
+.reveal-on [data-reveal] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 700ms var(--ease-out) var(--reveal-delay, 0ms),
+    transform 700ms var(--ease-out) var(--reveal-delay, 0ms);
+}
+.reveal-on [data-reveal][data-shown] {
+  opacity: 1;
+  transform: none;
+}
+/* A rule that draws itself left to right once its revealed parent shows. */
+.reveal-on [data-reveal] .draw-line {
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 900ms var(--ease-out) calc(var(--reveal-delay, 0ms) + 200ms);
+}
+.reveal-on [data-reveal][data-shown] .draw-line {
+  transform: none;
 }

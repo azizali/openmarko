@@ -20,6 +20,8 @@ const page = (load: false | (() => Promise<{ default: ComponentType }>)) => (loa
 const Widgets = page(__MODULE_AI__ && (() => import("./pages/Widgets")));
 const Knowledge = page(__MODULE_KNOWLEDGE__ && (() => import("./pages/Knowledge")));
 const Automation = page(__MODULE_AUTOMATION__ && (() => import("./pages/Automation")));
+const Seo = page(__MODULE_SEO__ && (() => import("./pages/seo/Seo")));
+const SeoSetup = page(__MODULE_SEO__ && (() => import("./pages/seo/Setup")));
 
 /** Admin moved into Settings (ADR 0027); old links still land on the same section. */
 function AdminRedirect() {
@@ -40,6 +42,7 @@ export default function App() {
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/accept-invitation/:id" element={<AcceptInvitation />} />
               <Route path="/onboarding" element={<Onboarding />} />
+              {SeoSetup && <Route path="/seo/setup" element={<SeoSetup />} />}
               <Route element={<Layout />}>
                 <Route index element={<Home />} />
                 {Widgets && <Route path="widgets" element={<Widgets />} />}
@@ -48,6 +51,8 @@ export default function App() {
                 {Knowledge && <Route path="knowledge" element={<Knowledge />} />}
                 {Knowledge && <Route path="knowledge/:baseId" element={<Knowledge />} />}
                 {Automation && <Route path="automation" element={<Automation />} />}
+                {Seo && <Route path="seo/:tab?" element={<Seo />} />}
+                {Seo && <Route path="seo/:tab/*" element={<Seo />} />}
                 <Route path="team" element={<Navigate replace to="/settings/team" />} />
                 <Route path="clients" element={<Navigate replace to="/settings/clients" />} />
                 <Route path="whitelabel" element={<Navigate replace to="/settings/whitelabel" />} />

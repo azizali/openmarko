@@ -5,5 +5,6 @@ declare const __MODULE_PARTNERS__: boolean;
 declare const __MODULE_AI__: boolean;
 declare const __MODULE_KNOWLEDGE__: boolean;
 declare const __MODULE_AUTOMATION__: boolean;
+declare const __MODULE_SEO__: boolean;
 declare const __APP_NAME__: string;
 declare const __FEATURES__: { id: string; label: string; description: string; module?: string }[];

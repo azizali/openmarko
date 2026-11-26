@@ -58,7 +58,7 @@ describe("Organizations and their people", () => {
   });
 });
 
-describe("the Admin area's view", () => {
+describe("the platform admin area's view", () => {
   test("lists every Organization with its Owner's status, and creates one for an existing user or by invitation", async () => {
     const admin = await adminSession(t.ctx);
     const by = { userId: admin.userId, email: admin.email, name: "Admin" };

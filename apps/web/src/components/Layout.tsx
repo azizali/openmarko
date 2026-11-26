@@ -1,29 +1,38 @@
 // The app shell: a sidebar with the Organization switcher and the pages the enabled modules add, a command palette
-// (⌘K), the theme toggle, and the page area. Pages a Role can't see, or a module that's off, never show.
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
+// (⌘K), the assistant (⌘J), the theme toggle, and the page area. Pages a Role can't see, or a module that's off, never
+// show. On wide screens the sidebar narrows to icons (⌘\ or its button) and remembers it.
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router";
 import {
+  BarChart3,
   BookOpen,
   Bot,
   Check,
   ChevronRight,
   ChevronsUpDown,
   CornerDownLeft,
+  Gauge,
   LayoutGrid,
   ListChecks,
+  ListTodo,
   LogOut,
   Menu,
   MessagesSquare,
   Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
   Plus,
   Search,
+  SearchCheck,
   Settings,
   Sparkles,
   Sun,
 } from "lucide-react";
 import { Avatar, cn, ModalDialog, navRow } from "./ui";
-import { Logo } from "./Logo";
+import { RailTips, railTip } from "./RailTips";
+import { Logo, LogoMark } from "./Logo";
 import { useTheme } from "../lib/theme";
+import { platformAdminLabel, roleName } from "@app/shared/access";
 import { useSession, type Membership } from "../lib/session";
 import { modules } from "../lib/modules";
 import { useBrand } from "../lib/brand";
@@ -31,9 +40,22 @@ import { useBrand } from "../lib/brand";
 // The floating chat widget and what the sidebar's Sparkles button opens. Folds away with the ai module (vite.config.ts).
 const AppChat = __MODULE_AI__ ? lazy(() => import("./AppChat")) : null;
 
-type Icon = ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
-type NavGroupInfo = { label: string; icon: Icon };
+type Icon = ComponentType<{
+  size?: number;
+  strokeWidth?: number;
+  className?: string;
+}>;
+/**
+ * Pages listed together. A group is an expandable parent row by default; a `section` is always open instead, its pages
+ * under a small label, for a group that is most of what the app is.
+ */
+type NavGroupInfo = { label: string; icon: Icon; section?: boolean };
 const aiGroup: NavGroupInfo = { label: "AI", icon: Bot };
+const seoGroup: NavGroupInfo = {
+  label: "Search",
+  icon: SearchCheck,
+  section: true,
+};
 export type NavItem = {
   /** The feature switch (app.config.ts) that shows or hides this entry. */
   feature?: string;
@@ -42,6 +64,11 @@ export type NavItem = {
   icon: Icon;
   /** Listed under this expandable parent in the sidebar. */
   group?: NavGroupInfo;
+  /**
+   * The pages this entry stands for, shown as tabs on them (Rankings: Google Maps, Google search…). The entry is the
+   * current one on any of them, and each is offered by name in the command palette.
+   */
+  within?: { to: string; label: string }[];
   /** Sits at the foot of the sidebar with the account, apart from the pages. */
   foot?: boolean;
   when?: (can: (r: string, a: string) => boolean) => boolean;
@@ -50,6 +77,45 @@ export type NavItem = {
 /** Every page in the app. Optional modules add theirs only when the build has them. */
 export const nav: NavItem[] = [
   { to: "/", label: "Home", icon: LayoutGrid },
+  // Search (the SEO module), for the Location chosen on the page: the overview; Rankings, where you stand and who beats
+  // you; Actions, what to change to move them; and its settings. Rankings and Actions are one entry each, their pages
+  // tabs on the page (ADR 0037), so the sidebar stays four rows however many tools Actions grows.
+  ...(modules.seo
+    ? (
+        [
+          ["/seo/overview", "Overview", Gauge],
+          [
+            "/seo/maps",
+            "Rankings",
+            BarChart3,
+            [
+              ["/seo/maps", "Google Maps"],
+              ["/seo/keywords", "Google search"],
+              ["/seo/ai", "AI answers"],
+              ["/seo/competitors", "Competitors"],
+            ],
+          ],
+          [
+            "/seo/plan",
+            "Actions",
+            ListTodo,
+            [
+              ["/seo/plan", "Action plan"],
+              ["/seo/site-audit", "Site audit"],
+            ],
+          ],
+          ["/seo/settings", "Search settings", Settings],
+        ] as const
+      ).map(([to, label, icon, within]): NavItem => ({
+        to,
+        label,
+        icon,
+        group: seoGroup,
+        within: within?.map(([t, l]) => ({ to: t, label: l })),
+        feature: "seo",
+        when: (can) => can("seo", "view"),
+      }))
+    : []),
   ...(modules.automation
     ? [
         {
@@ -92,6 +158,43 @@ export const nav: NavItem[] = [
 const iconBtn =
   "grid size-7 shrink-0 place-items-center rounded-md text-muted transition-colors hover:bg-hover hover:text-fg pointer-coarse:size-9";
 const onPath = (path: string, to: string) => (to === "/" ? path === "/" : path === to || path.startsWith(`${to}/`));
+/** Whether a sidebar entry is the current one: its own page, or one of the pages it stands for. */
+const isHere = (path: string, item: NavItem) => onPath(path, item.to) || !!item.within?.some((w) => onPath(path, w.to));
+
+/** The keyboard shortcuts, written the way this computer's keyboard labels them. */
+const mac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+const shortcut = { search: "K", assistant: "J", sidebar: "\\" } as const;
+const keys = (key: string) => (mac ? `⌘${key}` : `Ctrl ${key}`);
+function Kbd({ k }: { k: string }) {
+  return <kbd className="ml-auto shrink-0 rounded border border-line px-1 font-sans text-[11px] leading-[16px] text-subtle">{keys(k)}</kbd>;
+}
+
+const narrowKey = "sidebar-narrow";
+function storedNarrow() {
+  try {
+    return localStorage.getItem(narrowKey) === "1";
+  } catch {
+    return false; // storage blocked: wide, the default
+  }
+}
+
+/** Whether the wide-screen sidebar shows icons only, remembered on this browser. */
+function useNarrowSidebar() {
+  const [narrow, setNarrow] = useState(storedNarrow);
+  const toggle = useCallback(
+    () =>
+      setNarrow((v) => {
+        try {
+          localStorage.setItem(narrowKey, v ? "0" : "1");
+        } catch {
+          // storage blocked: it just won't be remembered
+        }
+        return !v;
+      }),
+    [],
+  );
+  return [narrow, toggle] as const;
+}
 
 const groupKey = (label: string) => `nav-group-${label}`;
 function storedOpen(label: string) {
@@ -102,12 +205,32 @@ function storedOpen(label: string) {
   }
 }
 
-function SidebarLink({ item, path }: { item: NavItem; path: string }) {
+/** A row in the narrow sidebar: just the icon, its name in the tooltip (RailTips) and for screen readers. */
+const narrowRow = (active: boolean) => cn(navRow(active), "w-9 justify-center px-0 pointer-coarse:w-9");
+
+function SidebarLink({ item, path, narrow }: { item: NavItem; path: string; narrow?: boolean }) {
+  const here = isHere(path, item);
   return (
-    <Link to={item.to} aria-current={onPath(path, item.to) ? "page" : undefined} className={navRow(onPath(path, item.to))}>
+    <Link
+      to={item.to}
+      aria-current={here ? "page" : undefined}
+      {...(narrow ? railTip(item.label, { group: item.group?.label }) : {})}
+      className={narrow ? narrowRow(here) : navRow(here)}
+    >
       <item.icon size={15} strokeWidth={1.75} className="shrink-0" />
-      <span className="flex-1 truncate">{item.label}</span>
+      <span className={narrow ? "sr-only" : "flex-1 truncate"}>{item.label}</span>
     </Link>
+  );
+}
+
+/** A group in the narrow sidebar: its pages as icons, set apart by a rule instead of a label; their tooltips name it. */
+function NarrowGroup({ info, items, path }: { info: NavGroupInfo; items: NavItem[]; path: string }) {
+  return (
+    <div role="group" aria-label={info.label} className="my-1 flex flex-col items-center gap-px border-y border-line py-1">
+      {items.map((n) => (
+        <SidebarLink key={n.to} item={n} path={path} narrow />
+      ))}
+    </div>
   );
 }
 
@@ -154,7 +277,22 @@ function NavGroup({ info, items, path }: { info: NavGroupInfo; items: NavItem[];
   );
 }
 
-function OrgSwitcher() {
+/** An always-open group: a small label, then its pages with their icons. */
+function NavSection({ info, items, path }: { info: NavGroupInfo; items: NavItem[]; path: string }) {
+  const id = `nav-section-${info.label.replace(/\W+/g, "-").toLowerCase()}`;
+  return (
+    <div role="group" aria-labelledby={id} className="my-3 flex flex-col gap-px first:mt-0 last:mb-0">
+      <div id={id} className="px-2 pb-1 text-[11px] font-medium tracking-[0.06em] text-subtle uppercase">
+        {info.label}
+      </div>
+      {items.map((n) => (
+        <SidebarLink key={n.to} item={n} path={path} />
+      ))}
+    </div>
+  );
+}
+
+function OrgSwitcher({ narrow }: { narrow?: boolean }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const { organizations, org, partners, switchOrg, me } = useSession();
@@ -182,24 +320,39 @@ function OrgSwitcher() {
   const groups = [
     { label: "Partner", orgs: organizations.filter(isPartner) },
     { label: "Clients", orgs: organizations.filter(isClient) },
-    { label: others.length > 1 ? "Organizations" : "Organization", orgs: others },
+    {
+      label: others.length > 1 ? "Organizations" : "Organization",
+      orgs: others,
+    },
   ].filter((g) => g.orgs.length > 0);
   return (
     <div ref={root} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex min-h-10 w-full items-center gap-2.5 rounded-md p-1 text-left hover:bg-hover"
+        className={cn("flex min-h-10 items-center gap-2.5 rounded-md p-1 text-left hover:bg-hover", narrow ? "mx-auto" : "w-full")}
         aria-expanded={open}
+        aria-label={narrow ? `Organization: ${org?.name ?? "none"}` : undefined}
+        {...(narrow ? railTip(org?.name ?? "No organization", { group: "Organization" }) : {})}
       >
         <span className="grid size-7 shrink-0 place-items-center rounded-md bg-ink text-[13px] font-semibold text-on-ink">{initial}</span>
-        <span className="min-w-0 flex-1 leading-tight">
-          <span className="block truncate text-[13px] font-medium">{org?.name ?? "No organization"}</span>
-          {kind && <span className="block truncate text-[12px] text-muted">{kind}</span>}
-        </span>
-        <ChevronsUpDown size={14} className="text-subtle" />
+        {!narrow && (
+          <>
+            <span className="min-w-0 flex-1 leading-tight">
+              <span className="block truncate text-[13px] font-medium">{org?.name ?? "No organization"}</span>
+              {kind && <span className="block truncate text-[12px] text-muted">{kind}</span>}
+            </span>
+            <ChevronsUpDown size={14} className="text-subtle" />
+          </>
+        )}
       </button>
       {open && (
-        <div className="anim-fade absolute top-full right-0 left-0 z-30 mt-1 rounded-lg border border-line bg-surface p-1 shadow-float">
+        <div
+          className={cn(
+            "anim-fade absolute z-30 rounded-lg border border-line bg-surface p-1 shadow-float",
+            // In the narrow sidebar it opens beside the rail rather than under it: there's no room below.
+            narrow ? "top-0 left-full ml-2 w-60" : "top-full right-0 left-0 mt-1",
+          )}
+        >
           {groups.map((g) => (
             <div key={g.label}>
               <div className="px-2 pt-1 pb-0.5 text-[11px] font-medium tracking-[0.06em] text-subtle uppercase">{g.label}</div>
@@ -248,14 +401,22 @@ function OrgSwitcher() {
   );
 }
 
-function CommandPalette({ onClose, items }: { onClose: () => void; items: NavItem[] }) {
+/** Something the command menu does in place rather than a page it goes to, shown with its shortcut. */
+type PaletteAction = { label: string; key: string; run: () => void };
+
+function CommandPalette({ onClose, items, actions }: { onClose: () => void; items: NavItem[]; actions: PaletteAction[] }) {
   const [q, setQ] = useState("");
   const [idx, setIdx] = useState(0);
   const navigate = useNavigate();
   const { admin, partner } = useSession();
   const found = useMemo(() => {
-    const pages = [
-      ...items.map((i) => ({ label: i.label, hint: "Page", to: i.to })),
+    const pages: { label: string; hint: string; to?: string; key?: string; run?: () => void }[] = [
+      ...actions.map((a) => ({ label: a.label, hint: "", key: a.key, run: a.run })),
+      ...items.flatMap((i) =>
+        i.within
+          ? i.within.map((w) => ({ label: `${i.label} · ${w.label}`, hint: "Page", to: w.to }))
+          : [{ label: i.label, hint: "Page", to: i.to }],
+      ),
       ...[
         "general",
         "features",
@@ -270,14 +431,23 @@ function CommandPalette({ onClose, items }: { onClose: () => void; items: NavIte
         hint: "Settings",
         to: `/settings/${s}`,
       })),
-      ...(admin ? [{ label: "Admin", hint: "Settings", to: "/settings/admin-users" }] : []),
+      ...(admin
+        ? [
+            {
+              label: platformAdminLabel,
+              hint: "Settings",
+              to: "/settings/admin-users",
+            },
+          ]
+        : []),
       { label: "New organization", hint: "Setup", to: "/onboarding" },
     ];
     return pages.filter((i) => i.label.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
-  }, [q, items, admin, partner]);
-  const go = (to: string) => {
-    navigate(to);
+  }, [q, items, actions, admin, partner]);
+  const go = (it: (typeof found)[number]) => {
     onClose();
+    if (it.run) it.run();
+    else if (it.to) void navigate(it.to);
   };
   return (
     <ModalDialog
@@ -302,7 +472,7 @@ function CommandPalette({ onClose, items }: { onClose: () => void; items: NavIte
               e.preventDefault();
               setIdx((i) => Math.max(0, i - 1));
             }
-            if (e.key === "Enter" && found[idx]) go(found[idx]!.to);
+            if (e.key === "Enter" && found[idx]) go(found[idx]!);
           }}
           placeholder="Go to…"
           aria-label="Search"
@@ -311,15 +481,15 @@ function CommandPalette({ onClose, items }: { onClose: () => void; items: NavIte
       </div>
       <ul className="max-h-80 overflow-y-auto p-1.5">
         {found.map((it, i) => (
-          <li key={it.to + it.label}>
+          <li key={(it.to ?? "") + it.label}>
             <button
               onMouseEnter={() => setIdx(i)}
-              onClick={() => go(it.to)}
+              onClick={() => go(it)}
               className={cn("flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-[13.5px]", i === idx && "bg-hover")}
             >
               {it.label.startsWith("New ") && <Plus size={13} className="shrink-0 text-subtle" />}
               <span className="flex-1 truncate">{it.label}</span>
-              <span className="text-[12px] text-subtle">{it.hint}</span>
+              {it.key ? <Kbd k={it.key} /> : <span className="text-[12px] text-subtle">{it.hint}</span>}
               {i === idx && <CornerDownLeft size={13} className="text-subtle" />}
             </button>
           </li>
@@ -335,23 +505,48 @@ export default function Layout() {
   const [cmd, setCmd] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [narrow, toggleNarrow] = useNarrowSidebar();
   const loc = useLocation();
-  const { loading, me, org, organizations, can, signOut, features } = useSession();
+  const navigate = useNavigate();
+  const { loading, me, org, organizations, can, signOut, features, admin } = useSession();
   const brand = useBrand();
 
+  // Everyone who may chat has the widget, as long as the Organization has the assistant switched on.
+  const hasChat = modules.ai && can("ai", "chat") && features.assistant?.on !== false;
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
+      const k = e.key.toLowerCase();
+      if (k === shortcut.search.toLowerCase()) {
         e.preventDefault();
         setCmd((v) => !v);
+      } else if (k === shortcut.assistant.toLowerCase() && hasChat) {
+        e.preventDefault();
+        setCmd(false);
+        setChatOpen((v) => !v);
+      } else if (k === shortcut.sidebar) {
+        e.preventDefault();
+        toggleNarrow();
       }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
-  }, []);
+  }, [hasChat, toggleNarrow]);
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [loc.pathname]);
+  // Switching Organization leaves what belonged to the old one (a SEO setup in progress, a chosen Location): SEO
+  // starts over from its own entry, which resumes any draft the new Organization has. The narrow-view menu closes too.
+  const orgId = org?.id;
+  const lastOrg = useRef(orgId);
+  useEffect(() => {
+    const was = lastOrg.current;
+    lastOrg.current = orgId;
+    // The first Organization arriving as the page loads isn't a switch: a reload or a shared link stays where it was.
+    if (!was || was === orgId) return;
+    setMobileNav(false); // the narrow-view menu was opened for the old Organization
+    if (loc.pathname.startsWith("/seo")) void navigate("/seo", { replace: true });
+  }, [orgId, loc.pathname, navigate]);
 
   if (loading) return null;
   if (!me) return <Navigate to="/sign-in" replace state={{ from: loc.pathname }} />;
@@ -360,13 +555,50 @@ export default function Layout() {
   // A feature that's off hides its menu entry, and its page says so (Settings → Features turns it back on).
   const switched = (n: NavItem) => !n.feature || features[n.feature]?.on !== false;
   const items = nav.filter((n) => (!n.when || n.when(can)) && switched(n));
-  const offHere = nav.find((n) => n.feature && onPath(loc.pathname, n.to) && !switched(n));
-  // Everyone who may chat has the widget, as long as the Organization has the assistant switched on.
-  const hasChat = modules.ai && can("ai", "chat") && features.assistant?.on !== false;
+  const offHere = nav.find((n) => n.feature && isHere(loc.pathname, n) && !switched(n));
   const chatButton = hasChat && !onPath(loc.pathname, "/widgets");
+  const openChat = () => {
+    setChatOpen(!chatOpen);
+    setMobileNav(false);
+  };
+  const actions: PaletteAction[] = [
+    ...(hasChat ? [{ label: `Ask ${brand.assistant}`, key: shortcut.assistant, run: () => setChatOpen(true) }] : []),
+    { label: narrow ? "Widen sidebar" : "Narrow sidebar", key: shortcut.sidebar, run: toggleNarrow },
+  ];
 
   const pages = items.filter((n) => !n.foot);
   const foot = items.filter((n) => n.foot);
+  /** A tooltip in the narrow sidebar (RailTips), a plain `title` in the wide one. */
+  const named = (rail: boolean, name: string, key?: string) =>
+    rail ? railTip(name, { shortcut: key && keys(key) }) : { title: key ? `${name} (${keys(key)})` : name };
+  const sidebarToggle = (rail: boolean) => (
+    <button
+      onClick={toggleNarrow}
+      aria-label={narrow ? "Widen sidebar" : "Narrow sidebar"}
+      {...named(rail, narrow ? "Widen sidebar" : "Narrow sidebar", shortcut.sidebar)}
+      className={cn(iconBtn, "hidden lg:grid")}
+    >
+      {narrow ? <PanelLeftOpen size={15} strokeWidth={1.75} /> : <PanelLeftClose size={15} strokeWidth={1.75} />}
+    </button>
+  );
+  const themeButton = (rail: boolean) => (
+    <button
+      onClick={() => setDark(!dark)}
+      aria-label={dark ? "Light mode" : "Dark mode"}
+      {...named(rail, dark ? "Light mode" : "Dark mode")}
+      className={iconBtn}
+    >
+      {dark ? <Sun size={15} strokeWidth={1.75} /> : <Moon size={15} strokeWidth={1.75} />}
+    </button>
+  );
+  const signOutButton = (rail: boolean) => (
+    <button onClick={() => void signOut()} aria-label="Sign out" {...named(rail, "Sign out")} className={iconBtn}>
+      <LogOut size={15} strokeWidth={1.75} />
+    </button>
+  );
+  const roleLine = `${roleName(org.role)}${admin ? ` · ${platformAdminLabel}` : ""}`;
+
+  // Search and the assistant are icons beside the logo; their tooltips and the command menu name the shortcuts.
   const sidebar = (
     <div className="flex h-full flex-col gap-1 px-2.5 py-2.5">
       <div className="flex h-8 items-center gap-0.5">
@@ -375,26 +607,26 @@ export default function Layout() {
         </NavLink>
         {hasChat && (
           <button
-            onClick={() => {
-              setChatOpen(!chatOpen);
-              setMobileNav(false);
-            }}
-            aria-label={brand.assistant}
+            onClick={openChat}
+            aria-label={`Ask ${brand.assistant}`}
             aria-pressed={chatOpen}
-            title={brand.assistant}
+            title={`Ask ${brand.assistant} (${keys(shortcut.assistant)})`}
             className={iconBtn}
           >
             <Sparkles size={15} strokeWidth={1.75} />
           </button>
         )}
-        <button onClick={() => setCmd(true)} aria-label="Search" title="Search (⌘K)" className={iconBtn}>
+        <button onClick={() => setCmd(true)} aria-label="Search" title={`Search (${keys(shortcut.search)})`} className={iconBtn}>
           <Search size={15} strokeWidth={1.75} />
         </button>
+        {sidebarToggle(false)}
       </div>
       <OrgSwitcher />
       <nav className="mt-1 flex flex-1 flex-col gap-px overflow-y-auto" aria-label="Main">
         {pages.map((n, i) => {
           if (n.group && pages[i - 1]?.group === n.group) return null; // listed with the first of its group
+          if (n.group?.section)
+            return <NavSection key={n.group.label} info={n.group} items={pages.filter((p) => p.group === n.group)} path={loc.pathname} />;
           if (n.group)
             return <NavGroup key={n.group.label} info={n.group} items={pages.filter((p) => p.group === n.group)} path={loc.pathname} />;
           return <SidebarLink key={n.to} item={n} path={loc.pathname} />;
@@ -409,31 +641,80 @@ export default function Layout() {
             <Avatar name={me.name} className="size-7 text-[11px]" />
             <div className="min-w-0 flex-1 leading-tight">
               <div className="truncate text-[12.5px] font-medium">{me.name}</div>
-              <div className="truncate text-[12px] text-muted capitalize" title={`Your role in ${org.name}`}>
-                {org.role}
+              <div
+                className="truncate text-[12px] text-muted"
+                title={`Your role in ${org.name}${admin ? `, and ${platformAdminLabel.toLowerCase()} of the whole app` : ""}`}
+              >
+                {roleLine}
               </div>
             </div>
           </div>
-          <button
-            onClick={() => setDark(!dark)}
-            aria-label={dark ? "Light mode" : "Dark mode"}
-            title={dark ? "Light mode" : "Dark mode"}
-            className={iconBtn}
-          >
-            {dark ? <Sun size={15} strokeWidth={1.75} /> : <Moon size={15} strokeWidth={1.75} />}
-          </button>
-          <button onClick={() => void signOut()} aria-label="Sign out" title="Sign out" className={iconBtn}>
-            <LogOut size={15} strokeWidth={1.75} />
-          </button>
+          {themeButton(false)}
+          {signOutButton(false)}
         </div>
       </div>
     </div>
   );
 
+  // The narrow sidebar: the same things as icons, their names and shortcuts in tooltips. Wide screens only.
+  const narrowSidebar = (
+    <RailTips className="flex h-full flex-col items-center gap-1 px-2 py-2.5">
+      <NavLink
+        to="/"
+        aria-label={`${brand.name} home`}
+        {...named(true, brand.name)}
+        className="grid h-8 w-9 place-items-center rounded-md hover:bg-hover"
+      >
+        <LogoMark size={18} />
+      </NavLink>
+      {sidebarToggle(true)}
+      <OrgSwitcher narrow />
+      <button onClick={() => setCmd(true)} aria-label="Search" {...named(true, "Search", shortcut.search)} className={narrowRow(false)}>
+        <Search size={15} strokeWidth={1.75} />
+      </button>
+      {hasChat && (
+        <button
+          onClick={openChat}
+          aria-label={`Ask ${brand.assistant}`}
+          aria-pressed={chatOpen}
+          {...named(true, `Ask ${brand.assistant}`, shortcut.assistant)}
+          className={narrowRow(chatOpen)}
+        >
+          <Sparkles size={15} strokeWidth={1.75} />
+        </button>
+      )}
+      <nav className="mt-1 flex w-full flex-1 flex-col items-center gap-px overflow-y-auto border-t border-line pt-2" aria-label="Main">
+        {pages.map((n, i) => {
+          if (n.group && pages[i - 1]?.group === n.group) return null;
+          if (n.group)
+            return <NarrowGroup key={n.group.label} info={n.group} items={pages.filter((p) => p.group === n.group)} path={loc.pathname} />;
+          return <SidebarLink key={n.to} item={n} path={loc.pathname} narrow />;
+        })}
+      </nav>
+      <div className="flex w-full flex-col items-center gap-1 border-t border-line pt-2">
+        {foot.map((n) => (
+          <SidebarLink key={n.to} item={n} path={loc.pathname} narrow />
+        ))}
+        <span {...railTip(`${me.name} · ${roleLine}`)} className="py-0.5">
+          <Avatar name={me.name} className="size-7 text-[11px]" />
+        </span>
+        {themeButton(true)}
+        {signOutButton(true)}
+      </div>
+    </RailTips>
+  );
+
   return (
     <div className="flex min-h-full">
-      <aside className="sidebar-scope sticky top-0 hidden h-screen w-60 shrink-0 border-r border-line bg-sidebar lg:block print:hidden">
-        {sidebar}
+      {/* Sticky makes the sidebar its own stacking context, so without a z-index the page (later in the DOM) paints over
+          anything that spills out of it, like the Organization menu in the narrow sidebar. */}
+      <aside
+        className={cn(
+          "sidebar-scope sticky top-0 z-30 hidden h-screen shrink-0 border-r border-line bg-sidebar lg:block print:hidden",
+          narrow ? "w-14" : "w-60",
+        )}
+      >
+        {narrow ? narrowSidebar : sidebar}
       </aside>
       {mobileNav && (
         <ModalDialog
@@ -483,7 +764,7 @@ export default function Layout() {
           )}
         </main>
       </div>
-      {cmd && <CommandPalette onClose={() => setCmd(false)} items={items} />}
+      {cmd && <CommandPalette onClose={() => setCmd(false)} items={items} actions={actions} />}
       {AppChat && hasChat && (
         <Suspense fallback={null}>
           {/* No floating button on Widgets: the page has its own widget in the preview, and two would confuse. */}

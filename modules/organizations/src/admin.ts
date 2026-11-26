@@ -1,4 +1,4 @@
-// The Admin area's view of Organizations: list them with their Owner's status, and create one with its first Owner.
+// The platform admin area's view of Organizations: list them with their Owner's status, and create one with its first Owner.
 // The Owner is either already a user (added straight away) or is invited by email. An invitation needs an inviting
 // user (Better Auth's rule), so the admin who creates the Organization is the inviter.
 import { eq } from "drizzle-orm";

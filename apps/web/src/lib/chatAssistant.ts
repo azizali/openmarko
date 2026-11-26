@@ -1,4 +1,4 @@
-// Which widget the app's chat uses (ADR 0031). The Widgets page and Admin → Models change it; the floating chat in the
+// Which widget the app's chat uses (ADR 0031). The Widgets page and Platform admin → Models change it; the floating chat in the
 // app listens, so it switches without a reload.
 export const CHAT_ASSISTANT_CHANGED = "app:chat-assistant-changed";
 

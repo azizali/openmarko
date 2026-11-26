@@ -54,6 +54,8 @@ export type Catalog = {
   resources: ResourceEntry[];
   /** Role editor groups, in declaration order. */
   groups: CatalogEntry[];
+  /** What a member's chat is told about each module that has a brief, in dependency order (ADR 0036). */
+  briefs: { module: string; text: string }[];
 };
 
 /** What Roles are compiled against: the enabled modules' resources and groups. */
@@ -86,6 +88,7 @@ export function buildCatalog(modules: ModuleDefinition[]): Catalog {
     settings: gather("settings", SETTING_PATTERN, "whitelabel"),
     resources: gather("permissions", RESOURCE_PATTERN, "reviews"),
     groups: gather("roleGroups", RESOURCE_PATTERN, "organization"),
+    briefs: modules.flatMap((m) => (m.assistantBrief?.trim() ? [{ module: m.id, text: m.assistantBrief.trim() }] : [])),
   };
   const groupIds = new Set(catalog.groups.map((g) => g.id));
   for (const r of catalog.resources) {
@@ -104,7 +107,7 @@ export function buildCatalog(modules: ModuleDefinition[]): Catalog {
   return catalog;
 }
 
-/** The catalog as JSON, for the admin area and docs: each setting's schema becomes a JSON Schema. */
+/** The catalog as JSON, for the platform admin area and docs: each setting's schema becomes a JSON Schema. */
 export function describeCatalog(catalog: Catalog) {
   return {
     ...catalog,

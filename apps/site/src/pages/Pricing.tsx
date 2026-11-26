@@ -1,6 +1,5 @@
-import { Receipt } from "lucide-react";
-import { Container, Heading, Section, Tag } from "../components/ui";
-import { Faq, FinalCta, PricingCards } from "../components/sections";
+import { Container, Heading, Section } from "../components/ui";
+import { Faq, PricingCards } from "../components/sections";
 import { APP_NAME, CONTACT_EMAIL } from "../data/site";
 import { useTitle } from "../lib/useTitle";
 
@@ -23,7 +22,6 @@ export default function Pricing() {
           <Heading
             as="h1"
             center
-            tag={<Tag icon={<Receipt size={13} />}>Pricing</Tag>}
             title="Simple pricing,"
             muted="no contracts."
             sub="Flat monthly plans and usage you can see. Placeholder numbers: edit them in one file."
@@ -40,7 +38,6 @@ export default function Pricing() {
           <Faq items={pricingFaqs} />
         </div>
       </Section>
-      <FinalCta />
     </>
   );
 }

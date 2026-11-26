@@ -1,4 +1,4 @@
-// Admin → Email: whether the app can send, through what, and a test send. The sender itself is edited in Settings.
+// Platform admin → Email: whether the app can send, through what, and a test send. The sender itself is edited in Settings.
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { Badge, Button, Card, CardHeader, Field, Input } from "../../components/ui";

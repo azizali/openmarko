@@ -1,12 +1,13 @@
 // A new Organization: the first thing after signing up, and how a member adds another.
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
-import { AuthShell } from "../components/AuthShell";
+import { AuthShell, SiteNote } from "../components/AuthShell";
 import { Feedback, useFeedback } from "../components/Feedback";
 import { Button, Field, Input } from "../components/ui";
 import { authClient, authError } from "../lib/auth";
 import { useSession } from "../lib/session";
 import { slugify } from "../lib/slug";
+import { pendingSite } from "../lib/startSite";
 
 export default function Onboarding() {
   const { me, loading, organizations, refresh, switchOrg } = useSession();
@@ -16,6 +17,7 @@ export default function Onboarding() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [busy, setBusy] = useState(false);
   const fb = useFeedback();
+  const site = pendingSite();
 
   if (loading) return null;
   if (!me) return <Navigate to="/sign-in" replace />;
@@ -33,11 +35,13 @@ export default function Onboarding() {
     if (r.error) return fb.fail(authError(r, "Try again."), "Could not create the organization");
     await refresh();
     await switchOrg((r.data as { id: string }).id);
-    navigate("/", { replace: true });
+    // With SEO in this app, a new Organization starts by setting it up (it can be skipped from there).
+    navigate(__MODULE_SEO__ ? "/seo/setup" : "/", { replace: true });
   };
 
   return (
     <AuthShell
+      aside={!organizations.length}
       title={organizations.length ? "New organization" : `Welcome, ${me.name.split(" ")[0]}`}
       sub={
         organizations.length
@@ -52,6 +56,7 @@ export default function Onboarding() {
         ) : null
       }
     >
+      {site && __MODULE_SEO__ && <SiteNote site={site}>Next, we look up</SiteNote>}
       <form onSubmit={submit} className="space-y-4">
         <Field label="Organization name">
           <Input

@@ -8,7 +8,7 @@ export const ai = pgSchema("ai");
 
 /**
  * An assistant: a model, instructions and the knowledge bases it answers from. It belongs to an Organization,
- * whose members chat with it. Skills, prompts and tools come later.
+ * whose members chat with it. Tools come from the modules (ADR 0036), not from the assistant.
  */
 export const assistants = ai.table(
   "assistants",

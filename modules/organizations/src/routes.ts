@@ -115,7 +115,7 @@ export function organizationRoutes(ctx: AppContext) {
           { detail: { summary: "Remove a member" }, params: ids("userId") },
         ),
     );
-  // The Admin area: every Organization with its Owner's status, and creating one with its first Owner.
+  // The platform admin area: every Organization with its Owner's status, and creating one with its first Owner.
   const admin = new Elysia({ name: "organizations.admin" }).group("/api/v1/admin/organizations", (g) =>
     g
       .use(ctx.adminGuard!)

@@ -14,7 +14,7 @@ import {
 } from "./service";
 import { stripeClient, verifyStripeSignature } from "./providers";
 
-/** Postgres sums come back as strings; the admin area wants numbers (ids stay strings). */
+/** Postgres sums come back as strings; the platform admin area wants numbers (ids stay strings). */
 const numbers = (r: Record<string, unknown>) =>
   Object.fromEntries(
     Object.entries(r).map(([k, v]) => [k, typeof v === "string" && /^\d+$/.test(v) && k !== "organizationId" ? Number(v) : v]),
@@ -102,7 +102,7 @@ export function billingRoutes(ctx: AppContext) {
     { detail: { summary: "Receive a Stripe webhook" } },
   );
 
-  // The Admin area: Plans, what Organizations used, assigning Plans with no payment, and overrides.
+  // The platform admin area: Plans, what Organizations used, assigning Plans with no payment, and overrides.
   const admin = new Elysia({ name: "billing.admin" }).group("/api/v1/admin", (g) =>
     g
       .use(ctx.adminGuard!)

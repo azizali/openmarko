@@ -1,4 +1,4 @@
-// Site-wide content. Placeholder copy: replace every line with your product's before launch.
+// Site-wide content: the home page's copy and FAQ. Plans and the blog are still the boilerplate's placeholders.
 import { appConfig } from "../../../../app.config";
 
 export const APP_NAME = appConfig.name;
@@ -6,14 +6,79 @@ export const APP_NAME = appConfig.name;
 export const APP_URL = import.meta.env.VITE_APP_URL ?? "http://localhost:5173";
 export const CONTACT_EMAIL = "hello@example.com";
 
+/** The hero's words: the result first, then how. */
 export const hero = {
-  title: "Your product,",
-  accent: "ready in a day,",
-  muted: "not a quarter.",
-  sub: "Sign-in, organizations and roles, billing, email, AI and integrations come built in. You write the part that is yours.",
-  primary: "Start free",
-  secondary: "See pricing",
+  title: "More customers from Google.",
+  accent: "No agency needed.",
+  sub: "Enter your website. OpenMarko finds what stops people nearby from finding you on Google Maps, Google search and ChatGPT, and fixes it with you.",
 };
+
+/**
+ * The website field's button and the lines under it, in the hero and the closing band. Keep every line true: "No
+ * contract" and "Cancel anytime" must match the terms.
+ */
+export const trySite = { button: "Try it free", points: ["Set up in under 10 minutes", "No contract", "Cancel anytime"] };
+
+/** The three numbers under the moving names. Each is a fact of the product, not a customer result. */
+export const numbers = [
+  { value: "10", unit: "min", label: "from entering your website to your first check" },
+  { value: "81", label: "spots around your door checked on Google Maps" },
+  { value: "1", unit: "click", label: "to apply a fix, with an Undo if you change your mind" },
+];
+
+/**
+ * Who uses it, for the strip under the hero. `sample: true` marks stand-ins, shown on the dev server only; production
+ * leaves it out until this is real. Replace with your own figures and customers (named only with their permission),
+ * then set `sample` to false.
+ */
+export const proof = {
+  sample: true,
+  businesses: 1240,
+  line: "from one-chair barbers to clinics with thirty locations",
+  names: [
+    "Bouldin Bikes",
+    "Eastside Plumbing Co.",
+    "Lady Bird Yoga",
+    "Tarrytown Vet",
+    "Mueller Family Dental",
+    "SoCo Coffee Roasters",
+    "Hyde Park Physio",
+    "Zilker Roofing",
+    "Clarksville Barbers",
+    "Cherrywood Florist",
+  ],
+};
+
+/**
+ * What owners say, on the home page. `sample: true` marks the layout's stand-ins: the dev server shows them with a
+ * Sample tag and a production build never does. Replace them with real quotes, each with the owner's permission.
+ */
+export type Testimonial = { quote: string; name: string; role: string; business: string; result?: string; sample?: boolean };
+export const testimonials: Testimonial[] = [
+  {
+    quote: "Our agency said we were number one. The grid showed we vanished four blocks north. We fixed our categories that week.",
+    name: "Sample owner",
+    role: "Owner",
+    business: "a dental practice",
+    result: "Top 3 in 21 of 49 spots, up from 9",
+    sample: true,
+  },
+  {
+    quote: "I didn't know ChatGPT was sending people to the shop across the street. Now I check what it says every Monday.",
+    name: "Sample manager",
+    role: "Manager",
+    business: "a bike shop",
+    result: "Named by ChatGPT for 4 of 6 questions",
+    sample: true,
+  },
+  {
+    quote: "We look after twelve clinics. Each one gets its own map, and I approve the fixes for all of them in ten minutes.",
+    name: "Sample partner",
+    role: "Founder",
+    business: "a local marketing studio",
+    sample: true,
+  },
+];
 
 export const features = [
   {
@@ -92,12 +157,29 @@ export const plans: Plan[] = [
 
 export const faqs = [
   {
-    q: "Can I turn modules off?",
-    a: "Yes. Each optional module (billing, partners, AI, knowledge, automation) is a switch in one config file. Off, it never reaches the build.",
+    q: "What is a ranking grid?",
+    a: "Google Maps ranks businesses by where the person searching stands. We search your keywords from a grid of spots around your door (5 × 5 up to 9 × 9, reaching up to 10 miles) and show your position at each one.",
   },
-  { q: "Which database does it use?", a: "Postgres. Locally in Docker; in production a managed provider such as Neon." },
-  { q: "Where does it run?", a: "The API and worker on any VPS with Docker, deployed with Kamal. The web app and this site on Vercel." },
-  { q: "Is my data mine?", a: "Yes. One database per app, yours to export or move at any time." },
+  {
+    q: "Do I need to give you access to my Google profile?",
+    a: "No. Rankings, keywords, AI answers and competitors work from public results. Connect your Google Business Profile only if you want to apply profile changes and posts from OpenMarko.",
+  },
+  {
+    q: "Will you change anything without asking?",
+    a: "No. Every suggestion waits for you to apply it, and every applied change can be undone. Autopilot is off until you turn it on, one kind of change at a time.",
+  },
+  {
+    q: "Which AI assistants do you check?",
+    a: "ChatGPT, Perplexity and Google's AI Overviews. For each question you track, you see whether you're named, where, what was said and which sites were cited.",
+  },
+  {
+    q: "How often are rankings checked?",
+    a: "Daily, weekly or monthly, as your plan allows. Check now runs a page's checks at once when you want fresh numbers.",
+  },
+  {
+    q: "I run an agency. Can I use it for my clients?",
+    a: "Yes. Partners manage each client as its own organization, under their own brand, with several locations per client.",
+  },
 ];
 
 export const posts = [

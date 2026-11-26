@@ -4,9 +4,36 @@
 // (apps/web, components/AppChat.tsx). It lives in a shadow DOM, so a page's styles can't break it and it can't break
 // the page. No dependencies, so the embeddable script stays small.
 
+import { renderMarkdown } from "./markdown";
+
 export type Chat = { id: string; title: string };
-export type Line = { role: "user" | "assistant"; text: string; sources?: string[] };
-export type Reply = { onText: (delta: string) => void; onSources: (titles: string[]) => void };
+export type Line = { role: "user" | "assistant"; text: string; sources?: string[]; tools?: ToolUse[] };
+export type Reply = { onText: (delta: string) => void; onSources: (titles: string[]) => void; onTool?: (use: ToolUse) => void };
+
+/**
+ * A tool the assistant used while answering a member (ADR 0036): which one, how it went, and the Task it proposed,
+ * if it proposed one. Website visitors' chats have none.
+ */
+export type ToolUse = {
+  id: string;
+  /** What it does, in words: `automation__recent_activity` reads "recent activity". */
+  label: string;
+  /** `declined`: the app answered why not (no business set up, not tracked): expected, and the answer says so. */
+  state: "running" | "done" | "declined" | "failed";
+  error?: string;
+  task?: { id: string; title: string; applied: boolean };
+};
+
+/** A tool's call or result, as the stream or a saved message gives it, in the words the chat shows. */
+export function toolUse(id: string, toolName: string, outcome: { output?: unknown; errorText?: string } | null): ToolUse {
+  const label = (toolName.split("__")[1] ?? toolName).replaceAll("_", " ");
+  if (!outcome) return { id, label, state: "running" };
+  if (outcome.errorText !== undefined) return { id, label, state: "failed", error: outcome.errorText };
+  const out = (outcome.output ?? {}) as { error?: { message?: string }; taskId?: string; title?: string; applied?: boolean };
+  if (out.error) return { id, label, state: "declined", error: out.error.message ?? "It couldn't be done." };
+  const task = typeof out.taskId === "string" ? { id: out.taskId, title: out.title ?? label, applied: !!out.applied } : undefined;
+  return { id, label, state: "done", ...(task ? { task } : {}) };
+}
 
 /** Where chats come from and go to. Everything else about the widget is the same for every audience. */
 export type ChatBackend = {
@@ -17,6 +44,8 @@ export type ChatBackend = {
   start(firstMessage: string): Promise<string>;
   send(id: string, text: string, reply: Reply, signal: AbortSignal): Promise<void>;
   remove(id: string): Promise<void>;
+  /** Applies a Task a tool proposed. Without it, a proposed Task says where to apply it instead. */
+  applyTask?(taskId: string): Promise<void>;
 };
 
 /** Thrown by a backend when a chat can't continue: the next message starts a new one. */
@@ -120,8 +149,25 @@ header { display: flex; align-items: center; gap: 2px; min-height: 46px; padding
 .wide .msg { width: auto; max-width: 75%; }
 .msg { max-width: 85%; padding: 8px 12px; border-radius: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .user { align-self: flex-end; background: var(--cw-accent); color: var(--cw-on-accent); }
-.assistant { align-self: flex-start; background: var(--cw-soft); }
+.assistant { align-self: flex-start; background: var(--cw-soft); white-space: normal; }
+.assistant > :first-child { margin-top: 0; }
+.assistant > :last-child { margin-bottom: 0; }
+.assistant p, .assistant ul, .assistant ol, .assistant pre { margin: 0 0 8px; }
+.assistant h4 { margin: 10px 0 4px; font-size: 14px; font-weight: 650; }
+.assistant ul, .assistant ol { padding-left: 20px; }
+.assistant li + li { margin-top: 3px; }
+.assistant code { padding: 1px 4px; font: 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--cw-bg); border: 1px solid var(--cw-line); border-radius: 4px; }
+.assistant pre { padding: 8px 10px; overflow-x: auto; font: 12.5px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--cw-bg); border: 1px solid var(--cw-line); border-radius: 8px; white-space: pre; }
+.assistant a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .sources { margin-top: 5px; font-size: 12px; color: var(--cw-muted); }
+.tools { display: grid; gap: 6px; margin-top: 6px; white-space: normal; }
+.tool { font-size: 12px; color: var(--cw-muted); }
+.tool.failed { color: var(--cw-bad); }
+.task { display: grid; gap: 6px; padding: 9px 10px; background: var(--cw-bg); border: 1px solid var(--cw-line); border-radius: 10px; }
+.task strong { font-weight: 600; }
+.task span { font-size: 12px; color: var(--cw-muted); }
+.task button { justify-self: start; padding: 4px 11px; font-size: 12.5px; font-weight: 600; border-radius: 7px; background: var(--cw-accent); color: var(--cw-on-accent); }
+.task button:disabled { opacity: .6; cursor: default; }
 .dots { display: inline-flex; gap: 3px; padding: 6px 0; }
 .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--cw-muted); animation: pulse 1s infinite ease-in-out; }
 .dots i:nth-child(2) { animation-delay: .15s; }
@@ -517,14 +563,72 @@ class ChatView implements ChatHandle {
   private bubble(line: Line) {
     const el = document.createElement("div");
     el.className = `msg ${line.role}`;
-    if (line.text) el.textContent = line.text;
-    else el.innerHTML = '<span class="dots" aria-label="Thinking"><i></i><i></i><i></i></span>';
+    // An answer is Markdown, shown formatted (markdown.ts builds it without innerHTML); a person's message is plain text.
+    if (line.text) {
+      if (line.role === "assistant") el.appendChild(renderMarkdown(document, line.text));
+      else el.textContent = line.text;
+    }
+    // Still thinking, unless the answer so far is a tool that has finished (a step limit can end a turn there).
+    else if (!line.tools?.some((u) => u.state !== "running"))
+      el.innerHTML = '<span class="dots" aria-label="Thinking"><i></i><i></i><i></i></span>';
     if (line.sources?.length) {
       const sources = document.createElement("div");
       sources.className = "sources";
       sources.textContent = `Sources: ${[...new Set(line.sources)].join(", ")}`;
       el.appendChild(sources);
     }
+    if (line.tools?.length) {
+      const tools = document.createElement("div");
+      tools.className = "tools";
+      for (const use of line.tools) tools.appendChild(use.task ? this.taskCard(use.task) : this.toolLine(use));
+      el.appendChild(tools);
+    }
+    return el;
+  }
+
+  /** One tool the answer used: running, done, or why it failed. */
+  private toolLine(use: ToolUse) {
+    const el = document.createElement("div");
+    el.className = `tool ${use.state}`;
+    el.textContent =
+      use.state === "running"
+        ? `Looking up ${use.label}…`
+        : use.state === "done"
+          ? `✓ ${use.label}`
+          : use.state === "declined"
+            ? `· ${use.label}: ${use.error}`
+            : `✕ ${use.label}: ${use.error ?? "failed"}`;
+    return el;
+  }
+
+  /** A change a tool proposed: applied by Autopilot, or waiting, with Apply when the backend can apply it. */
+  private taskCard(task: NonNullable<ToolUse["task"]>) {
+    const el = document.createElement("div");
+    el.className = "task";
+    const title = document.createElement("strong");
+    title.textContent = task.title;
+    const status = document.createElement("span");
+    status.textContent = task.applied ? "Applied. Undo it from Automation → Tasks." : "Proposed. Nothing changes until it's applied.";
+    el.append(title, status);
+    const apply = this.o.backend.applyTask;
+    if (!task.applied && apply) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = "Apply";
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try {
+          await apply.call(this.o.backend, task.id);
+          task.applied = true;
+          this.showError(null);
+          this.drawLog();
+        } catch (err) {
+          button.disabled = false;
+          this.showError(messageOf(err));
+        }
+      });
+      el.appendChild(button);
+    } else if (!task.applied) status.textContent = "Proposed. Apply it from Tasks.";
     return el;
   }
 
@@ -671,10 +775,17 @@ class ChatView implements ChatHandle {
           onSources: (titles) => {
             answer.sources = titles;
           },
+          onTool: (use) => {
+            const tools = (answer.tools ??= []);
+            const at = tools.findIndex((u) => u.id === use.id);
+            if (at === -1) tools.push(use);
+            else tools[at] = use;
+            if (live()) this.drawAnswer(answer);
+          },
         },
         turn.signal,
       );
-      if (!answer.text) throw new Error("The assistant didn't answer. Try again.");
+      if (!answer.text && !answer.tools?.length) throw new Error("The assistant didn't answer. Try again.");
     } catch (err) {
       if (!live()) return;
       if (turn.signal.aborted) {

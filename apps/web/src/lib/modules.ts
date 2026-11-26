@@ -5,6 +5,7 @@ export const modules = {
   ai: __MODULE_AI__,
   knowledge: __MODULE_KNOWLEDGE__,
   automation: __MODULE_AUTOMATION__,
+  seo: __MODULE_SEO__,
 } as const;
 
 export const APP_NAME = __APP_NAME__;
