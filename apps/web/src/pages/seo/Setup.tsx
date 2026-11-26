@@ -28,6 +28,7 @@ import {
   type Every,
 } from "./fields";
 import { miles } from "./distance";
+import { forgetSite, pendingSite } from "../../lib/startSite";
 
 type Step = "start" | "found" | "connect" | "track" | "launch";
 const steps: { id: Step; name: string }[] = [
@@ -274,20 +275,34 @@ function StartStep({ onMade }: { onMade: (id: string) => void }) {
   const org = useOrg();
   const navigate = useNavigate();
   const toast = useToast();
-  const [query, setQuery] = useState("");
+  // The website typed on the marketing site, if any (lib/startSite.ts): the search starts with it, once.
+  const [query, setQuery] = useState(() => pendingSite() ?? "");
   const [found, setFound] = useState<Place[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const fb = useFeedback();
 
-  const search = async (e: FormEvent) => {
-    e.preventDefault();
+  const find = async (q: string) => {
     setBusy("search");
     fb.clear();
-    const r = await seoApi(org.id).find.post({ query });
+    const r = await seoApi(org.id).find.post({ query: q });
     setBusy(null);
     if (r.error) return fb.fail(messageOf(r.error), "Could not search");
     setFound(r.data);
   };
+  const search = (e: FormEvent) => {
+    e.preventDefault();
+    void find(query);
+  };
+  const started = useRef(false);
+  useEffect(() => {
+    const site = pendingSite();
+    if (started.current || !site) return;
+    started.current = true;
+    forgetSite();
+    void find(site);
+    // Runs once, on arrival.
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, []);
   const pick = async (p: Place) => {
     setBusy(p.placeId);
     const r = await seoApi(org.id).locations.post({ place: p, name: p.name, lat: p.lat, lng: p.lng });

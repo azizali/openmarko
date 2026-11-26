@@ -6,9 +6,7 @@ export const cn = (...c: (string | false | null | undefined)[]) => c.filter(Bool
 
 /** Page column with hairline rails on wide screens. */
 export function Container({ children, className, rails = false }: { children: ReactNode; className?: string; rails?: boolean }) {
-  return (
-    <div className={cn("mx-auto w-full max-w-[1200px] px-4 sm:px-6", rails && "xl:border-x xl:border-line", className)}>{children}</div>
-  );
+  return <div className={cn("mx-auto w-full max-w-[1160px] px-5", rails && "xl:border-x xl:border-line", className)}>{children}</div>;
 }
 
 export function Section({
@@ -16,22 +14,25 @@ export function Section({
   className,
   id,
   rails = true,
+  roomy = false,
 }: {
   children: ReactNode;
   className?: string;
   id?: string;
   rails?: boolean;
+  /** The home page's spacing: 104px above and below on wide screens, and no side rails. */
+  roomy?: boolean;
 }) {
   return (
     <section id={id} className={cn("relative", className)}>
-      <Container rails={rails} className="py-16 sm:py-20">
+      <Container rails={rails && !roomy} className={roomy ? "py-[72px] md:py-[104px]" : "py-16 sm:py-20"}>
         {children}
       </Container>
     </section>
   );
 }
 
-/** A heading with an ink line and a muted second line. */
+/** A heading in two tones: the point in ink, then the rest in grey on the same line, so a long heading reads in two steps. */
 export function Heading({
   tag,
   title,
@@ -54,23 +55,18 @@ export function Heading({
       {tag}
       <H
         className={cn(
-          "font-display leading-[0.95]",
+          "font-display font-[650]",
           size === "xl"
-            ? "text-[40px] sm:text-[52px] lg:text-[60px]"
+            ? "text-[40px] leading-[0.98] tracking-[-0.035em] sm:text-[52px] lg:text-[60px]"
             : size === "lg"
-              ? "text-[32px] sm:text-[42px]"
-              : "text-[26px] sm:text-[32px]",
+              ? "text-[30px] leading-[1.04] tracking-[-0.03em] sm:text-[38px] lg:text-[46px]"
+              : "text-[26px] leading-[1.08] tracking-[-0.025em] sm:text-[32px]",
         )}
       >
         {title}
-        {muted && (
-          <>
-            <br />
-            <span className="text-muted">{muted}</span>
-          </>
-        )}
+        {muted && <span className="text-muted"> {muted}</span>}
       </H>
-      {sub && <p className={cn("mt-1 max-w-[58ch] text-[17px] leading-[1.6] text-fg/70 text-pretty", center && "mx-auto")}>{sub}</p>}
+      {sub && <p className={cn("mt-0.5 max-w-[56ch] text-[17.5px] leading-[1.55] text-muted text-pretty", center && "mx-auto")}>{sub}</p>}
     </div>
   );
 }
@@ -90,9 +86,9 @@ type BtnProps = {
 
 export function Button({ to, href, onClick, children, variant = "primary", size = "md", arrow, className, type = "button" }: BtnProps) {
   const cls = cn(
-    "group inline-flex items-center justify-center gap-2 rounded-lg font-medium whitespace-nowrap transition-[color,background-color,border-color,opacity,transform] duration-150 active:scale-[0.97]",
-    size === "lg" ? "h-12 px-5 text-[16px]" : size === "sm" ? "h-8 px-3 text-[14px]" : "h-10 px-4 text-[15px]",
-    variant === "primary" && "bg-ink text-on-ink shadow-card hover:opacity-85",
+    "group inline-flex items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap transition-[color,background-color,border-color,opacity,transform] duration-150 active:scale-[0.97]",
+    size === "lg" ? "h-12 px-6 text-[15px]" : size === "sm" ? "h-9 px-4 text-[14px]" : "h-10 px-5 text-[15px]",
+    variant === "primary" && "bg-ink text-on-ink shadow-card hover:bg-accent hover:text-white",
     variant === "secondary" && "border border-line bg-surface text-fg shadow-card hover:border-line-strong",
     variant === "ghost" && "text-fg hover:bg-hover",
     variant === "inverse" && "bg-white text-[#09090b] hover:bg-white/85",

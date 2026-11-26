@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { reducedMotion } from "../lib/motion";
-import { ChevronDown } from "lucide-react";
-import { Button, CheckList, Container, Heading, cn } from "./ui";
-import { APP_URL, CONTACT_EMAIL, faqs as defaultFaqs, features, plans, steps } from "../data/site";
+import { Plus } from "lucide-react";
+import { Button, CheckList, Container, cn } from "./ui";
+import { APP_NAME, APP_URL, CONTACT_EMAIL, faqs as defaultFaqs, features, plans, steps } from "../data/site";
+import { Lanterns } from "./Lanterns";
+import { TryPoints, TrySite } from "./TrySite";
 
 export function FeatureGrid() {
   return (
@@ -72,7 +74,7 @@ export function PricingCards() {
 }
 
 export function Faq({ items = defaultFaqs }: { items?: { q: string; a: string }[] }) {
-  const [open, setOpen] = useState<number | null>(0);
+  const [open, setOpen] = useState<number | null>(null);
   return (
     <ul className="divide-y divide-line border-y border-line">
       {items.map((f, i) => (
@@ -80,12 +82,12 @@ export function Faq({ items = defaultFaqs }: { items?: { q: string; a: string }[
           <button
             onClick={() => setOpen(open === i ? null : i)}
             aria-expanded={open === i}
-            className="flex w-full items-center justify-between gap-4 py-4 text-left text-[16.5px] font-medium"
+            className="flex w-full items-center justify-between gap-4 py-5 text-left text-[17px] font-medium"
           >
             {f.q}
-            <ChevronDown
-              size={18}
-              className={cn("shrink-0 text-muted transition-transform duration-300 ease-[var(--ease-out)]", open === i && "rotate-180")}
+            <Plus
+              size={20}
+              className={cn("shrink-0 text-muted transition-transform duration-300 ease-[var(--ease-out)]", open === i && "rotate-45")}
             />
           </button>
           {/* The answer opens to its own height (grid rows 0fr → 1fr) and stays out of the tab order while closed. */}
@@ -97,7 +99,7 @@ export function Faq({ items = defaultFaqs }: { items?: { q: string; a: string }[
             )}
           >
             <div className="overflow-hidden">
-              <p className="pb-5 text-[15.5px] leading-[1.65] text-muted">{f.a}</p>
+              <p className="max-w-[60ch] pb-6 text-[16px] leading-[1.6] text-muted">{f.a}</p>
             </div>
           </div>
         </li>
@@ -106,10 +108,6 @@ export function Faq({ items = defaultFaqs }: { items?: { q: string; a: string }[
   );
 }
 
-/**
- * The closing band. As it scrolls into view it opens from a rounded card inset from the page's edges to the full
- * width, meeting the footer below it (off under reduced motion).
- */
 function useWidenOnScroll() {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -142,24 +140,23 @@ function useWidenOnScroll() {
   return ref;
 }
 
+/**
+ * The closing band on every page: the promise again, the website field and paper pins rising. As it scrolls into view
+ * it opens from a rounded card inset from the page's edges to the full width, meeting the footer below it (off under
+ * reduced motion).
+ */
 export function FinalCta() {
   const ref = useWidenOnScroll();
   return (
-    <section ref={ref} className="relative bg-band text-white">
+    <section ref={ref} className="relative isolate overflow-hidden bg-band text-white">
       <div aria-hidden className="grid-band absolute inset-0" />
-      <Container className="relative flex flex-col items-start gap-6 pt-20 pb-16 sm:pt-24 lg:flex-row lg:items-center lg:justify-between">
-        <Heading
-          title="See your map this week."
-          muted={<span className="text-white/50">Your first check runs the minute you find your business.</span>}
-        />
-        <div className="flex flex-wrap gap-3">
-          <Button href={`${APP_URL}/sign-up`} size="lg" variant="inverse" arrow>
-            Check my rankings
-          </Button>
-          <Button href={`mailto:${CONTACT_EMAIL}`} size="lg" variant="ghost" className="text-white hover:bg-white/10">
-            Talk to us
-          </Button>
-        </div>
+      <Lanterns className="h-full" />
+      <Container className="relative z-10 flex flex-col items-center gap-5 pt-24 pb-20 text-center sm:pt-28">
+        <h2 className="max-w-[18ch] font-display text-[34px] leading-[1.02] font-[650] tracking-[-0.035em] sm:text-[48px] lg:text-[56px]">
+          Let {APP_NAME} bring your next customer. <span className="text-[#fe7bcd]">It takes 10 minutes to start.</span>
+        </h2>
+        <TrySite band className="mt-1" />
+        <TryPoints band />
       </Container>
     </section>
   );

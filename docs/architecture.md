@@ -11,7 +11,10 @@ apps/
   worker/            index.ts + runner.ts: pg-boss queues, cron schedules, outbox drain loop
   web/               the product (React, Vite, Tailwind). Eden-typed calls to the API; Better Auth's client for sign-in
   site/              the marketing site (React, Vite, Tailwind). Static. Every page shares one Layout: header
-                     (with the Industries menu), the closing call to action, and the footer.
+                     (with the Industries menu), the closing call to action, and the footer. The one action is
+                     the website field (TrySite): it opens the app's sign-up with the address in `?site=`.
+                     The web app keeps it for the tab (lib/startSite.ts) through sign-up, Google sign-in and
+                     the first Organization; SEO setup starts by searching for it.
 modules/             one folder per module: schema.ts (its tables), module.ts (its manifest), routes.ts, services, test/
   identity           Better Auth: sign-in, sessions, Organizations, invitations; app admins
   organizations      Organizations, members, archive and delete; the platform admin area's list

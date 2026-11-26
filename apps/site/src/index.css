@@ -8,10 +8,10 @@
   --surface: #ffffff;
   --sunken: #f4f4f5;
   --hover: #f4f4f5;
-  --border: #e4e4e7;
+  --border: #e8e8ec;
   --border-strong: #d4d4d8;
   --text: #09090b;
-  --muted: #71717a;
+  --muted: #66666f;
   --subtle: #9a9aa3;
   --ink: #09090b;
   --on-ink: #fafafa;
@@ -43,6 +43,16 @@
   --map-park: #e3ece0;
   /* The closing band and the footer: one dark ground in both themes, so they read as one block. */
   --band: #0c0c0e;
+  /* The hero's sky and its folded paper pins. */
+  --sky-1: #fde3f1;
+  --sky-2: #fdf5fa;
+  --pin-a: #ffffff;
+  --pin-b: #fbd5ea;
+  --pin-c: #e84f98;
+  --pin-d: #a3195b;
+  --pin-glow: rgb(219 39 119 / 0.22);
+  /* Pink for small text on light grounds: --accent is a step too light for 4.5:1 there. */
+  --accent-ink: #be185d;
   /* Strong ease-out for things that arrive. */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   color-scheme: light;
@@ -84,6 +94,14 @@
   --map-road: #27272a;
   --map-water: #172029;
   --map-park: #18241b;
+  --sky-1: #3b1230;
+  --sky-2: #140a14;
+  --pin-a: #ffe4f3;
+  --pin-b: #f9b6dc;
+  --pin-c: #fe7bcd;
+  --pin-d: #c2367f;
+  --pin-glow: rgb(254 123 205 / 0.45);
+  --accent-ink: #fe7bcd;
   color-scheme: dark;
 }
 
@@ -101,6 +119,7 @@
   --color-on-ink: var(--on-ink);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
   --color-good: var(--good);
   --color-good-soft: var(--good-soft);
   --color-bad: var(--bad);
@@ -186,10 +205,110 @@ button {
   background-size: 80px 80px;
   mask-image: linear-gradient(black, transparent);
 }
+/* Home feature pictures stand on a fine dot ground. */
+.dot-ground {
+  background-image: radial-gradient(color-mix(in srgb, var(--text) 8%, transparent) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
 /* Small grid used inside visual panels. */
 .grid-fine {
   background-image: linear-gradient(var(--grid-line) 1px, transparent 0), linear-gradient(90deg, var(--grid-line) 1px, transparent 0);
   background-size: 24px 24px;
+}
+/* Home hero: a soft pink sky that brightens behind the app window. */
+.hero-sky {
+  background: radial-gradient(90% 60% at 50% 70%, var(--sky-1), var(--sky-2) 55%, var(--bg));
+}
+/* Folded paper pins rising like lanterns (Lanterns.tsx). Each sets --x, --w, --d, --delay, --o and --s. */
+.lantern {
+  position: absolute;
+  bottom: -80px;
+  left: var(--x);
+  width: var(--w);
+  opacity: 0;
+  animation: lantern-rise var(--d) linear var(--delay) infinite;
+}
+.lantern > span {
+  display: block;
+  animation: lantern-sway var(--s) ease-in-out infinite alternate;
+}
+.lantern svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 6px 14px var(--pin-glow));
+}
+@keyframes lantern-rise {
+  10%,
+  75% {
+    opacity: var(--o);
+  }
+  to {
+    transform: translateY(-720px);
+    opacity: 0;
+  }
+}
+@keyframes lantern-sway {
+  from {
+    transform: translateX(-14px) rotate(-6deg);
+  }
+  to {
+    transform: translateX(14px) rotate(6deg);
+  }
+}
+/* The dark band keeps the dark pins in either theme. */
+.bg-band .lantern {
+  --pin-a: #ffe4f3;
+  --pin-b: #f9b6dc;
+  --pin-c: #fe7bcd;
+  --pin-d: #c2367f;
+  --pin-glow: rgb(254 123 205 / 0.45);
+}
+/* Home steps: three stops on one dashed path, a dot running 1 → 2 → 3 every 4 s. Down the left on narrow screens. */
+.step-path::before {
+  content: "";
+  position: absolute;
+  left: calc(100% / 6);
+  right: calc(100% / 6);
+  top: 19px;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, var(--border-strong) 0 6px, transparent 6px 12px);
+}
+.step-runner {
+  position: absolute;
+  top: 12px;
+  left: calc(100% / 6);
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 6px var(--accent-soft);
+  animation: step-run 4s var(--ease-out) infinite;
+}
+@keyframes step-run {
+  40%,
+  50% {
+    left: 50%;
+  }
+  90%,
+  to {
+    left: calc(500% / 6);
+  }
+}
+@media (max-width: 1023px) {
+  .step-path::before {
+    left: 19px;
+    right: auto;
+    top: 20px;
+    bottom: 20px;
+    width: 2px;
+    height: auto;
+    background: repeating-linear-gradient(180deg, var(--border-strong) 0 6px, transparent 6px 12px);
+  }
+  .step-runner {
+    display: none;
+  }
 }
 /* Dithered pixel band, like a map seen from far away. Used as a section divider. */
 .pixel-band {
@@ -434,21 +553,9 @@ button {
   }
 }
 
-/* Hero entrance: the headline, then the actions, then the tile, once on load. */
+/* Hero entrance: the headline, then the field, then the app window, once on load. */
 .enter {
   animation: rise 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
-/* Home: the tile's trend bars grow from the baseline once its check is done. */
-@keyframes bar-in {
-  from {
-    opacity: 0;
-    transform: scaleY(0.2);
-  }
-}
-.bar-in {
-  transform-origin: bottom;
-  animation: bar-in 500ms var(--ease-out) both;
 }
 
 /* Home: an AI answer arriving word by word. Each word fades in; the caret blinks while it streams. */
@@ -475,32 +582,6 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .marquee {
     animation: none;
-  }
-}
-
-/* Hero effect "streets": the map shows only in a soft light around the pointer (set as --px/--py by HeroFx). */
-.street-light {
-  --map-land: #e1e1e6;
-  --map-water: #cddbe8;
-  --map-park: #d3e4cd;
-  mask-image: radial-gradient(circle 260px at var(--px, -999px) var(--py, -999px), #000 0%, #000 35%, transparent 100%);
-}
-:root[data-theme="dark"] .street-light {
-  --map-land: #202024;
-  --map-road: #34343a;
-}
-/* The "you are here" pin's slow radar ring. */
-.radar {
-  animation: radar 2.4s var(--ease-out) infinite;
-}
-@keyframes radar {
-  from {
-    opacity: 0.5;
-    transform: scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: scale(5);
   }
 }
 

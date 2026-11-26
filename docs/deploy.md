@@ -49,7 +49,7 @@ Import the repository as a Vercel project with root directory `apps/web`, framew
 
 ## Site (Vercel)
 
-A second Vercel project with root directory `apps/site`. Set `VITE_APP_URL` to the web app's address so "Sign in" and every call to action go there.
+A second Vercel project with root directory `apps/site`. Set `VITE_APP_URL` to the web app's address so "Sign in" and every call to action go there. The website field sends people to `/sign-up?site=<their address>`.
 
 ## Email
 

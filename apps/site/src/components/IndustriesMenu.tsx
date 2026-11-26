@@ -58,7 +58,7 @@ export function IndustriesMenu() {
         aria-expanded={open}
         aria-controls={panelId}
         className={cn(
-          "inline-flex h-8 items-center gap-1 rounded-md px-2.5 text-[14px]",
+          "inline-flex h-[38px] items-center gap-1 rounded-lg px-2.5 text-[14.5px]",
           open || active ? "text-fg" : "text-muted hover:text-fg",
         )}
       >

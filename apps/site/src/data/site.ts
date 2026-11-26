@@ -6,25 +6,30 @@ export const APP_NAME = appConfig.name;
 export const APP_URL = import.meta.env.VITE_APP_URL ?? "http://localhost:5173";
 export const CONTACT_EMAIL = "hello@example.com";
 
-/** The hero's words. A short subtitle on purpose: one line under the headline, not a paragraph. */
+/** The hero's words: the result first, then how. */
 export const hero = {
-  badge: "Local SEO for Google Maps, search and AI answers",
-  title: "See where you rank on Google Maps,",
-  accent: "street by street.",
-  sub: "Your rank from up to 81 spots around your door, on Google search and in AI answers, plus this week's fixes.",
-  primary: "Check my rankings",
-  secondary: "See the app",
-  points: [
-    "Google Maps, Google search and 3 AI assistants",
-    "Every change shown first, with an Undo",
-    "Connects to your Google Business Profile",
-  ],
+  title: "More customers from Google.",
+  accent: "No agency needed.",
+  sub: "Enter your website. OpenMarko finds what stops people nearby from finding you on Google Maps, Google search and ChatGPT, and fixes it with you.",
 };
 
 /**
- * Who uses it, for the strip under the hero and the numbers above the quotes. `sample: true` marks stand-ins, shown on
- * the dev server only; production leaves both out until this is real. Replace with your own figures and customers
- * (named only with their permission), then set `sample` to false.
+ * The website field's button and the lines under it, in the hero and the closing band. Keep every line true: "No
+ * contract" and "Cancel anytime" must match the terms.
+ */
+export const trySite = { button: "Try it free", points: ["Set up in under 10 minutes", "No contract", "Cancel anytime"] };
+
+/** The three numbers under the moving names. Each is a fact of the product, not a customer result. */
+export const numbers = [
+  { value: "10", unit: "min", label: "from entering your website to your first check" },
+  { value: "81", label: "spots around your door checked on Google Maps" },
+  { value: "1", unit: "click", label: "to apply a fix, with an Undo if you change your mind" },
+];
+
+/**
+ * Who uses it, for the strip under the hero. `sample: true` marks stand-ins, shown on the dev server only; production
+ * leaves it out until this is real. Replace with your own figures and customers (named only with their permission),
+ * then set `sample` to false.
  */
 export const proof = {
   sample: true,
@@ -41,11 +46,6 @@ export const proof = {
     "Zilker Roofing",
     "Clarksville Barbers",
     "Cherrywood Florist",
-  ],
-  stats: [
-    { value: 38400, label: "Google Maps spots checked last week" },
-    { value: 2950, label: "fixes applied, every one with an Undo" },
-    { value: 412, label: "businesses named by ChatGPT for the first time" },
   ],
 };
 

@@ -1,6 +1,6 @@
-// Social proof: how many businesses use it, their names drifting past under the hero, and the week's numbers above
-// the quotes. All of it comes from `proof` in data/site.ts; while that's marked `sample` it shows on the dev server
-// only, with a Sample tag, and a production build leaves it out.
+// Social proof under the hero: how many businesses use it and their names drifting past. All of it comes from `proof`
+// in data/site.ts; while that's marked `sample` it shows on the dev server only, with a Sample tag, and a production
+// build leaves it out.
 import { useState } from "react";
 import { Pause, Play } from "lucide-react";
 import { cn } from "../ui";
@@ -60,32 +60,6 @@ export function ProofStrip() {
         >
           {paused ? <Play size={15} /> : <Pause size={15} />}
         </button>
-      </div>
-    </div>
-  );
-}
-
-function Stat({ value, label, run }: { value: number; label: string; run: boolean }) {
-  const n = useCountUp(value, run, 1400);
-  return (
-    <div className="flex flex-col gap-2 border-t border-line pt-5">
-      <span className="num font-display text-[44px] leading-none sm:text-[52px]">{n.toLocaleString("en-US")}</span>
-      <span className="text-[15px] text-muted">{label}</span>
-    </div>
-  );
-}
-
-export function ProofStats() {
-  const [ref, seen] = useSeenOnce<HTMLDivElement>(0.5);
-  return (
-    <div ref={ref} className="flex flex-col gap-4">
-      <div className="flex justify-end">
-        <SampleTag />
-      </div>
-      <div className="grid gap-8 sm:grid-cols-3">
-        {proof.stats.map((s) => (
-          <Stat key={s.label} {...s} run={seen} />
-        ))}
       </div>
     </div>
   );

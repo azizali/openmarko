@@ -36,7 +36,7 @@ function ThemeSwitch() {
       onClick={() => setDark(!dark)}
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
       title={dark ? "Light mode" : "Dark mode"}
-      className="grid size-8 place-items-center rounded-md text-muted hover:bg-hover hover:text-fg"
+      className="grid size-9 place-items-center rounded-full text-muted hover:bg-hover hover:text-fg"
     >
       {dark ? <Sun size={16} /> : <Moon size={16} />}
     </button>
@@ -50,16 +50,29 @@ function Header() {
   const loc = useLocation();
   const [openAt, setOpenAt] = useState<string | null>(null);
   const mobile = openAt === loc.pathname;
+  // The line under the header shows only once the page has scrolled.
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const on = () => setScrolled(window.scrollY > 8);
+    on();
+    window.addEventListener("scroll", on, { passive: true });
+    return () => window.removeEventListener("scroll", on);
+  }, []);
   const setMobile = (on: boolean) => setOpenAt(on ? loc.pathname : null);
   const navCls = ({ isActive }: { isActive: boolean }) =>
-    cn("inline-flex h-8 items-center rounded-md px-2.5 text-[14px]", isActive ? "text-fg" : "text-muted hover:text-fg");
+    cn("inline-flex h-[38px] items-center rounded-lg px-2.5 text-[14.5px]", isActive ? "text-fg" : "text-muted hover:text-fg");
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-bg/85 backdrop-blur">
-      <Container className="flex h-14 items-center gap-2">
-        <Link to="/" aria-label={`${APP_NAME} home`} className="mr-4 flex items-center">
-          <Logo size={21} />
+    <header
+      className={cn(
+        "sticky top-0 z-40 border-b bg-bg/82 backdrop-blur transition-colors",
+        scrolled || mobile ? "border-line" : "border-transparent",
+      )}
+    >
+      <Container className="flex h-16 items-center gap-2">
+        <Link to="/" aria-label={`${APP_NAME} home`} className="mr-5 flex items-center">
+          <Logo size={22} />
         </Link>
-        <nav className="hidden items-center lg:flex" aria-label="Main">
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
           {links.slice(0, 1).map((l) => (
             <NavLink key={l.to} to={l.to} className={navCls}>
               {l.label}
@@ -74,11 +87,14 @@ function Header() {
         </nav>
         <div className="ml-auto flex items-center gap-2">
           <ThemeSwitch />
-          <a href={`${APP_URL}/sign-in`} className="hidden h-8 items-center px-2.5 text-[14px] text-muted hover:text-fg sm:inline-flex">
+          <a
+            href={`${APP_URL}/sign-in`}
+            className="hidden h-[38px] items-center px-2.5 text-[14.5px] text-muted hover:text-fg sm:inline-flex"
+          >
             Sign in
           </a>
           <Button href={`${APP_URL}/sign-up`} size="sm" className="hidden sm:inline-flex">
-            Start free
+            Try it free
           </Button>
           <button
             onClick={() => setMobile(!mobile)}
@@ -102,7 +118,7 @@ function Header() {
               Sign in
             </a>
             <Button href={`${APP_URL}/sign-up`} size="lg" arrow>
-              Start free
+              Try it free
             </Button>
           </Container>
         </div>

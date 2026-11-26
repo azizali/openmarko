@@ -1,5 +1,5 @@
-// The home page's middle: where the visitor's customers search, what an agency report leaves out, four benefits each
-// with a piece of the product, the three steps to a first check, and what owners say.
+// The home page's middle: the three steps on one path, four benefits one per row each with a piece of the product,
+// what owners say, and, low on the page, what an agency report leaves out.
 import { useEffect, useState, type ReactNode } from "react";
 import { reducedMotion, revealDelay, useSeenOnce } from "../../lib/motion";
 import { Check, Quote } from "lucide-react";
@@ -8,82 +8,48 @@ import { GridThumb } from "./MapGrid";
 import { competitors, engines, gridRanks, top3 } from "./mock";
 import { testimonials } from "../../data/site";
 
-/** The places the product checks, with their real marks. */
-export const channels = [
-  { name: "Google Maps", icon: "/icons/google-maps.svg" },
-  { name: "Google search", icon: "/icons/google-icon.svg" },
-  { name: "ChatGPT", icon: "/icons/openai.svg", ink: true },
-  { name: "AI Overviews", icon: "/icons/gemini.svg" },
-  { name: "Perplexity", icon: "/icons/perplexity.svg" },
-];
-
-export function ChannelRow({ className }: { className?: string }) {
-  return (
-    <ul className={cn("flex flex-wrap items-center justify-center gap-x-7 gap-y-3", className)}>
-      {channels.map((c, i) => (
-        <li key={c.name} data-reveal style={revealDelay(60 + i * 60)} className="inline-flex items-center gap-2 text-[14.5px] text-fg/80">
-          <img src={c.icon} alt="" width={20} height={20} className={cn("size-5 object-contain", c.ink && "dark:invert")} />
-          {c.name}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 const agency = [
-  "A PDF of impressions once a month",
-  "“You rank #1”, checked from their own office",
-  "Changes made to your profile you never see",
-];
-const ours = [
-  "Your position from 49 spots around your door, every week",
-  "What ChatGPT, Perplexity and AI Overviews say when asked about you",
-  "Each fix shown before it's sent, and an Undo after",
+  { them: "A PDF once a month", us: "Fresh numbers every week" },
+  { them: "“You rank #1”, checked from their office", us: "Your rank from every street around your door" },
+  { them: "AI answers not checked", us: "What ChatGPT, Perplexity and AI Overviews say about you" },
+  { them: "Changes made without you seeing", us: "Every fix shown before it's sent, with an Undo" },
 ];
 
+/** What an agency report gives you, struck through as it comes into view, beside what OpenMarko shows. Read across. */
 export function Problem() {
   const [ref, seen] = useSeenOnce<HTMLDivElement>();
   return (
-    <div ref={ref} className="grid gap-10 lg:grid-cols-2 lg:gap-16">
-      <div className="flex flex-col gap-4">
-        <p className="text-[15px] font-medium text-muted">What a monthly report gives you</p>
-        <ul className="flex flex-col gap-4 font-display text-[26px] leading-[1.1] sm:text-[32px]">
-          {agency.map((a, i) => (
-            <li key={a}>
-              <span className="strike thick" data-on={seen || undefined} style={{ ["--strike-delay" as string]: `${i * 260}ms` }}>
-                {a}
-              </span>
-            </li>
-          ))}
-        </ul>
+    <div ref={ref} className="mx-auto max-w-[880px]">
+      <div className="hidden grid-cols-2 gap-6 pb-3.5 text-[13.5px] text-muted sm:grid">
+        <span>A monthly agency report</span>
+        <span className="font-medium text-fg">OpenMarko</span>
       </div>
-      <div className="flex flex-col gap-4">
-        <p className="text-[15px] font-medium">What OpenMarko shows you</p>
-        <ul className="flex flex-col gap-4">
-          {ours.map((o) => (
-            <li key={o} className="flex gap-3 border-t border-line pt-4 text-[18px] leading-snug">
-              <Check size={20} className="mt-0.5 shrink-0 text-good" />
-              {o}
-            </li>
-          ))}
-        </ul>
-      </div>
+      {agency.map((a, i) => (
+        <div key={a.us} className="grid gap-2 border-t border-line py-5 sm:grid-cols-2 sm:gap-6">
+          <span className="text-[17px] text-muted">
+            <span className="strike" data-on={seen || undefined} style={{ ["--strike-delay" as string]: `${i * 220}ms` }}>
+              {a.them}
+            </span>
+          </span>
+          <span className="flex gap-2.5 text-[17px]">
+            <Check size={18} className="mt-1 shrink-0 text-accent-ink" />
+            {a.us}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
 
-/** A benefit with its piece of the product. Reveals with the right-hand column a beat late; lifts 2px under a mouse. */
-function Card({ i, title, body, children }: { i: number; title: string; body: string; children: ReactNode }) {
+/** A benefit with its piece of the product: words on one side, the picture on the other, alternating down the page. */
+function Row({ i, title, body, children }: { i: number; title: string; body: string; children: ReactNode }) {
   return (
-    <div data-reveal style={revealDelay((i % 2) * 100)} className="flex">
-      <div className="flex flex-1 flex-col gap-5 rounded-2xl border border-line bg-surface p-5 transition-[transform,box-shadow] duration-200 ease-[var(--ease-out)] hover:-translate-y-0.5 hover:shadow-float sm:p-7">
-        <h3 className="text-[16px] leading-[1.55] font-normal text-muted">
-          <span className="font-medium text-fg">{title}.</span> {body}
-        </h3>
-        <div className="grid-fine flex min-h-[200px] flex-1 items-center justify-center rounded-xl border border-line bg-sunken p-5">
-          {children}
-        </div>
+    <div data-reveal className="grid items-center gap-7 lg:grid-cols-[1fr_1.1fr] lg:gap-16">
+      <div className={cn("flex max-w-[420px] min-w-0 flex-col gap-3.5", i % 2 === 1 && "lg:order-2")}>
+        <h3 className="font-display text-[26px] leading-[1.1] font-[650] tracking-[-0.025em] sm:text-[28px]">{title}</h3>
+        <p className="text-[17px] leading-[1.6] text-muted">{body}</p>
       </div>
+      <div className="dot-ground flex min-h-[300px] min-w-0 items-center justify-center rounded-[20px] bg-bg p-6 sm:p-8">{children}</div>
     </div>
   );
 }
@@ -92,12 +58,12 @@ function EveryStreet() {
   const ranks = gridRanks(5, 2);
   return (
     <div className="flex items-center gap-5">
-      <div className="flex flex-col items-center gap-1.5 rounded-xl border border-line bg-surface px-4 py-3">
+      <div className="flex flex-col items-center gap-1.5 rounded-[14px] border border-line bg-surface px-[18px] py-4">
         <span className="text-[12px] text-muted">From the office</span>
-        <span className="num font-display text-[34px] leading-none text-good">#1</span>
+        <span className="num font-display text-[40px] leading-none text-good">#1</span>
       </div>
       <span className="text-[13px] text-muted">vs</span>
-      <div className="flex flex-col items-center gap-1.5 rounded-xl border border-line bg-surface px-4 py-3">
+      <div className="flex flex-col items-center gap-1.5 rounded-[14px] border border-line bg-surface px-[18px] py-4">
         <GridThumb size={5} ranks={ranks} px={76} />
         <span className="num text-[12px] text-muted">Top 3 in {top3(ranks)} of 25 spots</span>
       </div>
@@ -127,8 +93,10 @@ function AiAnswer() {
   const streaming = shown < answerWords.length;
   return (
     <div ref={ref} onMouseEnter={() => !streaming && setRun((r) => r + 1)} className="flex w-full max-w-[330px] flex-col gap-2 text-[13px]">
-      <div className="ml-auto rounded-xl rounded-br-sm bg-ink px-3 py-2 text-on-ink">Best emergency dentist near South Congress?</div>
-      <div className="min-h-[62px] rounded-xl rounded-bl-sm border border-line bg-surface px-3 py-2 leading-relaxed">
+      <div className="ml-auto rounded-[14px] rounded-br-[4px] bg-ink px-3 py-[9px] text-on-ink">
+        Best emergency dentist near South Congress?
+      </div>
+      <div className="min-h-[62px] rounded-[14px] rounded-bl-[4px] border border-line bg-surface px-3 py-2.5 leading-relaxed">
         <img src={engines[0].icon} alt="" width={14} height={14} className="mr-1.5 inline size-3.5 align-[-2px] dark:invert" />
         <span className="sr-only">{answerWords.join(" ")}</span>
         <span aria-hidden className={cn(streaming && "stream-caret")}>
@@ -153,7 +121,7 @@ function WhyAhead() {
     { k: "Categories", you: you.categories, them: 4 },
   ];
   return (
-    <div className="flex w-full max-w-[320px] flex-col gap-3 rounded-xl border border-line bg-surface p-4 text-[12.5px]">
+    <div className="flex w-full max-w-[330px] flex-col gap-3.5 rounded-[14px] border border-line bg-surface p-[18px] text-[12.5px]">
       <div className="flex justify-between text-muted">
         <span>You</span>
         <span>{them.name}</span>
@@ -183,15 +151,15 @@ function WhyAhead() {
 /** A suggestion that applies itself, shows Undo, and goes back: a 3.6 s loop that starts again on hover. */
 function ApplyLoop() {
   return (
-    <div className="apply-loop flex w-full max-w-[330px] flex-col gap-2 rounded-xl border border-line bg-surface p-4">
+    <div className="apply-loop flex w-full max-w-[340px] flex-col gap-2 rounded-[14px] border border-line bg-surface p-[18px]">
       <span className="text-[12px] font-medium text-accent">Change your Google profile</span>
       <p className="text-[13.5px] leading-snug">Say “Invisalign” and “emergency visits” in your description.</p>
       <p className="text-[12px] text-muted">Three keywords you track aren't in it yet.</p>
       <div className="relative mt-1 h-9">
-        <span className="apply-a absolute inset-y-0 left-0 inline-flex items-center rounded-lg bg-ink px-3 text-[13px] font-medium text-on-ink">
+        <span className="apply-a absolute inset-y-0 left-0 inline-flex items-center rounded-[10px] bg-ink px-3.5 text-[13px] font-medium text-on-ink">
           Apply to Google
         </span>
-        <span className="apply-b absolute inset-y-0 left-0 inline-flex items-center gap-1.5 rounded-lg bg-good-soft px-3 text-[13px] font-medium text-good">
+        <span className="apply-b absolute inset-y-0 left-0 inline-flex items-center gap-1.5 rounded-[10px] bg-good-soft px-3.5 text-[13px] font-medium text-good">
           <Check size={14} /> Sent to Google <span className="text-muted">· Undo</span>
         </span>
       </div>
@@ -199,61 +167,107 @@ function ApplyLoop() {
   );
 }
 
-export function BenefitGrid() {
+export function FeatureRows() {
   return (
-    <div className="grid gap-5 md:grid-cols-2">
-      <Card
+    <div className="flex flex-col gap-20 lg:gap-24">
+      <Row
         i={0}
-        title="Every street"
-        body="Google ranks you differently three blocks away. See where customers find you, and where they find someone else."
+        title="See every street"
+        body="Google ranks you differently three blocks away. See where nearby customers find you, and where they find someone else."
       >
         <EveryStreet />
-      </Card>
-      <Card
+      </Row>
+      <Row
         i={1}
-        title="AI answers"
-        body="Whether ChatGPT, Perplexity and AI Overviews name you, what they say, and which sites they read."
+        title="Hear what AI says about you"
+        body="Find out whether ChatGPT, Perplexity and AI Overviews recommend you, what they say, and which sites they read."
       >
         <AiAnswer />
-      </Card>
-      <Card i={2} title="Why they're ahead" body="Their Google profile next to yours, so you know what to close first.">
+      </Row>
+      <Row
+        i={2}
+        title="Know why they're ahead"
+        body="The business above you, next to yours: reviews, photos and categories. You see what to close first."
+      >
         <WhyAhead />
-      </Card>
-      <Card
+      </Row>
+      <Row
         i={3}
-        title="One-click fixes"
-        body="A short list each week, each with its reason. Apply one, undo it, or hand a kind to Autopilot."
+        title="Fix it in one click"
+        body="A short list each week, each with its reason. Apply one, undo it, or let Autopilot handle a kind of fix for you."
       >
         <ApplyLoop />
-      </Card>
+      </Row>
+    </div>
+  );
+}
+
+/** Each step's small picture of that moment in the app. */
+function StepPicture({ i }: { i: number }) {
+  const box =
+    "mt-3.5 flex w-full max-w-[300px] flex-col gap-2 rounded-[14px] border border-line bg-surface p-3.5 text-left text-[13px] shadow-card";
+  if (i === 0)
+    return (
+      <div aria-hidden className={box}>
+        <div className="flex items-center justify-between gap-2 rounded-full border border-line py-1.5 pr-1.5 pl-3">
+          <span className="truncate font-medium">brightsmiledental.com</span>
+          <span className="shrink-0 rounded-full bg-ink px-2.5 py-1.5 text-[12px] font-semibold text-on-ink">Try it free</span>
+        </div>
+        <span className="flex items-center gap-2 text-muted">
+          <img src="/icons/google-maps.svg" alt="" width={16} height={16} className="size-4" />
+          Found: Bright Smile Dental, South Congress
+        </span>
+      </div>
+    );
+  if (i === 1)
+    return (
+      <div aria-hidden className={box}>
+        <div className="flex flex-wrap gap-1.5">
+          {["dentist", "emergency dentist", "invisalign", "Best dentist near me?"].map((k) => (
+            <span key={k} className="rounded-full border border-accent/40 bg-accent-soft px-2.5 py-[5px]">
+              {k}
+            </span>
+          ))}
+          <span className="rounded-full border border-line px-2.5 py-[5px] text-muted">+ add your own</span>
+        </div>
+      </div>
+    );
+  return (
+    <div aria-hidden className={box}>
+      <span className="text-[12px] font-medium text-accent-ink">Change your Google profile</span>
+      <span>Add “emergency visits” to your description.</span>
+      <span className="w-fit rounded-lg bg-ink px-[11px] py-[7px] text-[12.5px] font-medium text-on-ink">Apply to Google</span>
     </div>
   );
 }
 
 const steps = [
-  {
-    title: "Find your business",
-    body: "Search for it on Google from inside the app. We read your profile: categories, services, the cities you serve.",
-  },
-  {
-    title: "Pick what to track",
-    body: "We suggest Maps keywords, search terms and questions for the AI assistants from your profile and your area. Keep, drop or add.",
-  },
-  {
-    title: "See your first map",
-    body: "The first check starts at once. Your grid, your keywords and this week's fixes are there within minutes.",
-  },
+  { title: "Enter your website", body: "We find your Google profile and read your services and the area you serve." },
+  { title: "We check where you show up", body: "Google Maps from every street around you, Google search, and what AI assistants say." },
+  { title: "You get more customers", body: "Apply this week's fixes in a click and watch your map turn green." },
 ];
 
+/** Three stops on one dashed path; a dot runs from 1 to 3 (index.css, .step-path). Down the left on narrow screens. */
 export function Steps() {
   return (
-    <ol className="grid gap-8 lg:grid-cols-3">
+    <ol className="step-path relative grid gap-10 lg:grid-cols-3 lg:gap-8">
+      <span aria-hidden className="step-runner" />
       {steps.map((s, i) => (
-        <li key={s.title} data-reveal style={revealDelay(i * 140)} className="relative flex flex-col gap-3 pt-5">
-          <span aria-hidden className="draw-line absolute inset-x-0 top-0 h-px bg-fg/20" />
-          <span className="font-display text-[44px] leading-none text-accent">{i + 1}</span>
-          <h3 className="text-[19px] font-medium">{s.title}</h3>
-          <p className="text-[15.5px] leading-[1.6] text-muted">{s.body}</p>
+        <li
+          key={s.title}
+          className="relative grid grid-cols-[40px_1fr] items-start gap-x-4 lg:flex lg:flex-col lg:items-center lg:gap-2.5 lg:text-center"
+        >
+          <span
+            className={cn(
+              "num relative z-10 row-span-3 grid size-10 place-items-center rounded-full border-2 bg-sunken font-mono text-[15px] font-semibold",
+              i === 2 ? "border-accent text-accent-ink" : "border-line-strong",
+            )}
+          >
+            {i + 1}
+          </span>
+          <h3 className="mt-2 text-[20px] font-semibold tracking-[-0.01em]">{s.title}</h3>
+          <p className="max-w-[32ch] text-[16px] leading-[1.6] text-muted">{s.body}</p>
+          <StepPicture i={i} />
         </li>
       ))}
     </ol>
